@@ -1,5 +1,5 @@
 import React from 'react';
-import Animated from 'react-native-reanimated';
+import Animated, { type AnimatedStyle } from 'react-native-reanimated';
 import Svg from 'react-native-svg';
 import type { StyleProp, ViewStyle } from 'react-native';
 
@@ -18,7 +18,7 @@ export interface RigPartProps {
   /** pivot point in viewBox units (a shoulder, a tail root, an ear hinge) */
   pivot?: { x: number; y: number };
   /** animated transform for the part (rotate/translate/scale) */
-  style?: StyleProp<ViewStyle>;
+  style?: StyleProp<AnimatedStyle<ViewStyle>>;
   children: React.ReactNode;
 }
 

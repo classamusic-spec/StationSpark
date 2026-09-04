@@ -1,0 +1,306 @@
+/**
+ * CHALLENGE VALIDATOR — "could a child actually finish this?"
+ *
+ * Every generator is checked against this in the test suite, and the dev
+ * gallery can run it live. Returns a list of human-readable problems; an empty
+ * list means the challenge is structurally sound AND solvable.
+ */
+import { add, equals, toNumber } from '@/utils/fractions';
+import { pathPieces, posKey, samePos, solveHosePath, solveRoute } from '@/utils/grid';
+import type { Challenge, Fraction, GridPos } from './types';
+import { isSubMultiset, solveNumberLadder, sumOf } from './solvers';
+
+const isWholeMultiple = (value: Fraction, step: Fraction): boolean => {
+  const quotient = (value.num * step.den) / (value.den * step.num);
+  return Number.isFinite(quotient) && Number.isInteger(quotient) && quotient > 0;
+};
+
+const uniqueCount = (values: readonly (string | number)[]): number => new Set(values).size;
+
+const inGrid = (grid: { rows: number; cols: number }, p: GridPos): boolean =>
+  p.row >= 0 && p.row < grid.rows && p.col >= 0 && p.col < grid.cols;
+
+/** Problems with this challenge. Empty array = good to play. */
+export function validateChallenge(challenge: Challenge): string[] {
+  const problems: string[] = [];
+  const bad = (message: string) => problems.push(`${challenge.kind}: ${message}`);
+
+  switch (challenge.kind) {
+    case 'hose-hero': {
+      const capacity = challenge.grid.rows * challenge.grid.cols;
+      if (challenge.totalFlames < 1) bad('needs at least one flame');
+      if (challenge.totalFlames > capacity) bad('more flames than windows');
+      if (challenge.flameSlots.length !== challenge.totalFlames) bad('flameSlots length must equal totalFlames');
+      if (uniqueCount(challenge.flameSlots) !== challenge.flameSlots.length) bad('duplicate flame slots');
+      if (challenge.flameSlots.some((s) => s < 0 || s >= capacity)) bad('flame slot outside the window grid');
+      if (challenge.alreadyOut < 0 || challenge.alreadyOut >= challenge.totalFlames) bad('alreadyOut must leave at least one flame');
+      const remaining = challenge.totalFlames - challenge.alreadyOut;
+      if (challenge.askRemainingAt !== undefined && (challenge.askRemainingAt < 1 || challenge.askRemainingAt >= remaining)) {
+        bad('askRemainingAt must fall inside the remaining flames');
+      }
+      if (challenge.fractionTargets) {
+        let sum: Fraction = { num: 0, den: 1 };
+        for (const f of challenge.fractionTargets) {
+          if (!Number.isInteger((f.num * challenge.totalFlames) / f.den)) bad('fraction target does not land on whole flames');
+          sum = add(sum, f);
+        }
+        if (toNumber(sum) > 1) bad('fraction targets add up to more than the whole building');
+      }
+      break;
+    }
+
+    case 'water-tank': {
+      if (toNumber(challenge.target) <= 0) bad('target must be more than empty');
+      if (toNumber(challenge.target) > 1) bad('target is above a full tank');
+      if (toNumber(challenge.pumpStep) <= 0) bad('pumpStep must add water');
+      if (!isWholeMultiple(challenge.target, challenge.pumpStep)) bad('target is not a whole number of pumps');
+      if (!equals(challenge.pumpStep, { num: 1, den: challenge.ticks })) bad('pumpStep should match the gauge ticks');
+      break;
+    }
+
+    case 'ladder-builder':
+    case 'build-barrier': {
+      if (challenge.target < 1) bad('target must be positive');
+      if (challenge.pieces.some((p) => p < 1)) bad('every piece must be a positive whole number');
+      if (challenge.solutions.length === 0) bad('no solution exists');
+      for (const solution of challenge.solutions) {
+        if (sumOf(solution) !== challenge.target) bad(`solution ${solution.join('+')} does not sum to ${challenge.target}`);
+        if (!isSubMultiset(solution, challenge.pieces)) bad('solution uses pieces the child was not given');
+      }
+      if (challenge.solutionIndices) {
+        if (challenge.solutionIndices.length !== challenge.solutions.length) bad('solutionIndices must line up with solutions');
+        challenge.solutionIndices.forEach((indices, i) => {
+          if (uniqueCount(indices) !== indices.length) bad('solutionIndices reuses a piece');
+          const values = indices.map((idx) => challenge.pieces[idx] ?? Number.NaN);
+          if (values.some((v) => Number.isNaN(v))) bad('solutionIndices points outside pieces');
+          else if (sumOf(values) !== challenge.target) bad('solutionIndices does not sum to the target');
+          const expected = challenge.solutions[i];
+          if (expected && [...values].sort().join() !== [...expected].sort().join()) bad('solutionIndices disagrees with solutions');
+        });
+      }
+      if (challenge.kind === 'ladder-builder' && challenge.solutions.length < challenge.requiredSolutions) {
+        bad('fewer solutions than requiredSolutions');
+      }
+      break;
+    }
+
+    case 'number-ladder': {
+      if (challenge.min >= challenge.max) bad('ladder has no height');
+      if (challenge.start === challenge.target) bad('start and target are the same rung');
+      if (challenge.jumps.length === 0 || challenge.jumps.some((j) => j < 1)) bad('jumps must be positive');
+      if (challenge.start < challenge.min || challenge.start > challenge.max) bad('start is off the ladder');
+      if (challenge.target < challenge.min || challenge.target > challenge.max) bad('target is off the ladder');
+      if (!solveNumberLadder(challenge)) bad('target cannot be reached with these jumps');
+      break;
+    }
+
+    case 'dispatch-decoder': {
+      if (challenge.message.trim().length === 0) bad('empty radio message');
+      if (!challenge.messageEs || challenge.messageEs.trim().length === 0) bad('missing Spanish message');
+      if (challenge.options.length < 3) bad('needs at least three options');
+      if (uniqueCount(challenge.options) !== challenge.options.length) bad('duplicate options');
+      if (challenge.options.filter((o) => o === challenge.correct).length !== 1) bad('exactly one option must be correct');
+      if (challenge.mode === 'location' && !challenge.scene) bad('location mode needs a scene');
+      break;
+    }
+
+    case 'equipment-check': {
+      if (challenge.items.length === 0) bad('nothing to pack');
+      if (uniqueCount(challenge.items.map((i) => i.id)) !== challenge.items.length) bad('duplicate item rows');
+      for (const item of challenge.items) {
+        if (item.need < 1) bad('every row needs at least one item');
+        if (item.alreadyPacked < 0 || item.alreadyPacked >= item.need) bad('alreadyPacked must leave something to do');
+      }
+      if (uniqueCount(challenge.decoys) !== challenge.decoys.length) bad('duplicate decoys');
+      const needed = new Set(challenge.items.map((i) => i.id));
+      if (challenge.decoys.some((d) => needed.has(d))) bad('a decoy is also on the list');
+      break;
+    }
+
+    case 'gear-sort': {
+      if (challenge.bins.length < 2) bad('needs at least two bins');
+      if (uniqueCount(challenge.bins.map((b) => b.id)) !== challenge.bins.length) bad('duplicate bin ids');
+      if (challenge.items.length < challenge.bins.length) bad('fewer items than bins');
+      if (uniqueCount(challenge.items.map((i) => i.id)) !== challenge.items.length) bad('duplicate item ids');
+      const binIds = new Set(challenge.bins.map((b) => b.id));
+      for (const item of challenge.items) if (!binIds.has(item.bin)) bad(`item ${item.id} has no bin`);
+      for (const bin of challenge.bins) {
+        if (!challenge.items.some((i) => i.bin === bin.id)) bad(`bin ${bin.id} would sit empty`);
+      }
+      if (challenge.by === 'color' && challenge.items.some((i) => !i.color)) bad('colour sort needs colours on the items');
+      if (challenge.by === 'size' && challenge.items.some((i) => !i.size)) bad('size sort needs sizes on the items');
+      break;
+    }
+
+    case 'hose-path': {
+      if (samePos(challenge.start, challenge.end)) bad('hydrant and fire are the same cell');
+      if (!inGrid(challenge.grid, challenge.start) || !inGrid(challenge.grid, challenge.end)) bad('start or end is off the board');
+      const walls = new Set(challenge.blocked.map(posKey));
+      if (walls.has(posKey(challenge.start)) || walls.has(posKey(challenge.end))) bad('start or end sits on a blocked cell');
+      const solution = solveHosePath(challenge);
+      if (!solution) bad('the given pieces cannot connect the hydrant to the fire');
+      else {
+        const used = pathPieces(solution);
+        const have = { straight: challenge.pieces.filter((p) => p === 'straight').length, corner: challenge.pieces.filter((p) => p === 'corner').length };
+        if (used.straight > have.straight || used.corner > have.corner) bad('solution needs more pieces than were given');
+      }
+      break;
+    }
+
+    case 'rescue-route': {
+      if (samePos(challenge.start, challenge.goal)) bad('the truck is already there');
+      if (!inGrid(challenge.grid, challenge.start) || !inGrid(challenge.grid, challenge.goal)) bad('start or goal is off the map');
+      const walls = new Set(challenge.blocked.map(posKey));
+      if (walls.has(posKey(challenge.start)) || walls.has(posKey(challenge.goal))) bad('start or goal is blocked');
+      if (uniqueCount(challenge.blocked.map(posKey)) !== challenge.blocked.length) bad('duplicate blocked cells');
+      if (challenge.blocked.some((c) => !inGrid(challenge.grid, c))) bad('blocked cell is off the map');
+      const solution = solveRoute(challenge);
+      if (!solution) bad('there is no way through');
+      else if (solution.length > challenge.maxCommands) bad(`needs ${solution.length} commands but only ${challenge.maxCommands} are allowed`);
+      if (challenge.compareRoutes) {
+        const { a, b, shorter } = challenge.compareRoutes;
+        if (a === b) bad('the two routes are the same length');
+        if ((shorter === 'a' && a > b) || (shorter === 'b' && b > a)) bad('compareRoutes marks the longer route as shorter');
+      }
+      if (challenge.streetNames) {
+        for (const street of challenge.streetNames) {
+          if (street.row < 0 || street.row >= challenge.grid.rows) bad('street name on a row that does not exist');
+          if (street.name.trim().length === 0) bad('empty street name');
+        }
+      }
+      break;
+    }
+
+    case 'hydrant-match': {
+      if (challenge.label.trim().length === 0) bad('empty hydrant tag');
+      if (challenge.options.length < 3) bad('needs at least three hydrants');
+      if (uniqueCount(challenge.options) !== challenge.options.length) bad('duplicate hydrant numbers');
+      if (challenge.options.filter((o) => o === challenge.correct).length !== 1) bad('exactly one hydrant must match');
+      if (challenge.options.some((o) => o < 0)) bad('hydrant numbers must be positive');
+      const sum = /^(\d+)\s*([+−×÷])\s*(\d+)$/.exec(challenge.label);
+      if (sum) {
+        const left = Number(sum[1]);
+        const right = Number(sum[3]);
+        const expected =
+          sum[2] === '+' ? left + right : sum[2] === '−' ? left - right : sum[2] === '×' ? left * right : left / right;
+        if (expected !== challenge.correct) bad(`tag "${challenge.label}" does not equal ${challenge.correct}`);
+      }
+      break;
+    }
+
+    case 'spray-pattern': {
+      if (challenge.sequence.length < 4) bad('pattern is too short to read');
+      if (challenge.sequence[challenge.sequence.length - 1] !== challenge.answer) bad('answer must be the hidden last cell');
+      if (challenge.options.filter((o) => o === challenge.answer).length !== 1) bad('exactly one option must be correct');
+      if (uniqueCount(challenge.options) !== challenge.options.length) bad('duplicate options');
+      if (challenge.options.length < 3) bad('needs at least three options');
+      const period = [2, 3, 4].find(
+        (p) => challenge.sequence.length % p === 0 && challenge.sequence.every((s, i) => s === challenge.sequence[i % p]),
+      );
+      if (!period) bad('no single repeating rule explains the pattern');
+      else if (challenge.sequence.length - 1 < period * 1.5) bad('not enough of the pattern is visible to be sure');
+      break;
+    }
+
+    case 'clock-watch': {
+      const startTotal = challenge.start.h * 60 + challenge.start.m;
+      const targetTotal = challenge.target.h * 60 + challenge.target.m;
+      const delta = targetTotal - startTotal;
+      if (challenge.start.h < 1 || challenge.start.h > 12) bad('start hour is off the dial');
+      if (challenge.target.h < 1 || challenge.target.h > 12) bad('target hour is off the dial');
+      if (challenge.start.m < 0 || challenge.start.m > 59 || challenge.target.m < 0 || challenge.target.m > 59) bad('minutes off the dial');
+      if (delta <= 0) bad('target must be later than the start');
+      if (delta > 180) bad('more than three hours away');
+      if (delta % challenge.step !== 0) bad('target is not a whole number of steps away');
+      if (challenge.event.trim().length === 0) bad('missing event');
+      break;
+    }
+
+    case 'rescue-pets': {
+      if (challenge.total < 1) bad('nobody to rescue');
+      if (challenge.alreadySafe < 0 || challenge.alreadySafe >= challenge.total) bad('alreadySafe must leave someone to help');
+      break;
+    }
+
+    case 'signals': {
+      if (challenge.steps.length < 3) bad('needs at least three steps');
+      if (uniqueCount(challenge.steps) !== challenge.steps.length) bad('a step appears twice, so the order is ambiguous');
+      if (challenge.shuffled.length !== challenge.steps.length) bad('shuffled must hold every step');
+      if ([...challenge.shuffled].sort().join() !== [...challenge.steps].sort().join()) bad('shuffled is not the same set of steps');
+      if (challenge.shuffled.join() === challenge.steps.join()) bad('shuffled is already in order');
+      break;
+    }
+
+    case 'vocab-tap': {
+      if (challenge.options.length < 3) bad('needs at least three pictures');
+      if (uniqueCount(challenge.options.map((o) => o.id)) !== challenge.options.length) bad('duplicate options');
+      if (challenge.options.filter((o) => o.id === challenge.word.id).length !== 1) bad('the word must appear exactly once');
+      if (challenge.word.en.trim().length === 0 || challenge.word.es.trim().length === 0) bad('word is missing a translation');
+      break;
+    }
+
+    case 'listen-count': {
+      if (challenge.count < 1) bad('count must be at least one');
+      if (challenge.count > challenge.maxOnScreen) bad('more to count than fits on screen');
+      if (challenge.phraseEs.trim().length === 0) bad('missing Spanish phrase');
+      if (challenge.phraseEn.trim().length === 0) bad('missing English phrase');
+      if (challenge.item.es.trim().length === 0) bad('item is missing its Spanish word');
+      break;
+    }
+
+    case 'pizza-fractions': {
+      let sum: Fraction = { num: 0, den: 1 };
+      for (const topping of challenge.toppings) {
+        if (topping.fraction.num <= 0 || topping.fraction.den <= 0) bad('topping fraction must be positive');
+        if (!Number.isInteger((topping.fraction.num * challenge.cutInto) / topping.fraction.den)) bad('a topping does not land on whole slices');
+        sum = add(sum, topping.fraction);
+      }
+      if (!equals(sum, { num: 1, den: 1 })) bad('toppings do not cover exactly one whole pizza');
+      if (uniqueCount(challenge.toppings.map((t) => t.topping)) !== challenge.toppings.length) bad('the same topping twice');
+      if (challenge.shareAmong < 1) bad('needs someone to share with');
+      if (challenge.cutInto % challenge.shareAmong !== 0) bad('slices do not divide evenly between friends');
+      if (challenge.each !== challenge.cutInto / challenge.shareAmong) bad('each is not slices ÷ friends');
+      break;
+    }
+
+    case 'measure-pour': {
+      if (toNumber(challenge.target) <= 0) bad('target must be more than nothing');
+      if (!equals(challenge.step, { num: 1, den: challenge.ticks })) bad('step should match the jug ticks');
+      if (!isWholeMultiple(challenge.target, challenge.step)) bad('target is not a whole number of pours');
+      if (challenge.ingredient.en.trim().length === 0) bad('missing ingredient');
+      break;
+    }
+
+    case 'count-ingredients': {
+      if (challenge.needs.length === 0) bad('nothing to fetch');
+      if (challenge.needs.some((n) => n.count < 1)) bad('every need must be at least one');
+      if (uniqueCount(challenge.needs.map((n) => n.item.id)) !== challenge.needs.length) bad('the same ingredient twice');
+      if (uniqueCount(challenge.extras.map((e) => e.id)) !== challenge.extras.length) bad('duplicate extras');
+      const needed = new Set(challenge.needs.map((n) => n.item.id));
+      if (challenge.extras.some((e) => needed.has(e.id))) bad('an extra is also on the list');
+      break;
+    }
+
+    case 'divide-share': {
+      if (challenge.among < 2) bad('sharing needs at least two people');
+      if (challenge.each < 1) bad('everyone must get at least one');
+      if (challenge.total !== challenge.among * challenge.each) bad('total is not among × each');
+      break;
+    }
+
+    case 'recipe-scale': {
+      if (challenge.serves < 1 || challenge.eating < 1) bad('serves and eating must be positive');
+      if (challenge.lines.length === 0) bad('no ingredients to scale');
+      for (const line of challenge.lines) {
+        if (line.amount < 1) bad('amount must be positive');
+        if (!Number.isInteger(line.scaled) || line.scaled < 1) bad('scaled amount must be a whole number');
+        if (line.scaled * challenge.serves !== line.amount * challenge.eating) bad(`${line.item.en} does not scale correctly`);
+      }
+      break;
+    }
+  }
+
+  return problems;
+}
+
+export const isPlayable = (challenge: Challenge): boolean => validateChallenge(challenge).length === 0;

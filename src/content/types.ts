@@ -166,7 +166,13 @@ export interface RecipeDef {
    *  the "Ask a grown-up" chip. */
   grownUp?: boolean;
   /** kitchen beats: a sequence of kitchen challenge generators */
-  steps: { game: ChallengeKind; challenge: (ctx: GeneratorContext) => Challenge; intro?: DialogueLine[] }[];
+  steps: {
+    game: ChallengeKind;
+    challenge: (ctx: GeneratorContext) => Challenge;
+    intro?: DialogueLine[];
+    /** Only cook this step for these bands (default all) — mirrors MissionBeat.bands. */
+    bands?: AgeBand[];
+  }[];
   badge?: BadgeId;
   xp: number;
 }

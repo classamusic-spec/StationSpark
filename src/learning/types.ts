@@ -276,6 +276,8 @@ export interface ListenCountChallenge {
   count: number;
   item: VocabWord;
   maxOnScreen: number;
+  /** how much English support the translation card shows (defaults by age band) */
+  support?: 'full' | 'some' | 'min';
 }
 
 /* ---- Kitchen ------------------------------------------------------- */

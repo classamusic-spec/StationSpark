@@ -12,7 +12,7 @@ import { useReducedMotion } from './useReducedMotion';
  *
  * Returns `true` while the eyes are closed. Always `false` under reduced motion.
  */
-export function useBlinkState(minMs = idle.blinkMinMs, maxMs = idle.blinkMaxMs, closedMs = 120): boolean {
+export function useBlinkState(minMs: number = idle.blinkMinMs, maxMs: number = idle.blinkMaxMs, closedMs = 120): boolean {
   const [closed, setClosed] = useState(false);
   const reduced = useReducedMotion();
 

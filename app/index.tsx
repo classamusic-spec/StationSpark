@@ -1,18 +1,12 @@
 import React from 'react';
-import { View } from 'react-native';
-import { Button, Logo, ScreenFrame, Text } from '@/ui';
+import { Redirect } from 'expo-router';
+import { useGame } from '@/state/store';
+import { FirehouseScreen } from '@/screens/Firehouse/FirehouseScreen';
 
-/** Placeholder — replaced by the Firehouse home screen (src/screens/FirehouseScreen). */
+/** The Firehouse home. First run goes through onboarding. */
 export default function Index() {
-  return (
-    <ScreenFrame>
-      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: 24 }}>
-        <Logo size={260} />
-        <Text variant="h2" center>
-          The station is being built…
-        </Text>
-        <Button label="Start Shift" size="xl" />
-      </View>
-    </ScreenFrame>
-  );
+  const onboarded = useGame((s) => s.profile.onboarded);
+  const hydrated = useGame((s) => s.hydrated);
+  if (hydrated && !onboarded) return <Redirect href="/onboarding" />;
+  return <FirehouseScreen />;
 }

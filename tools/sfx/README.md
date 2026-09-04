@@ -53,7 +53,7 @@ From `docs/ART_DIRECTION.md`: **bright, toy-like, short, major key**.
 | `lowpass` `highpass` `bandpass` | one-pole filters, cutoff may be a function of time |
 | `formant(x, freq, q)` | 2-pole band-pass — the vocal-tract peaks that make `dog-bark` and `meow` read as animals rather than buzzes |
 | `mix` `place(dest, src, atSec)` `gain` | arrangement |
-| `delay` `reverb` `softClip` `dcBlock` `fade` `fit` | finishing |
+| `delay` `reverb` `softClip` `dcBlock` `fade` | finishing |
 | `seamless(x, dur, xfade)` | render longer than needed, then crossfade the overhang back over the head — this is what makes the loops loop |
 
 ## Making a loop actually seamless

@@ -12,7 +12,7 @@ import { idle } from '@/theme';
 import { useReducedMotion } from './useReducedMotion';
 
 /** A shared value that gently bobs between -amp..+amp forever. */
-export function useIdleBob(amplitude = idle.bobAmplitude, periodMs = idle.bobPeriodMs, phase = 0): SharedValue<number> {
+export function useIdleBob(amplitude: number = idle.bobAmplitude, periodMs: number = idle.bobPeriodMs, phase = 0): SharedValue<number> {
   const v = useSharedValue(0);
   const reduced = useReducedMotion();
   useEffect(() => {
@@ -38,7 +38,7 @@ export function useIdleBob(amplitude = idle.bobAmplitude, periodMs = idle.bobPer
 }
 
 /** 0..1 blink amount: 1 = eyes closed. Random cadence per character. */
-export function useBlink(minMs = idle.blinkMinMs, maxMs = idle.blinkMaxMs): SharedValue<number> {
+export function useBlink(minMs: number = idle.blinkMinMs, maxMs: number = idle.blinkMaxMs): SharedValue<number> {
   const v = useSharedValue(0);
   const reduced = useReducedMotion();
   useEffect(() => {

@@ -111,7 +111,6 @@ function wave(type, phase) {
 function toolkit(sr, seed) {
   const rnd = makeRng(seed);
   const n = (sec) => Math.max(1, Math.round(sec * sr));
-  const buf = (sec) => new Float32Array(n(sec));
   const val = (x, u, t) => (typeof x === 'function' ? x(u, t) : x);
 
   /* ---- oscillator ------------------------------------------------- */
@@ -318,14 +317,6 @@ function toolkit(sr, seed) {
     return out;
   }
 
-  /** Trim (or pad) to an exact length in seconds. */
-  function fit(x, dur) {
-    const len = n(dur);
-    const out = new Float32Array(len);
-    out.set(x.subarray(0, Math.min(len, x.length)));
-    return out;
-  }
-
   /**
    * Make a loop seamless: render `dur + xfade` seconds, then crossfade the
    * overhanging tail back over the head. The result loops with no click and no
@@ -347,7 +338,6 @@ function toolkit(sr, seed) {
     sr,
     rnd,
     n,
-    buf,
     osc,
     partials,
     noise,
@@ -367,7 +357,6 @@ function toolkit(sr, seed) {
     softClip,
     dcBlock,
     fade,
-    fit,
     seamless,
   };
 }
@@ -626,7 +615,8 @@ const SOUNDS = {
           1 - i * 0.05,
         );
       });
-      return S.fade(S.reverb(out, { amount: 0.3, decaySec: 0.4, tailSec: 0.4 }), 0.002, 0.08);
+      const trail = S.delay(out, { timeSec: 0.085, feedback: 0.3, mixAmt: 0.35, tailSec: 0.3 });
+      return S.fade(S.reverb(trail, { amount: 0.28, decaySec: 0.4, tailSec: 0.4 }), 0.002, 0.08);
     },
   },
 

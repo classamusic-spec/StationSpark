@@ -1,7 +1,8 @@
 import React, { useCallback } from 'react';
 import { Pressable, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring, withTiming } from 'react-native-reanimated';
-import { hit, palette, radii, springs, timings } from '@/theme';
+import { hit, palette, radii, shadows, springs, timings } from '@/theme';
+import { usePulse } from '@/hooks/usePulse';
 import { haptics } from '@/services/haptics';
 import { sfx } from '@/services/audio';
 import { Text } from './Text';
@@ -40,6 +41,8 @@ export interface ButtonProps {
   sound?: 'tap' | 'tap-soft' | 'pop' | 'none';
   accessibilityLabel?: string;
   children?: React.ReactNode;
+  /** soft pulsing gold glow behind the button — for the one hero CTA on a screen */
+  glow?: boolean;
 }
 
 /**
@@ -59,6 +62,7 @@ export function Button({
   sound = 'tap',
   accessibilityLabel,
   children,
+  glow = false,
 }: ButtonProps) {
   const t = tones[tone];
   const s = sizes[size];
@@ -92,6 +96,7 @@ export function Button({
       style={[block && styles.block, disabled && styles.disabled, style]}
       hitSlop={6}
     >
+      {glow ? <ButtonGlow height={s.h + s.edge} /> : null}
       <View style={[styles.edge, { backgroundColor: t.edge, borderRadius: radii.pill, height: s.h + s.edge }]}>
         <Animated.View
           style={[
@@ -114,7 +119,33 @@ export function Button({
   );
 }
 
+/**
+ * The hero-CTA glow: a soft gold halo that breathes behind the pill.
+ * Its own component so the looping animation only exists when `glow` is set.
+ */
+function ButtonGlow({ height }: { height: number }) {
+  const pulse = usePulse(1700, 0.5);
+  const style = useAnimatedStyle(() => ({
+    opacity: 0.3 + pulse.value * 0.45,
+    transform: [{ scale: 1 + pulse.value * 0.045 }],
+  }));
+  return (
+    <Animated.View
+      pointerEvents="none"
+      style={[styles.glow, shadows.glowGold, { borderRadius: (height + 20) / 2 }, style]}
+    />
+  );
+}
+
 const styles = StyleSheet.create({
+  glow: {
+    position: 'absolute',
+    left: -14,
+    right: -14,
+    top: -10,
+    bottom: -10,
+    backgroundColor: 'rgba(255,199,44,0.55)',
+  },
   block: { alignSelf: 'stretch' },
   disabled: { opacity: 0.5 },
   edge: { alignSelf: 'stretch' },
