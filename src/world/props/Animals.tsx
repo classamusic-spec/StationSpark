@@ -17,12 +17,15 @@ import { useReducedMotion } from '@/hooks';
 
 export type AnimalMood = 'help' | 'happy' | 'safe';
 
-export const animalName: Record<AnimalId, { en: string; es: string; plural: string; sound: 'meow' | 'dog-bark' | 'pop' }> = {
-  kitten: { en: 'kitten', es: 'gatito', plural: 'kittens', sound: 'meow' },
-  puppy: { en: 'puppy', es: 'perrito', plural: 'puppies', sound: 'dog-bark' },
-  bunny: { en: 'bunny', es: 'conejito', plural: 'bunnies', sound: 'pop' },
-  duckling: { en: 'duckling', es: 'patito', plural: 'ducklings', sound: 'pop' },
-  turtle: { en: 'turtle', es: 'tortuga', plural: 'turtles', sound: 'pop' },
+export const animalName: Record<
+  AnimalId,
+  { en: string; es: string; plural: string; pluralEs: string; sound: 'meow' | 'dog-bark' | 'pop' }
+> = {
+  kitten: { en: 'kitten', es: 'gatito', plural: 'kittens', pluralEs: 'gatitos', sound: 'meow' },
+  puppy: { en: 'puppy', es: 'perrito', plural: 'puppies', pluralEs: 'perritos', sound: 'dog-bark' },
+  bunny: { en: 'bunny', es: 'conejito', plural: 'bunnies', pluralEs: 'conejitos', sound: 'pop' },
+  duckling: { en: 'duckling', es: 'patito', plural: 'ducklings', pluralEs: 'patitos', sound: 'pop' },
+  turtle: { en: 'turtle', es: 'tortuga', plural: 'turtles', pluralEs: 'tortugas', sound: 'pop' },
 };
 
 /** Random blink as plain state — cheap (one flip every few seconds) and works everywhere. */

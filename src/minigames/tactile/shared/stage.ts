@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useWindowDimensions, type LayoutChangeEvent } from 'react-native';
 import { useSharedValue, useFrameCallback, type SharedValue } from 'react-native-reanimated';
 import { spacing } from '@/theme';
-import type { AgeBand } from '@/learning/types';
 
 /** Everything is laid out against this design box and then scaled. */
 export const DESIGN = { w: 390, h: 700 } as const;
@@ -66,22 +65,4 @@ export function useClock(active = true): SharedValue<number> {
   }, [active, frame]);
 
   return clock;
-}
-
-/** Band A gets bigger targets and fewer words; band C gets the maths written out. */
-export interface BandPresentation {
-  /** minimum tap/drag target */
-  target: number;
-  /** show equations / fractions as symbols */
-  showEquations: boolean;
-  /** show counting icons next to numerals */
-  showCountIcons: boolean;
-  /** keep prompts short */
-  terse: boolean;
-}
-
-export function bandPresentation(band: AgeBand, stage: Stage): BandPresentation {
-  if (band === 'A') return { target: Math.max(72, stage.s(78)), showEquations: false, showCountIcons: true, terse: true };
-  if (band === 'B') return { target: Math.max(64, stage.s(68)), showEquations: true, showCountIcons: false, terse: false };
-  return { target: Math.max(64, stage.s(64)), showEquations: true, showCountIcons: false, terse: false };
 }
