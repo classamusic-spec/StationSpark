@@ -160,6 +160,11 @@ export interface RecipeDef {
   nameEs?: string;
   blurb: string;
   subjects: Subject[];
+  /** Warm welcome from Captain Bea shown when the recipe card opens. */
+  intro?: DialogueLine[];
+  /** Heat or a knife is involved: the crew does that step and the Kitchen shows
+   *  the "Ask a grown-up" chip. */
+  grownUp?: boolean;
   /** kitchen beats: a sequence of kitchen challenge generators */
   steps: { game: ChallengeKind; challenge: (ctx: GeneratorContext) => Challenge; intro?: DialogueLine[] }[];
   badge?: BadgeId;

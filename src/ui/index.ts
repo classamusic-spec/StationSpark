@@ -8,3 +8,4 @@ export * from './TopBar';
 export * from './ScreenFrame';
 export * from './Logo';
 export * from './icons';
+export * from './kit';

@@ -129,6 +129,8 @@ export interface LadderBuilderChallenge {
   pieces: number[];
   /** All valid combos (subsets of pieces indices that sum to target) */
   solutions: number[][];
+  /** Same combos expressed as indices into `pieces` (generators fill both). */
+  solutionIndices?: number[][];
   /** For band C: ask for two different combos */
   requiredSolutions: 1 | 2;
   animal: AnimalId;
@@ -167,7 +169,17 @@ export interface GearSortChallenge {
   kind: 'gear-sort';
   by: 'color' | 'shape' | 'size' | 'category';
   bins: { id: string; label: string; labelEs?: string; color?: string }[];
-  items: { id: string; bin: string; equipment: EquipmentId; color?: string; size?: 'S' | 'M' | 'L' }[];
+  items: {
+    id: string;
+    bin: string;
+    equipment: EquipmentId;
+    color?: string;
+    size?: 'S' | 'M' | 'L';
+    /** Display overrides for themed sorts (e.g. recycling day); fall back to `equipment`. */
+    label?: string;
+    labelEs?: string;
+    icon?: string;
+  }[];
 }
 
 export type HosePiece = 'straight' | 'corner';
@@ -233,7 +245,10 @@ export interface BuildBarrierChallenge {
   kind: 'build-barrier';
   target: number;
   pieces: number[];
+  /** Combos of piece VALUES that sum to `target` (see also `solutionIndices`). */
   solutions: number[][];
+  /** Same combos expressed as indices into `pieces` (generators fill both). */
+  solutionIndices?: number[][];
 }
 
 export interface SignalsChallenge {
