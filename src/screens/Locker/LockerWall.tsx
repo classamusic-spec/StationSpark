@@ -152,6 +152,8 @@ const Room = memo(function Room({ w, h, stageH, helmet, name }: { w: number; h: 
   const open = lockers[openIndex];
   const grout = Math.max(1, Math.floor(w / 72));
   const bx0 = L.benchX - L.benchWidth / 2;
+  /** the wet-floor cone stands in front of the bench's far leg, clear of Rookie's boots */
+  const cone = bx0 + L.benchWidth - 24;
 
   return (
     <Svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} pointerEvents="none">
@@ -184,10 +186,10 @@ const Room = memo(function Room({ w, h, stageH, helmet, name }: { w: number; h: 
       </G>
       {/* a cone parked by the bench */}
       <G>
-        <Ellipse cx={bx0 - 18} cy={L.floorY + 26} rx={13} ry={shadowRy(13)} fill={SHADOW_FILL} opacity={SHADOW_OPACITY} />
-        <Path d={`M ${bx0 - 18} ${L.floorY - 6} C ${bx0 - 16} ${L.floorY - 6} ${bx0 - 15} ${L.floorY - 4} ${bx0 - 14.5} ${L.floorY - 2} L ${bx0 - 10} ${L.floorY + 23} L ${bx0 - 26} ${L.floorY + 23} L ${bx0 - 21.5} ${L.floorY - 2} C ${bx0 - 21} ${L.floorY - 4} ${bx0 - 20} ${L.floorY - 6} ${bx0 - 18} ${L.floorY - 6} Z`} fill={palette.orange} />
-        <Path d={`M ${bx0 - 21} ${L.floorY + 8} L ${bx0 - 15} ${L.floorY + 8} L ${bx0 - 14} ${L.floorY + 13} L ${bx0 - 22} ${L.floorY + 13} Z`} fill={palette.white} />
-        <Rect x={bx0 - 30} y={L.floorY + 22} width={24} height={5} rx={2.5} fill={palette.orangeDark} />
+        <Ellipse cx={cone} cy={L.floorY + 26} rx={13} ry={shadowRy(13)} fill={SHADOW_FILL} opacity={SHADOW_OPACITY} />
+        <Path d={`M ${cone} ${L.floorY - 6} C ${cone + 2} ${L.floorY - 6} ${cone + 3} ${L.floorY - 4} ${cone + 3.5} ${L.floorY - 2} L ${cone + 8} ${L.floorY + 23} L ${cone - 8} ${L.floorY + 23} L ${cone - 3.5} ${L.floorY - 2} C ${cone - 3} ${L.floorY - 4} ${cone - 2} ${L.floorY - 6} ${cone} ${L.floorY - 6} Z`} fill={palette.orange} />
+        <Path d={`M ${cone - 3} ${L.floorY + 8} L ${cone + 3} ${L.floorY + 8} L ${cone + 4} ${L.floorY + 13} L ${cone - 4} ${L.floorY + 13} Z`} fill={palette.white} />
+        <Rect x={cone - 12} y={L.floorY + 22} width={24} height={5} rx={2.5} fill={palette.orangeDark} />
       </G>
     </Svg>
   );

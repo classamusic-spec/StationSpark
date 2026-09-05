@@ -17,9 +17,9 @@ import { AnswerTile } from '@/ui/kit/AnswerTile';
 import { HintBubble } from '@/ui/kit/HintBubble';
 import { Tray } from '@/ui/kit/Tray';
 import { VocabIcon } from '@/ui/kit/VocabIcon';
-import { GameCrew } from '@/characters';
+
 import { Stage as SceneStage } from '@/world';
-import { CrewFigure } from '@/world/scenes';
+import { CrewFigure, SceneCrew } from '@/world/scenes';
 import { Stage, at } from '../../parts/Stage';
 import { PlateArt } from '../../parts/FoodBits';
 import { EquationStrip } from '../../parts/SceneBits';
@@ -152,7 +152,7 @@ export function DivideShare({ challenge, ageBand, onComplete, onEvent, compact }
       {/* an indoor game is played in a kitchen, never against a blue sky */}
       <SceneStage variant="counter" groundHeight={150} />
       {among < 3 ? (
-        <GameCrew side="right" size={54} bottom={104} showPepper mood={phase === 'eating' ? 'cheer' : phase === 'deal' ? 'happy' : 'idle'} />
+        <SceneCrew side="right" size={54} showPepper mood={phase === 'eating' ? 'cheer' : phase === 'deal' ? 'happy' : 'idle'} />
       ) : null}
       <PromptBanner
         title={`${challenge.total} ${itemName} for ${among} firefighters`}

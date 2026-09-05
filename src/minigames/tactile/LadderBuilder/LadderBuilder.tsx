@@ -8,8 +8,9 @@ import { Chip, Text, Tray, TrayRow } from '@/ui';
 import { sfx } from '@/services/audio';
 import { haptics } from '@/services/haptics';
 import { speech } from '@/services/speech';
-import { GameCrew, Pepper, Rookie } from '@/characters';
+import { Pepper, Rookie } from '@/characters';
 import { Stage } from '@/world';
+import { SceneCrew } from '@/world/scenes';
 import { Animal, LadderPiece, UnitWall, animalName } from '@/world/props';
 import {
   DragToken,
@@ -273,7 +274,7 @@ export function LadderBuilder({ challenge, ageBand, onComplete, onEvent, compact
       hint={hints.bubble}
       onDismissHint={hints.dismiss}
       backdrop={<Stage variant="park" groundHeight={150} />}
-      overlay={<GameCrew side="right" size={58} bottom={compact ? 108 : 132} mood={state.phase === 'done' ? 'cheer' : state.phase === 'climbing' ? 'happy' : 'idle'} />}
+      overlay={<SceneCrew side="right" size={58} mood={state.phase === 'done' ? 'cheer' : state.phase === 'climbing' ? 'happy' : 'idle'} />}
       footer={
         <View style={styles.mathRow}>
           <Text variant="h3" color={total === target ? palette.leafGreenDark : palette.navy}>

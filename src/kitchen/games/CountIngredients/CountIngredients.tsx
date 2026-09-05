@@ -27,8 +27,9 @@ import { Tray } from '@/ui/kit/Tray';
 import { VocabIcon } from '@/ui/kit/VocabIcon';
 import { RoundIconButton } from '@/ui/RoundIconButton';
 import { SpeakerIcon } from '@/ui/icons';
-import { GameCrew } from '@/characters';
+
 import { Stage as SceneStage } from '@/world';
+import { SceneCrew } from '@/world/scenes';
 import { Stage, at } from '../../parts/Stage';
 import { RecipeCardFrame } from '../../parts/RecipeCardFrame';
 import { CookCTA } from '../../parts/SceneBits';
@@ -236,7 +237,7 @@ export function CountIngredients({ challenge, onComplete, onEvent, compact }: Mi
     <View style={styles.root}>
       {/* a pantry, not a sky: shelves, jars, sacks and crates behind the play */}
       <SceneStage variant="pantry" groundHeight={160} />
-      <GameCrew side="right" size={50} bottom={104} showPepper npc="rosa" mood={blended ? 'cheer' : Object.keys(bowl).length > 0 ? 'happy' : 'idle'} />
+      <SceneCrew side="right" size={50} showPepper npc="rosa" mood={blended ? 'cheer' : Object.keys(bowl).length > 0 ? 'happy' : 'idle'} />
       <PromptBanner title="Fill the blender!" subtitle="Drag what the recipe asks for — no more, no less." compact={compact} />
 
       <View style={styles.listWrap}>

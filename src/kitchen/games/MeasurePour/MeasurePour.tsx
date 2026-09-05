@@ -16,8 +16,9 @@ import { PromptBanner } from '@/ui/kit/PromptBanner';
 import { HintBubble } from '@/ui/kit/HintBubble';
 import { Tray } from '@/ui/kit/Tray';
 import { VocabIcon } from '@/ui/kit/VocabIcon';
-import { GameCrew } from '@/characters';
+
 import { Stage as SceneStage } from '@/world';
+import { SceneCrew } from '@/world/scenes';
 import { Stage, at } from '../../parts/Stage';
 import { CookCTA } from '../../parts/SceneBits';
 import { useRise } from '../../parts/motion';
@@ -162,7 +163,7 @@ export function MeasurePour({ challenge, onComplete, onEvent, compact }: MiniGam
     <View style={styles.root}>
       {/* a kitchen game belongs on a counter, not on a sky gradient */}
       <SceneStage variant="counter" groundHeight={170} />
-      <GameCrew side="right" size={50} bottom={104} showPepper mood={done ? 'cheer' : pouring ? 'happy' : 'idle'} />
+      <SceneCrew side="right" size={50} showPepper mood={done ? 'cheer' : pouring ? 'happy' : 'idle'} />
       <PromptBanner
         title={`Pour ${formatFraction(target)} ${unitWord}${targetN === 1 ? '' : 's'} of ${challenge.ingredient.en}`}
         subtitle="Press and hold the container to pour."

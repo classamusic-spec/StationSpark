@@ -17,8 +17,9 @@ import { hit, palette, radii, shadows, spacing, springs } from '@/theme';
 import { sfx } from '@/services/audio';
 import { haptics } from '@/services/haptics';
 import { Button, CheckIcon, Chip, EquipmentIcon, ResetIcon, Text, TrayRow, equipmentLabel } from '@/ui';
-import { GameCrew } from '@/characters';
+
 import { Stage } from '@/world';
+import { SceneCrew } from '@/world/scenes';
 import { AskQuestion } from '../shared/AskQuestion';
 import { Draggable } from '../shared/Draggable';
 import { GameFrame } from '../shared/GameFrame';
@@ -267,7 +268,7 @@ export function EquipmentCheck({ challenge, ageBand, onComplete, onEvent, compac
       backdrop={
         <>
           <Stage variant="yard" groundHeight={150} />
-          <GameCrew side="left" size={52} bottom={compact ? 158 : 186} showPepper mood={state.phase === 'done' ? 'cheer' : 'idle'} />
+          <SceneCrew side="left" size={52} showPepper mood={state.phase === 'done' ? 'cheer' : 'idle'} />
         </>
       }
       hint={{ text: hintText, visible: hintLadder.showBubble && state.phase === 'packing', onDismiss: hintLadder.dismiss }}

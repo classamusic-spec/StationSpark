@@ -2,8 +2,9 @@
  * TRAINING YARD — practise any station, any time, no mission attached.
  *
  * Every registered mini-game with `meta.yard === 'training'` gets a tile,
- * grouped under cream board headers by subject. Nothing is locked and nothing
- * is timed; the yard is where a child goes to get good at a thing.
+ * grouped under cream yard signs by subject, standing on the grass of the
+ * obstacle course behind the firehouse. Nothing is locked and nothing is
+ * timed; the yard is where a child goes to get good at a thing.
  */
 import React, { useMemo } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
@@ -14,15 +15,17 @@ import type { SkillTag } from '@/learning/types';
 import { challengeSkills } from '@/learning/types';
 import type { MiniGameMeta, Stars } from '@/minigames/types';
 import { listMiniGames } from '@/minigames/registry';
-import { palette, radii, shadows, spacing, stagger, type SubjectId } from '@/theme';
+import { palette, spacing, stagger, subjectColors, type SubjectId } from '@/theme';
 import { useShift } from '@/hooks/useShift';
 import { useGame } from '@/state/store';
 import { Button, Logo, Panel, ScreenFrame, Text, TopBar } from '@/ui';
 import { subjectLabel } from '@/ui/SubjectPill';
 import { CharacterPortrait } from '@/characters';
 import { StarCounter } from '@/screens/Mission/StarCounter';
+import { SignBoard } from '@/screens/Locker/parts/SignBoard';
 import { TrainingBackdrop } from './TrainingBackdrop';
 import { TrainingStationTile } from './TrainingStationTile';
+import { YardSign } from './parts/YardSign';
 
 /** The order subjects appear on the board. */
 const SUBJECT_ORDER: SubjectId[] = ['math', 'reading', 'english', 'spanish', 'logic', 'teamwork', 'cooking'];
@@ -49,21 +52,6 @@ export function stationStars(kind: MiniGameMeta['kind'], plays: number, mastery:
   if (attempts === 0) return 1;
   const ratio = correct / attempts;
   return ratio >= 0.85 ? 3 : ratio >= 0.55 ? 2 : 1;
-}
-
-function BoardHeader({ label, count }: { label: string; count: number }) {
-  return (
-    <View style={styles.boardHeader}>
-      <Panel tone="cream" radius="pill" padding="xs" style={styles.headerPanel}>
-        <Text variant="h3">{label}</Text>
-        <View style={styles.countPill}>
-          <Text variant="tiny" color={palette.navy}>
-            {count}
-          </Text>
-        </View>
-      </Panel>
-    </View>
-  );
 }
 
 export function TrainingYardScreen() {
@@ -102,16 +90,18 @@ export function TrainingYardScreen() {
           <Logo size={160} tagline={false} />
         </View>
 
+        {/* the yard's name board, hanging from the bunting */}
         <Animated.View entering={FadeInDown.springify().damping(16)} style={styles.titleWrap}>
-          <View style={styles.titlePlate} />
-          <Panel tone="cream" radius="panel" padding="sm" style={styles.titlePanel}>
-            <Text variant="hero" center>
-              Training Yard
-            </Text>
-            <Text variant="body" color={palette.navySoft} center>
-              Practise anything, as many times as you like!
-            </Text>
-          </Panel>
+          <SignBoard hang>
+            <View style={styles.titleText}>
+              <Text variant="h2" center>
+                Training Yard
+              </Text>
+              <Text variant="small" color={palette.navySoft} center>
+                Practise anything, any time!
+              </Text>
+            </View>
+          </SignBoard>
         </Animated.View>
 
         {stations.length === 0 ? (
@@ -130,8 +120,8 @@ export function TrainingYardScreen() {
         ) : (
           groups.map((group, gi) => (
             <View key={group.subject} style={styles.group}>
-              <Animated.View entering={FadeInDown.delay(gi * stagger.card).springify().damping(16)}>
-                <BoardHeader label={subjectLabel(group.subject)} count={group.metas.length} />
+              <Animated.View entering={FadeInDown.delay(gi * stagger.card).springify().damping(16)} style={styles.signRow}>
+                <YardSign label={subjectLabel(group.subject)} count={group.metas.length} glyph={`subject-${group.subject}`} color={subjectColors[group.subject].bg} />
               </Animated.View>
               <View style={styles.grid}>
                 {group.metas.map((meta, i) => {
@@ -153,9 +143,13 @@ export function TrainingYardScreen() {
         )}
 
         {stations.length > 0 ? (
-          <Text variant="small" color={palette.navySoft} center style={styles.footer}>
-            {`Every station you finish adds 5 XP. You have ${xp} XP.`}
-          </Text>
+          <View style={styles.footer}>
+            <SignBoard compact>
+              <Text variant="small" color={palette.navySoft} center>
+                {`Every station you finish adds 5 XP. You have ${xp} XP.`}
+              </Text>
+            </SignBoard>
+          </View>
         ) : null}
       </ScrollView>
     </ScreenFrame>
@@ -164,36 +158,13 @@ export function TrainingYardScreen() {
 
 const styles = StyleSheet.create({
   scroll: { paddingHorizontal: spacing.md, gap: spacing.md, paddingTop: spacing.xs },
-  logoRow: { alignItems: 'center', marginTop: spacing.xs, marginBottom: -spacing.sm },
-  titleWrap: { alignItems: 'center' },
-  titlePlate: {
-    position: 'absolute',
-    left: spacing.lg,
-    right: spacing.lg,
-    top: -6,
-    bottom: 14,
-    backgroundColor: palette.tan,
-    borderRadius: radii.panel,
-  },
-  titlePanel: { alignSelf: 'stretch', ...shadows.card },
+  logoRow: { alignItems: 'center' },
+  /** the ropes reach up to the bunting line in the backdrop */
+  titleWrap: { alignItems: 'center', marginTop: 14 },
+  titleText: { alignItems: 'center', paddingHorizontal: spacing.xs },
   empty: { alignItems: 'center', gap: spacing.sm },
   group: { gap: spacing.xs },
-  boardHeader: { alignSelf: 'flex-start' },
-  headerPanel: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-    paddingHorizontal: spacing.md,
-    borderRadius: radii.pill,
-  },
-  countPill: {
-    minWidth: 26,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: radii.pill,
-    backgroundColor: palette.tan,
-    alignItems: 'center',
-  },
+  signRow: { alignSelf: 'flex-start', marginLeft: spacing.xs },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
-  footer: { marginTop: spacing.xs },
+  footer: { alignItems: 'center', marginTop: spacing.xs },
 });

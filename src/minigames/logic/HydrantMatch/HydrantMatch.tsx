@@ -8,8 +8,9 @@ import { sfx } from '@/services/audio';
 import { haptics } from '@/services/haptics';
 import { speech } from '@/services/speech';
 import { Button, EquipmentIcon, SpeakerIcon, Text } from '@/ui';
-import { GameCrew } from '@/characters';
+
 import { Stage } from '@/world';
+import { SceneCrew } from '@/world/scenes';
 import { Draggable } from '../shared/Draggable';
 import { GameFrame } from '../shared/GameFrame';
 import { SlotZone } from '../shared/SlotZone';
@@ -114,7 +115,7 @@ export function HydrantMatch({ challenge, ageBand, onComplete, onEvent, compact 
       subtitle={ageBand === 'A' ? undefined : 'Drag the hose to the matching hydrant.'}
       compact={compact}
       backdrop={<Stage variant="street" groundHeight={168} />}
-      overlay={<GameCrew side="right" size={54} bottom={compact ? 138 : 162} showPepper mood={state.phase === 'connected' ? 'cheer' : 'idle'} />}
+      overlay={<SceneCrew side="right" size={54} showPepper mood={state.phase === 'connected' ? 'cheer' : 'idle'} />}
       hint={{ text: hintText, visible: hintLadder.showBubble, onDismiss: hintLadder.dismiss }}
       tray={
         <View style={styles.tray}>

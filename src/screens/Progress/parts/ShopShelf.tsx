@@ -41,14 +41,12 @@ function UpgradeTile({ entry, index, onBuy }: { entry: ShopEntry; index: number;
         ) : (
           <>
             <Chip label={String(def.cost)} tone="yellow" glyph="spark" />
-            <Button
-              label="Buy"
-              size="sm"
-              tone={affordable ? 'green' : 'white'}
-              disabled={!affordable}
-              onPress={() => onBuy(def)}
-              accessibilityLabel={affordable ? `Buy ${def.name} for ${def.cost} sparks` : `${def.name} costs ${def.cost} sparks — keep playing to earn more`}
-            />
+            {affordable ? (
+              <Button label="Buy" size="sm" tone="green" onPress={() => onBuy(def)} accessibilityLabel={`Buy ${def.name} for ${def.cost} sparks`} />
+            ) : (
+              /* never a greyed-out button: a cheerful nudge instead */
+              <Chip label="Keep playing!" tone="cream" />
+            )}
           </>
         )}
       </View>

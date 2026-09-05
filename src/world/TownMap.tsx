@@ -438,11 +438,12 @@ function Pizza() {
       <Path d="M 106 360 L 156 330 L 206 360 Z" fill="#2E9E52" />
       <Path d="M 156 330 L 206 360 L 156 360 Z" fill={SHADE} />
       <Rect x={104} y={356} width={104} height={7} rx={3.5} fill="#1F7C3C" />
-      {/* pizza slice sign */}
-      <Path d="M 156 336 l 13 22 l -26 0 z" fill="#F3C463" />
-      <Path d="M 156 341 l 9 15 l -18 0 z" fill="#E8523F" />
-      <Circle cx={152} cy={351} r={1.8} fill="#FFF3D6" />
-      <Circle cx={160} cy={353} r={1.6} fill="#FFF3D6" />
+      {/* pizza badge — the same signage motif as the pet shop's paw disc */}
+      <Circle cx={156} cy={346} r={8.5} fill={palette.white} />
+      <Path d="M 156 340 l 6 11 a 13 13 0 0 1 -12 0 z" fill="#F3C463" />
+      <Path d="M 156 342.5 l 4.2 7.7 a 9 9 0 0 1 -8.4 0 z" fill="#E8523F" />
+      <Circle cx={154} cy={348} r={1.3} fill="#FFF3D6" />
+      <Circle cx={158} cy={349.4} r={1.1} fill="#FFF3D6" />
       {awning(114, 366, 50, 7, '#2E9E52', palette.white)}
       <Rect x={118} y={376} width={34} height={20} rx={3} fill={palette.creamDeep} />
       <Rect x={120} y={378} width={30} height={16} rx={2} fill={GLASS} />
@@ -792,12 +793,12 @@ function Birds({ u }: { u: number }) {
   const style = useAnimatedStyle(() => ({
     transform: [
       { translateX: (-50 + t.value * 450) * u },
-      { translateY: Math.sin(t.value * Math.PI * 2) * 14 * u },
+      { translateY: Math.sin(t.value * Math.PI * 2) * 8 * u },
     ],
   }));
   const wing = useAnimatedStyle(() => ({ transform: [{ scaleY: 0.68 + flap.value * 0.64 }] }));
   return (
-    <Animated.View style={[styles.layer, { left: 0, top: 26 * u }, style]} pointerEvents="none">
+    <Animated.View style={[styles.layer, { left: 0, top: 10 * u }, style]} pointerEvents="none">
       <Animated.View style={wing}>
         <Svg width={54 * u} height={20 * u} viewBox="0 0 54 20">
           <Path d="M4 10 q 6 -8 12 0 q 6 -8 12 0" stroke={palette.navySoft} strokeWidth={2.4} fill="none" strokeLinecap="round" opacity={0.6} />

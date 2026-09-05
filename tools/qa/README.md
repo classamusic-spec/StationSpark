@@ -33,8 +33,9 @@ CHROMIUM_PATH=/opt/pw-browsers/chromium node tools/qa/play.mjs /tmp/qa-dist
 Exit code is 0 only when every row passes. Screenshots of failures and the
 per-page console log land in `tools/qa/out/`.
 
-`package.json` is shared with several engineers, so there is deliberately no
-`npm run` alias — use the command above.
+There is an `npm run qa:play` alias, but it points at `./dist`. Build your own
+export directory instead: `dist/` is the screenshot tools' build and is easy to
+leave stale, and the harness must run against the code you just changed.
 
 ### Flags
 

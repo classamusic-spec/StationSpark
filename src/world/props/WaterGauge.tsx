@@ -274,8 +274,8 @@ export function PumpLever({ width, height }: { width: number; height: number }) 
         <Rect x={8} y={4} width={104} height={44} rx={22} fill={palette.engineRed} />
         <SvgPath d="M8 26a22 22 0 0 0 22 22h60a22 22 0 0 0 22-22z" fill={SHADE} />
         <Rect x={22} y={11} width={64} height={11} rx={5.5} fill={HIGHLIGHT} />
-        <Circle cx={30} cy={26} r={4} fill={SHADE} />
-        <Circle cx={90} cy={26} r={4} fill={SHADE} />
+        <Ellipse cx={22} cy={26} rx={5} ry={12} fill={HIGHLIGHT} opacity={0.5} />
+        <Ellipse cx={98} cy={26} rx={5} ry={12} fill={SHADE} />
       </Svg>
     </View>
   );

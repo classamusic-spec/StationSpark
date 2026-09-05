@@ -25,9 +25,9 @@ import { AnswerTile } from '@/ui/kit/AnswerTile';
 import { GrownUpChip } from '@/ui/kit/Chip';
 import { HintBubble } from '@/ui/kit/HintBubble';
 import { Tray } from '@/ui/kit/Tray';
-import { GameCrew } from '@/characters';
+
 import { Stage as SceneStage } from '@/world';
-import { CrewFigure } from '@/world/scenes';
+import { CrewFigure, SceneCrew } from '@/world/scenes';
 import { toppingLabel, toppings } from '../../food';
 import {
   buildWedges,
@@ -355,7 +355,7 @@ export function PizzaFractions({ challenge, ageBand, onComplete, onEvent, compac
     <View style={styles.root}>
       {/* the whole kitchen game used to be played against a blue sky */}
       <SceneStage variant="counter" groundHeight={200} />
-      <GameCrew side="left" size={50} bottom={104} showPepper npc="gino" mood={phase === 'share' ? 'cheer' : phase === 'cut' ? 'think' : 'idle'} />
+      <SceneCrew side="left" size={50} showPepper npc="gino" mood={phase === 'share' ? 'cheer' : phase === 'cut' ? 'think' : 'idle'} />
       <PromptBanner
         title={prompt}
         subtitle={

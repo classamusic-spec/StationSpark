@@ -17,8 +17,9 @@ import { haptics } from '@/services/haptics';
 import { speech } from '@/services/speech';
 import { AnswerTile, Text, TrayRow } from '@/ui';
 import type { AnswerState } from '@/ui/kit/AnswerTile';
-import { GameCrew } from '@/characters';
+
 import { Stage } from '@/world';
+import { SceneCrew } from '@/world/scenes';
 import { GameFrame } from '../shared/GameFrame';
 import { useGameLayout } from '../shared/layout';
 import { useHintLadder } from '../shared/useHintLadder';
@@ -145,7 +146,7 @@ export function SprayPattern({ challenge, ageBand, onComplete, onEvent, compact 
       backdrop={
         <>
           <Stage variant="yard" groundHeight={150} />
-          <GameCrew side="right" size={54} bottom={compact ? 148 : 176} showPepper mood={state.phase === 'solved' ? 'cheer' : state.phase === 'spraying' ? 'happy' : 'idle'} />
+          <SceneCrew side="right" size={54} showPepper mood={state.phase === 'solved' ? 'cheer' : state.phase === 'spraying' ? 'happy' : 'idle'} />
         </>
       }
       hint={{ text: hintText, visible: hintLadder.showBubble, onDismiss: hintLadder.dismiss }}

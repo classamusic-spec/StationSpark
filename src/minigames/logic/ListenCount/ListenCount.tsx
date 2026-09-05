@@ -8,8 +8,9 @@ import { sfx } from '@/services/audio';
 import { haptics } from '@/services/haptics';
 import { speech } from '@/services/speech';
 import { Button, CheckIcon, Chip, SpeakerIcon, Text, VocabIcon } from '@/ui';
-import { GameCrew } from '@/characters';
+
 import { Stage } from '@/world';
+import { SceneCrew } from '@/world/scenes';
 import { GameFrame } from '../shared/GameFrame';
 import { useGameLayout } from '../shared/layout';
 import { useHintLadder } from '../shared/useHintLadder';
@@ -130,7 +131,7 @@ export function ListenCount({ challenge, ageBand, onComplete, onEvent, compact }
       backdrop={
         <>
           <Stage variant="store-room" groundHeight={158} />
-          <GameCrew side="right" size={54} bottom={compact ? 158 : 186} mood={state.phase === 'solved' ? 'cheer' : state.taken.length > 0 ? 'happy' : 'idle'} />
+          <SceneCrew side="right" size={54} mood={state.phase === 'solved' ? 'cheer' : state.taken.length > 0 ? 'happy' : 'idle'} />
         </>
       }
       hint={{ text: hintText, visible: hintLadder.showBubble, onDismiss: hintLadder.dismiss }}

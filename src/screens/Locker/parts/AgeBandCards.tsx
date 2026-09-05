@@ -144,6 +144,7 @@ const styles = StyleSheet.create({
   faceCompact: { flexDirection: 'column', minHeight: hit.min, gap: 2, paddingHorizontal: 4 },
   art: { alignItems: 'center', justifyContent: 'center' },
   text: { flexShrink: 1, gap: 2, alignItems: 'flex-start' },
-  stars: { flexDirection: 'row', gap: 2, marginTop: 2 },
+  /** a translucent white pill keeps the gold stars readable on the yellow card */
+  stars: { flexDirection: 'row', gap: 2, marginTop: 2, backgroundColor: 'rgba(255,255,255,0.55)', borderRadius: radii.pill, paddingHorizontal: 6, paddingVertical: 2 },
   tick: { marginLeft: 'auto', backgroundColor: 'rgba(255,255,255,0.55)', borderRadius: radii.pill, padding: 6 },
 });

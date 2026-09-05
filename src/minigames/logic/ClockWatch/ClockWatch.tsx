@@ -17,8 +17,9 @@ import { hit, palette, radii, shadows, spacing, springs } from '@/theme';
 import { sfx } from '@/services/audio';
 import { haptics } from '@/services/haptics';
 import { Button, CheckIcon, GlyphIcon, Text } from '@/ui';
-import { GameCrew } from '@/characters';
+
 import { Stage } from '@/world';
+import { SceneCrew } from '@/world/scenes';
 import { Animal } from '@/world/props';
 import { GameFrame } from '../shared/GameFrame';
 import { useGameLayout } from '../shared/layout';
@@ -178,7 +179,7 @@ export function ClockWatch({ challenge, ageBand, onComplete, onEvent, compact }:
       subtitle={ageBand === 'A' ? undefined : 'Drag the long hand around the dial.'}
       compact={compact}
       backdrop={<Stage variant="tower" groundHeight={140} />}
-      overlay={<GameCrew side="left" size={54} bottom={compact ? 150 : 176} mood={state.solved ? 'cheer' : 'idle'} />}
+      overlay={<SceneCrew side="left" size={54} mood={state.solved ? 'cheer' : 'idle'} />}
       hint={{ text: hintText, visible: hintLadder.showBubble, onDismiss: hintLadder.dismiss }}
       tray={
         <View style={styles.tray}>
@@ -225,7 +226,7 @@ export function ClockWatch({ challenge, ageBand, onComplete, onEvent, compact }:
                 enough for two digits and is locked to a single line. */}
             {Array.from({ length: 12 }, (_, i) => {
               const a = ((i + 1) * Math.PI) / 6;
-              const r = size * 0.33;
+              const r = size * 0.265;
               const boxW = size * 0.24;
               const boxH = size * 0.14;
               return (
@@ -240,7 +241,7 @@ export function ClockWatch({ challenge, ageBand, onComplete, onEvent, compact }:
                       top: centre - Math.cos(a) * r - boxH / 2,
                       width: boxW,
                       height: boxH,
-                      fontSize: size * 0.095,
+                      fontSize: size * 0.088,
                       lineHeight: boxH,
                     },
                   ]}

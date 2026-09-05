@@ -1,14 +1,19 @@
-import React, { useCallback, useMemo, useState } from 'react';
+/**
+ * ONBOARDING — three short beats under the station sign.
+ *
+ * The stage (bunting, sign, crew on the apron) stays put; the sheet below it
+ * carries the words, the pickers and the one big button. The child's Rookie
+ * updates live on the stage while they choose, and the whole crew throws a
+ * confetti welcome at the end.
+ */
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import Animated, { FadeIn, FadeInDown, FadeOut } from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { palette, radii, shadows, spacing } from '@/theme';
-import { Button, ChevronRightIcon, Logo, Panel, ScreenFrame, Text } from '@/ui';
+import { Button, ChevronRightIcon, GlyphIcon, Panel, ScreenFrame, Text } from '@/ui';
 import { CelebrationOverlay } from '@/characters';
-import { CaptainBea } from '@/characters/CaptainBea';
-import { Beacon } from '@/characters/Beacon';
-import { Rookie } from '@/characters/Rookie';
-import { Pepper } from '@/characters/Pepper';
 import { sfx } from '@/services/audio';
 import { haptics } from '@/services/haptics';
 import { speech } from '@/services/speech';
@@ -16,6 +21,8 @@ import { useGame } from '@/state/store';
 import { TownBackdrop } from '@/world';
 import { useScaledLayout } from '@/screens/shared';
 import { AgeBandCards, AvatarPickers, NameTag } from '@/screens/Locker/LockerScreen';
+import { BellSteps } from './parts/BellSteps';
+import { StationStage } from './parts/StationStage';
 
 const BEATS = [
   {
@@ -40,6 +47,7 @@ const BEATS = [
 
 export function OnboardingScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const layout = useScaledLayout();
   const profile = useGame((s) => s.profile);
   const setProfile = useGame((s) => s.setProfile);
@@ -50,6 +58,7 @@ export function OnboardingScreen() {
   const [celebrating, setCelebrating] = useState(false);
 
   const beat = BEATS[Math.min(step, BEATS.length - 1)] ?? BEATS[0];
+  const last = step === BEATS.length - 1;
 
   const speakBeat = useCallback((index: number) => {
     const b = BEATS[index];
@@ -57,9 +66,22 @@ export function OnboardingScreen() {
     speech.say(b.title, { speaker: index === 2 ? 'beacon' : 'bea' });
   }, []);
 
-  React.useEffect(() => {
+  useEffect(() => {
     speakBeat(step);
   }, [speakBeat, step]);
+
+  /**
+   * Every look change sparkles on the Rookie standing on the stage.
+   * `SparkleBurst` only needs the number to CHANGE, so derive it from the look
+   * itself — setting state from an effect just to count the changes cost an
+   * extra render per tap (and fired a burst on mount that nobody asked for).
+   */
+  const sparkle = useMemo(() => {
+    const look = `${profile.avatar.skin}|${profile.avatar.hair}|${profile.avatar.helmet}`;
+    let hash = 0;
+    for (let i = 0; i < look.length; i += 1) hash = (hash * 31 + look.charCodeAt(i)) % 100000;
+    return hash;
+  }, [profile.avatar]);
 
   const next = useCallback(() => {
     if (step < BEATS.length - 1) {
@@ -75,84 +97,72 @@ export function OnboardingScreen() {
     setCelebrating(true);
   }, [name, setProfile, step]);
 
-  const crewSize = useMemo(() => Math.max(150, Math.min(240, layout.s(196))), [layout]);
+  const stageH = Math.round(Math.max(300, Math.min(layout.height * 0.44, 520)));
+  const hills = layout.height - stageH + 40;
 
   return (
-    <ScreenFrame backdrop={<TownBackdrop hills={200} cloudCount={4} />}>
-      <ScrollView
-        style={styles.scroll}
-        contentContainerStyle={[styles.content, { maxWidth: layout.contentWidth }]}
-        showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled"
-      >
-        <View style={styles.logo}>
-          <Logo size={Math.min(layout.s(196), 240)} />
-        </View>
+    <ScreenFrame safeBottom={false} backdrop={<TownBackdrop hills={hills} cloudCount={4} />}>
+      <StationStage height={stageH - insets.top} step={step} avatar={profile.avatar} sparkle={sparkle} />
 
-        {/* progress dots */}
-        <View style={styles.dots}>
-          {BEATS.map((b, i) => (
-            <View key={b.id} style={[styles.dot, i === step && styles.dotOn, i < step && styles.dotDone]} />
-          ))}
-        </View>
+      <View style={[styles.sheet, shadows.card]}>
+        <ScrollView
+          contentContainerStyle={[styles.content, { maxWidth: layout.contentWidth, paddingBottom: insets.bottom + spacing.lg }]}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
+          <BellSteps step={step} total={BEATS.length} />
 
-        <Animated.View key={beat.id} entering={FadeIn.duration(220)} exiting={FadeOut.duration(140)} style={styles.beat}>
-          <View style={styles.crew}>
-            {step === 0 ? <CaptainBea size={crewSize} emotion="happy" pose="wave" /> : null}
-            {step === 1 ? (
-              <View style={styles.crewRow}>
-                <Rookie size={crewSize} avatar={profile.avatar} pose="stand" emotion="happy" />
-                <Pepper size={crewSize * 0.55} emotion="happy" wag />
-              </View>
-            ) : null}
-            {step === 2 ? <Beacon size={crewSize * 0.9} emotion="calm" /> : null}
-          </View>
-
-          <Panel tone="white" padding="md" radius="panel" style={styles.card}>
-            <Text variant="h2" center>
-              {beat.title}
-            </Text>
-            <Text variant="body" color={palette.navySoft} center>
-              {beat.body}
-            </Text>
-            <Text variant="small" color={palette.purple} center>
-              {beat.es}
-            </Text>
-          </Panel>
-
-          {step === 1 ? (
-            <Animated.View entering={FadeInDown.springify().damping(17)} style={styles.pickers}>
-              <NameTag value={name} onChange={setName} />
-              <Panel tone="cream" padding="md" radius="panel" style={styles.card}>
-                <AvatarPickers avatar={profile.avatar} onChange={setAvatar} compact />
-              </Panel>
-              <Panel tone="cream" padding="md" radius="panel" style={styles.card}>
-                <Text variant="h3">How old are you?</Text>
-                <AgeBandCards value={profile.ageBand} onChange={(b) => setProfile({ ageBand: b })} />
-              </Panel>
-            </Animated.View>
-          ) : null}
-
-          {step === 2 ? (
-            <Panel tone="cream" padding="md" radius="panel" style={[styles.card, styles.safety]}>
-              <Text variant="bodyStrong" center>
-                In a real emergency: get away from danger, tell a grown-up, and call your local emergency number.
+          <Animated.View key={beat.id} entering={FadeIn.duration(220)} exiting={FadeOut.duration(140)} style={styles.beat}>
+            <Panel tone="white" padding="md" radius="panel" style={styles.card}>
+              <Text variant="h2" center>
+                {beat.title}
               </Text>
+              <Text variant="body" color={palette.navySoft} center>
+                {beat.body}
+              </Text>
+              <View style={styles.esRow}>
+                <GlyphIcon id="subject-spanish" size={18} label="en español" ink={palette.purple} />
+                <Text variant="small" color={palette.purple} center>
+                  {beat.es}
+                </Text>
+              </View>
             </Panel>
-          ) : null}
-        </Animated.View>
 
-        <Button
-          label={step === BEATS.length - 1 ? "Let's go!" : 'Next'}
-          size="xl"
-          tone={step === BEATS.length - 1 ? 'green' : 'red'}
-          block
-          iconRight={<ChevronRightIcon size={28} />}
-          onPress={next}
-          style={[styles.cta, shadows.glowGold]}
-        />
-        <View style={styles.footerSpace} />
-      </ScrollView>
+            {step === 1 ? (
+              <Animated.View entering={FadeInDown.springify().damping(17)} style={styles.pickers}>
+                <NameTag value={name} onChange={setName} />
+                <Panel tone="white" padding="md" radius="panel" style={styles.card}>
+                  <Text variant="h3">Pick your look</Text>
+                  <AvatarPickers avatar={profile.avatar} onChange={setAvatar} compact />
+                </Panel>
+                <Panel tone="white" padding="md" radius="panel" style={styles.card}>
+                  <Text variant="h3">How old are you?</Text>
+                  <AgeBandCards value={profile.ageBand} onChange={(b) => setProfile({ ageBand: b })} compact />
+                </Panel>
+              </Animated.View>
+            ) : null}
+
+            {step === 2 ? (
+              <Panel tone="tan" padding="md" radius="panel" style={styles.card}>
+                <Text variant="bodyStrong" center>
+                  In a real emergency: get away from danger, tell a grown-up, and call your local emergency number.
+                </Text>
+              </Panel>
+            ) : null}
+          </Animated.View>
+
+          <Button
+            label={last ? "Let's go!" : 'Next'}
+            size="xl"
+            tone={last ? 'green' : 'red'}
+            block
+            glow
+            iconRight={<ChevronRightIcon size={28} />}
+            onPress={next}
+            style={styles.cta}
+          />
+        </ScrollView>
+      </View>
 
       <CelebrationOverlay
         visible={celebrating}
@@ -169,19 +179,17 @@ export function OnboardingScreen() {
 }
 
 const styles = StyleSheet.create({
-  scroll: { flex: 1 },
-  content: { width: '100%', alignSelf: 'center', paddingHorizontal: spacing.md, paddingBottom: spacing.xl, gap: spacing.sm },
-  logo: { alignItems: 'center', marginTop: spacing.lg },
-  dots: { flexDirection: 'row', justifyContent: 'center', gap: 8, marginVertical: spacing.xs },
-  dot: { width: 12, height: 12, borderRadius: 6, backgroundColor: 'rgba(255,255,255,0.6)' },
-  dotOn: { backgroundColor: palette.engineRed, width: 30 },
-  dotDone: { backgroundColor: palette.leafGreen },
+  sheet: {
+    flex: 1,
+    backgroundColor: palette.panel,
+    borderTopLeftRadius: radii.panel + 6,
+    borderTopRightRadius: radii.panel + 6,
+    overflow: 'hidden',
+  },
+  content: { width: '100%', alignSelf: 'center', paddingHorizontal: spacing.md, paddingTop: spacing.sm, gap: spacing.sm },
   beat: { gap: spacing.sm },
-  crew: { alignItems: 'center', minHeight: 150 },
-  crewRow: { flexDirection: 'row', alignItems: 'flex-end', gap: spacing.xs },
   card: { gap: 6 },
+  esRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 2 },
   pickers: { gap: spacing.sm },
-  safety: { borderWidth: 3, borderColor: palette.tanDark, borderRadius: radii.panel },
-  cta: { marginTop: spacing.xs },
-  footerSpace: { height: spacing.lg },
+  cta: { marginTop: spacing.xs, alignSelf: 'stretch' },
 });

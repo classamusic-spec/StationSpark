@@ -123,18 +123,41 @@ function faceFor(mood: AnimalMood, pose: AnimalPose, blink: boolean): { look: Lo
 /** The navy contact ellipse every grounded animal stands on (rule #3). */
 const Ground = ({ rx }: { rx: number }) => <Ellipse cx={50} cy={95} rx={rx} ry={shadowRy(rx)} fill={SHADOW_FILL} opacity={SHADOW_OPACITY} />;
 
-/** Two soft paws: down on the ground, or up beside the face when held. */
-function Paws({ pose, color, y = 90, up = 58, spread = 10 }: { pose: AnimalPose; color: string; y?: number; up?: number; spread?: number }) {
+/**
+ * Two soft paws. Down on the ground (drawn behind the head), or — when held —
+ * up over the cheeks, drawn *in front* of the face (`front`) so the pose
+ * reads as "paws up!" rather than two mittens floating beside the head.
+ */
+function Paws({
+  pose,
+  color,
+  y = 90,
+  up = 60,
+  spread = 10,
+  front,
+}: {
+  pose: AnimalPose;
+  color: string;
+  y?: number;
+  up?: number;
+  spread?: number;
+  front?: boolean;
+}) {
   if (pose === 'held') {
+    if (!front) return null;
     return (
       <G>
-        <Ellipse cx={50 - 24} cy={up} rx={6.5} ry={7.5} fill={color} />
-        <Ellipse cx={50 + 24} cy={up} rx={6.5} ry={7.5} fill={color} />
-        <Ellipse cx={50 - 24} cy={up + 3} rx={4} ry={2.6} fill={SHADE} />
-        <Ellipse cx={50 + 24} cy={up + 3} rx={4} ry={2.6} fill={SHADE} />
+        {[50 - 20, 50 + 20].map((cx) => (
+          <G key={cx}>
+            <Ellipse cx={cx} cy={up} rx={7} ry={8} fill={color} />
+            <Ellipse cx={cx} cy={up + 3.2} rx={4.2} ry={2.8} fill={SHADE} />
+            <Ellipse cx={cx - 2} cy={up - 3.4} rx={2.4} ry={1.6} fill={HIGHLIGHT} />
+          </G>
+        ))}
       </G>
     );
   }
+  if (front) return null;
   const sp = pose === 'safe' ? spread - 2 : spread;
   return (
     <G>
@@ -194,6 +217,7 @@ function Kitten({ blink, mood, pose }: RigProps) {
       <Path d="M50 49.5l-3.6 3.2h7.2z" fill={palette.pink} />
       <Mouth cx={50} cy={56} w={12} kind={mouth} />
       <Path d="M22 50h-11M22 55h-11M78 50h11M78 55h11" stroke={palette.white} strokeWidth={2} strokeLinecap="round" opacity={0.9} />
+      <Paws pose={pose} color={coat} front />
     </Svg>
   );
 }
@@ -238,6 +262,7 @@ function Puppy({ blink, mood, pose }: RigProps) {
       <Rect x={33} y={64} width={34} height={2.2} rx={1.1} fill={HIGHLIGHT} />
       <Circle cx={50} cy={71} r={3.6} fill={palette.gold} />
       <Circle cx={49} cy={70} r={1.2} fill={HIGHLIGHT} />
+      <Paws pose={pose} color={coat} front />
     </Svg>
   );
 }
@@ -288,6 +313,7 @@ function Bunny({ blink, mood, pose }: RigProps) {
       <Circle cx={34} cy={65} r={1.3} fill={SHADE} />
       <Circle cx={70} cy={62} r={1.3} fill={SHADE} />
       <Circle cx={66} cy={65} r={1.3} fill={SHADE} />
+      <Paws pose={pose} color={coat} front />
     </Svg>
   );
 }

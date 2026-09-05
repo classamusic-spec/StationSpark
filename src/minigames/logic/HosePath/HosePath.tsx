@@ -9,8 +9,9 @@ import { hit, palette, radii, shadows, spacing, springs } from '@/theme';
 import { sfx } from '@/services/audio';
 import { haptics } from '@/services/haptics';
 import { Button, EquipmentIcon, ResetIcon, Text, TrayRow } from '@/ui';
-import { GameCrew } from '@/characters';
+
 import { Stage } from '@/world';
+import { SceneCrew } from '@/world/scenes';
 import { Draggable } from '../shared/Draggable';
 import { GameFrame } from '../shared/GameFrame';
 import { SlotZone } from '../shared/SlotZone';
@@ -252,7 +253,7 @@ export function HosePath({ challenge, ageBand, onComplete, onEvent, compact }: M
       backdrop={
         <>
           <Stage variant="yard" groundHeight={150} />
-          <GameCrew side="left" size={54} bottom={compact ? 152 : 180} showPepper mood={state.phase === 'done' ? 'cheer' : state.phase === 'flowing' ? 'happy' : 'idle'} />
+          <SceneCrew side="left" size={54} showPepper mood={state.phase === 'done' ? 'cheer' : state.phase === 'flowing' ? 'happy' : 'idle'} />
         </>
       }
       hint={{ text: hintText, visible: hintLadder.showBubble && state.phase === 'building', onDismiss: hintLadder.dismiss }}

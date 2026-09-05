@@ -83,7 +83,8 @@ export function BarrierPiece({
   const red = tone === 'ghost' ? palette.slateLight : palette.engineRed;
   const white = tone === 'ghost' ? palette.white : palette.white;
   const legs = tone === 'ghost' ? palette.slate : palette.charcoal;
-  const footX = n === 1 ? [width * 0.5] : [Math.max(6, width * 0.16), Math.min(width - 6, width * 0.84)];
+  // short pieces stand on one centred foot; two A-frames would collide
+  const footX = n <= 2 ? [width * 0.5] : [Math.max(6, width * 0.16), Math.min(width - 6, width * 0.84)];
 
   return (
     <View style={[styles.piece, { width, height }]}>

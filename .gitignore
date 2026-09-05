@@ -43,3 +43,7 @@ yarn-error.*
 # reports / scratch
 /coverage
 /screenshots
+
+# QA harness output
+/tools/qa/out
+/tools/qa/.tmp

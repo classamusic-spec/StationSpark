@@ -19,8 +19,9 @@ import { sfx } from '@/services/audio';
 import { haptics } from '@/services/haptics';
 import { speech } from '@/services/speech';
 import Svg, { Path } from 'react-native-svg';
-import { GameCrew, Rookie } from '@/characters';
+import { Rookie } from '@/characters';
 import { Stage } from '@/world';
+import { SceneCrew } from '@/world/scenes';
 import { Animal, RescueBasket, RescueTree, animalName, sceneTheme } from '@/world/props';
 import { AskQuestion, GameShell, PulseRing, optionsFor, useHintLadder, useMeasuredBox, useSpokenPrompt, useStage } from '../shared';
 
@@ -320,7 +321,7 @@ export function RescuePets({ challenge, ageBand, onComplete, onEvent, compact }:
       }
       overlay={
         <>
-        <GameCrew side="left" size={58} bottom={compact ? 92 : 112} showPepper npc="okafor" mood={state.phase === 'done' ? 'cheer' : state.saved.length > 0 ? 'happy' : 'idle'} />
+        <SceneCrew side="left" size={58} showPepper npc="okafor" mood={state.phase === 'done' ? 'cheer' : state.saved.length > 0 ? 'happy' : 'idle'} />
         <AskQuestion
           visible={state.phase === 'asking'}
           question={askText}

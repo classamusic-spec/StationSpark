@@ -8,9 +8,9 @@ import { hit, palette, radii, shadows, spacing, springs } from '@/theme';
 import { sfx, type SfxName } from '@/services/audio';
 import { haptics } from '@/services/haptics';
 import { Button, CheckIcon, ChevronRightIcon, Text, TrayRow } from '@/ui';
-import { GameCrew } from '@/characters';
+
 import { Stage } from '@/world';
-import { SlotPlaque } from '@/world/scenes';
+import { SceneCrew, SlotPlaque } from '@/world/scenes';
 import { Draggable } from '../shared/Draggable';
 import { GameFrame } from '../shared/GameFrame';
 import { SlotZone } from '../shared/SlotZone';
@@ -180,10 +180,13 @@ export function Signals({ challenge, ageBand, onComplete, onEvent, compact }: Mi
   }, [playSequence, session, shuffled, state.locked, state.phase, state.slots, steps]);
 
   /* layout */
-  const perRow = steps.length <= 3 ? steps.length : 3;
+  // the call is a sequence: keep it on ONE rail so the last socket never
+  // wraps under the clipboard and gets clipped by the tray
+  const perRow = Math.min(steps.length, 4);
   const slotSize = Math.min(
     layout.s(96),
-    (layout.boxWidth - spacing.md * 2 - (perRow - 1) * layout.s(22)) / perRow,
+    // the chevrons between the sockets take room too, or the last one wraps
+    (layout.boxWidth - spacing.lg * 2 - (perRow - 1) * layout.s(30)) / perRow,
   );
   const cardSize = Math.max(hit.big, Math.min(slotSize - 6, layout.s(82)));
 
@@ -204,7 +207,7 @@ export function Signals({ challenge, ageBand, onComplete, onEvent, compact }: Mi
       subtitle={ageBand === 'A' ? undefined : 'Put the steps of the call in order.'}
       compact={compact}
       backdrop={<Stage variant="radio-room" groundHeight={150} />}
-      overlay={<GameCrew side="right" size={54} bottom={compact ? 148 : 172} mood={state.phase === 'done' ? 'cheer' : state.phase === 'playing' ? 'happy' : 'idle'} />}
+      overlay={<SceneCrew side="right" size={54} mood={state.phase === 'done' ? 'cheer' : state.phase === 'playing' ? 'happy' : 'idle'} />}
       hint={{ text: hintText, visible: hintLadder.showBubble && state.phase === 'ordering', onDismiss: hintLadder.dismiss }}
       tray={
         <View style={styles.trayInner}>
@@ -268,8 +271,9 @@ export function Signals({ challenge, ageBand, onComplete, onEvent, compact }: Mi
             return (
               <React.Fragment key={i}>
                 <View style={styles.slotCol}>
+                  {/* an empty socket already carries its number on the plaque */}
                   <Text variant="tiny" color={palette.navyMuted}>
-                    {i + 1}
+                    {id ? String(i + 1) : ' '}
                   </Text>
                   <SlotZone
                     id={`step:${i}`}

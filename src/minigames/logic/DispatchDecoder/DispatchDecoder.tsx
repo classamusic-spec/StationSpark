@@ -10,8 +10,9 @@ import { haptics } from '@/services/haptics';
 import { speech } from '@/services/speech';
 import { AnswerTile, Button, SpeakerIcon, Text, TrayRow, VocabIcon } from '@/ui';
 import type { AnswerState } from '@/ui/kit/AnswerTile';
-import { GameCrew } from '@/characters';
+
 import { Stage } from '@/world';
+import { SceneCrew } from '@/world/scenes';
 import { GameFrame } from '../shared/GameFrame';
 import { useGameLayout } from '../shared/layout';
 import { useHintLadder } from '../shared/useHintLadder';
@@ -187,7 +188,7 @@ export function DispatchDecoder({ challenge, ageBand, onComplete, onEvent, compa
       backdrop={
         <>
           <Stage variant="radio-room" groundHeight={158} />
-          <GameCrew side="left" size={54} bottom={compact ? 156 : 184} mood={state.phase === 'solved' ? 'cheer' : state.phase === 'listening' ? 'think' : 'idle'} />
+          <SceneCrew side="left" size={54} mood={state.phase === 'solved' ? 'cheer' : state.phase === 'listening' ? 'think' : 'idle'} />
         </>
       }
       hint={{ text: hintText, visible: hintLadder.showBubble, onDismiss: hintLadder.dismiss }}

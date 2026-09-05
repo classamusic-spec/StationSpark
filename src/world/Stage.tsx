@@ -360,7 +360,7 @@ function streetArt(w: number, h: number, gy: number, s: number) {
 }
 
 function yardArt(w: number, h: number, gy: number, s: number) {
-  const wallTop = Math.max(52, Math.min(h * 0.26, gy - 150));
+  const wallTop = Math.max(46, Math.min(h * 0.2, gy - 150));
   const towerTop = Math.max(24, Math.min(h * 0.1, gy - 240));
   const towerH = gy - towerTop;
   const rows = Math.max(2, Math.floor(towerH / (64 * s)));
@@ -393,12 +393,25 @@ function yardArt(w: number, h: number, gy: number, s: number) {
           <Rect key={`d${i}`} x={w * 0.075} y={gy - 78 * s + i * 24 * s} width={w * 0.31} height={5 * s} rx={2.5} fill={SHADE} />
         ))}
         <Rect x={w * 0.1} y={gy - 66 * s} width={w * 0.26} height={16 * s} rx={5} fill="#3D6FB0" />
-        {/* wall hose reel */}
+        {/* upper wall furniture: windows, an ENGINE 1 plate and the hose reel,
+            all high enough to read over whatever the game parks in front */}
+        {[0.08, 0.24].map((f, i) => (
+          <G key={`sw${i}`}>
+            <Rect x={w * f - 3} y={wallTop + 34} width={w * 0.11 + 6} height={46 * s + 6} rx={7} fill={palette.creamDeep} />
+            <Rect x={w * f} y={wallTop + 37} width={w * 0.11} height={46 * s} rx={5} fill="#33477A" />
+            <Rect x={w * f} y={wallTop + 37 + 23 * s} width={w * 0.11} height={3} fill={palette.creamDeep} opacity={0.8} />
+            <Rect x={w * f - 5} y={wallTop + 37 + 46 * s + 4} width={w * 0.11 + 10} height={5} rx={2.5} fill={SHADE} />
+          </G>
+        ))}
         <G>
-          <Circle cx={w * 0.47} cy={gy - 118 * s} r={22 * s} fill={palette.slateLight} />
-          <Circle cx={w * 0.47} cy={gy - 118 * s} r={16 * s} fill={palette.engineRed} />
-          <Circle cx={w * 0.47} cy={gy - 118 * s} r={9 * s} fill={palette.engineRedDark} />
-          <Circle cx={w * 0.47 - 6 * s} cy={gy - 124 * s} r={4 * s} fill={HILITE} />
+          <Rect x={w * 0.4} y={wallTop + 40} width={w * 0.13} height={22} rx={10} fill={palette.cream} />
+          <Rect x={w * 0.415} y={wallTop + 45} width={w * 0.1} height={5} rx={2.5} fill={palette.navyMuted} opacity={0.5} />
+        </G>
+        <G>
+          <Circle cx={w * 0.47} cy={wallTop + 96} r={22 * s} fill={palette.slateLight} />
+          <Circle cx={w * 0.47} cy={wallTop + 96} r={16 * s} fill={palette.engineRed} />
+          <Circle cx={w * 0.47} cy={wallTop + 96} r={9 * s} fill={palette.engineRedDark} />
+          <Circle cx={w * 0.47 - 6 * s} cy={wallTop + 90} r={4 * s} fill={HILITE} />
         </G>
       </G>
       {groundPlane(w, h, gy, grounds.yard.near, grounds.yard.lip)}

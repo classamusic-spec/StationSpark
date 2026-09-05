@@ -96,7 +96,7 @@ export function RankLadder({ ladder }: { ladder: readonly LadderRung[] }) {
             </View>
             {r.current ? (
               <View style={styles.here}>
-                <GlyphIcon id="star" size={16} label="you are here" />
+                <GlyphIcon id="pin" size={16} label="you are here" />
                 <Text variant="tiny" color={palette.navy}>
                   You are here
                 </Text>

@@ -20,8 +20,9 @@ import { hit, palette, radii, shadows, spacing, springs, timings } from '@/theme
 import { sfx } from '@/services/audio';
 import { haptics } from '@/services/haptics';
 import { Text } from '@/ui';
-import { GameCrew } from '@/characters';
+
 import { Stage } from '@/world';
+import { SceneCrew } from '@/world/scenes';
 import { AskQuestion } from '../shared/AskQuestion';
 import { GameFrame } from '../shared/GameFrame';
 import { useGameLayout } from '../shared/layout';
@@ -397,7 +398,7 @@ export function RescueRoute({ challenge, ageBand, onComplete, onEvent, compact }
       backdrop={
         <>
           <Stage variant="street" groundHeight={150} />
-          <GameCrew side="right" size={52} bottom={compact ? 168 : 196} showPepper mood={state.phase === 'arrived' ? 'cheer' : state.phase === 'running' ? 'happy' : 'idle'} />
+          <SceneCrew side="right" size={52} showPepper mood={state.phase === 'arrived' ? 'cheer' : state.phase === 'running' ? 'happy' : 'idle'} />
         </>
       }
       hint={{ text: hintText, visible: hintLadder.showBubble && state.phase !== 'running', onDismiss: hintLadder.dismiss }}

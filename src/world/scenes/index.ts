@@ -5,5 +5,6 @@
  */
 export * from './CrewFigure';
 export * from './PumperTruck';
+export * from './SceneCrew';
 export * from './SlotPlaque';
 export * from './WallPanel';

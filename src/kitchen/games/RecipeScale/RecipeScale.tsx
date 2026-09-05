@@ -22,9 +22,9 @@ import { GrownUpChip } from '@/ui/kit/Chip';
 import { HintBubble } from '@/ui/kit/HintBubble';
 import { Tray } from '@/ui/kit/Tray';
 import { VocabIcon } from '@/ui/kit/VocabIcon';
-import { GameCrew } from '@/characters';
+
 import { Stage as SceneStage } from '@/world';
-import { CrewFigure } from '@/world/scenes';
+import { CrewFigure, SceneCrew } from '@/world/scenes';
 import { RecipeCardFrame } from '../../parts/RecipeCardFrame';
 import { CookCTA, PotArt } from '../../parts/SceneBits';
 import { pluralEn } from '../../spanish';
@@ -176,7 +176,7 @@ export function RecipeScale({
 
       <View style={styles.potRow}>
         <PotArt size={140} bubbling={cooking} />
-        <GameCrew side="right" size={52} bottom={12} showPepper npc="rosa" mood={cooking ? 'cheer' : allCorrect ? 'happy' : 'idle'} />
+        <SceneCrew side="right" size={52} showPepper npc="rosa" mood={cooking ? 'cheer' : allCorrect ? 'happy' : 'idle'} />
       </View>
 
       <Tray tone="cream">
@@ -224,7 +224,7 @@ function CrewRow({
             style={extraFrom !== undefined && i >= extraFrom ? styles.crewExtra : undefined}
           >
             {/* critique #23 — full rigs, not heads in circles */}
-            <CrewFigure id={CREW[i % CREW.length] ?? 'rookie'} size={46} bobPhase={i * 0.4} />
+            <CrewFigure id={CREW[i % CREW.length] ?? 'rookie'} size={40} bobPhase={i * 0.4} />
           </Animated.View>
         ))}
       </View>
@@ -338,10 +338,11 @@ const styles = StyleSheet.create({
   root: { flex: 1 },
   ratio: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-end',
     justifyContent: 'center',
     gap: spacing.sm,
-    marginTop: spacing.xs,
+    // clear of the two-line prompt banner above it
+    marginTop: spacing.lg,
   },
   crewCol: { alignItems: 'center' },
   crewRow: { flexDirection: 'row', gap: 2 },
