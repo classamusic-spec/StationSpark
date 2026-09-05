@@ -16,7 +16,7 @@ import { useMiniGameSession } from '@/minigames/useMiniGameSession';
 import { hit, palette, radii, shadows, spacing, springs } from '@/theme';
 import { sfx } from '@/services/audio';
 import { haptics } from '@/services/haptics';
-import { Button, CheckIcon, Text } from '@/ui';
+import { Button, CheckIcon, GlyphIcon, Text } from '@/ui';
 import { GameCrew } from '@/characters';
 import { Stage } from '@/world';
 import { Animal } from '@/world/props';
@@ -186,9 +186,12 @@ export function ClockWatch({ challenge, ageBand, onComplete, onEvent, compact }:
             <Text variant="h3" center>
               {clockLabel(startTotal)} → {clockLabel(targetTotal)}
             </Text>
-            <Text variant="small" color={palette.navySoft} center>
-              you moved {moved} minutes {moved === answerDelta ? '✓' : ''}
-            </Text>
+            <View style={styles.movedRow}>
+              <Text variant="small" color={palette.navySoft} center>
+                you moved {moved} minutes
+              </Text>
+              {moved === answerDelta ? <GlyphIcon id="check" size={18} label="correct" /> : null}
+            </View>
           </View>
           <View style={styles.controls}>
             <Button label={`−${step}`} tone="white" size="md" onPress={() => nudgeBy(-1)} disabled={state.solved} />
@@ -366,5 +369,6 @@ const styles = StyleSheet.create({
   },
   tray: { gap: spacing.sm },
   readout: { alignItems: 'center' },
+  movedRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4 },
   controls: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: spacing.sm, minHeight: hit.min },
 });

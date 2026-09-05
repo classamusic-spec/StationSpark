@@ -1,6 +1,6 @@
 /**
  * StarCounter — the white star pill that lives in the top-right corner of every
- * play screen (see the reference art's "⭐ 0/8").
+ * play screen (see the reference art's star counter, "0/8").
  *
  * Lives here because the Mission runner is its main home; the Dispatch board
  * and the Training Yard import it from '@/screens/Mission'.

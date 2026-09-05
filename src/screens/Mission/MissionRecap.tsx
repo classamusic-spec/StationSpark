@@ -16,7 +16,7 @@ import { palette, radii, shadows, spacing, stagger } from '@/theme';
 import { sfx } from '@/services/audio';
 import { speech } from '@/services/speech';
 import { Button, Panel, SubjectPill, Text } from '@/ui';
-import { ChevronRightIcon } from '@/ui/icons';
+import { CheckIcon, ChevronRightIcon } from '@/ui/icons';
 import { CharacterPortrait } from '@/characters';
 
 /** Kid-facing names for every skill tag. */
@@ -59,9 +59,7 @@ function SkillRow({ label, index }: { label: string; index: number }) {
       style={styles.skill}
     >
       <View style={styles.tick}>
-        <Text variant="small" color={palette.white}>
-          ✓
-        </Text>
+        <CheckIcon size={16} color={palette.white} />
       </View>
       <Text variant="bodyStrong">{label}</Text>
     </Animated.View>

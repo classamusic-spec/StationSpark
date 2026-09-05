@@ -36,7 +36,7 @@ import { speech } from '@/services/speech';
 import { useGame } from '@/state/store';
 import { Button, Panel, RoundIconButton, ScreenFrame, Text, TopBar } from '@/ui';
 import { BackIcon, ChevronRightIcon } from '@/ui/icons';
-import { StarRow } from '@/ui/kit';
+import { GlyphIcon, StarRow } from '@/ui/kit';
 import { CelebrationOverlay, DialogueOverlay } from '@/characters';
 import { TravelCinematic } from '@/world/travel/TravelCinematic';
 import { KitchenBeat } from './KitchenBeat';
@@ -314,8 +314,9 @@ function RewardScreen({
             <View style={[styles.rewardChip, { backgroundColor: '#FFE9A8' }]}>
               <Text variant="h3" center>{`+${mission.xp} XP`}</Text>
             </View>
-            <View style={[styles.rewardChip, { backgroundColor: palette.purpleSoft }]}>
-              <Text variant="h3" center>{`✨ +${mission.sparks}`}</Text>
+            <View style={[styles.rewardChip, styles.rewardChipMark, { backgroundColor: palette.purpleSoft }]}>
+              <GlyphIcon id="spark" size={24} label="sparks" />
+              <Text variant="h3" center>{`+${mission.sparks}`}</Text>
             </View>
           </View>
 
@@ -351,6 +352,7 @@ const styles = StyleSheet.create({
   rewardCard: { alignItems: 'center', gap: spacing.sm, borderRadius: radii.panel },
   rewardRow: { flexDirection: 'row', gap: spacing.sm },
   rewardChip: { paddingHorizontal: spacing.md, paddingVertical: 6, borderRadius: radii.pill, minWidth: 108 },
+  rewardChipMark: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5 },
   badge: {
     alignSelf: 'stretch',
     backgroundColor: palette.panel,

@@ -67,10 +67,10 @@ function UpgradeRow({ entry, onBuy }: { entry: { def: StationUpgradeDef; owned: 
         </Text>
       </View>
       {owned ? (
-        <Chip label="Built ✓" tone="green" />
+        <Chip label="Built" tone="green" glyph="check" />
       ) : (
         <View style={styles.buyCol}>
-          <Chip label={`✨ ${def.cost}`} tone="yellow" />
+          <Chip label={String(def.cost)} tone="yellow" glyph="spark" />
           <Button label="Buy" size="sm" tone={affordable ? 'green' : 'white'} disabled={!affordable} onPress={() => onBuy(def)} />
         </View>
       )}

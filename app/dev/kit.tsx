@@ -443,7 +443,7 @@ export default function KitGallery() {
           <View style={styles.row}>
             <Counter value={12} suffix=" missions" variant="numeral" />
             <Counter value={340} prefix="+" suffix=" XP" variant="numeral" color={palette.goldDark} />
-            <Counter value={26} prefix="✨ +" variant="numeral" color={palette.purple} />
+            <Counter value={26} prefix="+" variant="numeral" color={palette.purple} />
           </View>
         </Section>
 

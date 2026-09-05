@@ -23,7 +23,7 @@ export interface XpBarProps {
 }
 
 /**
- * The profile XP row from the reference: "Level 4 … Next Level ⭐", a green bar,
+ * The profile XP row from the reference: "Level 4 … Next Level" with a star, a green bar,
  * then "120 / 200 XP" underneath.
  */
 export function XpBar({ value, max, label, rightLabel = 'Next Level', star = true, unit = 'XP', color = palette.leafGreen, style }: XpBarProps) {

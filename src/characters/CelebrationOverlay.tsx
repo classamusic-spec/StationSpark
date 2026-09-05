@@ -14,6 +14,7 @@ import { StarRow } from '@/ui/kit/StarRow';
 import { BadgeArt } from '@/ui/kit/BadgeArt';
 import { ConfettiBurst } from '@/ui/kit/ConfettiBurst';
 import { Counter } from '@/ui/kit/Counter';
+import { GlyphIcon } from '@/ui/kit/GlyphIcon';
 import { Beacon, type BeaconHandle } from './Beacon';
 import { Pepper } from './Pepper';
 import { Rookie } from './Rookie';
@@ -150,7 +151,10 @@ export function CelebrationOverlay({
               ) : null}
               {sparks !== undefined ? (
                 <View style={styles.reward}>
-                  <Counter value={sparks} prefix="✨ +" variant="numeral" color={palette.purple} delayMs={980} durationMs={durations.cinematic} />
+                  <View style={styles.rewardMark}>
+                    <GlyphIcon id="spark" size={26} label="sparks" />
+                    <Counter value={sparks} prefix="+" variant="numeral" color={palette.purple} delayMs={980} durationMs={durations.cinematic} />
+                  </View>
                   <Text variant="tiny" color={palette.navyMuted}>
                     SPARKS
                   </Text>
@@ -208,6 +212,7 @@ const styles = StyleSheet.create({
   badgeName: { alignItems: 'center', gap: 0 },
   rewards: { flexDirection: 'row', gap: spacing.xl, justifyContent: 'center', marginTop: spacing.xs },
   reward: { alignItems: 'center' },
+  rewardMark: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   recap: { alignItems: 'center', gap: 6, marginTop: spacing.xs },
   pills: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, justifyContent: 'center' },
   cta: { alignSelf: 'stretch', marginTop: spacing.sm },

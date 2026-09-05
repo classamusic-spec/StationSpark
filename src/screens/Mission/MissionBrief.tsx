@@ -35,7 +35,8 @@ function SubjectTile({ subject, index }: { subject: SubjectId; index: number }) 
       style={[styles.tile, { backgroundColor: c.soft }]}
     >
       <View style={styles.tileGlyph}>
-        <GlyphIcon id={subject} size={44} label={subjectLabel(subject)} />
+        {/* the drawn subject mark, inked in the subject's own hue for the pale tile */}
+        <GlyphIcon id={subject} size={44} ink={c.bg} label={subjectLabel(subject)} />
       </View>
       <Text variant="bodyStrong" center numberOfLines={1}>
         {subjectLabel(subject)}

@@ -59,7 +59,7 @@ function DispatchIcon({ size }: { size: number }) {
 }
 
 /**
- * Not the folded-paper 🗺️ shape: a *survey board* of Spark City — a cream chart
+ * Not the folded-paper map emoji shape: a *survey board* of Spark City — a cream chart
  * on a tan board with drawn asphalt, a park block and the river running
  * through it. Reads as a hand-drawn map, not as a glyph.
  */

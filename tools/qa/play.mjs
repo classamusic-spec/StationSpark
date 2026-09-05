@@ -967,7 +967,7 @@ async function advanceOnce(page, seen = new Map()) {
     return 'travel';
   }
   // celebration / recap / reward / kitchen CTAs
-  for (const label of ['See my reward', 'Next', 'Nice work!', 'Back to the mission', 'Keep cooking', 'Keep going', 'Continue', 'Back to the call ›']) {
+  for (const label of ['See my reward', 'Next', 'Nice work!', 'Back to the mission', 'Back to the kitchen', 'Keep cooking', 'Keep going', 'Continue', 'Back to the call ›']) {
     const l = byLabel(page, label);
     if ((await l.count()) > 0) {
       await tap(page, l, { after: 600 });
@@ -988,13 +988,13 @@ async function advanceOnce(page, seen = new Map()) {
   return null;
 }
 
-async function runMission() {
+async function runMission(id, badge) {
   const page = await ctx.newPage();
   const issues = [];
   watch(page, issues);
-  const row = { name: 'mission/pizza-shop-panic', ok: false, note: '', issues };
+  const row = { name: `mission/${id}`, ok: false, note: '', issues };
   try {
-    await page.goto(`${base}/mission/pizza-shop-panic`, { waitUntil: 'domcontentloaded', timeout: 45000 });
+    await page.goto(`${base}/mission/${id}`, { waitUntil: 'domcontentloaded', timeout: 45000 });
     await byLabel(page, 'Get ready for ', false).first().waitFor({ state: 'attached', timeout: 30000 });
 
     let stalled = 0;
@@ -1020,9 +1020,9 @@ async function runMission() {
     const store = await page.evaluate(() => JSON.parse(localStorage.getItem('station-spark-v1') || '{}'));
     const p = store?.state?.progress ?? {};
     const problems = [];
-    if (!p.missions?.['pizza-shop-panic']) problems.push('mission not recorded');
+    if (!p.missions?.[id]) problems.push('mission not recorded');
     if (!(p.xp > 0)) problems.push(`xp=${p.xp}`);
-    if (!(p.badges ?? []).includes('pizza-rescue')) problems.push(`badges=${JSON.stringify(p.badges)}`);
+    if (badge && !(p.badges ?? []).includes(badge)) problems.push(`badges=${JSON.stringify(p.badges)}`);
     if (!((p.words ?? []).length > 0)) problems.push('no wordsLearned recorded');
     if (problems.length) throw new Error(`store: ${problems.join('; ')}`);
     row.ok = true;
@@ -1030,14 +1030,70 @@ async function runMission() {
   } catch (e) {
     row.note = String(e && e.message ? e.message : e).slice(0, 260);
     try {
-      await page.screenshot({ path: path.join(outDir, 'fail-mission.png') });
+      await page.screenshot({ path: path.join(outDir, `fail-mission-${id}.png`) });
     } catch {
       /* ignore */
     }
   }
   await page.close();
   results.push(row);
-  console.log(`${row.ok ? 'PASS' : 'FAIL'}  mission/pizza-shop-panic${row.note ? `  — ${row.note}` : ''}`);
+  console.log(`${row.ok ? 'PASS' : 'FAIL'}  mission/${id}${row.note ? `  — ${row.note}` : ''}`);
+}
+
+/**
+ * One standalone recipe end to end: /kitchen/<id> → intro → every step →
+ * the dinner table → "Recipe complete!" → back to the kitchen, then the store
+ * has to show the recipe banked.
+ */
+async function runRecipe(recipeId) {
+  const page = await ctx.newPage();
+  const issues = [];
+  watch(page, issues);
+  const row = { name: `kitchen/${recipeId}`, ok: false, note: '', issues };
+  try {
+    await page.goto(`${base}/kitchen/${recipeId}`, { waitUntil: 'domcontentloaded', timeout: 45000 });
+    await sleep(2000);
+    const before = await page.evaluate(
+      () => JSON.parse(localStorage.getItem('station-spark-v1') || '{}')?.state?.progress?.xp ?? 0,
+    );
+
+    let stalled = 0;
+    const seen = new Map();
+    const trail = [];
+    for (let i = 0; i < 200 && stalled < 8; i += 1) {
+      const url = page.url();
+      if (!url.includes(`/kitchen/${recipeId}`)) break; // navigated home = finished
+      const did = await advanceOnce(page, seen);
+      if (did === null) {
+        stalled += 1;
+        await sleep(700);
+      } else {
+        stalled = 0;
+        if (trail[trail.length - 1] !== did) trail.push(did);
+      }
+    }
+    row.note = trail.join(' → ').slice(0, 200);
+    await sleep(1200);
+
+    const store = await page.evaluate(() => JSON.parse(localStorage.getItem('station-spark-v1') || '{}'));
+    const p = store?.state?.progress ?? {};
+    const problems = [];
+    if (!(p.recipes ?? []).includes(recipeId)) problems.push(`recipes=${JSON.stringify(p.recipes)}`);
+    if (!(p.xp > before)) problems.push(`xp ${before} → ${p.xp}`);
+    if (problems.length) throw new Error(`store: ${problems.join('; ')}`);
+    row.ok = true;
+    row.note = '';
+  } catch (e) {
+    row.note = String(e && e.message ? e.message : e).slice(0, 260);
+    try {
+      await page.screenshot({ path: path.join(outDir, `fail-recipe-${recipeId}.png`) });
+    } catch {
+      /* ignore */
+    }
+  }
+  await page.close();
+  results.push(row);
+  console.log(`${row.ok ? 'PASS' : 'FAIL'}  kitchen/${recipeId}${row.note ? `  — ${row.note}` : ''}`);
 }
 
 async function runShift() {
@@ -1104,9 +1160,18 @@ async function runShift() {
 /* go                                                                   */
 /* ------------------------------------------------------------------ */
 
+const MISSIONS = [
+  ['pizza-shop-panic', 'pizza-rescue'],
+  ['market-morning', 'market-helper'],
+  ['festival-exchange', 'rescue-exchange'],
+];
+
 const kinds = onlyKinds ?? KINDS;
 for (const kind of kinds) await runTraining(kind);
-if (!skipMission && !onlyKinds) await runMission();
+if (!skipMission && !onlyKinds) {
+  for (const [id, badge] of MISSIONS) await runMission(id, badge);
+  await runRecipe('quesadillas');
+}
 if (!skipShift && !onlyKinds) await runShift();
 
 await browser.close();
