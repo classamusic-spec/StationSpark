@@ -88,7 +88,12 @@ export function Modal({ visible, onClose, title, subtitle, children, ctaLabel, o
 
 const styles = StyleSheet.create({
   root: { ...StyleSheet.absoluteFill, justifyContent: 'flex-end', zIndex: 90 },
-  scrim: { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(31,42,90,0.42)' },
+  /**
+   * Art critique item #24. The old 42 % navy sheet desaturated the whole world
+   * on six screens — a child should never watch the town go grey while being
+   * asked a friendly question. 18 %, warmed toward the station's tan.
+   */
+  scrim: { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(58,54,74,0.18)' },
   sheet: {
     backgroundColor: 'rgba(255,255,255,0.96)',
     borderTopLeftRadius: radii.panel + 10,

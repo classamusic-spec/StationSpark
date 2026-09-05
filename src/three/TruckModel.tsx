@@ -12,7 +12,8 @@
  * tone plus the bevel highlight — the "sticker, not line-art" rule from
  * docs/ART_DIRECTION.md, in three dimensions.
  *
- * Draw calls: 38 (see docs/THREE.md). Wheels and ladder rungs are instanced.
+ * Draw calls: 32 — every mirrored or repeated part is one `InstancedMesh`
+ * (see docs/THREE.md).
  */
 import React, { useEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
@@ -39,8 +40,11 @@ const HOOD = { x0: 1.84, x1: 2.2, y0: 0.46, y1: 1.42 };
 const SCREEN = { x: 2.03, y: 1.7, tilt: 0.57 };
 const WHEEL = { r: 0.44, w: 0.32, y: 0.44, z: 0.8, front: 1.3, rear: -1.26 };
 const STRIPE_Y = 0.8;
-const DECAL = { x: -1.01, y: 1.2, r: 0.3 };
+const DECAL = { x: -1.02, y: 1.13, r: 0.33 };
 const RUNG_X = [-1.85, -1.45, -1.05, -0.65, -0.25] as const;
+
+/** Tail lamps stay engine red whatever the paint is. */
+const TAIL_RED = trim.tail;
 
 const mid = (a: number, b: number) => (a + b) / 2;
 const len = (a: number, b: number) => b - a;
@@ -111,9 +115,9 @@ const SPARKLE_COUNT = 46;
 function buildSparkles(count: number): THREE.BufferGeometry {
   const pos = new Float32Array(count * 3);
   for (let i = 0; i < count; i += 1) {
-    pos[i * 3] = (Math.random() - 0.5) * 5;
-    pos[i * 3 + 1] = Math.random() * 2.6;
-    pos[i * 3 + 2] = (Math.random() - 0.5) * 2.4;
+    pos[i * 3] = (Math.random() - 0.5) * 4.6;
+    pos[i * 3 + 1] = Math.random() * 2.5;
+    pos[i * 3 + 2] = (Math.random() - 0.5) * 2.1;
   }
   const g = new THREE.BufferGeometry();
   g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
@@ -142,7 +146,7 @@ function buildGeometry(decal: TruckStyle['decal']): TruckGeometry {
     ladderRung: rb(0.08, 0.07, 0.78, 0.03),
     lightBarBase: rb(0.3, 0.1, 1.42, 0.042),
     lamp: rb(0.26, 0.15, 0.5, 0.06),
-    bumper: rb(0.24, 0.3, 1.84, 0.11),
+    bumper: rb(0.22, 0.26, 1.88, 0.055),
     grille: rb(0.06, 0.34, 1.0, 0.028),
     grilleSlat: rb(0.03, 0.035, 0.86, 0.014),
     headlight: rb(0.07, 0.18, 0.2, 0.055),
@@ -182,6 +186,7 @@ interface TruckMaterials {
   hub: THREE.MeshStandardMaterial;
   hubCap: THREE.MeshStandardMaterial;
   headlight: THREE.MeshStandardMaterial;
+  tailLight: THREE.MeshStandardMaterial;
   lampA: THREE.MeshStandardMaterial;
   lampB: THREE.MeshStandardMaterial;
   roundel: THREE.MeshStandardMaterial;
@@ -203,7 +208,7 @@ function buildShadowMaterial(): THREE.ShaderMaterial {
   return new THREE.ShaderMaterial({
     transparent: true,
     depthWrite: false,
-    uniforms: { uColor: { value: new THREE.Color(trim.shadow) }, uOpacity: { value: 0.46 } },
+    uniforms: { uColor: { value: new THREE.Color(trim.shadow) }, uOpacity: { value: 0.52 } },
     vertexShader: /* glsl */ `
       varying vec2 vUv;
       void main() {
@@ -249,12 +254,18 @@ function buildMaterials(color: TruckStyle['color'], decal: TruckStyle['decal']):
       emissiveIntensity: 0.9,
       roughness: 0.3,
     }),
+    tailLight: new THREE.MeshStandardMaterial({
+      color: TAIL_RED,
+      emissive: new THREE.Color(TAIL_RED),
+      emissiveIntensity: 0.55,
+      roughness: 0.32,
+    }),
     lampA: new THREE.MeshStandardMaterial({ color: '#FFFFFF', emissive: new THREE.Color('#FFFFFF'), roughness: 0.28 }),
     lampB: new THREE.MeshStandardMaterial({ color: '#FFFFFF', emissive: new THREE.Color('#FFFFFF'), roughness: 0.28 }),
     roundel: paint('#FFFFFF', { roughness: 0.45, flatShading: false }),
     sparkle: new THREE.PointsMaterial({
       color: trim.sparkle,
-      size: 0.14,
+      size: 0.16,
       sizeAttenuation: true,
       transparent: true,
       opacity: 0,
@@ -410,7 +421,7 @@ export function TruckModel({ style, spinning = false, honk = 0, shine = 0, reduc
   return (
     <group>
       {/* the contact shadow stays on the floor, so it sits outside the bounce */}
-      <mesh geometry={geo.shadow} material={mat.shadow} position={[0.04, 0.01, 0]} scale={[2.55, 1, 1.16]} />
+      <mesh geometry={geo.shadow} material={mat.shadow} position={[0.05, 0.008, 0]} scale={[2.95, 1, 1.32]} />
 
       <group ref={bounce}>
         {/* ── chassis + paint ─────────────────────────────────── */}
@@ -422,58 +433,43 @@ export function TruckModel({ style, spinning = false, honk = 0, shine = 0, reduc
 
         {/* ── glass: sloped windscreen + a door window each side ─ */}
         <mesh geometry={geo.windshield} material={mat.glass} position={[SCREEN.x + 0.058, SCREEN.y + 0.038, 0]} rotation={[0, 0, SCREEN.tilt]} />
-        <mesh
-          geometry={geo.glint}
-          material={mat.glint}
-          position={[SCREEN.x + 0.094, SCREEN.y + 0.06, 0.34]}
-          rotation={[0.5, 0, SCREEN.tilt]}
-        />
+        <mesh geometry={geo.glint} material={mat.glint} position={[SCREEN.x + 0.094, SCREEN.y + 0.06, 0.34]} rotation={[0.5, 0, SCREEN.tilt]} />
+        <Repeat geometry={geo.sideWindow} material={mat.glass} at={SIDE_WINDOWS} />
+        <Repeat geometry={geo.sideGlint} material={mat.glint} at={SIDE_GLINTS} />
 
-        {/* ── everything that repeats on both flanks ───────────── */}
-        {[1, -1].map((side) => (
-          <group key={`flank${side}`}>
-            <mesh geometry={geo.compartment} material={mat.inset} position={[-1.74, 1.2, SKIN * side]} />
-            <mesh geometry={geo.compartment} material={mat.inset} position={[-0.3, 1.2, SKIN * side]} />
-            <mesh geometry={geo.panelLine} material={mat.line} position={[-0.88, 1.46, SKIN * side]} />
-            <mesh geometry={geo.stripeSide} material={mat.stripe} position={[0.02, STRIPE_Y, (SKIN + 0.008) * side]} />
-            <mesh geometry={geo.sideWindow} material={mat.glass} position={[1.2, 1.55, SKIN * side]} />
-            <mesh geometry={geo.sideGlint} material={mat.glint} position={[0.92, 1.55, (SKIN + 0.022) * side]} rotation={[0, 0, 0.34]} />
-          </group>
-        ))}
+        {/* ── flank dressing: lockers, panel seam, reflective stripe ─ */}
+        <Repeat geometry={geo.compartment} material={mat.inset} at={COMPARTMENTS} />
+        <Repeat geometry={geo.panelLine} material={mat.line} at={PANEL_LINES} />
+        <Repeat geometry={geo.stripeSide} material={mat.stripe} at={SIDE_STRIPES} />
+        <mesh geometry={geo.stripeFront} material={mat.stripe} position={[2.215, STRIPE_Y, 0]} />
 
         {/* ── the door decal, one roundel per side ─────────────── */}
-        {style.decal !== 'none'
-          ? [1, -1].map((side) => (
-              <group key={`decal${side}`} position={[DECAL.x, DECAL.y, SKIN * side]} rotation={[0, side > 0 ? 0 : Math.PI, 0]}>
-                <mesh geometry={geo.roundel} material={mat.roundel} position={[0, 0, 0.006]} />
-                {geo.decalMain && mat.decalMain ? (
-                  <mesh geometry={geo.decalMain} material={mat.decalMain} position={[0, 0, 0.028]} scale={0.84} />
-                ) : null}
-                {geo.decalAccent && mat.decalAccent ? (
-                  <mesh geometry={geo.decalAccent} material={mat.decalAccent} position={[0, 0, 0.046]} scale={0.84} />
-                ) : null}
-              </group>
-            ))
-          : null}
+        {style.decal !== 'none' ? (
+          <>
+            <Repeat geometry={geo.roundel} material={mat.roundel} at={ROUNDELS} />
+            <Repeat geometry={geo.decalMain} material={mat.decalMain} at={DECAL_MAIN} />
+            <Repeat geometry={geo.decalAccent} material={mat.decalAccent} at={DECAL_ACCENT} />
+          </>
+        ) : null}
 
         {/* ── roof ladder ──────────────────────────────────────── */}
-        <mesh geometry={geo.ladderRail} material={mat.ladder} position={[-0.88, 1.6, 0.46]} />
-        <mesh geometry={geo.ladderRail} material={mat.ladder} position={[-0.88, 1.6, -0.46]} />
-        <LadderRungs geometry={geo.ladderRung} material={mat.ladderLight} />
+        <Repeat geometry={geo.ladderRail} material={mat.ladder} at={LADDER_RAILS} />
+        <Repeat geometry={geo.ladderRung} material={mat.ladderLight} at={LADDER_RUNGS} />
 
         {/* ── light bar ────────────────────────────────────────── */}
         <mesh geometry={geo.lightBarBase} material={mat.grille} position={[1.24, 2.03, 0]} />
         <mesh geometry={geo.lamp} material={mat.lampA} position={[1.24, 2.13, 0.34]} />
         <mesh geometry={geo.lamp} material={mat.lampB} position={[1.24, 2.13, -0.34]} />
 
-        {/* ── the face: bumper, stripe, grille, headlights ─────── */}
-        <mesh geometry={geo.bumper} material={mat.chrome} position={[2.22, 0.46, 0]} />
-        <mesh geometry={geo.stripeFront} material={mat.stripe} position={[2.215, STRIPE_Y, 0]} />
+        {/* ── the face: bumper, grille, headlights ─────────────── */}
+        <mesh geometry={geo.bumper} material={mat.chrome} position={[2.23, 0.42, 0]} />
         <mesh geometry={geo.grille} material={mat.grille} position={[2.21, 1.14, 0]} />
-        <mesh geometry={geo.grilleSlat} material={mat.chrome} position={[2.245, 1.06, 0]} />
-        <mesh geometry={geo.grilleSlat} material={mat.chrome} position={[2.245, 1.22, 0]} />
-        <mesh geometry={geo.headlight} material={mat.headlight} position={[2.23, 1.14, 0.62]} />
-        <mesh geometry={geo.headlight} material={mat.headlight} position={[2.23, 1.14, -0.62]} />
+        <Repeat geometry={geo.grilleSlat} material={mat.chrome} at={GRILLE_SLATS} />
+        <Repeat geometry={geo.headlight} material={mat.headlight} at={HEADLIGHTS} />
+
+        {/* ── the tail, because the child can spin it right round ─ */}
+        <mesh geometry={geo.bumper} material={mat.chrome} position={[-2.26, 0.42, 0]} />
+        <Repeat geometry={geo.headlight} material={mat.tailLight} at={TAIL_LIGHTS} />
 
         {/* ── wheels: 12 objects in 3 instanced draw calls ─────── */}
         <instancedMesh ref={tyres} args={[geo.tyre, mat.tyre, 4]} frustumCulled={false} />
@@ -487,18 +483,95 @@ export function TruckModel({ style, spinning = false, honk = 0, shine = 0, reduc
   );
 }
 
-/** The five rungs, in one instanced draw call. */
-function LadderRungs({ geometry, material }: { geometry: THREE.BufferGeometry; material: THREE.Material }) {
+/* ------------------------------------------------------------------ */
+/* Instanced repeats                                                    */
+/* ------------------------------------------------------------------ */
+
+interface Placement {
+  position: [number, number, number];
+  rotation?: [number, number, number];
+  scale?: number;
+}
+
+/** Mirror a flank placement onto the far side, turned to face outward. */
+const bothFlanks = (x: number, y: number, z: number, rz = 0): Placement[] => [
+  { position: [x, y, z] },
+  { position: [x, y, -z], rotation: [0, Math.PI, -rz] },
+];
+
+const COMPARTMENTS: readonly Placement[] = [...bothFlanks(-1.74, 1.22, SKIN), ...bothFlanks(-0.3, 1.22, SKIN)];
+const PANEL_LINES: readonly Placement[] = bothFlanks(-0.88, 1.465, SKIN);
+const SIDE_STRIPES: readonly Placement[] = bothFlanks(0.02, STRIPE_Y, SKIN + 0.008);
+const SIDE_WINDOWS: readonly Placement[] = bothFlanks(1.2, 1.55, SKIN);
+const SIDE_GLINTS: readonly Placement[] = [
+  { position: [0.92, 1.55, SKIN + 0.022], rotation: [0, 0, 0.34] },
+  { position: [0.92, 1.55, -(SKIN + 0.022)], rotation: [0, Math.PI, -0.34] },
+];
+const ROUNDELS: readonly Placement[] = bothFlanks(DECAL.x, DECAL.y, SKIN + 0.03);
+const DECAL_SCALE = DECAL.r * 1.46;
+const DECAL_MAIN: readonly Placement[] = [
+  { position: [DECAL.x, DECAL.y, SKIN + 0.05], scale: DECAL_SCALE },
+  { position: [DECAL.x, DECAL.y, -(SKIN + 0.05)], rotation: [0, Math.PI, 0], scale: DECAL_SCALE },
+];
+const DECAL_ACCENT: readonly Placement[] = [
+  { position: [DECAL.x, DECAL.y, SKIN + 0.068], scale: DECAL_SCALE },
+  { position: [DECAL.x, DECAL.y, -(SKIN + 0.068)], rotation: [0, Math.PI, 0], scale: DECAL_SCALE },
+];
+const LADDER_RAILS: readonly Placement[] = [
+  { position: [-0.88, 1.6, 0.46] },
+  { position: [-0.88, 1.6, -0.46] },
+];
+const LADDER_RUNGS: readonly Placement[] = RUNG_X.map((x) => ({ position: [x, 1.6, 0] }) as Placement);
+const GRILLE_SLATS: readonly Placement[] = [
+  { position: [2.245, 1.06, 0] },
+  { position: [2.245, 1.22, 0] },
+];
+const HEADLIGHTS: readonly Placement[] = [
+  { position: [2.23, 1.14, 0.62] },
+  { position: [2.23, 1.14, -0.62] },
+];
+const TAIL_LIGHTS: readonly Placement[] = [
+  { position: [-2.24, 1.14, 0.56] },
+  { position: [-2.24, 1.14, -0.56] },
+];
+
+const placePos = new THREE.Vector3();
+const placeQuat = new THREE.Quaternion();
+const placeEuler = new THREE.Euler();
+const placeScale = new THREE.Vector3();
+const placeMatrix = new THREE.Matrix4();
+
+/**
+ * Every part that appears more than once — both flanks, five ladder rungs, two
+ * headlights — is drawn here as a single `InstancedMesh`. It is what keeps the
+ * whole truck under 35 draw calls (see docs/THREE.md).
+ */
+function Repeat({
+  geometry,
+  material,
+  at,
+}: {
+  geometry: THREE.BufferGeometry | undefined;
+  material: THREE.Material | undefined;
+  at: readonly Placement[];
+}) {
   const mesh = useRef<THREE.InstancedMesh>(null);
   useEffect(() => {
     const m = mesh.current;
     if (!m) return;
-    const mat4 = new THREE.Matrix4();
-    RUNG_X.forEach((x, i) => {
-      mat4.makeTranslation(x, 1.6, 0);
-      m.setMatrixAt(i, mat4);
+    at.forEach((t, i) => {
+      placePos.set(t.position[0], t.position[1], t.position[2]);
+      const r = t.rotation ?? [0, 0, 0];
+      placeEuler.set(r[0], r[1], r[2]);
+      placeQuat.setFromEuler(placeEuler);
+      placeScale.setScalar(t.scale ?? 1);
+      placeMatrix.compose(placePos, placeQuat, placeScale);
+      m.setMatrixAt(i, placeMatrix);
     });
     m.instanceMatrix.needsUpdate = true;
-  }, []);
-  return <instancedMesh ref={mesh} args={[geometry, material, RUNG_X.length]} frustumCulled={false} />;
+    m.computeBoundingSphere();
+  }, [at, geometry, material]);
+
+  if (!geometry || !material) return null;
+  return <instancedMesh ref={mesh} args={[geometry, material, at.length]} frustumCulled={false} />;
 }

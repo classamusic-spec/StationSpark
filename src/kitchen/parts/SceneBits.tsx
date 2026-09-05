@@ -12,21 +12,37 @@ import { useRise, useSwing } from './motion';
 /* Wooden peel (the board the pizza sits on)                             */
 /* ------------------------------------------------------------------ */
 
+/**
+ * The wooden peel, redrawn to the reference (critique #18): a rounded board in
+ * the same top-down projection as the pizza, with a stubby handle at the
+ * bottom — not a disc on a lollipop stick. No keylines: the rim, the grain and
+ * the handle are separated by value only.
+ */
 export function WoodPeel({ size }: { size: number }) {
   return (
     <Svg width={size} height={size * 1.24} viewBox="0 0 100 124">
       <Defs>
         <LinearGradient id="peelWood" x1="0" y1="0" x2="1" y2="1">
-          <Stop offset="0" stopColor="#D9A164" />
+          <Stop offset="0" stopColor="#DCA76B" />
           <Stop offset="1" stopColor="#B87C41" />
         </LinearGradient>
       </Defs>
-      <Ellipse cx={50} cy={54} rx={49} ry={49} fill="rgba(31,42,90,0.12)" />
-      <Rect x={42} y={86} width={16} height={36} rx={8} fill="#C08B4E" />
-      <Rect x={44} y={88} width={5} height={30} rx={3} fill="rgba(255,255,255,0.28)" />
-      <Circle cx={50} cy={51} r={49} fill="url(#peelWood)" />
-      <Circle cx={50} cy={51} r={49} fill="none" stroke="#A96C33" strokeWidth={3} />
-      <Path d="M14 24a48 48 0 0 1 42-22c-18 4-32 15-38 30z" fill="rgba(255,255,255,0.25)" />
+      {/* contact shadow on the counter */}
+      <Ellipse cx={50} cy={112} rx={44} ry={8} fill="rgba(31,42,90,0.12)" />
+      {/* handle */}
+      <Rect x={40} y={92} width={20} height={30} rx={10} fill="#A96C33" />
+      <Rect x={43} y={95} width={6} height={24} rx={3} fill="rgba(255,255,255,0.32)" />
+      {/* board — a rounded square, matching the reference's cutting board */}
+      <Rect x={2} y={2} width={96} height={100} rx={26} fill="#A96C33" />
+      <Rect x={2} y={2} width={96} height={96} rx={26} fill="url(#peelWood)" />
+      {/* grain */}
+      <Path d="M18 16 q 32 -6 64 0" stroke="#C08B4E" strokeWidth={2.4} fill="none" strokeLinecap="round" opacity={0.7} />
+      <Path d="M12 40 q 38 -7 76 0" stroke="#C08B4E" strokeWidth={2.4} fill="none" strokeLinecap="round" opacity={0.55} />
+      <Path d="M14 68 q 36 -6 72 0" stroke="#C08B4E" strokeWidth={2.4} fill="none" strokeLinecap="round" opacity={0.45} />
+      <Path d="M16 88 q 34 -5 68 0" stroke="#C08B4E" strokeWidth={2} fill="none" strokeLinecap="round" opacity={0.35} />
+      {/* lit edge */}
+      <Path d="M2 28 a 26 26 0 0 1 26 -26 h 14 c -22 4 -36 14 -40 34 z" fill="rgba(255,255,255,0.32)" />
+      <Path d="M98 74 a 26 26 0 0 1 -26 24 h -12 c 20 -4 34 -12 38 -26 z" fill="rgba(31,42,90,0.14)" />
     </Svg>
   );
 }
@@ -38,13 +54,15 @@ export function WoodPeel({ size }: { size: number }) {
 export function PizzaCutter({ size }: { size: number }) {
   return (
     <Svg width={size} height={size * 0.62} viewBox="0 0 120 74">
+      <Ellipse cx={56} cy={68} rx={44} ry={5} fill="rgba(31,42,90,0.12)" />
       <Rect x={54} y={40} width={62} height={16} rx={8} fill={palette.engineRed} transform="rotate(18 60 48)" />
-      <Rect x={56} y={42} width={54} height={5} rx={3} fill="rgba(255,255,255,0.35)" transform="rotate(18 60 48)" />
+      <Rect x={56} y={42} width={54} height={5} rx={3} fill="rgba(255,255,255,0.32)" transform="rotate(18 60 48)" />
       <Rect x={40} y={30} width={26} height={11} rx={5} fill={palette.slate} transform="rotate(18 46 36)" />
-      <Circle cx={30} cy={30} r={26} fill="#C7CEE0" />
-      <Circle cx={30} cy={30} r={26} fill="none" stroke="#98A2C0" strokeWidth={3} />
-      <Circle cx={30} cy={30} r={6} fill="#7E8AAE" />
-      <Path d="M12 14a26 26 0 0 1 22-6c-11 1-19 6-24 14z" fill="rgba(255,255,255,0.6)" />
+      <Circle cx={30} cy={30} r={26} fill="#98A2C0" />
+      <Circle cx={30} cy={28.5} r={24.5} fill="#C7CEE0" />
+      <Circle cx={30} cy={30} r={7} fill="#7E8AAE" />
+      <Circle cx={30} cy={29} r={3.4} fill="rgba(255,255,255,0.32)" />
+      <Path d="M12 14a26 26 0 0 1 22-6c-11 1-19 6-24 14z" fill="rgba(255,255,255,0.55)" />
     </Svg>
   );
 }

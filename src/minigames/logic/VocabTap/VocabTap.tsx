@@ -10,6 +10,8 @@ import { haptics } from '@/services/haptics';
 import { speech } from '@/services/speech';
 import { AnswerTile, Button, SpeakerIcon, Text, TrayRow, VocabIcon } from '@/ui';
 import type { AnswerState } from '@/ui/kit/AnswerTile';
+import { GameCrew } from '@/characters';
+import { Stage } from '@/world';
 import { GameFrame } from '../shared/GameFrame';
 import { useGameLayout } from '../shared/layout';
 import { useHintLadder } from '../shared/useHintLadder';
@@ -105,6 +107,12 @@ export function VocabTap({ challenge, ageBand, onComplete, onEvent, compact }: M
       title={promptLang === 'es' ? '¿Cuál es?' : 'Which one is it?'}
       subtitle={ageBand === 'A' ? undefined : 'Listen to Beacon, then tap the picture.'}
       compact={compact}
+      backdrop={
+        <>
+          <Stage variant="classroom" groundHeight={150} />
+          <GameCrew side="left" size={58} bottom={compact ? 150 : 178} mood={state.phase === 'solved' ? 'cheer' : 'idle'} />
+        </>
+      }
       hint={{ text: hintText, visible: hintLadder.showBubble, onDismiss: hintLadder.dismiss }}
       tray={
         <TrayRow>

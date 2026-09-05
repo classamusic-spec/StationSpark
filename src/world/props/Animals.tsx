@@ -297,15 +297,30 @@ const styles = StyleSheet.create({
 export function RescueTree({ width, height }: { width: number; height: number }) {
   return (
     <View style={{ width, height }} pointerEvents="none">
+      {/* critique: not three circles on a stick — a dark back mass, a lit front
+          mass with a lobed silhouette, branch forks and a bark highlight. */}
       <Svg width={width} height={height} viewBox="0 0 240 260">
-        <Rect x={104} y={120} width={32} height={140} rx={12} fill={palette.wood} />
-        <Path d="M120 150 L64 122" stroke={palette.wood} strokeWidth={18} strokeLinecap="round" />
-        <Path d="M120 170 L182 146" stroke={palette.wood} strokeWidth={18} strokeLinecap="round" />
-        <Circle cx={120} cy={78} r={64} fill="#4CAF50" />
-        <Circle cx={62} cy={104} r={44} fill="#5DBB63" />
-        <Circle cx={180} cy={104} r={46} fill="#3B8E3F" />
-        <Circle cx={120} cy={44} r={40} fill="#8FD16B" />
-        <Ellipse cx={96} cy={58} rx={22} ry={14} fill={palette.white} opacity={0.16} />
+        <Ellipse cx={120} cy={254} rx={62} ry={13} fill={palette.navy} opacity={0.12} />
+        <Path d="M104 260 q -4 -80 8 -120 h 16 q 12 40 8 120 z" fill={palette.woodDark} />
+        <Path d="M108 260 q -3 -78 7 -118 h 6 q -6 42 -3 118 z" fill="rgba(255,255,255,0.32)" />
+        <Path d="M120 152 q -30 -6 -56 -30" stroke={palette.woodDark} strokeWidth={17} strokeLinecap="round" fill="none" />
+        <Path d="M120 172 q 34 -4 62 -26" stroke={palette.woodDark} strokeWidth={15} strokeLinecap="round" fill="none" />
+        {/* back canopy mass */}
+        <Path
+          d="M120 8 q -46 0 -58 34 q -40 6 -34 44 q -22 22 4 46 q 12 26 46 20 q 22 22 44 4 q 26 16 46 -8 q 34 -2 32 -34 q 18 -26 -8 -46 q -2 -36 -38 -40 q -14 -22 -34 -20 z"
+          fill="#2F7F45"
+        />
+        {/* lit front mass */}
+        <Path
+          d="M120 24 q -38 0 -48 28 q -32 6 -26 36 q -18 18 4 38 q 10 20 38 16 q 18 18 36 2 q 22 12 38 -8 q 28 -2 26 -28 q 14 -22 -8 -38 q -2 -28 -32 -32 q -12 -18 -28 -14 z"
+          fill="#4CAF50"
+        />
+        <Path
+          d="M120 30 q -30 0 -40 22 q 12 -10 34 -12 q 22 -4 44 8 q -10 -18 -38 -18 z"
+          fill="rgba(255,255,255,0.32)"
+        />
+        <Path d="M66 84 q 14 -14 34 -16 q -22 10 -30 26 z" fill="#8FD16B" opacity={0.85} />
+        <Path d="M158 118 q 18 -6 26 -22 q -4 24 -24 30 z" fill="#2F7F45" />
       </Svg>
     </View>
   );

@@ -3,9 +3,12 @@
  * (`world/props`, `world/fx` and `world/travel` are separate modules with their
  * own barrels; import those directly.)
  */
+export * from './tone';
 export * from './Clouds';
 export * from './Hills';
 export * from './Sun';
+export * from './Birds';
+export * from './Neighbours';
 export * from './TownSkyline';
 export * from './Trees';
 export * from './Flag';

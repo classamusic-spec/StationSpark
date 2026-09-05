@@ -335,6 +335,7 @@ export function MarketMoney({ challenge, ageBand, onComplete, onEvent, compact }
   const equation = useMemo(() => {
     const values = state.counter.map((i) => coins[i] ?? 0);
     if (values.length === 0) return '0';
+    if (values.length === 1) return String(total);
     if (values.length > 5) return `${values.length} coins = ${total}`;
     return `${values.join(' + ')} = ${total}`;
   }, [coins, state.counter, total]);
@@ -382,7 +383,7 @@ export function MarketMoney({ challenge, ageBand, onComplete, onEvent, compact }
                   <CoinToken
                     value={value}
                     size={coinSize}
-                    label={`${value} coin`}
+                    label={spent ? `${value} coin, already on the counter` : `${value} coin`}
                     spent={spent || state.phase !== 'shopping'}
                     highlight={hintLadder.highlight && wanted.has(index)}
                     onDropCoin={(slotId) => onDropCoin(index, slotId)}
@@ -438,7 +439,7 @@ export function MarketMoney({ challenge, ageBand, onComplete, onEvent, compact }
           id="counter"
           enabled={state.phase === 'shopping'}
           hitPad={layout.s(14)}
-          style={[styles.counter, { width: stallWidth, minHeight: layout.s(74) }]}
+          style={[styles.counter, { width: stallWidth, minHeight: layout.s(90) }]}
         >
           <View style={styles.counterInner}>
             {state.counter.length === 0 ? (

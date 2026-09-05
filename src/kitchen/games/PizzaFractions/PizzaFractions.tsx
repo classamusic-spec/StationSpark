@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Pressable, StyleSheet, View, type GestureResponderEvent } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import Svg, { Circle, Defs, Path, RadialGradient, Rect, Stop } from 'react-native-svg';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
@@ -25,7 +25,9 @@ import { AnswerTile } from '@/ui/kit/AnswerTile';
 import { GrownUpChip } from '@/ui/kit/Chip';
 import { HintBubble } from '@/ui/kit/HintBubble';
 import { Tray } from '@/ui/kit/Tray';
-import { CharacterPortrait } from '@/characters/CharacterPortrait';
+import { GameCrew } from '@/characters';
+import { Stage as SceneStage } from '@/world';
+import { CrewFigure } from '@/world/scenes';
 import { toppingLabel, toppings } from '../../food';
 import {
   buildWedges,
@@ -162,14 +164,21 @@ export function PizzaFractions({ challenge, ageBand, onComplete, onEvent, compac
     [assigned, beacon, challenge.toppings, plan, session],
   );
 
-  const onPizzaTap = useCallback(
-    (e: GestureResponderEvent, s: number) => {
-      const p = {
-        x: PC.x - R_SAUCE + e.nativeEvent.locationX / s,
-        y: PC.y - R_SAUCE + e.nativeEvent.locationY / s,
-      };
+  /**
+   * `x`/`y` are relative to the pizza surface, in screen px.
+   *
+   * This used to read `e.nativeEvent.locationX` off a <Pressable>. On web that
+   * is undefined for a mouse press, so every tap resolved to NaN and the
+   * "tap a slice" affordance did nothing at all — dragging a bowl was the only
+   * way to top the pizza. Gesture-handler reports view-relative coordinates on
+   * every platform (the cutter below already relies on it).
+   */
+  const onPizzaTapAt = useCallback(
+    (x: number, y: number, s: number) => {
+      if (!Number.isFinite(x) || !Number.isFinite(y) || !s) return;
+      const p = { x: PC.x - R_SAUCE + x / s, y: PC.y - R_SAUCE + y / s };
       const region = regionAtPoint(p, PC, R_SAUCE, count);
-      if (region === null) return;
+      if (region === null || !Number.isInteger(region)) return;
       if (assigned[region]) {
         const next = [...assigned];
         next[region] = null;
@@ -344,6 +353,9 @@ export function PizzaFractions({ challenge, ageBand, onComplete, onEvent, compac
 
   return (
     <View style={styles.root}>
+      {/* the whole kitchen game used to be played against a blue sky */}
+      <SceneStage variant="counter" groundHeight={200} />
+      <GameCrew side="left" size={50} bottom={104} showPepper npc="gino" mood={phase === 'share' ? 'cheer' : phase === 'cut' ? 'think' : 'idle'} />
       <PromptBanner
         title={prompt}
         subtitle={
@@ -459,12 +471,7 @@ export function PizzaFractions({ challenge, ageBand, onComplete, onEvent, compac
                 </View>
 
                 {phase === 'top' ? (
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel="Pizza — tap a slice to add the ingredient you picked"
-                    style={at(s, PC.x - R_SAUCE, PC.y - R_SAUCE, R_SAUCE * 2, R_SAUCE * 2)}
-                    onPress={(e) => onPizzaTap(e, s)}
-                  />
+                  <PizzaSurface s={s} onTapAt={onPizzaTapAt} />
                 ) : (
                   <CutSurface s={s} onStroke={onStroke} />
                 )}
@@ -489,11 +496,11 @@ export function PizzaFractions({ challenge, ageBand, onComplete, onEvent, compac
               />
             ) : null}
 
-            {phase === 'cut' ? (
-              <View style={at(s, 18, 348)} pointerEvents="none">
-                <PizzaCutter size={92 * s} />
-              </View>
-            ) : null}
+            {/* the cutter lies on the counter beside the peel the whole time,
+                as in the reference — it is scene dressing, not a mode marker */}
+            <View style={at(s, 16, 344)} pointerEvents="none">
+              <PizzaCutter size={(phase === 'cut' ? 96 : 82) * s} />
+            </View>
           </>
         )}
       </Stage>
@@ -570,18 +577,45 @@ function PizzaArt({
           <Stop offset="1" stopColor="#D8382B" />
         </RadialGradient>
       </Defs>
-      <Circle cx={PC.x} cy={PC.y + 4} r={R_CRUST} fill="rgba(31,42,90,0.14)" />
-      <Circle cx={PC.x} cy={PC.y} r={R_CRUST} fill="#F0B865" />
-      <Circle cx={PC.x} cy={PC.y} r={R_CRUST} fill="none" stroke="#D89845" strokeWidth={4} />
-      <Circle cx={PC.x} cy={PC.y} r={R_SAUCE + 5} fill="#E9A94F" />
+      {/* critique #18: a golden PUFFY crust (scalloped, three tones), real
+          sauce, and a bed of shredded cheese — it used to be a red disc with
+          faint dots and a keyline. No outlines: value does the separating. */}
+      <Circle cx={PC.x} cy={PC.y + 5} r={R_CRUST} fill="rgba(31,42,90,0.14)" />
+      <Circle cx={PC.x} cy={PC.y} r={R_CRUST} fill="#D89845" />
+      {Array.from({ length: 22 }, (_, i) => {
+        const a = (i / 22) * Math.PI * 2;
+        const p = polar(PC, R_CRUST - 7, a);
+        return <Circle key={`puff${i}`} cx={p.x} cy={p.y} r={11} fill="#F0B865" />;
+      })}
+      {Array.from({ length: 22 }, (_, i) => {
+        const a = (i / 22) * Math.PI * 2 - 0.06;
+        const p = polar(PC, R_CRUST - 10, a);
+        return a > Math.PI * 0.9 && a < Math.PI * 1.9 ? null : (
+          <Circle key={`puffhi${i}`} cx={p.x} cy={p.y - 3} r={5} fill="rgba(255,255,255,0.32)" />
+        );
+      })}
+      <Circle cx={PC.x} cy={PC.y} r={R_SAUCE + 6} fill="#E9A94F" />
       <Circle cx={PC.x} cy={PC.y} r={R_SAUCE} fill="url(#sauce)" />
-      {[0.42, 0.66, 0.86].map((rr, i) =>
-        [0, 1, 2, 3, 4].map((k) => {
-          const a = (k / 5) * Math.PI * 2 + i * 0.7;
-          const p = polar(PC, R_SAUCE * rr, a);
-          return <Circle key={`t${i}-${k}`} cx={p.x} cy={p.y} r={2.4} fill="rgba(255,255,255,0.14)" />;
-        }),
-      )}
+      {/* shredded mozzarella */}
+      {Array.from({ length: 54 }, (_, i) => {
+        const a = i * 2.399963;
+        const rr = R_SAUCE * 0.94 * Math.sqrt((i + 0.5) / 54);
+        const p = polar(PC, rr, a);
+        const deg = ((i * 47) % 180) - 90;
+        return (
+          <Rect
+            key={`ch${i}`}
+            x={p.x - 8}
+            y={p.y - 2.6}
+            width={16}
+            height={5.2}
+            rx={2.6}
+            fill={i % 3 === 0 ? '#FFE9A8' : '#FFD86B'}
+            transform={`rotate(${deg} ${p.x} ${p.y})`}
+          />
+        );
+      })}
+      <Circle cx={PC.x} cy={PC.y} r={R_SAUCE} fill="rgba(255,255,255,0.1)" />
 
       {wedges.map((w) => {
         const topping = assigned[w.index];
@@ -649,6 +683,32 @@ function PizzaArt({
         : null}
       <Rect x={PC.x - 1} y={PC.y - 1} width={2} height={2} fill="transparent" />
     </Svg>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Topping surface: a tap anywhere on the sauce                         */
+/* ------------------------------------------------------------------ */
+
+/** The tappable sauce. Reports view-relative coordinates on every platform. */
+function PizzaSurface({ s, onTapAt }: { s: number; onTapAt: (x: number, y: number, s: number) => void }) {
+  const gesture = useMemo(
+    () =>
+      Gesture.Tap()
+        .maxDistance(20)
+        .onEnd((e, ok) => {
+          if (ok) runOnJS(onTapAt)(e.x, e.y, s);
+        }),
+    [onTapAt, s],
+  );
+  return (
+    <GestureDetector gesture={gesture}>
+      <View
+        accessibilityRole="button"
+        accessibilityLabel="Pizza — tap a slice to add the ingredient you picked"
+        style={at(s, PC.x - R_SAUCE, PC.y - R_SAUCE, R_SAUCE * 2, R_SAUCE * 2)}
+      />
+    </GestureDetector>
   );
 }
 
@@ -828,9 +888,10 @@ function ShareScene({
         const n = plates[i] ?? 0;
         const glow = highlight && i === nextIdx;
         return (
-          <View key={`plate${i}`} style={at(s, p.x - 46, p.y - 74, 92, 130)}>
+          <View key={`plate${i}`} style={at(s, p.x - 46, p.y - 104, 92, 164)}>
             <View style={styles.plateCol}>
-              <CharacterPortrait id={CREW[i % CREW.length] ?? 'rookie'} size={44 * s} />
+              {/* critique #23 — the full rig stands at the plate */}
+              <CrewFigure id={CREW[i % CREW.length] ?? 'rookie'} size={92 * s} bobPhase={i * 0.5} />
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel={`Plate ${i + 1}, ${n} slices`}

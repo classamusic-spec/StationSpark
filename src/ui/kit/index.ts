@@ -5,6 +5,7 @@ export * from './AnswerTile';
 export * from './Chip';
 export * from './Tray';
 export * from './HintBubble';
+export * from './playArea';
 export * from './EquipmentIcon';
 export * from './VocabIcon';
 export * from './GlyphIcon';

@@ -69,7 +69,9 @@ const styles = StyleSheet.create({
   pill: {
     minHeight: hit.min - 10,
     flexGrow: 1,
-    flexBasis: 'auto',
+    // 30 % basis: three fit on a line, a fourth and fifth wrap to a tidy second
+    // row instead of squeezing the labels into "Fla…".
+    flexBasis: '30%',
     borderRadius: radii.pill,
     alignItems: 'center',
     justifyContent: 'center',

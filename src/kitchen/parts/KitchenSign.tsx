@@ -56,9 +56,10 @@ export function KitchenSign({ width = 300, top = 'FIREHOUSE', bottom = 'KITCHEN'
           <Rect x={122} y={40} width={56} height={14} rx={6} fill="#F1EAD9" />
         </G>
 
-        {/* plaque */}
+        {/* plaque — critique #20: the orphan speech-bubble tail that pointed at
+            nothing is gone; this is a bolted enamel sign, not a bubble. */}
         <Path
-          d="M18 52h264a14 14 0 0 1 14 14v58a14 14 0 0 1-14 14h-40l-12 12-12-12H18a14 14 0 0 1-14-14V66a14 14 0 0 1 14-14z"
+          d="M18 52h264a14 14 0 0 1 14 14v58a14 14 0 0 1-14 14H18a14 14 0 0 1-14-14V66a14 14 0 0 1 14-14z"
           fill="url(#signRed)"
         />
         <Path d="M18 52h264a14 14 0 0 1 14 14v6H4v-6a14 14 0 0 1 14-14z" fill="rgba(255,255,255,0.28)" />

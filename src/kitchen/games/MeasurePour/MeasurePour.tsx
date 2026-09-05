@@ -16,6 +16,8 @@ import { PromptBanner } from '@/ui/kit/PromptBanner';
 import { HintBubble } from '@/ui/kit/HintBubble';
 import { Tray } from '@/ui/kit/Tray';
 import { VocabIcon } from '@/ui/kit/VocabIcon';
+import { GameCrew } from '@/characters';
+import { Stage as SceneStage } from '@/world';
 import { Stage, at } from '../../parts/Stage';
 import { CookCTA } from '../../parts/SceneBits';
 import { useRise } from '../../parts/motion';
@@ -29,13 +31,19 @@ const SPAN = INNER.h * 0.8;
 const JUG = { x: 246, y: 26, w: 118, h: 150 };
 const POUR_MS = 620;
 
-const liquidLook: Record<string, { fill: string; foam: string }> = {
-  milk: { fill: '#FBF6EC', foam: '#FFFFFF' },
-  water: { fill: '#7ED2F7', foam: '#BDECFF' },
-  flour: { fill: '#F0DFBE', foam: '#FBEFD8' },
-  sugar: { fill: '#FFF3D6', foam: '#FFFFFF' },
-  butter: { fill: '#FFDE8A', foam: '#FFEFC0' },
-  tomato: { fill: '#F2705F', foam: '#FF9C8E' },
+/**
+ * `tin` is the colour of the container the ingredient is *in*.
+ * BLOCKING DEFECT FIX: sugar is white cubes and the tin was white too, so the
+ * "azúcar" container was effectively invisible. Every pale ingredient now sits
+ * in a tin with real value contrast behind it.
+ */
+const liquidLook: Record<string, { fill: string; foam: string; tin: string }> = {
+  milk: { fill: '#FBF6EC', foam: '#FFFFFF', tin: '#9FC9E8' },
+  water: { fill: '#7ED2F7', foam: '#BDECFF', tin: '#CFEFFF' },
+  flour: { fill: '#F0DFBE', foam: '#FBEFD8', tin: '#D8C7A2' },
+  sugar: { fill: '#FFF3D6', foam: '#FFFFFF', tin: '#8FB6DA' },
+  butter: { fill: '#FFDE8A', foam: '#FFEFC0', tin: '#E5C371' },
+  tomato: { fill: '#F2705F', foam: '#FF9C8E', tin: '#FFC7BE' },
 };
 
 export function MeasurePour({ challenge, onComplete, onEvent, compact }: MiniGameProps<'measure-pour'>) {
@@ -58,7 +66,7 @@ export function MeasurePour({ challenge, onComplete, onEvent, compact }: MiniGam
   const target = challenge.target;
   const targetN = toNumber(target);
   const pouredN = toNumber(poured);
-  const look = liquidLook[challenge.ingredient.id] ?? { fill: '#7ED2F7', foam: '#BDECFF' };
+  const look = liquidLook[challenge.ingredient.id] ?? { fill: '#7ED2F7', foam: '#BDECFF', tin: '#CFEFFF' };
   const unitWord = challenge.unit === 'cup' ? 'cup' : 'spoon';
 
   useEffect(() => {
@@ -152,6 +160,9 @@ export function MeasurePour({ challenge, onComplete, onEvent, compact }: MiniGam
 
   return (
     <View style={styles.root}>
+      {/* a kitchen game belongs on a counter, not on a sky gradient */}
+      <SceneStage variant="counter" groundHeight={170} />
+      <GameCrew side="right" size={50} bottom={104} showPepper mood={done ? 'cheer' : pouring ? 'happy' : 'idle'} />
       <PromptBanner
         title={`Pour ${formatFraction(target)} ${unitWord}${targetN === 1 ? '' : 's'} of ${challenge.ingredient.en}`}
         subtitle="Press and hold the container to pour."
@@ -163,8 +174,11 @@ export function MeasurePour({ challenge, onComplete, onEvent, compact }: MiniGam
         {(s) => (
           <>
             {/* cup */}
-            <Animated.View style={[at(s, CUP.x, CUP.y, CUP.w, CUP.h), cupWobble]}>
-              <Svg width={CUP.w * s} height={CUP.h * s} viewBox={`0 0 ${CUP.w} ${CUP.h}`}>
+            {/* critique: the handle used to be clipped by the SVG box, so only
+                two nubs showed behind the right edge. The box is wider now and
+                the handle is a real three-tone object standing proud of the cup. */}
+            <Animated.View style={[at(s, CUP.x, CUP.y, CUP.w + 48, CUP.h), cupWobble]}>
+              <Svg width={(CUP.w + 48) * s} height={CUP.h * s} viewBox={`0 0 ${CUP.w + 48} ${CUP.h}`}>
                 <Defs>
                   <LinearGradient id="glass" x1="0" y1="0" x2="1" y2="0">
                     <Stop offset="0" stopColor="rgba(255,255,255,0.85)" />
@@ -173,14 +187,29 @@ export function MeasurePour({ challenge, onComplete, onEvent, compact }: MiniGam
                   </LinearGradient>
                 </Defs>
                 <Path
-                  d={`M ${CUP.w - 22} 70 q 34 8 34 44 q 0 36 -34 44`}
+                  d={`M ${CUP.w - 26} 78 q 46 10 46 52 q 0 42 -46 52`}
                   fill="none"
-                  stroke="rgba(255,255,255,0.85)"
-                  strokeWidth={14}
+                  stroke="#DCE3F0"
+                  strokeWidth={22}
                   strokeLinecap="round"
                 />
+                <Path
+                  d={`M ${CUP.w - 26} 78 q 46 10 46 52 q 0 42 -46 52`}
+                  fill="none"
+                  stroke={palette.white}
+                  strokeWidth={15}
+                  strokeLinecap="round"
+                />
+                <Path
+                  d={`M ${CUP.w - 20} 84 q 36 10 36 44`}
+                  fill="none"
+                  stroke="rgba(255,255,255,0.9)"
+                  strokeWidth={5}
+                  strokeLinecap="round"
+                />
+                <Rect x={2} y={12} width={CUP.w - 4} height={CUP.h - 18} rx={26} fill="#E4EAF5" />
                 <Rect x={6} y={16} width={CUP.w - 12} height={CUP.h - 26} rx={22} fill="url(#glass)" />
-                <Rect x={6} y={16} width={CUP.w - 12} height={CUP.h - 26} rx={22} fill="none" stroke={palette.white} strokeWidth={5} />
+                <Rect x={14} y={26} width={16} height={CUP.h - 60} rx={8} fill="rgba(255,255,255,0.6)" />
                 <Rect x={2} y={6} width={CUP.w - 4} height={20} rx={10} fill={palette.white} />
               </Svg>
             </Animated.View>
@@ -238,6 +267,14 @@ export function MeasurePour({ challenge, onComplete, onEvent, compact }: MiniGam
                   disabled={done}
                 >
                   <View style={[styles.jug, { width: JUG.w * s, height: JUG.h * s, borderRadius: 20 * s, borderWidth: 4 * s }]}>
+                    {/* the tin the ingredient sits in — gives white contents
+                        something to read against (azúcar was white on white) */}
+                    <View
+                      style={[
+                        styles.tin,
+                        { width: 78 * s, height: 78 * s, borderRadius: 26 * s, backgroundColor: look.tin },
+                      ]}
+                    />
                     <VocabIcon id={challenge.ingredient.id} size={62 * s} />
                     <Text variant="tiny" color={palette.navy} style={{ fontSize: 13 * s, lineHeight: 17 * s }}>
                       {challenge.ingredient.es}
@@ -316,6 +353,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     ...shadows.card,
   },
+  tin: { position: 'absolute', top: '14%' },
   stream: { alignItems: 'center' },
   streamBody: { flex: 1, width: '100%' },
   readout: {

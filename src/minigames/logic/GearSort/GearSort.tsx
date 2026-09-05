@@ -9,6 +9,8 @@ import { sfx } from '@/services/audio';
 import { haptics } from '@/services/haptics';
 import { speech } from '@/services/speech';
 import { Chip, EquipmentIcon, Text, TrayRow, equipmentLabel } from '@/ui';
+import { GameCrew } from '@/characters';
+import { Stage } from '@/world';
 import { Draggable } from '../shared/Draggable';
 import { GameFrame } from '../shared/GameFrame';
 import { SlotZone } from '../shared/SlotZone';
@@ -128,6 +130,12 @@ export function GearSort({ challenge, ageBand, onComplete, onEvent, compact }: M
       subtitle={ageBand === 'A' ? undefined : 'Drag each piece of gear into its bin.'}
       es={prompt.es}
       compact={compact}
+      backdrop={
+        <>
+          <Stage variant="store-room" groundHeight={150} />
+          <GameCrew side="right" size={54} bottom={compact ? 150 : 178} mood={state.phase === 'done' ? 'cheer' : Object.keys(state.placed).length > 0 ? 'happy' : 'idle'} />
+        </>
+      }
       hint={{ text: hintText, visible: hintLadder.showBubble, onDismiss: hintLadder.dismiss }}
       tray={
         <TrayRow>

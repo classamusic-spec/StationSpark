@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useReducer, useRef } from 'react';
 import { StyleSheet, View } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withSequence, withSpring, withTiming } from 'react-native-reanimated';
-import Svg from 'react-native-svg';
+import Svg, { Ellipse, G, Path } from 'react-native-svg';
 import type { MiniGameProps } from '@/minigames/types';
 import { useMiniGameSession } from '@/minigames/useMiniGameSession';
 import { palette, radii, shadows, spacing, springs } from '@/theme';
@@ -10,6 +10,8 @@ import { ResetIcon } from '@/ui/icons';
 import { sfx } from '@/services/audio';
 import { haptics } from '@/services/haptics';
 import { speech } from '@/services/speech';
+import { GameCrew } from '@/characters';
+import { Stage } from '@/world';
 import { BarrierPiece, Campfire, Cone, RingPanel, ringSlots } from '@/world/props';
 import {
   DragToken,
@@ -205,7 +207,9 @@ export function BuildBarrier({ challenge, ageBand, onComplete, onEvent, compact 
   const ringStyle = useAnimatedStyle(() => ({ transform: [{ translateX: shake.value }] }));
   const fireStyle = useAnimatedStyle(() => ({ transform: [{ scale: 1 + pop.value * 0.1 }] }));
 
-  const segPx = Math.max(20, Math.min(stage.s(26), 190 / Math.max(...pieces, 1)));
+  // critique: the longest piece (10) used to overflow the tray row and get
+  // clipped. Size a segment so the widest piece always fits one tray line.
+  const segPx = Math.max(13, Math.min(stage.s(24), (Math.min(stage.windowW, 520) - 96) / Math.max(...pieces, 1)));
 
   return (
     <GameShell
@@ -216,6 +220,8 @@ export function BuildBarrier({ challenge, ageBand, onComplete, onEvent, compact 
       onStageLayout={onLayout}
       hint={hints.bubble}
       onDismissHint={hints.dismiss}
+      backdrop={<Stage variant="park" groundHeight={150} />}
+      overlay={<GameCrew side="right" size={58} bottom={compact ? 110 : 134} showPepper mood={state.phase === 'done' ? 'cheer' : state.placed.length > 0 ? 'happy' : 'idle'} />}
       footer={
         <View style={styles.mathRow}>
           <Text variant="h3" color={filled === target ? palette.leafGreenDark : palette.navy}>
@@ -253,14 +259,44 @@ export function BuildBarrier({ challenge, ageBand, onComplete, onEvent, compact 
     >
       {ready ? (
         <View style={StyleSheet.absoluteFill}>
-          <View style={[styles.yard, { top: geo.cy - geo.radius * 1.55, height: geo.radius * 3.1 }]} pointerEvents="none" />
+          {/* the picnic clearing: a rounded grass field with a dirt patch, a
+              worn path and tufts — never a hard-cornered rectangle */}
+          <View style={[styles.yard, { top: geo.cy - geo.radius * 1.62, height: geo.radius * 3.24 }]} pointerEvents="none">
+            <View style={styles.yardLip} />
+          </View>
+          <Svg style={StyleSheet.absoluteFill} width={geo.w} height={geo.h} pointerEvents="none">
+            <Ellipse cx={geo.cx} cy={geo.cy} rx={geo.radius * 1.22} ry={geo.radius * 1.05} fill="#D8C39A" opacity={0.55} />
+            <Path
+              d={`M ${geo.cx - geo.radius * 0.2} ${geo.h} Q ${geo.cx + geo.radius * 0.4} ${geo.cy + geo.radius * 1.3} ${geo.cx + geo.radius * 0.1} ${geo.cy + geo.radius * 1.05} L ${geo.cx + geo.radius * 0.6} ${geo.cy + geo.radius * 1.15} Q ${geo.cx + geo.radius * 0.8} ${geo.cy + geo.radius * 1.6} ${geo.cx + geo.radius * 0.5} ${geo.h} Z`}
+              fill="#E4D3AE"
+              opacity={0.7}
+            />
+            {[0.1, 0.24, 0.76, 0.9].map((f, i) => (
+              <G key={`tuft${i}`}>
+                <Path
+                  d={`M ${geo.w * f} ${geo.cy + geo.radius * (i % 2 ? 1.24 : -1.24)} q ${-5} ${-12} 0 ${-17} q 5 6 0 17 z`}
+                  fill="#3E9A55"
+                />
+                <Path
+                  d={`M ${geo.w * f + 7} ${geo.cy + geo.radius * (i % 2 ? 1.24 : -1.24)} q ${-4} ${-9} 1 ${-13} q 4 5 -1 13 z`}
+                  fill={palette.grass}
+                />
+              </G>
+            ))}
+          </Svg>
 
-          {/* cones dressing the yard corners */}
-          <View style={[styles.cone, { left: stage.s(8), top: geo.cy + geo.radius * 1.1 }]} pointerEvents="none">
+          {/* cones + tape ringing the clearing */}
+          <View style={[styles.cone, { left: stage.s(6), top: geo.cy + geo.radius * 1.12 }]} pointerEvents="none">
             <Cone size={stage.s(40)} />
           </View>
-          <View style={[styles.cone, { right: stage.s(8), top: geo.cy - geo.radius * 1.35 }]} pointerEvents="none">
+          <View style={[styles.cone, { left: stage.s(6), top: geo.cy - geo.radius * 1.42 }]} pointerEvents="none">
+            <Cone size={stage.s(34)} />
+          </View>
+          <View style={[styles.cone, { right: stage.s(6), top: geo.cy - geo.radius * 1.42 }]} pointerEvents="none">
             <Cone size={stage.s(40)} />
+          </View>
+          <View style={[styles.cone, { right: stage.s(6), top: geo.cy + geo.radius * 1.12 }]} pointerEvents="none">
+            <Cone size={stage.s(34)} />
           </View>
 
           {/* the campfire in the middle */}
@@ -298,11 +334,13 @@ export function BuildBarrier({ challenge, ageBand, onComplete, onEvent, compact 
 const styles = StyleSheet.create({
   yard: {
     position: 'absolute',
-    left: 0,
-    right: 0,
-    backgroundColor: palette.grass,
-    borderRadius: 36,
+    left: -14,
+    right: -14,
+    backgroundColor: palette.grassDark,
+    borderRadius: 90,
+    overflow: 'hidden',
   },
+  yardLip: { position: 'absolute', left: 0, right: 0, top: 0, height: 10, backgroundColor: palette.grass },
   cone: { position: 'absolute' },
   fire: { position: 'absolute', alignItems: 'center', justifyContent: 'center' },
   mathRow: {

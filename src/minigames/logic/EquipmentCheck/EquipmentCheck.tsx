@@ -17,6 +17,8 @@ import { hit, palette, radii, shadows, spacing, springs } from '@/theme';
 import { sfx } from '@/services/audio';
 import { haptics } from '@/services/haptics';
 import { Button, CheckIcon, Chip, EquipmentIcon, ResetIcon, Text, TrayRow, equipmentLabel } from '@/ui';
+import { GameCrew } from '@/characters';
+import { Stage } from '@/world';
 import { AskQuestion } from '../shared/AskQuestion';
 import { Draggable } from '../shared/Draggable';
 import { GameFrame } from '../shared/GameFrame';
@@ -142,7 +144,9 @@ export function EquipmentCheck({ challenge, ageBand, onComplete, onEvent, compac
   });
 
   /* ----- geometry ----- */
-  const truckWidth = Math.min(layout.boxWidth - spacing.md * 2, layout.s(360));
+  // critique: the reference makes the engine full-bleed, filling the frame —
+  // ours was inset and read as a small cropped van.
+  const truckWidth = Math.min(layout.boxWidth, layout.s(430));
   const bay = truckBayRect(truckWidth);
   const rowHeight = bay.height / Math.max(1, challenge.items.length);
   /** each shelf sizes its own ghosts, so a row of 7 and a row of 2 both look right */
@@ -260,6 +264,12 @@ export function EquipmentCheck({ challenge, ageBand, onComplete, onEvent, compac
       title="Pack the Right Equipment"
       subtitle={ageBand === 'A' ? undefined : 'Drag the items into the truck.'}
       compact={compact}
+      backdrop={
+        <>
+          <Stage variant="yard" groundHeight={150} />
+          <GameCrew side="left" size={52} bottom={compact ? 158 : 186} showPepper mood={state.phase === 'done' ? 'cheer' : 'idle'} />
+        </>
+      }
       hint={{ text: hintText, visible: hintLadder.showBubble && state.phase === 'packing', onDismiss: hintLadder.dismiss }}
       overlay={
         askItem ? (
@@ -333,6 +343,8 @@ export function EquipmentCheck({ challenge, ageBand, onComplete, onEvent, compac
         <Animated.View style={truckStyle}>
           <TruckSide width={truckWidth} />
           <View style={[styles.bay, { left: bay.x, top: bay.y, width: bay.width, height: bay.height }]}>
+            {/* the compartment is lit from above, not a flat navy box */}
+            <View style={styles.bayLight} pointerEvents="none" />
             {challenge.items.map((item, rowIndex) => {
               const packed = Math.min(item.need, state.packed[item.id] ?? 0);
               const slotSize = slotSizeFor(item.need);
@@ -397,6 +409,7 @@ export function EquipmentCheck({ challenge, ageBand, onComplete, onEvent, compac
 const styles = StyleSheet.create({
   stage: { alignItems: 'center', justifyContent: 'center' },
   bay: { position: 'absolute', overflow: 'hidden', borderRadius: 8 },
+  bayLight: { position: 'absolute', left: 0, right: 0, top: 0, height: '38%', backgroundColor: 'rgba(255,255,255,0.14)' },
   shelf: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 4 },
   shelfDivider: { borderBottomWidth: 3, borderBottomColor: 'rgba(255,255,255,0.22)' },
   ghosts: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-evenly' },

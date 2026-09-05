@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
+import { useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { CharacterId, DialogueLine, Emotion } from '@/content/types';
 import type { EquipmentId } from '@/learning/types';
@@ -15,6 +16,7 @@ import {
   Counter,
   DispatchSlip,
   EquipmentIcon,
+  GlyphIcon,
   GrownUpChip,
   HintBubble,
   Logo,
@@ -39,6 +41,7 @@ import {
   XpBar,
   badgeIconIds,
   equipmentIds,
+  glyphIds,
   vocabIconIds,
   type ButtonSize,
   type ButtonTone,
@@ -49,15 +52,18 @@ import {
   CelebrationOverlay,
   CharacterPortrait,
   DialogueOverlay,
+  GameCrew,
   Npc,
   Pepper,
   Rookie,
   allEmotions,
   npcNames,
   npcVariants,
+  type CrewMood,
   type HelmetTone,
   type SkinTone,
 } from '@/characters';
+import { Confetti, DustPuff, Sparkles, SteamPuffs, WaterDroplets } from '@/world/fx';
 
 /* ------------------------------------------------------------------ */
 /* Gallery furniture                                                    */
@@ -114,8 +120,20 @@ const DEMO_LINES: DialogueLine[] = [
   { speaker: 'pepper', text: 'Woof! (Pepper found the ladder.)', emotion: 'excited' },
 ];
 
+/**
+ * Sections, so each can be screenshotted on its own:
+ *   /dev/kit?section=characters | icons | badges | fx | ui
+ * No `section` (or `all`) shows the whole gallery.
+ */
+type SectionName = 'characters' | 'icons' | 'badges' | 'fx' | 'ui';
+const CREW_MOODS: CrewMood[] = ['idle', 'think', 'happy', 'cheer'];
+
 export default function KitGallery() {
   const insets = useSafeAreaInsets();
+  const { section } = useLocalSearchParams<{ section?: string }>();
+  const only = typeof section === 'string' && section !== 'all' ? section : null;
+  const show = (s: SectionName) => !only || only === s;
+
   const [emotion, setEmotion] = useState<Emotion>('happy');
   const [toggle, setToggle] = useState(true);
   const [band, setBand] = useState<'A' | 'B' | 'C'>('B');
@@ -126,6 +144,7 @@ export default function KitGallery() {
   const [dialogue, setDialogue] = useState(-1);
   const [celebrate, setCelebrate] = useState(false);
   const [hint, setHint] = useState(false);
+  const [fxPlay, setFxPlay] = useState(1);
 
   const line = DEMO_LINES[dialogue];
 
@@ -135,11 +154,13 @@ export default function KitGallery() {
         <View style={styles.header}>
           <Logo size={260} />
           <Text variant="h3" center color={palette.navySoft}>
-            UI kit &amp; character gallery
+            {only ? `${only} sheet` : 'UI kit & character gallery'}
           </Text>
         </View>
 
         {/* ---------------- characters ---------------- */}
+        {show('characters') ? (
+          <>
         <Section title="Emotions" subtitle="Tap an emotion — every rig below switches to it.">
           <View style={styles.row}>
             {allEmotions.map((e) => (
@@ -239,7 +260,21 @@ export default function KitGallery() {
           </View>
         </Section>
 
+        <Section title="Game crew" subtitle="the resident cast for every mini-game — idle · think · happy · cheer">
+          <View style={styles.row}>
+            {CREW_MOODS.map((m) => (
+              <View key={m} style={styles.crewCell}>
+                <GameCrew mood={m} showPepper npc={m === 'cheer' ? 'rosa' : undefined} size={72} style={styles.crewPos} />
+                <Label>{m}</Label>
+              </View>
+            ))}
+          </View>
+        </Section>
+          </>
+        ) : null}
+
         {/* ---------------- art sheets ---------------- */}
+        {show('badges') ? (
         <Section title="Badges" subtitle={`${badgeIconIds.length} icons · locked state`}>
           <View style={styles.row}>
             {badgeIconIds.map((icon, i) => (
@@ -260,6 +295,22 @@ export default function KitGallery() {
                 <BadgeArt icon={b.icon} color={b.color} size={72} />
               </Cell>
             ))}
+          </View>
+        </Section>
+        ) : null}
+
+        {show('icons') ? (
+          <>
+        <Section title="Glyphs" subtitle={`${glyphIds.length} drawn UI marks — the emoji replacements`}>
+          <View style={styles.row}>
+            {glyphIds.map((id) => (
+              <Cell key={id} label={id} width={72}>
+                <GlyphIcon id={id} size={40} />
+              </Cell>
+            ))}
+            <Cell label="muted" width={72}>
+              <GlyphIcon id="star" size={40} muted />
+            </Cell>
           </View>
         </Section>
 
@@ -291,9 +342,54 @@ export default function KitGallery() {
               <VocabIcon id="not-a-real-word" size={56} />
             </Cell>
           </View>
+          <Text variant="tiny" color={palette.navyMuted}>
+            Contrast check — the same icons on a white tile:
+          </Text>
+          <View style={[styles.row, styles.whiteRow]}>
+            {(['sugar', 'egg', 'milk', 'flour', 'cloud', 'bunny', 'rain', 'sheep', 'rice', 'salt'] as const).map((id) => (
+              <Cell key={id} label={id} width={72}>
+                <VocabIcon id={id} size={56} />
+              </Cell>
+            ))}
+          </View>
         </Section>
+          </>
+        ) : null}
+
+        {/* ---------------- particle FX ---------------- */}
+        {show('fx') ? (
+        <Section title="Particle FX" subtitle="from @/world/fx — steam and water loop, the rest fire on trigger">
+          <View style={styles.row}>
+            <Button label="Fire all" tone="blue" size="md" onPress={() => setFxPlay((n) => n + 1)} />
+          </View>
+          <View style={styles.fxRow}>
+            <View style={styles.fxCell}>
+              <SteamPuffs x={56} y={92} count={6} />
+              <Label>SteamPuffs</Label>
+            </View>
+            <View style={styles.fxCell}>
+              <WaterDroplets x={56} y={80} trigger={fxPlay} radius={40} />
+              <Label>WaterDroplets</Label>
+            </View>
+            <View style={styles.fxCell}>
+              <Sparkles x={56} y={60} trigger={fxPlay} />
+              <Label>Sparkles</Label>
+            </View>
+            <View style={styles.fxCell}>
+              <DustPuff x={56} y={96} trigger={fxPlay} />
+              <Label>DustPuff</Label>
+            </View>
+            <View style={styles.fxCell}>
+              <Confetti trigger={fxPlay} width={112} height={120} count={18} />
+              <Label>Confetti</Label>
+            </View>
+          </View>
+        </Section>
+        ) : null}
 
         {/* ---------------- primitives ---------------- */}
+        {show('ui') ? (
+          <>
         <Section title="Buttons" subtitle="every tone · every size · glow CTA">
           <View style={styles.row}>
             {TONES.map((tone) => (
@@ -448,6 +544,8 @@ export default function KitGallery() {
             </TrayRow>
           </Tray>
         </Section>
+          </>
+        ) : null}
       </ScrollView>
 
       {/* overlays */}
@@ -500,6 +598,20 @@ const styles = StyleSheet.create({
   ghostRow: { backgroundColor: palette.charcoal, borderRadius: radii.tile, padding: spacing.sm },
   ghostCell: { padding: 4 },
   boardTile: { width: 82, alignItems: 'center', gap: 2 },
+  crewCell: { width: 190, height: 132, alignItems: 'center', justifyContent: 'flex-end' },
+  crewPos: { position: 'absolute', left: 0, bottom: 18 },
+  whiteRow: { backgroundColor: palette.white, borderRadius: radii.tile, padding: spacing.sm },
+  fxRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+  fxCell: {
+    width: 112,
+    height: 138,
+    backgroundColor: 'rgba(255,255,255,0.55)',
+    borderRadius: radii.tile,
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    paddingBottom: 4,
+    overflow: 'hidden',
+  },
   glowRow: { alignItems: 'center', paddingVertical: spacing.sm },
   blockBtn: { flexGrow: 1, minWidth: 200 },
   fxBox: { alignItems: 'center', justifyContent: 'center' },

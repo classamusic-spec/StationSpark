@@ -27,9 +27,9 @@ const Bloom = memo(function Bloom({ size }: { size: number }) {
         </RadialGradient>
       </Defs>
       <Circle cx={c} cy={c} r={c} fill="url(#sunWash)" />
-      <Circle cx={c} cy={c} r={size * 0.34} fill="url(#sunHalo)" />
-      <Circle cx={c} cy={c} r={size * 0.19} fill={palette.safetyYellow} />
-      <Circle cx={c - size * 0.05} cy={c - size * 0.055} r={size * 0.07} fill="#FFF6D2" opacity={0.75} />
+      <Circle cx={c} cy={c} r={size * 0.3} fill="url(#sunHalo)" />
+      <Circle cx={c} cy={c} r={size * 0.13} fill={palette.safetyYellow} opacity={0.9} />
+      <Circle cx={c - size * 0.035} cy={c - size * 0.04} r={size * 0.05} fill="#FFF6D2" opacity={0.7} />
     </Svg>
   );
 });

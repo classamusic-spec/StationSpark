@@ -22,7 +22,9 @@ import { GrownUpChip } from '@/ui/kit/Chip';
 import { HintBubble } from '@/ui/kit/HintBubble';
 import { Tray } from '@/ui/kit/Tray';
 import { VocabIcon } from '@/ui/kit/VocabIcon';
-import { CharacterPortrait } from '@/characters/CharacterPortrait';
+import { GameCrew } from '@/characters';
+import { Stage as SceneStage } from '@/world';
+import { CrewFigure } from '@/world/scenes';
 import { RecipeCardFrame } from '../../parts/RecipeCardFrame';
 import { CookCTA, PotArt } from '../../parts/SceneBits';
 import { pluralEn } from '../../spanish';
@@ -128,6 +130,8 @@ export function RecipeScale({
 
   return (
     <View style={styles.root}>
+      {/* the pot stands on a kitchen counter, not in the sky */}
+      <SceneStage variant="counter" groundHeight={170} />
       <PromptBanner
         title={`${challenge.eating} are eating!`}
         subtitle={`This recipe serves ${challenge.serves}. Set the new amounts.`}
@@ -172,6 +176,7 @@ export function RecipeScale({
 
       <View style={styles.potRow}>
         <PotArt size={140} bubbling={cooking} />
+        <GameCrew side="right" size={52} bottom={12} showPepper npc="rosa" mood={cooking ? 'cheer' : allCorrect ? 'happy' : 'idle'} />
       </View>
 
       <Tray tone="cream">
@@ -218,7 +223,8 @@ function CrewRow({
               .damping(13)}
             style={extraFrom !== undefined && i >= extraFrom ? styles.crewExtra : undefined}
           >
-            <CharacterPortrait id={CREW[i % CREW.length] ?? 'rookie'} size={26} />
+            {/* critique #23 — full rigs, not heads in circles */}
+            <CrewFigure id={CREW[i % CREW.length] ?? 'rookie'} size={46} bobPhase={i * 0.4} />
           </Animated.View>
         ))}
       </View>
@@ -272,22 +278,29 @@ function ScaleLine({
     <Animated.View entering={FadeInDown.delay(index * 70).springify()}>
       <Animated.View style={fb.style}>
         <View style={[styles.line, correct && styles.lineDone]}>
-          <VocabIcon id={icon} size={38} />
+          <VocabIcon id={icon} size={34} />
+          {/* BLOCKING DEFECT FIX: six labels were truncated ("mushr…",
+              "champiñ…", "tomate · …"). Names now wrap onto two lines and the
+              "was N" note sits on its own line — the layout gives, not the word. */}
           <View style={styles.lineText}>
-            <Text variant="bodyStrong" color={palette.navy} numberOfLines={1}>
+            <Text variant="bodyStrong" color={palette.navy} numberOfLines={2} style={styles.lineName}>
               {pluralEn(en, value)}
             </Text>
-            <Text variant="tiny" color={palette.purple} numberOfLines={1}>
-              {es} · was {was}
+            <Text variant="tiny" color={palette.purple} numberOfLines={2} style={styles.lineEs}>
+              {es}
+            </Text>
+            <Text variant="tiny" color={palette.navyMuted} numberOfLines={1} style={styles.lineWas}>
+              was {was}
             </Text>
           </View>
-          <Stepper label="−" onPress={() => onStep(-1)} disabled={disabled || value <= 0} />
+          {/* red is brand energy, never a destructive control: minus is neutral */}
+          <Stepper label="−" tone="neutral" onPress={() => onStep(-1)} disabled={disabled || value <= 0} />
           <Animated.View style={[styles.value, numStyle]}>
             <Text variant="h1" color={correct ? palette.leafGreenDark : palette.navy}>
               {value}
             </Text>
           </Animated.View>
-          <Stepper label="+" onPress={() => onStep(1)} disabled={disabled} />
+          <Stepper label="+" tone="add" onPress={() => onStep(1)} disabled={disabled} />
         </View>
       </Animated.View>
     </Animated.View>
@@ -296,10 +309,12 @@ function ScaleLine({
 
 function Stepper({
   label,
+  tone,
   onPress,
   disabled,
 }: {
   label: string;
+  tone: 'neutral' | 'add';
   onPress: () => void;
   disabled?: boolean;
 }) {
@@ -310,9 +325,9 @@ function Stepper({
       onPress={onPress}
       disabled={disabled}
       hitSlop={6}
-      style={[styles.stepper, disabled && styles.stepperOff]}
+      style={[styles.stepper, tone === 'add' ? styles.stepperAdd : styles.stepperNeutral, disabled && styles.stepperOff]}
     >
-      <Text variant="h1" color={palette.white}>
+      <Text variant="h1" color={tone === 'add' ? palette.white : palette.navy}>
         {label}
       </Text>
     </Pressable>
@@ -345,18 +360,22 @@ const styles = StyleSheet.create({
     ...shadows.soft,
   },
   lineDone: { borderColor: palette.leafGreen, backgroundColor: palette.mint },
-  lineText: { flex: 1 },
-  value: { minWidth: 46, alignItems: 'center' },
+  lineText: { flex: 1, minWidth: 84 },
+  lineName: { fontSize: 16, lineHeight: 19 },
+  lineEs: { fontSize: 12, lineHeight: 14 },
+  lineWas: { fontSize: 11, lineHeight: 13 },
+  value: { minWidth: 40, alignItems: 'center' },
   stepper: {
     width: 56,
     height: 56,
     borderRadius: 18,
-    backgroundColor: palette.engineRed,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 2,
     borderColor: 'rgba(255,255,255,0.35)',
   },
+  stepperNeutral: { backgroundColor: palette.creamDeep },
+  stepperAdd: { backgroundColor: palette.leafGreen },
   stepperOff: { backgroundColor: palette.lockedGrey },
   potRow: { flex: 1, alignItems: 'center', justifyContent: 'flex-end', paddingBottom: spacing.xs },
   trayRow: {

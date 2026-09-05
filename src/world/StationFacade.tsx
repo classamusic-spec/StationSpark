@@ -10,7 +10,7 @@ import { HIGHLIGHT, SHADE, SHADE_DEEP, SHADOW_FILL, SHADOW_OPACITY } from './ton
  * y 40–188 roof and bell gable · 184–418 wall (sign, room grid, plates)
  * 412–488 garage band · 486–566 the apron the crew and the props stand on.
  */
-export const FACADE_VB = { w: 360, h: 566 } as const;
+export const FACADE_VB = { w: 360, h: 548 } as const;
 
 const GRID = { x: 30, y: 216, w: 300, h: 164, cols: 3, rows: 2, gap: 9 } as const;
 
@@ -69,7 +69,7 @@ export function facadeLayout(width: number): FacadeLayout {
     scale,
     px,
     tiles,
-    sign: { x: px(68), y: px(164), w: px(224), h: px(42) },
+    sign: { x: px(64), y: px(162), w: px(232), h: px(41) },
     bell: { x: px(162), y: px(104), size: px(36) },
     flag: { x: px(282), y: px(46), width: px(52), poleHeight: px(104) },
     chimney: { x: px(38), y: px(64), size: px(30) },
@@ -221,18 +221,21 @@ function ApronCone({ x, y, h = 26 }: { x: number; y: number; h?: number }) {
   );
 }
 
-/** The wall-mounted hose reel between the bays. */
+/** The wall-mounted hose reel between the bays, on its own backing plate. */
 function HoseReel({ x, y }: { x: number; y: number }) {
   return (
     <G>
-      <Rect x={x - 15} y={y - 3} width={30} height={5} rx={2.5} fill={SHADE_DEEP} />
-      <Circle cx={x} cy={y + 15} r={15} fill={palette.charcoal} />
-      <Circle cx={x} cy={y + 15} r={12.5} fill={palette.engineRed} />
-      <Circle cx={x} cy={y + 15} r={9} fill={palette.engineRedDark} />
-      <Circle cx={x} cy={y + 15} r={5.4} fill={palette.slateLight} />
-      <Path d={`M ${x - 12} ${y + 12} a 12 12 0 0 1 8 -8`} stroke={HIGHLIGHT} strokeWidth={3} fill="none" strokeLinecap="round" />
-      <Path d={`M ${x + 11} ${y + 20} q 6 8 2 14`} stroke={palette.safetyYellow} strokeWidth={3.4} fill="none" strokeLinecap="round" />
-      <Circle cx={x} cy={y + 15} r={2} fill={palette.charcoalDark} />
+      {/* backing plate, so the reel is mounted rather than floating */}
+      <Rect x={x - 17} y={y - 4} width={34} height={44} rx={9} fill={SHADE_DEEP} />
+      <Rect x={x - 15} y={y - 2} width={30} height={40} rx={8} fill={palette.creamDeep} />
+      <Rect x={x - 15} y={y - 2} width={30} height={5} rx={2.5} fill={HIGHLIGHT} />
+      <Circle cx={x} cy={y + 17} r={13} fill={palette.charcoal} />
+      <Circle cx={x} cy={y + 16} r={11} fill={palette.engineRed} />
+      <Circle cx={x} cy={y + 16} r={7.6} fill={palette.engineRedDark} />
+      <Circle cx={x} cy={y + 16} r={4.4} fill={palette.slateLight} />
+      <Path d={`M ${x - 9} ${y + 12} a 10 10 0 0 1 6 -6`} stroke={HIGHLIGHT} strokeWidth={2.6} fill="none" strokeLinecap="round" />
+      <Path d={`M ${x + 9} ${y + 21} q 5 7 1 12`} stroke={palette.safetyYellow} strokeWidth={3} fill="none" strokeLinecap="round" />
+      <Circle cx={x} cy={y + 16} r={1.8} fill={palette.charcoalDark} />
     </G>
   );
 }
@@ -257,12 +260,22 @@ function NoticeBoard({ x, y }: { x: number; y: number }) {
 function AddressPlate({ x, y }: { x: number; y: number }) {
   return (
     <G>
-      <Rect x={x} y={y} width={40} height={20} rx={6} fill={palette.navy} />
-      <Rect x={x + 2} y={y + 2} width={36} height={13} rx={5} fill="#2E3C74" />
-      <SvgText x={x + 20} y={y + 15} fontFamily={fontFamily.display} fontSize={13} fontWeight="700" fill={palette.cream} textAnchor="middle">
-        1
+      <Rect x={x - 1} y={y + 1} width={52} height={22} rx={7} fill={SHADE} />
+      <Rect x={x} y={y} width={52} height={22} rx={7} fill={palette.cream} />
+      <Rect x={x} y={y} width={52} height={5} rx={2.5} fill={HIGHLIGHT} />
+      <Rect x={x} y={y + 17} width={52} height={5} rx={2.5} fill={SHADE} />
+      <SvgText
+        x={x + 26}
+        y={y + 16}
+        fontFamily={fontFamily.display}
+        fontSize={12}
+        fontWeight="700"
+        fill={palette.navy}
+        textAnchor="middle"
+        letterSpacing={0.4}
+      >
+        No. 1
       </SvgText>
-      <Rect x={x + 5} y={y + 3} width={11} height={2.4} rx={1.2} fill={HIGHLIGHT} />
     </G>
   );
 }
@@ -367,6 +380,16 @@ export const StationFacade = memo(function StationFacade({ width, unlocked = [] 
       {/* roof soffit shadow: the eaves sitting on the wall (critique #4) */}
       <Rect x={14} y={184} width={332} height={16} rx={6} fill="url(#soffit)" />
       <Rect x={24} y={200} width={312} height={4} rx={2} fill={HIGHLIGHT} />
+
+      {/* ── the STATION SPARK name board (the screen lays the text over it) ── */}
+      <G>
+        <Rect x={60} y={158} width={240} height={54} rx={20} fill={SHADOW_FILL} opacity={0.16} />
+        <Rect x={60} y={156} width={240} height={52} rx={20} fill={palette.tanDark} />
+        <Rect x={64} y={160} width={232} height={44} rx={17} fill={palette.cream} />
+        <Rect x={64} y={160} width={232} height={6} rx={3} fill={HIGHLIGHT} />
+        <Rect x={64} y={198} width={232} height={6} rx={3} fill={SHADE} />
+      </G>
+
       {/* pilasters between the rooms */}
       <Rect x={GRID.x + tileW + 1} y={206} width={5} height={190} rx={2} fill={palette.tanDark} opacity={0.4} />
       <Rect x={GRID.x + 2 * (tileW + GRID.gap) - 6} y={206} width={5} height={190} rx={2} fill={palette.tanDark} opacity={0.4} />
@@ -441,43 +464,48 @@ export const StationFacade = memo(function StationFacade({ width, unlocked = [] 
       {/* ── the apron ────────────────────────────────────────────────── */}
       {/* the slab, splayed a little wider at the front so it reads as ground */}
       <Path
-        d={`M 4 ${APRON_Y} L 356 ${APRON_Y} Q 372 ${APRON_Y + 40} 376 566 L -16 566 Q -12 ${APRON_Y + 40} 4 ${APRON_Y} Z`}
+        d={`M 6 ${APRON_Y} L 354 ${APRON_Y} Q 368 ${APRON_Y + 34} 372 548 L -12 548 Q -8 ${APRON_Y + 34} 6 ${APRON_Y} Z`}
         fill="url(#apronGrad)"
       />
       {/* soft top lip, never a hard seam (rule #7) */}
-      <Path d={`M 4 ${APRON_Y} L 356 ${APRON_Y} Q 358 ${APRON_Y + 5} 358 ${APRON_Y + 8} L 2 ${APRON_Y + 8} Q 2 ${APRON_Y + 5} 4 ${APRON_Y} Z`} fill="#EDF1F8" />
+      <Path d={`M 6 ${APRON_Y} L 354 ${APRON_Y} Q 356 ${APRON_Y + 5} 356 ${APRON_Y + 8} L 4 ${APRON_Y + 8} Q 4 ${APRON_Y + 5} 6 ${APRON_Y} Z`} fill="#EDF1F8" />
       {/* the building's cast shadow spilling onto it */}
-      <Rect x={-6} y={APRON_Y} width={372} height={26} fill="url(#baseShade)" />
+      <Rect x={-6} y={APRON_Y} width={372} height={22} fill="url(#baseShade)" />
       {/* tyre marks rolling out of both bays */}
-      <Path d={`M 62 ${APRON_Y + 6} Q 56 ${APRON_Y + 40} 44 566`} stroke={SHADE} strokeWidth={9} fill="none" strokeLinecap="round" />
-      <Path d={`M 126 ${APRON_Y + 6} Q 128 ${APRON_Y + 40} 128 566`} stroke={SHADE} strokeWidth={9} fill="none" strokeLinecap="round" />
-      <Path d={`M 232 ${APRON_Y + 6} Q 232 ${APRON_Y + 40} 234 566`} stroke={SHADE} strokeWidth={9} fill="none" strokeLinecap="round" />
-      <Path d={`M 296 ${APRON_Y + 6} Q 302 ${APRON_Y + 40} 314 566`} stroke={SHADE} strokeWidth={9} fill="none" strokeLinecap="round" />
-      {/* the yellow guide dashes down the centre of each bay */}
-      {[176, 184].map((x, i) => (
-        <Rect key={x} x={x - 3} y={APRON_Y + 30 + i * 2} width={7} height={20} rx={3.5} fill={palette.safetyYellow} opacity={0.9} />
-      ))}
-      {[
-        [40, 552],
-        [86, 560],
-        [274, 560],
-        [322, 552],
-      ].map(([x, y]) => (
-        <Rect key={`${x}-${y}`} x={x! - 9} y={y!} width={18} height={5} rx={2.5} fill={palette.safetyYellow} opacity={0.7} />
+      <Path d={`M 66 ${APRON_Y + 6} Q 58 ${APRON_Y + 32} 46 548`} stroke={SHADE} strokeWidth={9} fill="none" strokeLinecap="round" />
+      <Path d={`M 126 ${APRON_Y + 6} Q 126 ${APRON_Y + 32} 124 548`} stroke={SHADE} strokeWidth={9} fill="none" strokeLinecap="round" />
+      <Path d={`M 234 ${APRON_Y + 6} Q 234 ${APRON_Y + 32} 236 548`} stroke={SHADE} strokeWidth={9} fill="none" strokeLinecap="round" />
+      <Path d={`M 294 ${APRON_Y + 6} Q 302 ${APRON_Y + 32} 314 548`} stroke={SHADE} strokeWidth={9} fill="none" strokeLinecap="round" />
+      {/* the yellow guide dashes between the bays */}
+      {[0, 1].map((i) => (
+        <Rect key={i} x={177} y={APRON_Y + 18 + i * 15} width={7} height={11} rx={3.5} fill={palette.safetyYellow} opacity={0.9} />
       ))}
 
       {/* ── apron dressing (critique #3) ─────────────────────────────── */}
-      <ApronHydrant x={26} y={534} s={0.95} />
-      <CoiledHose x={72} y={548} s={0.9} />
-      <Bollard x={158} y={528} h={30} />
-      <Bollard x={202} y={528} h={30} />
-      <ApronCone x={296} y={540} h={26} />
+      {/* set back up the apron so the crew standing at the front edge never
+          covers them */}
+      <ApronHydrant x={96} y={520} s={0.8} />
+      <CoiledHose x={138} y={526} s={0.74} />
+      <Bollard x={172} y={516} h={26} />
+      <Bollard x={200} y={516} h={26} />
+      <ApronCone x={276} y={522} h={24} />
       {/* the yard drain, so the apron reads as a real surface */}
       <G>
-        <Rect x={330} y={516} width={26} height={12} rx={5} fill={SHADE_DEEP} />
-        <Rect x={332} y={518} width={22} height={8} rx={4} fill="#AEB6CC" />
-        <Rect x={334} y={520} width={18} height={1.8} rx={0.9} fill={SHADE_DEEP} />
-        <Rect x={334} y={523} width={18} height={1.8} rx={0.9} fill={SHADE_DEEP} />
+        <Rect x={224} y={506} width={24} height={11} rx={5} fill={SHADE_DEEP} />
+        <Rect x={226} y={508} width={20} height={7} rx={3.5} fill="#AEB6CC" />
+        <Rect x={228} y={509.6} width={16} height={1.6} rx={0.8} fill={SHADE_DEEP} />
+        <Rect x={228} y={512.4} width={16} height={1.6} rx={0.8} fill={SHADE_DEEP} />
+      </G>
+      {/* hedges tucking the apron's edges into the ground plane */}
+      <G>
+        <Ellipse cx={4} cy={506} rx={30} ry={19} fill="#3F944E" />
+        <Ellipse cx={-4} cy={514} rx={30} ry={18} fill="#4FA858" />
+        <Ellipse cx={16} cy={512} rx={16} ry={11} fill="#4FA858" />
+        <Ellipse cx={8} cy={504} rx={11} ry={6} fill={HIGHLIGHT} />
+        <Ellipse cx={356} cy={506} rx={30} ry={19} fill="#3F944E" />
+        <Ellipse cx={364} cy={514} rx={30} ry={18} fill="#4FA858" />
+        <Ellipse cx={344} cy={512} rx={16} ry={11} fill="#4FA858" />
+        <Ellipse cx={348} cy={504} rx={11} ry={6} fill={HIGHLIGHT} />
       </G>
     </Svg>
   );

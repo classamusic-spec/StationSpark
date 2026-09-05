@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Pressable, StyleSheet, View, type LayoutChangeEvent } from 'react-native';
 import Animated, { FadeInDown, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { useFocusEffect, useRouter, type Href } from 'expo-router';
-import Svg, { Circle, Path } from 'react-native-svg';
+import Svg, { Circle, Defs, Ellipse, Path, RadialGradient, Stop } from 'react-native-svg';
 import { durations, easings, hit, palette, radii, shadows, spacing, timings } from '@/theme';
 import { Button, ChevronRightIcon, GearIcon, Logo, RoundIconButton, ScreenFrame, Text, TopBar } from '@/ui';
 import { sfx } from '@/services/audio';
@@ -11,7 +11,7 @@ import { speech } from '@/services/speech';
 import { useGame } from '@/state/store';
 import { useShiftSummary } from '@/state/selectors';
 import { useShift } from '@/hooks/useShift';
-import { Bell, ChimneySmoke, CatWindow, DoorLight, FACADE_VB, Flag, Pigeon, StationFacade, TownBackdrop, facadeLayout } from '@/world';
+import { Bell, ChimneySmoke, CatWindow, DoorLight, FACADE_VB, Flag, Neighbours, Pigeon, StationFacade, TownBackdrop, facadeLayout } from '@/world';
 import { Rookie } from '@/characters/Rookie';
 import { Beacon } from '@/characters/Beacon';
 import { Pepper } from '@/characters/Pepper';
@@ -57,8 +57,17 @@ function GrownUpsPill({ onPress }: { onPress: () => void }) {
   );
 }
 
-/** vertical space reserved below the station façade for the crew + CTA */
-const CREW_ZONE = 128;
+/**
+ * Vertical space reserved below the station for the crew + CTA.
+ *
+ * The façade now carries its own apron (the slab the hydrant, hose, bollards
+ * and cone stand on), so the crew stands *in front of* the building on the
+ * grass rather than in a gap under it — which lets the whole station sit ~15 %
+ * larger in frame and closes the empty sky at the top (critique #5).
+ */
+const CREW_ZONE = 84;
+/** how far the apron runs on behind the crew and the CTA */
+const APRON_OVERLAP = 8;
 
 export function FirehouseScreen() {
   const router = useRouter();
@@ -153,13 +162,27 @@ export function FirehouseScreen() {
   }, [router, shift, shiftActive]);
 
   const crew = useMemo(() => {
-    const base = station?.height ?? 320;
+    const base = station ? station.apronTop : 320;
     return {
-      rookie: Math.max(104, Math.min(170, base * 0.4)),
-      beacon: Math.max(70, Math.min(120, base * 0.27)),
-      pepper: Math.max(62, Math.min(104, base * 0.24)),
+      rookie: Math.max(96, Math.min(150, base * 0.37)),
+      beacon: Math.max(62, Math.min(100, base * 0.24)),
+      pepper: Math.max(58, Math.min(94, base * 0.23)),
     };
-  }, [station?.height]);
+  }, [station]);
+
+  /** wide enough that the longest greeting never truncates (rule #10) */
+  const bubbleW = Math.max(150, Math.min(206, stage.w * 0.54));
+
+  /** the neighbouring block, sitting on the same ground line as the apron */
+  const block = useMemo(() => {
+    if (!station || stage.w < 40) return null;
+    const width = stage.w * 1.5;
+    return {
+      width,
+      left: (stage.w - width) / 2,
+      bottom: CREW_ZONE - APRON_OVERLAP + (station.height - station.apronTop) - 10,
+    };
+  }, [stage.w, station]);
 
   return (
     <ScreenFrame
@@ -180,7 +203,7 @@ export function FirehouseScreen() {
     >
       <View style={[styles.body, { maxWidth: layout.contentWidth }]}>
         <Animated.View entering={FadeInDown.springify().damping(18)} style={styles.logo}>
-          <Logo size={Math.min(layout.s(168), 210)} />
+          <Logo size={Math.min(layout.s(152), 200)} />
         </Animated.View>
 
         <View style={styles.chipRow}>
@@ -191,6 +214,9 @@ export function FirehouseScreen() {
         <View style={styles.stage} onLayout={onStage}>
           {station ? (
             <>
+              {/* the block behind the station: neighbour rooftops + a tree mass */}
+              {block ? <Neighbours width={block.width} style={{ left: block.left, bottom: block.bottom }} /> : null}
+
               <Animated.View style={[styles.stationWrap, { width: station.width, height: station.height }, zoomStyle]}>
                 <StationFacade width={station.width} unlocked={unlocked} />
 
@@ -237,13 +263,31 @@ export function FirehouseScreen() {
                 </View>
               </Animated.View>
 
-              {/* crew */}
-              <View style={[styles.crewLeft, { bottom: 10 }]} pointerEvents="none">
-                <GreetingBubble lines={greetings} maxWidth={Math.min(210, stage.w * 0.56)} />
+              {/* crew — standing on the ground in front of the apron */}
+              <View style={[styles.crewLeft, { bottom: 12 }]} pointerEvents="none">
                 <Rookie size={crew.rookie} avatar={profile.avatar} pose="wave" emotion="happy" />
+                {/* the greeting reads out of Rookie's shoulder, so it never
+                    sits over the room tiles */}
+                <View style={[styles.bubble, { left: crew.rookie * 0.5, bottom: crew.rookie * 0.66, width: bubbleW }]}>
+                  <GreetingBubble lines={greetings} maxWidth={bubbleW} />
+                </View>
               </View>
-              <View style={[styles.crewRight, { bottom: 8 }]} pointerEvents="none">
-                <Beacon size={crew.beacon} emotion="happy" style={styles.beacon} />
+              <View style={[styles.crewRight, { bottom: 10 }]} pointerEvents="none">
+                <View style={[styles.beacon, { width: crew.beacon }]}>
+                  <Beacon size={crew.beacon} emotion="happy" />
+                  {/* the cyan pool Beacon's hover throws onto the ground */}
+                  <View style={styles.beaconGlow}>
+                    <Svg width={crew.beacon * 0.9} height={crew.beacon * 0.28} viewBox="0 0 90 28">
+                      <Defs>
+                        <RadialGradient id="beaconPool" cx="50%" cy="50%" r="50%">
+                          <Stop offset="0" stopColor={palette.waterCyan} stopOpacity={0.5} />
+                          <Stop offset="1" stopColor={palette.waterCyan} stopOpacity={0} />
+                        </RadialGradient>
+                      </Defs>
+                      <Ellipse cx={45} cy={14} rx={45} ry={14} fill="url(#beaconPool)" />
+                    </Svg>
+                  </View>
+                </View>
                 <Pepper size={crew.pepper} emotion="happy" wag />
               </View>
 
@@ -271,16 +315,18 @@ export function FirehouseScreen() {
 
 const styles = StyleSheet.create({
   body: { flex: 1, width: '100%', alignSelf: 'center', paddingHorizontal: spacing.sm },
-  logo: { alignItems: 'center', marginTop: 40 },
-  chipRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: spacing.xs, marginTop: spacing.xs },
-  stage: { flex: 1, alignItems: 'center', justifyContent: 'flex-end', marginTop: spacing.xs },
-  stationWrap: { position: 'absolute', bottom: CREW_ZONE - 10, alignSelf: 'center' },
+  logo: { alignItems: 'center', marginTop: 6 },
+  chipRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: spacing.xs, marginTop: spacing.xxs },
+  stage: { flex: 1, alignItems: 'center', justifyContent: 'flex-end', marginTop: 2 },
+  stationWrap: { position: 'absolute', bottom: CREW_ZONE - APRON_OVERLAP, alignSelf: 'center' },
   abs: { position: 'absolute' },
   sign: { alignItems: 'center', justifyContent: 'center' },
-  crewLeft: { position: 'absolute', left: 0, alignItems: 'flex-start', gap: 2 },
-  crewRight: { position: 'absolute', right: 2, flexDirection: 'row', alignItems: 'flex-end', gap: 0 },
-  beacon: { marginBottom: 58, marginRight: -6 },
-  ctaWrap: { position: 'absolute', bottom: -6, left: 0, right: 0, alignItems: 'center', paddingHorizontal: spacing.lg },
+  crewLeft: { position: 'absolute', left: -8, alignItems: 'flex-start' },
+  bubble: { position: 'absolute' },
+  crewRight: { position: 'absolute', right: -6, flexDirection: 'row', alignItems: 'flex-end', gap: 0 },
+  beacon: { marginBottom: 34, marginRight: -10 },
+  beaconGlow: { position: 'absolute', left: '5%', bottom: -10, alignItems: 'center' },
+  ctaWrap: { position: 'absolute', bottom: -4, left: 0, right: 0, alignItems: 'center', paddingHorizontal: spacing.lg },
   cta: { minWidth: 220, maxWidth: 300, alignSelf: 'center' },
   grownUps: {
     flexDirection: 'row',

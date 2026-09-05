@@ -103,23 +103,35 @@ export function Campfire({ size = 120, calm }: { size?: number; calm?: boolean }
   const s = size;
   return (
     <Svg width={s} height={s} viewBox="0 0 120 120">
-      <Ellipse cx={60} cy={64} rx={46} ry={40} fill="#D8C39A" />
+      <Ellipse cx={60} cy={66} rx={46} ry={40} fill="#D8C39A" />
       <Ellipse cx={60} cy={64} rx={34} ry={29} fill="#C0A97E" />
+      {/* ring of stones: base → navy shade → white highlight, per stone */}
       {Array.from({ length: 10 }, (_, i) => {
         const a = (i / 10) * Math.PI * 2;
+        const cx = 60 + Math.cos(a) * 42;
+        const cy = 64 + Math.sin(a) * 36;
         return (
-          <Ellipse
-            key={i}
-            cx={60 + Math.cos(a) * 42}
-            cy={64 + Math.sin(a) * 36}
-            rx={11}
-            ry={9}
-            fill={i % 2 ? '#B9BFD1' : '#9FA7BE'}
-          />
+          <G key={i}>
+            <Ellipse cx={cx} cy={cy + 5} rx={11} ry={4} fill={palette.navy} opacity={0.12} />
+            <Ellipse cx={cx} cy={cy} rx={11} ry={9} fill={i % 2 ? '#BCC3D5' : '#A6AEC5'} />
+            <Ellipse cx={cx} cy={cy + 3.5} rx={10} ry={5} fill="rgba(31,42,90,0.14)" />
+            <Ellipse cx={cx - 3} cy={cy - 3.4} rx={4.6} ry={2.8} fill="rgba(255,255,255,0.32)" />
+          </G>
         );
       })}
-      <Rect x={34} y={58} width={52} height={11} rx={5.5} fill={palette.wood} transform="rotate(-16 60 64)" />
-      <Rect x={34} y={58} width={52} height={11} rx={5.5} fill={palette.woodDark} transform="rotate(20 60 64)" />
+      {/* two split logs with cut ends and grain */}
+      <G transform="rotate(-16 60 64)">
+        <Rect x={34} y={58} width={52} height={12} rx={6} fill={palette.wood} />
+        <Rect x={34} y={58} width={52} height={4} rx={2} fill="rgba(255,255,255,0.32)" />
+        <Ellipse cx={84} cy={64} rx={4.4} ry={6} fill="#E4C08C" />
+        <Ellipse cx={84} cy={64} rx={2} ry={2.8} fill={palette.woodDark} />
+      </G>
+      <G transform="rotate(20 60 64)">
+        <Rect x={34} y={58} width={52} height={12} rx={6} fill={palette.woodDark} />
+        <Rect x={34} y={58} width={52} height={4} rx={2} fill="rgba(255,255,255,0.18)" />
+        <Ellipse cx={36} cy={64} rx={4.4} ry={6} fill="#D3AA79" />
+        <Ellipse cx={36} cy={64} rx={2} ry={2.8} fill="#7C5228" />
+      </G>
       {calm ? (
         <G>
           <Circle cx={50} cy={58} r={4} fill={palette.navy} />

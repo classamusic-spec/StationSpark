@@ -1,18 +1,30 @@
-import React from 'react';
-import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
+import React, { useEffect } from 'react';
+import { StyleSheet, View, type LayoutChangeEvent, type StyleProp, type ViewStyle } from 'react-native';
 import Animated, { FadeInUp } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { palette, radii, shadows, spacing } from '@/theme';
+import { setTrayHeight } from './playArea';
 
 /**
  * Bottom tray that holds draggable items / answer tiles / action buttons.
  * White with big rounded top corners; safe-area aware.
+ *
+ * It reports its measured height so Beacon's hint bubble can float *above* the
+ * tray instead of on top of the answer tiles (see `playArea.ts`).
  */
 export function Tray({ children, style, tone = 'white' }: { children: React.ReactNode; style?: StyleProp<ViewStyle>; tone?: 'white' | 'glass' | 'cream' }) {
   const insets = useSafeAreaInsets();
   const bg = tone === 'white' ? palette.white : tone === 'cream' ? palette.panel : 'rgba(255,255,255,0.86)';
+
+  useEffect(() => () => setTrayHeight(0), []);
+  const onLayout = (e: LayoutChangeEvent) => setTrayHeight(e.nativeEvent.layout.height);
+
   return (
-    <Animated.View entering={FadeInUp.springify().damping(18)} style={[styles.tray, shadows.card, { backgroundColor: bg, paddingBottom: Math.max(insets.bottom, spacing.md) }, style]}>
+    <Animated.View
+      onLayout={onLayout}
+      entering={FadeInUp.springify().damping(18)}
+      style={[styles.tray, shadows.card, { backgroundColor: bg, paddingBottom: Math.max(insets.bottom, spacing.md) }, style]}
+    >
       {children}
     </Animated.View>
   );

@@ -8,8 +8,16 @@ const LETTERS: Record<'en' | 'es', string[]> = {
   es: 'ABCDEFGHIJLMNOPQRSTUVYZ'.split(''),
 };
 
+/**
+ * Only words the icon sheet really *draws*. Actions, numbers, colours and jobs
+ * all borrow someone else's picture (yellow → a sun, teacher → a school), and a
+ * borrowed picture makes "spell what you see" unfair.
+ */
+const drawnCategories: readonly VocabWord['category'][] = ['equipment', 'food', 'animals', 'places'];
+
 /** Single plain word, no spaces, hyphens or accents — a fair thing to spell. */
-const spellable = (word: VocabWord, lang: 'en' | 'es'): boolean => /^[a-zñ]+$/.test(word[lang]);
+const spellable = (word: VocabWord, lang: 'en' | 'es'): boolean =>
+  drawnCategories.includes(word.category) && /^[a-zñ]+$/.test(word[lang]);
 
 const letterCount = (word: VocabWord, lang: 'en' | 'es'): number => word[lang].length;
 

@@ -4,10 +4,13 @@ import Svg, { Circle, Defs, Ellipse, G, LinearGradient, Path, Rect, Stop } from 
 import Animated, { useAnimatedStyle } from 'react-native-reanimated';
 import { palette } from '@/theme';
 import { Text } from '@/ui/Text';
-import { Stage, at } from './parts/Stage';
+import { at, useStage } from './parts/Stage';
 import { useRise, useSwing } from './parts/motion';
 
 const DESIGN = { w: 390, h: 700 };
+/** the wall and counter colours the letterbox bands are painted with */
+const WALL_TOP = '#FFE6C7';
+const COUNTER_DEEP = '#E2BC86';
 
 /* ------------------------------------------------------------------ */
 /* Hanging pendant lamp — sways from the ceiling                        */
@@ -168,6 +171,66 @@ function Room({ s }: { s: number }) {
         <Path d="M78 84c5 5 7 8 7 11a7 7 0 0 1-14 0c0-3 2-6 7-11z" fill={palette.flameCore} />
       </G>
 
+      {/* ── wall furniture (critique #20: 40 % of the frame was bare brick) ── */}
+
+      {/* pot rack */}
+      <G>
+        <Rect x={24} y={296} width={166} height={9} rx={4.5} fill={palette.charcoal} />
+        <Rect x={24} y={296} width={166} height={3.5} rx={1.75} fill="rgba(255,255,255,0.32)" />
+        <Rect x={26} y={288} width={7} height={14} rx={3.5} fill={palette.charcoalDark} />
+        <Rect x={181} y={288} width={7} height={14} rx={3.5} fill={palette.charcoalDark} />
+        {[52, 104, 154].map((x, i) => (
+          <G key={`pan${i}`}>
+            <Rect x={x - 2} y={305} width={4} height={13} rx={2} fill={palette.charcoalDark} />
+            <Path d={`M ${x - 22} 318 h 44 a 22 20 0 0 1 -44 0 z`} fill={i === 1 ? palette.slate : palette.charcoal} />
+            <Path d={`M ${x - 14} 323 h 13 a 13 10 0 0 1 -13 0 z`} fill="rgba(255,255,255,0.32)" />
+            <Rect x={x + 20} y={310} width={26} height={6} rx={3} fill={palette.charcoalDark} />
+          </G>
+        ))}
+      </G>
+
+      {/* chalkboard menu */}
+      <G>
+        <Rect x={210} y={292} width={164} height={112} rx={12} fill={palette.woodDark} />
+        <Rect x={218} y={300} width={148} height={88} rx={7} fill="#2E3A46" />
+        <Rect x={218} y={300} width={148} height={26} rx={7} fill="rgba(255,255,255,0.18)" />
+        <Rect x={214} y={392} width={156} height={9} rx={4.5} fill={palette.wood} />
+        <Rect x={234} y={394} width={18} height={4} rx={2} fill={palette.white} opacity={0.85} />
+        {[318, 336, 354, 372].map((y, i) => (
+          <Rect key={`menu${i}`} x={232} y={y} width={i % 2 === 0 ? 108 : 82} height={5} rx={2.5} fill={palette.white} opacity={0.55} />
+        ))}
+      </G>
+
+      {/* spice shelf */}
+      <G>
+        <Rect x={24} y={420} width={166} height={9} rx={4.5} fill={palette.wood} />
+        <Rect x={24} y={420} width={166} height={3.5} rx={1.75} fill="rgba(255,255,255,0.32)" />
+        <Path d="M40 429 l0 12 l10 -12 z" fill={palette.woodDark} />
+        <Path d="M174 429 l-10 12 l10 0 z" fill={palette.woodDark} />
+        {[
+          { x: 36, h: 30, c: '#E7D8FF' },
+          { x: 68, h: 24, c: '#FFE1B8' },
+          { x: 98, h: 34, c: '#D9F2D2' },
+          { x: 132, h: 26, c: '#FFD2E5' },
+          { x: 160, h: 30, c: '#CFE9F8' },
+        ].map((j, i) => (
+          <G key={`spice${i}`}>
+            <Rect x={j.x} y={420 - j.h} width={22} height={j.h} rx={6} fill={j.c} />
+            <Rect x={j.x} y={420 - j.h} width={7} height={j.h} rx={3.5} fill="rgba(255,255,255,0.32)" />
+            <Rect x={j.x - 2} y={420 - j.h - 6} width={26} height={7} rx={3.5} fill={palette.tanDark} />
+          </G>
+        ))}
+      </G>
+
+      {/* fire-shield tea towel on a rail */}
+      <G>
+        <Rect x={206} y={422} width={72} height={7} rx={3.5} fill={palette.slate} />
+        <Path d="M214 428 h 56 v 44 q -28 9 -56 0 z" fill={palette.white} />
+        <Path d="M214 428 h 18 v 42 q -9 2 -18 1 z" fill="rgba(31,42,90,0.08)" />
+        <Path d="M242 440 c 7 6 10 10 10 14 a 10 10 0 0 1 -20 0 c 0 -4 3 -8 10 -14 z" fill={palette.engineRed} opacity={0.85} />
+        <Path d="M242 448 c 4 4 5 6 5 8 a 5 5 0 0 1 -10 0 c 0 -2 1 -4 5 -8 z" fill={palette.safetyYellow} />
+      </G>
+
       {/* counter + checkered cloth */}
       <G>
         <Rect x={0} y={520} width={DESIGN.w} height={180} fill="url(#counter)" />
@@ -210,32 +273,48 @@ export interface KitchenBackdropProps {
  *
  * Reusable behind every kitchen screen — pair with `<ScreenFrame mood="kitchen">`.
  */
+/**
+ * Critique #20: the room used to be scaled with `fit="cover"`, which cropped the
+ * lampshades off the top and pushed the wall sign half off the left edge. It is
+ * now anchored to its design box and **letterboxed** — the room is always whole,
+ * and the bands above and below it are painted wall and counter so the join is
+ * invisible rather than a strip of sky.
+ */
 export function KitchenBackdrop({ still }: KitchenBackdropProps) {
+  const stage = useStage(DESIGN.w, DESIGN.h, 'contain');
+  const s = stage.s;
   return (
-    <Stage design={DESIGN} fit="cover" style={StyleSheet.absoluteFill}>
-      {(s) => (
-        <View pointerEvents="none" style={StyleSheet.absoluteFill}>
-          <Room s={s} />
-          <View style={[at(s, 16, 88, 124, 80), styles.poster]}>
-            <Text variant="tiny" center color={palette.navySoft} style={{ fontSize: 15 * s, lineHeight: 20 * s }}>
-              {'COOK\nLEARN\nHELP!'}
-            </Text>
+    <View style={[StyleSheet.absoluteFill, styles.root]} pointerEvents="none" onLayout={stage.onLayout}>
+      {stage.ready ? (
+        <>
+          {/* letterbox bands, painted so the room never floats on the sky */}
+          <View style={[styles.band, { top: 0, height: Math.max(0, stage.top + 2), backgroundColor: WALL_TOP }]} />
+          <View style={[styles.band, { top: stage.top + stage.height - 2, bottom: 0, backgroundColor: COUNTER_DEEP }]} />
+          <View style={{ position: 'absolute', left: stage.left, top: stage.top, width: stage.width, height: stage.height }}>
+            <Room s={s} />
+            <View style={[at(s, 16, 88, 124, 80), styles.poster]}>
+              <Text variant="tiny" center color={palette.navySoft} style={{ fontSize: 15 * s, lineHeight: 20 * s }}>
+                {'COOK\nLEARN\nHELP!'}
+              </Text>
+            </View>
+            {still ? null : (
+              <>
+                <Wisp s={s} x={292} y={480} periodMs={3400} />
+                <Wisp s={s} x={310} y={476} periodMs={4100} delayMs={900} scale={0.8} />
+                <Wisp s={s} x={324} y={482} periodMs={3800} delayMs={1800} scale={0.6} />
+                <PendantLamp s={s} x={62} periodMs={4600} delayMs={0} />
+                <PendantLamp s={s} x={330} periodMs={5400} delayMs={700} />
+              </>
+            )}
           </View>
-          {still ? null : (
-            <>
-              <Wisp s={s} x={292} y={480} periodMs={3400} />
-              <Wisp s={s} x={310} y={476} periodMs={4100} delayMs={900} scale={0.8} />
-              <Wisp s={s} x={324} y={482} periodMs={3800} delayMs={1800} scale={0.6} />
-              <PendantLamp s={s} x={62} periodMs={4600} delayMs={0} />
-              <PendantLamp s={s} x={330} periodMs={5400} delayMs={700} />
-            </>
-          )}
-        </View>
-      )}
-    </Stage>
+        </>
+      ) : null}
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  root: { overflow: 'hidden' },
+  band: { position: 'absolute', left: 0, right: 0 },
   poster: { alignItems: 'center', justifyContent: 'center' },
 });

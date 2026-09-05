@@ -92,11 +92,19 @@ export function distance(a: Pt, b: Pt): number {
   return Math.hypot(a.x - b.x, a.y - b.y);
 }
 
-/** Which region a point lands in, or null when it missed the pizza. */
+/**
+ * Which region a point lands in, or null when it missed the pizza.
+ *
+ * A non-finite point (a touch whose coordinates never arrived) has to be a
+ * miss, not `NaN`: `NaN > radius` is false, so the old version fell through and
+ * returned a NaN index that callers happily wrote into their region array.
+ */
 export function regionAtPoint(p: Pt, center: Pt, radius: number, count: number): number | null {
-  if (distance(p, center) > radius) return null;
+  if (!Number.isFinite(p.x) || !Number.isFinite(p.y)) return null;
+  if (!(distance(p, center) <= radius)) return null;
   const n = Math.max(1, Math.round(count));
   const idx = Math.floor((angleOf(center, p) / TAU) * n);
+  if (!Number.isFinite(idx)) return null;
   return Math.min(n - 1, Math.max(0, idx));
 }
 

@@ -72,7 +72,9 @@ export function BowlCell({
   return (
     <View style={[styles.cell, shadows.soft, { width }, selected && styles.cellSelected, dim && styles.cellDim]}>
       <BlueBowl size={width * 0.74} word={word} glyphId={glyphId} />
-      <Text variant="tiny" center color={palette.navy} numberOfLines={1}>
+      {/* BLOCKING DEFECT FIX: "Bell pep…" — ingredient names wrap now instead
+          of truncating. The layout gives, never the word. */}
+      <Text variant="tiny" center color={palette.navy} numberOfLines={2} style={styles.cellLabel}>
         {label}
       </Text>
     </View>
@@ -243,6 +245,7 @@ const styles = StyleSheet.create({
     borderWidth: 3,
     borderColor: 'transparent',
   },
+  cellLabel: { fontSize: 12, lineHeight: 14 },
   cellSelected: { borderColor: palette.safetyYellow, backgroundColor: palette.white },
   cellDim: { opacity: 0.45 },
 });

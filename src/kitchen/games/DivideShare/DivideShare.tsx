@@ -17,7 +17,9 @@ import { AnswerTile } from '@/ui/kit/AnswerTile';
 import { HintBubble } from '@/ui/kit/HintBubble';
 import { Tray } from '@/ui/kit/Tray';
 import { VocabIcon } from '@/ui/kit/VocabIcon';
-import { CharacterPortrait } from '@/characters/CharacterPortrait';
+import { GameCrew } from '@/characters';
+import { Stage as SceneStage } from '@/world';
+import { CrewFigure } from '@/world/scenes';
 import { Stage, at } from '../../parts/Stage';
 import { PlateArt } from '../../parts/FoodBits';
 import { EquationStrip } from '../../parts/SceneBits';
@@ -25,9 +27,18 @@ import { pluralEn } from '../../spanish';
 import { answerOptions, equationText, nextPlate, shareState } from '../../shareMath';
 import { kitchenFeel, nearestTarget, useBeaconHint, useDragSource } from '../useKitchenGame';
 
-const D = { w: 390, h: 400 };
-const TRAY = { x: 18, y: 14, w: 354, h: 116 };
-const PLATE_Y = 236;
+/**
+ * BLOCKING DEFECT FIX (art critique): the answer tiles were drawn at y 150 and
+ * the plate cards started at y 160, so the three plates and a stray answer card
+ * piled on top of each other. The design box is taller now and the three bands
+ * — serving tray, answer row, plate row — never share a pixel.
+ */
+const D = { w: 390, h: 486 };
+const TRAY = { x: 18, y: 10, w: 354, h: 104 };
+const ASK_Y = 126;
+const PLATE_TOP = 224;
+const PLATE_H = 210;
+const PLATE_Y = PLATE_TOP + 120;
 const ITEM = 42;
 
 interface CrewSeat {
@@ -62,7 +73,8 @@ export function DivideShare({ challenge, ageBand, onComplete, onEvent, compact }
   const itemName = pluralEn(challenge.item.en, challenge.total);
 
   const platePoints = useMemo(() => {
-    const w = Math.min(96, (D.w - 24) / among);
+    // leave a real gutter between cards so neighbouring plates never touch
+    const w = Math.max(64, Math.min(92, (D.w - 28) / among - 10));
     const gap = (D.w - among * w) / (among + 1);
     return Array.from({ length: among }, (_, i) => ({ x: gap + i * (w + gap) + w / 2, y: PLATE_Y, w }));
   }, [among]);
@@ -137,6 +149,11 @@ export function DivideShare({ challenge, ageBand, onComplete, onEvent, compact }
 
   return (
     <View style={styles.root}>
+      {/* an indoor game is played in a kitchen, never against a blue sky */}
+      <SceneStage variant="counter" groundHeight={150} />
+      {among < 3 ? (
+        <GameCrew side="right" size={54} bottom={104} showPepper mood={phase === 'eating' ? 'cheer' : phase === 'deal' ? 'happy' : 'idle'} />
+      ) : null}
       <PromptBanner
         title={`${challenge.total} ${itemName} for ${among} firefighters`}
         subtitle={phase === 'ask' ? 'How many does each one get?' : 'Drag one to a plate — or tap a plate.'}
@@ -157,7 +174,7 @@ export function DivideShare({ challenge, ageBand, onComplete, onEvent, compact }
             </View>
 
             {phase === 'ask' ? (
-              <View style={[at(s, 20, 150, 350), styles.answerWrap]}>
+              <View style={[at(s, 20, ASK_Y, 350), styles.answerWrap]}>
                 {answerOptions(each).map((value, i) => (
                   <AnswerTile
                     key={value}
@@ -203,7 +220,7 @@ export function DivideShare({ challenge, ageBand, onComplete, onEvent, compact }
                 key={`plate${i}`}
                 s={s}
                 x={p.x - p.w / 2}
-                y={p.y - 76}
+                y={PLATE_TOP}
                 width={p.w}
                 count={plates[i] ?? 0}
                 each={each}
@@ -323,10 +340,11 @@ function PlateSpot({
   const hopStyle = useAnimatedStyle(() => ({ transform: [{ translateY: hop.value }] }));
 
   return (
-    <Animated.View style={[at(s, x, y, width, 150), fb.style]}>
+    <Animated.View style={[at(s, x, y, width, PLATE_H), fb.style]}>
       <Animated.View style={[styles.plateCol, hopStyle]}>
-        <CharacterPortrait id={crew.id} size={42 * s} />
-        <Text variant="tiny" color={palette.navySoft} style={{ fontSize: 12 * s, lineHeight: 15 * s }}>
+        {/* critique #23 — the whole rig stands behind the plate, not a head */}
+        <CrewFigure id={crew.id} size={96 * s} emotion={eating ? 'excited' : 'happy'} jumping={eating} bobPhase={delay / 900} />
+        <Text variant="tiny" center numberOfLines={1} color={palette.navySoft} style={{ fontSize: 12 * s, lineHeight: 15 * s }}>
           {crew.name}
         </Text>
         <Pressable
@@ -335,20 +353,21 @@ function PlateSpot({
           onPress={onPress}
           style={[styles.plateHit, glow && styles.plateGlow, { borderRadius: 16 * s }]}
         >
-          <PlateArt size={width * 0.92 * s} />
+          <PlateArt size={width * 0.86 * s} />
           <View style={styles.plateItems}>
             {Array.from({ length: Math.min(count, 4) }, (_, i) => (
               <Animated.View key={i} entering={ZoomIn.springify().damping(12)}>
-                <VocabIcon id={item.id} size={20 * s} />
+                <VocabIcon id={item.id} size={18 * s} />
               </Animated.View>
             ))}
           </View>
-          <View style={styles.plateBadge}>
-            <Text variant="bodyStrong" color={count === each ? palette.leafGreenDark : palette.navy} style={{ fontSize: 16 * s, lineHeight: 20 * s }}>
-              {count}
-            </Text>
-          </View>
         </Pressable>
+        {/* the count lives *inside* the card, in flow — it used to float outside it */}
+        <View style={[styles.plateBadge, { borderRadius: 999, paddingHorizontal: 9 * s, marginTop: -8 * s }]}>
+          <Text variant="bodyStrong" color={count === each ? palette.leafGreenDark : palette.navy} style={{ fontSize: 16 * s, lineHeight: 21 * s }}>
+            {count}
+          </Text>
+        </View>
       </Animated.View>
     </Animated.View>
   );
@@ -369,12 +388,10 @@ const styles = StyleSheet.create({
   plateGlow: { borderColor: palette.safetyYellow, backgroundColor: 'rgba(255,199,44,0.2)' },
   plateItems: { position: 'absolute', flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', maxWidth: '70%' },
   plateBadge: {
-    position: 'absolute',
-    right: 0,
-    bottom: 0,
     backgroundColor: palette.white,
     borderRadius: radii.pill,
     paddingHorizontal: 7,
+    alignItems: 'center',
     ...shadows.soft,
   },
   trayRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm, minHeight: 4 },

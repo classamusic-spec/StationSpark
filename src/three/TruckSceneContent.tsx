@@ -18,7 +18,7 @@ import { TruckModel } from './TruckModel';
 import type { DragController } from './dragControl';
 
 /** Hero framing: the camera sits front-right and slightly above the light bar. */
-export const TRUCK_CAMERA = { position: [5.9, 2.9, 5.3] as [number, number, number], fov: 30 };
+export const TRUCK_CAMERA = { position: [6.3, 3.1, 5.7] as [number, number, number], fov: 30 };
 
 /** The camera's right axis — drag up/down tilts about this, never about world X. */
 const PITCH_AXIS = new THREE.Vector3(0.67, 0, -0.74).normalize();
@@ -26,7 +26,9 @@ const IDLE_YAW = (12 * Math.PI) / 180;
 const IDLE_PERIOD = 6;
 const BOB_PERIOD = 3.4;
 /** Puts the truck's floor below the camera target so it sits in the lower half. */
-const GROUND_DROP = -0.94;
+const GROUND_DROP = -1;
+/** Perspective makes the near (cab) end read wider, so nudge the rig back to centre. */
+const FRAME_OFFSET: [number, number, number] = [-0.2, 0, 0.22];
 
 export interface TruckSceneContentProps {
   style: TruckStyle;
@@ -72,10 +74,12 @@ export function TruckSceneContent({ style, spinning, honk, shine, reduced = fals
       {/* Cool fill so the shaded side keeps its colour instead of going muddy. */}
       <directionalLight position={[-5, 2.5, -4.5]} intensity={0.55} color={palette.waterCyanLight} />
 
-      <group ref={tilt}>
-        <group ref={turn}>
-          <group ref={hover} position={[0, GROUND_DROP, 0]}>
-            <TruckModel style={style} spinning={spinning} honk={honk} shine={shine} reduced={reduced} />
+      <group position={FRAME_OFFSET}>
+        <group ref={tilt}>
+          <group ref={turn}>
+            <group ref={hover} position={[0, GROUND_DROP, 0]}>
+              <TruckModel style={style} spinning={spinning} honk={honk} shine={shine} reduced={reduced} />
+            </group>
           </group>
         </group>
       </group>

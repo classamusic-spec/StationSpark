@@ -9,6 +9,8 @@ import { hit, palette, radii, shadows, spacing, springs } from '@/theme';
 import { sfx } from '@/services/audio';
 import { haptics } from '@/services/haptics';
 import { Button, EquipmentIcon, ResetIcon, Text, TrayRow } from '@/ui';
+import { GameCrew } from '@/characters';
+import { Stage } from '@/world';
 import { Draggable } from '../shared/Draggable';
 import { GameFrame } from '../shared/GameFrame';
 import { SlotZone } from '../shared/SlotZone';
@@ -119,9 +121,20 @@ export function HosePath({ challenge, ageBand, onComplete, onEvent, compact }: M
     return null;
   }, [solution, state.placed]);
 
-  /* water flows as soon as the line connects */
+  /**
+   * Water flows as soon as the line connects.
+   *
+   * This used to be guarded by `state.phase !== 'building'` AND to list
+   * `state.phase` in its deps — so the very first FLOW tick moved the phase to
+   * 'flowing', React tore the effect down, and the re-run bailed at the guard.
+   * The water stopped one cell in and `session.complete()` never fired: the
+   * game was impossible to finish. A ref runs it exactly once instead; the
+   * board is frozen while the water travels, so `path` cannot change under us.
+   */
+  const flowing = useRef(false);
   useEffect(() => {
-    if (!path || state.phase !== 'building') return;
+    if (!path || flowing.current) return;
+    flowing.current = true;
     sfx.startLoop('water-spray');
     let i = 1;
     const id = setInterval(() => {
@@ -147,7 +160,7 @@ export function HosePath({ challenge, ageBand, onComplete, onEvent, compact }: M
       clearInterval(id);
       sfx.stopLoop('water-spray');
     };
-  }, [path, session, state.phase]);
+  }, [path, session]);
 
   useEffect(() => () => sfx.stopLoop('water-spray'), []);
 
@@ -236,6 +249,12 @@ export function HosePath({ challenge, ageBand, onComplete, onEvent, compact }: M
       title="Lay the Hose"
       subtitle={ageBand === 'A' ? undefined : 'Drag pieces in, tap to turn them.'}
       compact={compact}
+      backdrop={
+        <>
+          <Stage variant="yard" groundHeight={150} />
+          <GameCrew side="left" size={54} bottom={compact ? 152 : 180} showPepper mood={state.phase === 'done' ? 'cheer' : state.phase === 'flowing' ? 'happy' : 'idle'} />
+        </>
+      }
       hint={{ text: hintText, visible: hintLadder.showBubble && state.phase === 'building', onDismiss: hintLadder.dismiss }}
       tray={
         <View style={styles.trayInner}>

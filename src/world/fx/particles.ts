@@ -132,3 +132,127 @@ export function polar(angleDeg: number, distance: number): { x: number; y: numbe
   const rad = ((angleDeg - 90) * Math.PI) / 180;
   return { x: Math.cos(rad) * distance, y: Math.sin(rad) * distance };
 }
+
+/* ------------------------------------------------------------------ *
+ * Scene FX: water, steam and dust                                     *
+ * ------------------------------------------------------------------ */
+
+export interface PuffParticle {
+  id: number;
+  /** horizontal offset at birth, in px */
+  x: number;
+  /** how far it drifts sideways over its life, in px */
+  driftX: number;
+  /** how far it rises, in px */
+  rise: number;
+  /** diameter in px at full size */
+  size: number;
+  /** how much it swells as it rises (1 = no swell) */
+  swell: number;
+  delayMs: number;
+  durationMs: number;
+  /** peak opacity */
+  alpha: number;
+}
+
+export interface PuffOptions {
+  count?: number;
+  seed?: number;
+  /** how wide the puffs are born, in px */
+  spread?: number;
+  /** how far they travel up, in px */
+  rise?: number;
+  /** base puff diameter, in px */
+  size?: number;
+}
+
+/** Rising steam / smoke: soft rounded puffs that swell and fade as they climb. */
+export function makePuffs({ count = 6, seed = 11, spread = 22, rise = 64, size = 18 }: PuffOptions = {}): PuffParticle[] {
+  const rnd = mulberry32(seed);
+  return Array.from({ length: count }, (_, i) => {
+    const a = rnd();
+    const b = rnd();
+    const c = rnd();
+    return {
+      id: i,
+      x: (a - 0.5) * spread,
+      driftX: (b - 0.5) * spread * 1.4,
+      rise: rise * (0.75 + c * 0.5),
+      size: size * (0.7 + a * 0.7),
+      swell: 1.5 + b * 0.9,
+      delayMs: Math.round((i / count) * 900 + a * 160),
+      durationMs: Math.round(1500 + c * 900),
+      alpha: 0.36 + b * 0.3,
+    };
+  });
+}
+
+export interface DropParticle {
+  id: number;
+  /** launch direction in degrees, 0 = straight up */
+  angle: number;
+  /** how far it flies before gravity wins, in px */
+  distance: number;
+  /** how far it then falls, in px */
+  fall: number;
+  size: number;
+  delayMs: number;
+  durationMs: number;
+  spin: number;
+}
+
+export interface DropOptions {
+  count?: number;
+  seed?: number;
+  /** how far the drops fly, in px */
+  radius?: number;
+  /** spray cone half-width in degrees (180 = all round) */
+  spreadDeg?: number;
+  /** centre of the cone in degrees, 0 = up */
+  aimDeg?: number;
+}
+
+/** A splash of water: drops fly out along a cone, then fall. */
+export function makeDrops({ count = 10, seed = 5, radius = 44, spreadDeg = 70, aimDeg = 0 }: DropOptions = {}): DropParticle[] {
+  const rnd = mulberry32(seed);
+  return Array.from({ length: count }, (_, i) => {
+    const a = rnd();
+    const b = rnd();
+    const c = rnd();
+    return {
+      id: i,
+      angle: aimDeg + (((i + a) / count) * 2 - 1) * spreadDeg,
+      distance: radius * (0.6 + b * 0.6),
+      fall: radius * (0.5 + c * 0.8),
+      size: 6 + a * 7,
+      delayMs: Math.round(a * 160),
+      durationMs: Math.round(560 + c * 320),
+      spin: (b > 0.5 ? 1 : -1) * (60 + c * 160),
+    };
+  });
+}
+
+export interface DustParticle {
+  id: number;
+  angle: number;
+  distance: number;
+  size: number;
+  delayMs: number;
+  durationMs: number;
+}
+
+/** The little ring of dust a dropped token kicks up when it lands. */
+export function makeDust({ count = 7, seed = 9, radius = 26 }: { count?: number; seed?: number; radius?: number } = {}): DustParticle[] {
+  const rnd = mulberry32(seed);
+  return Array.from({ length: count }, (_, i) => {
+    const a = rnd();
+    return {
+      id: i,
+      angle: (360 / count) * i + (a - 0.5) * 26,
+      distance: radius * (0.6 + a * 0.7),
+      size: 7 + a * 8,
+      delayMs: Math.round(a * 70),
+      durationMs: Math.round(420 + a * 220),
+    };
+  });
+}

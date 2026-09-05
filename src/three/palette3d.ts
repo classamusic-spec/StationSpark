@@ -40,6 +40,7 @@ export const trim = {
   stripeLight: '#FFE07A',
   headlight: '#FFF1A8',
   headlightGlow: palette.safetyYellow,
+  tail: palette.engineRedLight,
   ladder: palette.slate,
   ladderLight: palette.slateLight,
   shadow: palette.navy,

@@ -30,27 +30,12 @@ import { haptics } from '@/services/haptics';
 import { speech } from '@/services/speech';
 import { useGame } from '@/state/store';
 import { Button, Logo, Panel, ScreenFrame, Text, TopBar } from '@/ui';
-import { CharacterPortrait } from '@/characters';
 import { StarCounter } from '@/screens/Mission/StarCounter';
-import { BellTower, DispatchBackdrop } from './DispatchBackdrop';
+import { useScaledLayout } from '@/screens/shared';
+import { BellTower, DispatchBackdrop, DispatchDesk, deskHeight, heroHeight } from './DispatchBackdrop';
 import { MissionSlip } from './MissionSlip';
 
 const STAMP_MS = 560;
-
-/** Captain Bea's line at the bottom of the board. */
-function BeaBar({ line }: { line: string }) {
-  return (
-    <Animated.View entering={FadeInDown.delay(320).springify().damping(16)} style={styles.beaBar}>
-      <CharacterPortrait id="bea" emotion="happy" size={72} />
-      <View style={[styles.beaBubble, shadows.card]}>
-        <Text variant="tiny" color={palette.navyMuted}>
-          Captain Bea
-        </Text>
-        <Text variant="bodyStrong">{line}</Text>
-      </View>
-    </Animated.View>
-  );
-}
 
 /**
  * Meal break. After every second call Captain Bea points at the firehouse
@@ -91,6 +76,7 @@ export function DispatchScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const reduced = useReducedMotion();
+  const layout = useScaledLayout();
 
   const shift = useShift();
   const progressMissions = useGame((s) => s.progress.missions);
@@ -192,17 +178,22 @@ export function DispatchScreen() {
       ? 'Great shift so far. Pick the next one!'
       : 'Choose a job, Rookie!';
 
+  const hero = heroHeight(layout.isTablet);
+  const desk = deskHeight(layout.isTablet) + insets.bottom;
+  /** on a tablet the slips run two-up, so the board never ends in dead space */
+  const twoUp = layout.isTablet && !layout.landscape ? true : layout.isTablet;
+
   return (
-    <ScreenFrame backdrop={<DispatchBackdrop />} chrome={<TopBar right={<StarCounter stars={shift.starsEarned} />} />} safeBottom={false}>
-      <BellTower swing={swing} />
+    <ScreenFrame backdrop={<DispatchBackdrop hero={hero} />} chrome={<TopBar right={<StarCounter stars={shift.starsEarned} />} />} safeBottom={false}>
+      <BellTower swing={swing} top={hero - 182} />
       <DingDing visible={ding} />
 
       <ScrollView
-        contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + 128 }]}
+        contentContainerStyle={[styles.scroll, { paddingBottom: desk + spacing.lg, paddingTop: spacing.sm }]}
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.logoRow} pointerEvents="none">
-          <Logo size={168} tagline={false} />
+          <Logo size={layout.isTablet ? 168 : 144} tagline={false} />
         </View>
 
         {/* cream header board on a tan plate */}
@@ -241,20 +232,21 @@ export function DispatchScreen() {
             </Panel>
           </Animated.View>
         ) : (
-          <View style={styles.list}>
+          <View style={[styles.list, twoUp && styles.grid]}>
             {list.map((m, i) => {
               const lock = lockInfo(m);
               return (
-                <MissionSlip
-                  key={m.id}
-                  mission={m}
-                  index={i}
-                  stars={(progressMissions[m.id]?.stars ?? 0) as Stars}
-                  locked={lock.locked}
-                  lockLabel={lock.label}
-                  dispatched={dispatchedId === m.id}
-                  onPress={() => choose(m)}
-                />
+                <View key={m.id} style={twoUp ? styles.gridCell : undefined}>
+                  <MissionSlip
+                    mission={m}
+                    index={i}
+                    stars={(progressMissions[m.id]?.stars ?? 0) as Stars}
+                    locked={lock.locked}
+                    lockLabel={lock.label}
+                    dispatched={dispatchedId === m.id}
+                    onPress={() => choose(m)}
+                  />
+                </View>
               );
             })}
           </View>
@@ -278,28 +270,28 @@ export function DispatchScreen() {
         ) : null}
       </ScrollView>
 
-      <View style={[styles.beaWrap, { paddingBottom: Math.max(insets.bottom, spacing.sm) }]} pointerEvents="box-none">
-        <BeaBar line={beaLine} />
-      </View>
+      <DispatchDesk line={beaLine} safeBottom={insets.bottom} />
     </ScreenFrame>
   );
 }
 
 const styles = StyleSheet.create({
-  scroll: { paddingHorizontal: spacing.md, paddingTop: spacing.xs, gap: spacing.sm },
-  logoRow: { alignItems: 'center', marginTop: spacing.xs, marginBottom: -spacing.sm },
+  scroll: { paddingHorizontal: spacing.md, gap: spacing.sm },
+  logoRow: { alignItems: 'center', marginTop: 0, marginBottom: -spacing.xxs },
   headerWrap: { alignItems: 'center', marginBottom: spacing.xs },
   headerPlate: {
     position: 'absolute',
     left: spacing.lg,
     right: spacing.lg,
-    top: -6,
+    top: -8,
     bottom: 14,
     backgroundColor: palette.tan,
     borderRadius: radii.panel,
   },
   headerPanel: { alignSelf: 'stretch', ...shadows.card },
   list: { gap: spacing.sm },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
+  gridCell: { width: '48.8%' },
   meal: { gap: spacing.xs },
   mealRow: { flexDirection: 'row', gap: spacing.xs, marginTop: spacing.xxs },
   mealBtn: { flex: 1 },
@@ -329,7 +321,7 @@ const styles = StyleSheet.create({
   ding: {
     position: 'absolute',
     right: Platform.OS === 'web' ? 12 : 8,
-    top: 118,
+    top: 96,
     backgroundColor: palette.white,
     borderRadius: radii.pill,
     paddingHorizontal: spacing.sm,

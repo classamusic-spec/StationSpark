@@ -361,7 +361,7 @@ export function ShapeBuilder({ challenge, ageBand, onComplete, onEvent, compact 
    * than a rung.
    */
   const scaleFor = useCallback(
-    (piece: ShapePiece) => (tokenBox * 0.84) / (0.55 * Math.max(piece.w, piece.h) + 0.45 * biggest),
+    (piece: ShapePiece) => (tokenBox * 0.84) / (0.7 * Math.max(piece.w, piece.h) + 0.3 * biggest),
     [biggest, tokenBox],
   );
 
@@ -527,7 +527,14 @@ export function ShapeBuilder({ challenge, ageBand, onComplete, onEvent, compact 
 }
 
 const styles = StyleSheet.create({
-  stage: { flex: 1, alignSelf: 'stretch', alignItems: 'center', justifyContent: 'center', gap: spacing.xs },
+  stage: {
+    flex: 1,
+    alignSelf: 'stretch',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    paddingBottom: '7%',
+    gap: spacing.xs,
+  },
   wall: {
     position: 'absolute',
     left: 0,
@@ -535,10 +542,19 @@ const styles = StyleSheet.create({
     top: '6%',
     bottom: '14%',
     overflow: 'hidden',
+    backgroundColor: palette.creamDeep,
     borderTopLeftRadius: radii.panel,
     borderTopRightRadius: radii.panel,
   },
-  floor: { position: 'absolute', left: 0, right: 0, bottom: 0, height: '15%', overflow: 'hidden' },
+  floor: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: '15%',
+    overflow: 'hidden',
+    backgroundColor: palette.wood,
+  },
   bench: {
     alignItems: 'center',
     backgroundColor: palette.wood,
@@ -567,10 +583,10 @@ const styles = StyleSheet.create({
   tokenFace: {
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: palette.panel,
+    backgroundColor: palette.white,
     borderRadius: radii.tile,
     borderWidth: 3,
-    borderColor: 'transparent',
+    borderColor: palette.creamDeep,
   },
   tokenHighlight: { borderColor: palette.safetyYellow },
   turnBadge: { position: 'absolute', right: 2, top: 2 },

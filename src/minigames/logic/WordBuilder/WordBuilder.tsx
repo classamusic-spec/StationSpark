@@ -118,7 +118,7 @@ function TileToken({ letter, size, index, used, wrong, highlight, disabled, onDr
         collapsable={false}
         accessible={!used}
         accessibilityRole="button"
-        accessibilityLabel={`letter ${letter}`}
+        accessibilityLabel={used ? `letter ${letter}, already used` : `letter ${letter}`}
         style={[styles.tileWrap, highlight && shadows.glowGold, dragging && styles.dragging, animatedStyle]}
       >
         {/* the entering animation and the wobble transform need separate nodes */}
@@ -252,7 +252,7 @@ export function WordBuilder({ challenge, ageBand, onComplete, onEvent, compact }
   const slotSize = Math.max(30, Math.min(layout.s(54), (inner - (perRow - 1) * 8) / perRow));
   /** pin the row width so a long word always wraps into two tidy lines */
   const rowWidth = perRow * (slotSize + 8) - 8;
-  const tileSize = Math.max(hit.min, layout.s(tiles.length > 6 ? 58 : 64));
+  const tileSize = Math.max(hit.min, layout.s(tiles.length > 6 ? 56 : tiles.length > 4 ? 58 : 64));
   const iconSize = layout.s(ageBand === 'A' ? 88 : 76);
 
   /* ----- copy ----- */
@@ -364,14 +364,16 @@ export function WordBuilder({ challenge, ageBand, onComplete, onEvent, compact }
             </Animated.View>
           ) : null}
         </View>
-        <ChalkLedge width={boardWidth} />
+        <View style={{ width: boardWidth, height: Math.round(boardWidth * 0.075) }}>
+          <ChalkLedge width={boardWidth} />
+        </View>
       </View>
     </GameFrame>
   );
 }
 
 const styles = StyleSheet.create({
-  stage: { flex: 1, alignSelf: 'stretch', alignItems: 'center', justifyContent: 'center' },
+  stage: { flex: 1, alignSelf: 'stretch', alignItems: 'center', justifyContent: 'flex-end', paddingBottom: spacing.sm },
   wall: {
     position: 'absolute',
     left: 0,
@@ -379,10 +381,20 @@ const styles = StyleSheet.create({
     top: '5%',
     bottom: '12%',
     overflow: 'hidden',
+    backgroundColor: '#D9EEF7',
     borderTopLeftRadius: radii.panel,
     borderTopRightRadius: radii.panel,
   },
-  floor: { position: 'absolute', left: 0, right: 0, bottom: 0, height: '13%', overflow: 'hidden' },
+  floor: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: '13%',
+    overflow: 'hidden',
+    backgroundColor: palette.tan,
+    justifyContent: 'flex-start',
+  },
   board: {
     alignItems: 'center',
     gap: spacing.xs,

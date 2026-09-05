@@ -28,9 +28,39 @@ export function ReadyRoomWall({ width }: { width: number }) {
     <Svg width={width} height={width * 0.66} viewBox="0 0 360 238" preserveAspectRatio="xMidYMin slice">
       <Rect x={0} y={0} width={360} height={238} fill="#D9EEF7" />
       <Rect x={0} y={0} width={360} height={9} fill="rgba(31,42,90,0.08)" />
-      {[0, 1, 2, 3, 4, 5].map((i) => (
-        <Rect key={i} x={i * 60 + 6} y={12} width={26} height={226} rx={13} fill="rgba(255,255,255,0.35)" />
+      {[0, 1, 2].map((i) => (
+        <Rect key={i} x={i * 120 + 14} y={12} width={92} height={226} rx={10} fill="rgba(255,255,255,0.22)" />
       ))}
+      {/* noticeboard with three pinned notes */}
+      <G>
+        <Rect x={22} y={26} width={128} height={94} rx={9} fill={palette.woodDark} />
+        <Rect x={28} y={32} width={116} height={82} rx={6} fill="#E7C98F" />
+        {([
+          [36, 40, palette.white],
+          [96, 44, palette.pinkSoft],
+          [58, 76, palette.waterCyanLight],
+        ] as [number, number, string][]).map(([x, y, fill], i) => (
+          <G key={i}>
+            <Rect x={x} y={y} width={42} height={32} rx={4} fill={fill} />
+            <Rect x={x + 6} y={y + 8} width={30} height={3} rx={1.5} fill="rgba(31,42,90,0.16)" />
+            <Rect x={x + 6} y={y + 16} width={22} height={3} rx={1.5} fill="rgba(31,42,90,0.12)" />
+            <Circle cx={x + 21} cy={y + 3} r={3.4} fill={palette.engineRed} />
+          </G>
+        ))}
+      </G>
+
+      {/* station clock */}
+      <G>
+        <Circle cx={296} cy={70} r={34} fill={palette.navy} />
+        <Circle cx={296} cy={68} r={29} fill={palette.cream} />
+        {[0, 90, 180, 270].map((deg) => (
+          <Rect key={deg} x={294.5} y={42} width={3} height={7} rx={1.5} fill={palette.navySoft} transform={`rotate(${deg} 296 68)`} />
+        ))}
+        <Path d="M296 68V50" stroke={palette.navy} strokeWidth={4} strokeLinecap="round" />
+        <Path d="M296 68l14 8" stroke={palette.engineRed} strokeWidth={3.4} strokeLinecap="round" />
+        <Circle cx={296} cy={68} r={3.4} fill={palette.navy} />
+      </G>
+
       <Rect x={0} y={150} width={360} height={10} rx={5} fill={palette.tanDark} />
       <Rect x={0} y={150} width={360} height={4} rx={2} fill={palette.tan} />
       {/* a hook with a helmet hanging on the rail */}

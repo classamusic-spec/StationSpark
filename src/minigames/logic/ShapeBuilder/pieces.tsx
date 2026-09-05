@@ -5,6 +5,8 @@ import { palette } from '@/theme';
 
 const SHEEN = 'rgba(255,255,255,0.34)';
 const SHADE = 'rgba(31,42,90,0.16)';
+/** a hairline of navy so a cream or tan piece still reads on a white tray card */
+const EDGE = 'rgba(31,42,90,0.22)';
 
 /* ================================================================= */
 /* Geometry — a shape is always drawn to FIT its box, so turning a     */
@@ -87,8 +89,8 @@ export function PieceArt({ shape, w, h, rotation, color, ghost }: PieceArtProps)
             rx={Math.max(1, w / 2 - 1)}
             ry={Math.max(1, h / 2 - 1)}
             fill={fill}
-            stroke={ghost ? ghostLine : undefined}
-            strokeWidth={ghost ? 2.5 : 0}
+            stroke={ghost ? ghostLine : EDGE}
+            strokeWidth={ghost ? 2.5 : 1.5}
             strokeDasharray={ghost ? '7 5' : undefined}
           />
           {ghost ? null : (
@@ -110,8 +112,8 @@ export function PieceArt({ shape, w, h, rotation, color, ghost }: PieceArtProps)
             height={Math.max(1, h - 2)}
             rx={round}
             fill={fill}
-            stroke={ghost ? ghostLine : undefined}
-            strokeWidth={ghost ? 2.5 : 0}
+            stroke={ghost ? ghostLine : EDGE}
+            strokeWidth={ghost ? 2.5 : 1.5}
             strokeDasharray={ghost ? '7 5' : undefined}
           />
           {ghost ? null : (

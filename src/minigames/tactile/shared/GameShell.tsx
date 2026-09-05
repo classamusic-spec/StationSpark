@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback, useState } from 'react';
 import { StyleSheet, View, type LayoutChangeEvent } from 'react-native';
 import { PromptBanner } from '@/ui';
 import { spacing } from '@/theme';
@@ -47,6 +47,12 @@ export function GameShell({
   hint,
   onDismissHint,
 }: GameShellProps) {
+  const [trayH, setTrayH] = useState(0);
+  const onTrayLayout = useCallback((e: LayoutChangeEvent) => {
+    const h = e.nativeEvent.layout.height;
+    setTrayH((p) => (Math.abs(p - h) < 1 ? p : h));
+  }, []);
+
   return (
     <View style={styles.root}>
       {backdrop}
@@ -65,9 +71,15 @@ export function GameShell({
         </View>
       ) : null}
 
-      {tray}
+      {tray ? <View onLayout={onTrayLayout}>{tray}</View> : null}
       {overlay}
-      {onDismissHint ? <BeaconHint hint={hint ?? null} onDismiss={onDismissHint} /> : null}
+      {onDismissHint ? (
+        /* the hint bubble is lifted clear of the tray so it can never cover an
+           interactive tile (blocking defect in the art critique) */
+        <View style={[styles.hintLane, { bottom: trayH }]} pointerEvents="box-none">
+          <BeaconHint hint={hint ?? null} onDismiss={onDismissHint} />
+        </View>
+      ) : null}
     </View>
   );
 }
@@ -77,4 +89,5 @@ const styles = StyleSheet.create({
   top: { alignItems: 'center', gap: spacing.xs, paddingHorizontal: spacing.xs },
   stage: { flex: 1, overflow: 'hidden' },
   footer: { alignItems: 'center', paddingTop: spacing.xs },
+  hintLane: { position: 'absolute', left: 0, right: 0, top: 0, zIndex: 40 },
 });

@@ -17,6 +17,9 @@ import { hit, palette, radii, shadows, spacing, springs } from '@/theme';
 import { sfx } from '@/services/audio';
 import { haptics } from '@/services/haptics';
 import { Button, CheckIcon, Text } from '@/ui';
+import { GameCrew } from '@/characters';
+import { Stage } from '@/world';
+import { Animal } from '@/world/props';
 import { GameFrame } from '../shared/GameFrame';
 import { useGameLayout } from '../shared/layout';
 import { useBeaconLine } from '../shared/speak';
@@ -174,6 +177,8 @@ export function ClockWatch({ challenge, ageBand, onComplete, onEvent, compact }:
       title={clockLabel(targetTotal) === clockLabel(current) ? 'That looks right!' : 'Set the Clock'}
       subtitle={ageBand === 'A' ? undefined : 'Drag the long hand around the dial.'}
       compact={compact}
+      backdrop={<Stage variant="tower" groundHeight={140} />}
+      overlay={<GameCrew side="left" size={54} bottom={compact ? 150 : 176} mood={state.solved ? 'cheer' : 'idle'} />}
       hint={{ text: hintText, visible: hintLadder.showBubble, onDismiss: hintLadder.dismiss }}
       tray={
         <View style={styles.tray}>
@@ -211,21 +216,29 @@ export function ClockWatch({ challenge, ageBand, onComplete, onEvent, compact }:
           <Animated.View style={[{ width: size, height: size }, dialStyle]} collapsable={false}>
             <ClockFace size={size} />
 
+            {/* BLOCKING DEFECT FIX: the numeral box was narrower than a
+                two-digit numeral, so "10 / 11 / 12" wrapped onto a second line
+                and read as doubled, overlapping digits. The box is now wide
+                enough for two digits and is locked to a single line. */}
             {Array.from({ length: 12 }, (_, i) => {
               const a = ((i + 1) * Math.PI) / 6;
-              const r = size * 0.335;
+              const r = size * 0.33;
+              const boxW = size * 0.24;
+              const boxH = size * 0.14;
               return (
                 <Text
                   key={i}
                   variant="h3"
+                  numberOfLines={1}
                   style={[
                     styles.numeral,
                     {
-                      left: centre + Math.sin(a) * r - size * 0.06,
-                      top: centre - Math.cos(a) * r - size * 0.06,
-                      width: size * 0.12,
-                      fontSize: size * 0.1,
-                      lineHeight: size * 0.12,
+                      left: centre + Math.sin(a) * r - boxW / 2,
+                      top: centre - Math.cos(a) * r - boxH / 2,
+                      width: boxW,
+                      height: boxH,
+                      fontSize: size * 0.095,
+                      lineHeight: boxH,
                     },
                   ]}
                   center
@@ -293,6 +306,15 @@ export function ClockWatch({ challenge, ageBand, onComplete, onEvent, compact }:
           </Animated.View>
         </GestureDetector>
 
+        {/* the tower ledge under the dial, with Luna sitting on it */}
+        <View style={[styles.ledge, { width: size * 1.12 }]} pointerEvents="none">
+          <View style={styles.ledgeTop} />
+          <View style={styles.ledgeShade} />
+          <View style={styles.luna}>
+            <Animal id="kitten" size={Math.max(38, size * 0.24)} mood={state.solved ? 'happy' : 'help'} />
+          </View>
+        </View>
+
         <View style={styles.bigTime}>
           <Text variant="h1" center>
             {clockLabel(current)}
@@ -322,6 +344,10 @@ const styles = StyleSheet.create({
     ...shadows.soft,
   },
   numeral: { position: 'absolute', textAlign: 'center' },
+  ledge: { alignItems: 'center', marginTop: -6 },
+  ledgeTop: { height: 12, alignSelf: 'stretch', borderRadius: 6, backgroundColor: '#DCC79F' },
+  ledgeShade: { height: 5, alignSelf: 'stretch', marginTop: -1, borderRadius: 3, backgroundColor: 'rgba(31,42,90,0.14)' },
+  luna: { position: 'absolute', right: '12%', bottom: 10 },
   hand: { position: 'absolute', borderRadius: 8 },
   cap: { position: 'absolute', backgroundColor: palette.gold, borderWidth: 3, borderColor: palette.white },
   bigTime: {

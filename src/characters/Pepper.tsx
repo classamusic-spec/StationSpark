@@ -11,6 +11,9 @@ import { ink } from './rig/palettes';
 const VB = { w: 132, h: 126 } as const;
 const TAIL_PIVOT = { x: 98, y: 88 } as const;
 const TAIL_WIN = { x: 88, y: 48, w: 44, h: 48 } as const;
+/** the floppy ear hinges just behind the temple */
+const EAR_PIVOT = { x: 26, y: 40 } as const;
+const EAR_WIN = { x: 2, y: 30, w: 34, h: 52 } as const;
 
 const coat = { base: '#FFFFFF', shade: '#E3E8F4', deep: '#CBD3E6' };
 const spot = '#2A3566';
@@ -50,6 +53,34 @@ export const Pepper = forwardRef<PepperHandle, PepperProps>(function Pepper(
   const tail = useIdleBob(1, wag ? 300 : 1500, bobPhase);
   const blink = useBlinkState();
   const hop = useSharedValue(0);
+  const ear = useSharedValue(0);
+
+  /* An occasional ear flick — the cheapest possible "she is alive" tell. */
+  useEffect(() => {
+    if (reduced || !animate) {
+      cancelAnimation(ear);
+      ear.value = 0;
+      return;
+    }
+    let alive = true;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const schedule = () => {
+      timer = setTimeout(
+        () => {
+          if (!alive) return;
+          ear.value = withSequence(withSpring(1, springs.pop), withSpring(0, springs.gentle));
+          schedule();
+        },
+        2400 + Math.random() * 3600,
+      );
+    };
+    schedule();
+    return () => {
+      alive = false;
+      if (timer) clearTimeout(timer);
+      cancelAnimation(ear);
+    };
+  }, [animate, ear, reduced]);
 
   const doJump = useCallback(() => {
     if (reduced) return;
@@ -73,6 +104,9 @@ export const Pepper = forwardRef<PepperHandle, PepperProps>(function Pepper(
   }));
   const tailStyle = useAnimatedStyle(() => ({
     transform: [{ rotate: `${tail.value * (wag ? 26 : 8)}deg` }],
+  }));
+  const earStyle = useAnimatedStyle(() => ({
+    transform: [{ rotate: `${ear.value * -17 + (animate ? bob.value * 0.9 : 0)}deg` }],
   }));
 
   const blinking = animate && blink;
@@ -176,16 +210,7 @@ export const Pepper = forwardRef<PepperHandle, PepperProps>(function Pepper(
           <Ellipse cx={64} cy={40} rx={11} ry={9.6} fill={spot} transform="rotate(14 64 40)" />
           <Circle cx={31} cy={58} r={4.6} fill={spot} />
 
-          {/* ears */}
-          <Ellipse
-            cx={20}
-            cy={earsDown ? 66 : 56}
-            rx={10}
-            ry={18}
-            fill={spot}
-            transform={`rotate(${earsDown ? 8 : 18} 20 ${earsDown ? 66 : 56})`}
-          />
-          <Ellipse cx={19} cy={earsDown ? 62 : 52} rx={4.4} ry={9} fill="#3E4A80" opacity={0.55} transform={`rotate(${earsDown ? 8 : 18} 19 ${earsDown ? 62 : 52})`} />
+          {/* the far ear (the floppy near one is a moving part, below) */}
           <Ellipse cx={78} cy={26} rx={8.6} ry={13} fill={spot} transform="rotate(24 78 26)" />
 
           {/* muzzle */}
@@ -204,6 +229,12 @@ export const Pepper = forwardRef<PepperHandle, PepperProps>(function Pepper(
           <Ellipse cx={28} cy={62} rx={5} ry={3.4} fill="#FF9EA8" opacity={0.5} />
           <Ellipse cx={72} cy={62} rx={5} ry={3.4} fill="#FF9EA8" opacity={0.4} />
         </Svg>
+
+        {/* the floppy near ear — flicks every few seconds so Pepper is never still */}
+        <RigPart unit={unit} win={EAR_WIN} pivot={EAR_PIVOT} style={earStyle}>
+          <Ellipse cx={20} cy={earsDown ? 66 : 56} rx={10} ry={18} fill={spot} transform={`rotate(${earsDown ? 8 : 18} 20 ${earsDown ? 66 : 56})`} />
+          <Ellipse cx={19} cy={earsDown ? 62 : 52} rx={4.4} ry={9} fill="#3E4A80" opacity={0.55} transform={`rotate(${earsDown ? 8 : 18} 19 ${earsDown ? 62 : 52})`} />
+        </RigPart>
       </Animated.View>
     </Animated.View>
   );

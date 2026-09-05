@@ -8,6 +8,9 @@ import { hit, palette, radii, shadows, spacing, springs } from '@/theme';
 import { sfx, type SfxName } from '@/services/audio';
 import { haptics } from '@/services/haptics';
 import { Button, CheckIcon, ChevronRightIcon, Text, TrayRow } from '@/ui';
+import { GameCrew } from '@/characters';
+import { Stage } from '@/world';
+import { SlotPlaque } from '@/world/scenes';
 import { Draggable } from '../shared/Draggable';
 import { GameFrame } from '../shared/GameFrame';
 import { SlotZone } from '../shared/SlotZone';
@@ -200,6 +203,8 @@ export function Signals({ challenge, ageBand, onComplete, onEvent, compact }: Mi
       title="Firefighter Signals"
       subtitle={ageBand === 'A' ? undefined : 'Put the steps of the call in order.'}
       compact={compact}
+      backdrop={<Stage variant="radio-room" groundHeight={150} />}
+      overlay={<GameCrew side="right" size={54} bottom={compact ? 148 : 172} mood={state.phase === 'done' ? 'cheer' : state.phase === 'playing' ? 'happy' : 'idle'} />}
       hint={{ text: hintText, visible: hintLadder.showBubble && state.phase === 'ordering', onDismiss: hintLadder.dismiss }}
       tray={
         <View style={styles.trayInner}>
@@ -223,8 +228,11 @@ export function Signals({ challenge, ageBand, onComplete, onEvent, compact }: Mi
                       hintLadder.highlight && hintSignal === id ? styles.cardHint : null,
                     ]}
                   >
-                    <SignalGlyph id={id} size={cardSize * 0.6} />
-                    <Text variant="tiny" center numberOfLines={1}>
+                    <SignalGlyph id={id} size={cardSize * 0.56} />
+                    {/* BLOCKING DEFECT FIX: "Check the… / Raise lad…" were
+                        truncated. The label now wraps to two lines inside a
+                        card sized for it — the layout gives, never the word. */}
+                    <Text variant="tiny" center numberOfLines={2} style={styles.cardLabel}>
                       {signalName[id].en}
                     </Text>
                   </Draggable>
@@ -246,7 +254,12 @@ export function Signals({ challenge, ageBand, onComplete, onEvent, compact }: Mi
       }
     >
       <View style={styles.stage}>
-        <View style={styles.slotRow}>
+        {/* the call sheet: a real clipboard, not cards floating in the sky */}
+        <View style={styles.clipboard}>
+          <View style={styles.clip} />
+          <View style={styles.clipInner} />
+          <View style={styles.clipRule} />
+          <View style={styles.slotRow}>
           {steps.map((want, i) => {
             const cardIndex = state.slots[i];
             const id = cardIndex === null || cardIndex === undefined ? null : shuffled[cardIndex];
@@ -283,9 +296,10 @@ export function Signals({ challenge, ageBand, onComplete, onEvent, compact }: Mi
                         }}
                       />
                     ) : (
-                      <Text variant="tiny" color={palette.slate} center>
-                        step {i + 1}
-                      </Text>
+                      /* BLOCKING DEFECT FIX: an empty slot showed the literal
+                         placeholder string "step 1". It is now a drawn,
+                         numbered socket plaque. */
+                      <SlotPlaque index={i + 1} width={slotSize} height={slotSize} highlight={hintLadder.highlight && hintStep === i} />
                     )}
                   </SlotZone>
                 </View>
@@ -297,6 +311,7 @@ export function Signals({ challenge, ageBand, onComplete, onEvent, compact }: Mi
               </React.Fragment>
             );
           })}
+          </View>
         </View>
 
         {state.phase === 'done' ? (
@@ -364,13 +379,35 @@ const styles = StyleSheet.create({
   trayInner: { gap: spacing.xs },
   card: {
     alignItems: 'center',
+    justifyContent: 'flex-start',
     backgroundColor: palette.white,
     borderRadius: radii.card,
     paddingVertical: spacing.xs,
+    paddingHorizontal: 4,
     borderWidth: 3,
     borderColor: 'transparent',
     ...shadows.soft,
   },
+  cardLabel: { fontSize: 12, lineHeight: 14, marginTop: 2 },
+  clipboard: {
+    backgroundColor: palette.creamDeep,
+    borderRadius: radii.panel,
+    paddingHorizontal: spacing.sm,
+    paddingTop: spacing.lg,
+    paddingBottom: spacing.sm,
+    alignItems: 'center',
+    ...shadows.card,
+  },
+  clip: {
+    position: 'absolute',
+    top: -9,
+    width: 78,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: palette.slate,
+  },
+  clipInner: { position: 'absolute', top: -5, width: 52, height: 10, borderRadius: 5, backgroundColor: palette.slateLight },
+  clipRule: { alignSelf: 'stretch', height: 4, borderRadius: 2, backgroundColor: 'rgba(31,42,90,0.08)', marginBottom: spacing.xs },
   cardHint: { borderColor: palette.safetyYellow, ...shadows.glowGold },
   actions: { flexDirection: 'row', justifyContent: 'center' },
 });

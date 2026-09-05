@@ -11,10 +11,10 @@ const SHEEN = 'rgba(255,255,255,0.34)';
 /* The Farmers Market stall                                           */
 /* ================================================================= */
 
-export const STALL_VIEW = { w: 340, h: 148 } as const;
+export const STALL_VIEW = { w: 340, h: 196 } as const;
 /** Where the produce on sale sits, and where the price board's face is. */
-const STALL_ITEM = { x: 134, y: 40, w: 76, h: 76 } as const;
-const STALL_SIGN = { x: 26, y: 46, w: 84, h: 40 } as const;
+const STALL_ITEM = { x: 126, y: 46, w: 88, h: 88 } as const;
+const STALL_SIGN = { x: 24, y: 54, w: 88, h: 44 } as const;
 
 export function stallRects(width: number) {
   const k = width / STALL_VIEW.w;
@@ -44,18 +44,19 @@ export function StallFront({ width }: { width: number }) {
   const stripes = 10;
   return (
     <Svg width={width} height={(width * h) / w} viewBox={`0 0 ${w} ${h}`}>
-      {/* back wall */}
-      <Rect x={18} y={26} width={304} height={104} rx={10} fill={palette.creamDeep} />
-      <Rect x={18} y={26} width={304} height={98} rx={10} fill={palette.cream} />
-      {[46, 66, 86, 106].map((y) => (
-        <Rect key={y} x={22} y={y} width={296} height={2} rx={1} fill={palette.creamDeep} />
+      {/* back wall of the stall — warm tan planks so the cream awning reads */}
+      <Rect x={16} y={30} width={308} height={140} rx={10} fill={palette.tanDark} />
+      <Rect x={16} y={30} width={308} height={134} rx={10} fill={palette.tan} />
+      {[58, 84, 110, 136].map((y) => (
+        <Rect key={y} x={20} y={y} width={300} height={2.4} rx={1.2} fill="rgba(158,106,54,0.30)" />
       ))}
+      <Rect x={16} y={30} width={308} height={8} rx={4} fill="rgba(255,255,255,0.30)" />
 
       {/* posts */}
-      {[6, 318].map((x) => (
+      {[4, 320].map((x) => (
         <G key={x}>
-          <Rect x={x} y={20} width={16} height={128} rx={5} fill={palette.woodDark} />
-          <Rect x={x + 2} y={22} width={5} height={122} rx={2.5} fill={palette.wood} />
+          <Rect x={x} y={22} width={16} height={166} rx={5} fill={palette.woodDark} />
+          <Rect x={x + 2} y={24} width={5} height={160} rx={2.5} fill={palette.wood} />
         </G>
       ))}
 
@@ -66,47 +67,47 @@ export function StallFront({ width }: { width: number }) {
           x={(w / stripes) * i}
           y={0}
           width={w / stripes}
-          height={26}
+          height={30}
           fill={i % 2 ? palette.cream : palette.engineRed}
         />
       ))}
-      {scallops(stripes, w, 26, w / stripes / 2)}
-      <Rect x={0} y={0} width={w} height={26} rx={9} fill="none" />
-      <Rect x={0} y={0} width={w} height={7} rx={3.5} fill={SHEEN} />
-      <Rect x={0} y={20} width={w} height={6} fill={SHADE} />
+      {scallops(stripes, w, 30, w / stripes / 2)}
+      <Rect x={0} y={0} width={w} height={8} rx={4} fill={SHEEN} />
+      <Rect x={0} y={30} width={w} height={7} fill={SHADE} />
 
       {/* hanging price board */}
-      <Path d={`M${STALL_SIGN.x + 12} 26 v 14 M${STALL_SIGN.x + STALL_SIGN.w - 12} 26 v 14`} stroke={palette.woodDark} strokeWidth={3} />
-      <Rect x={STALL_SIGN.x - 6} y={STALL_SIGN.y - 8} width={STALL_SIGN.w + 12} height={STALL_SIGN.h + 16} rx={12} fill={palette.woodDark} />
-      <Rect x={STALL_SIGN.x - 2} y={STALL_SIGN.y - 4} width={STALL_SIGN.w + 4} height={STALL_SIGN.h + 8} rx={9} fill={palette.panel} />
+      <Path d={`M${STALL_SIGN.x + 14} 32 v 18 M${STALL_SIGN.x + STALL_SIGN.w - 14} 32 v 18`} stroke={palette.woodDark} strokeWidth={3} />
+      <Rect x={STALL_SIGN.x - 6} y={STALL_SIGN.y - 8} width={STALL_SIGN.w + 12} height={STALL_SIGN.h + 16} rx={13} fill={palette.woodDark} />
+      <Rect x={STALL_SIGN.x - 2} y={STALL_SIGN.y - 4} width={STALL_SIGN.w + 4} height={STALL_SIGN.h + 8} rx={10} fill={palette.panel} />
 
       {/* produce crate on the right */}
       <G>
         {([
-          [252, 62, palette.engineRed],
-          [278, 58, palette.leafGreen],
-          [300, 64, palette.safetyYellow],
-          [264, 78, palette.orange],
-          [290, 80, palette.engineRedLight],
+          [248, 92, palette.engineRed],
+          [276, 86, palette.leafGreen],
+          [302, 94, palette.safetyYellow],
+          [261, 110, palette.orange],
+          [289, 112, palette.engineRedLight],
         ] as [number, number, string][]).map(([cx, cy, fill], i) => (
           <G key={i}>
-            <Circle cx={cx} cy={cy + 2} r={11} fill={SHADE} />
-            <Circle cx={cx} cy={cy} r={11} fill={fill} />
-            <Circle cx={cx - 3.5} cy={cy - 4} r={3} fill="rgba(255,255,255,0.45)" />
+            <Circle cx={cx} cy={cy + 2} r={13} fill={SHADE} />
+            <Circle cx={cx} cy={cy} r={13} fill={fill} />
+            <Circle cx={cx - 4} cy={cy - 4.5} r={3.6} fill="rgba(255,255,255,0.45)" />
           </G>
         ))}
-        <Path d="M232 86 h88 l-6 40 a6 6 0 0 1-6 5 h-64 a6 6 0 0 1-6-5z" fill={palette.wood} />
-        <Rect x={230} y={80} width={92} height={12} rx={6} fill={palette.woodDark} />
-        <Path d="M240 96 h72 l-3 24 h-66z" fill={palette.tan} />
+        <Path d="M228 120 h94 l-7 44 a7 7 0 0 1-7 6 h-66 a7 7 0 0 1-7-6z" fill={palette.wood} />
+        <Rect x={226} y={113} width={98} height={13} rx={6.5} fill={palette.woodDark} />
+        <Path d="M238 132 h76 l-4 26 h-68z" fill={palette.tan} />
       </G>
 
       {/* the crate the item on sale sits in */}
+      <Ellipse cx={STALL_ITEM.x + STALL_ITEM.w / 2} cy={136} rx={34} ry={6} fill="rgba(31,42,90,0.10)" />
       <Path
-        d={`M${STALL_ITEM.x - 8} 104 h${STALL_ITEM.w + 16} l-5 26 a6 6 0 0 1-6 5 h-${STALL_ITEM.w} a6 6 0 0 1-6-5z`}
+        d={`M${STALL_ITEM.x - 10} 128 h${STALL_ITEM.w + 20} l-6 36 a7 7 0 0 1-7 6 h-${STALL_ITEM.w - 2} a7 7 0 0 1-7-6z`}
         fill={palette.wood}
       />
-      <Rect x={STALL_ITEM.x - 10} y={98} width={STALL_ITEM.w + 20} height={12} rx={6} fill={palette.woodDark} />
-      <Ellipse cx={STALL_ITEM.x + STALL_ITEM.w / 2} cy={112} rx={30} ry={5} fill="rgba(31,42,90,0.10)" />
+      <Rect x={STALL_ITEM.x - 12} y={121} width={STALL_ITEM.w + 24} height={13} rx={6.5} fill={palette.woodDark} />
+      <Path d={`M${STALL_ITEM.x + 2} 140 h${STALL_ITEM.w - 4} l-4 22 h-${STALL_ITEM.w - 12}z`} fill={palette.tan} />
     </Svg>
   );
 }
@@ -146,6 +147,7 @@ export function Bunting({ width }: { width: number }) {
  * cobbles, so nothing floats in raw sky.
  */
 export function MarketGround({ width }: { width: number }) {
+  const crate = Math.max(64, width * 0.24);
   return (
     <View style={styles.ground} pointerEvents="none">
       <View style={styles.kerb} />
@@ -165,8 +167,38 @@ export function MarketGround({ width }: { width: number }) {
             />
           )),
         )}
+        <View style={[styles.sideProp, { left: -crate * 0.18 }]}>
+          <SideCrate size={crate} tone="apple" />
+        </View>
+        <View style={[styles.sideProp, { right: -crate * 0.18 }]}>
+          <SideCrate size={crate} tone="leaf" />
+        </View>
       </View>
     </View>
+  );
+}
+
+/** A spare crate of produce standing on the paving — market dressing. */
+function SideCrate({ size, tone }: { size: number; tone: 'apple' | 'leaf' }) {
+  const fruit = tone === 'apple' ? palette.engineRed : palette.leafGreen;
+  const fruit2 = tone === 'apple' ? palette.orange : palette.safetyYellow;
+  return (
+    <Svg width={size} height={size * 0.78} viewBox="0 0 100 78">
+      <Ellipse cx={50} cy={72} rx={40} ry={6} fill="rgba(31,42,90,0.10)" />
+      {([
+        [30, 26, fruit],
+        [52, 22, fruit2],
+        [70, 28, fruit],
+      ] as [number, number, string][]).map(([cx, cy, fill], i) => (
+        <G key={i}>
+          <Circle cx={cx} cy={cy} r={12} fill={fill} />
+          <Circle cx={cx - 4} cy={cy - 4} r={3.4} fill="rgba(255,255,255,0.45)" />
+        </G>
+      ))}
+      <Path d="M12 34h76l-6 34a7 7 0 0 1-7 5H25a7 7 0 0 1-7-5z" fill={palette.wood} />
+      <Rect x={10} y={28} width={80} height={12} rx={6} fill={palette.woodDark} />
+      <Path d="M24 46h52l-3 20H27z" fill={palette.tan} />
+    </Svg>
   );
 }
 
@@ -229,9 +261,10 @@ export function PaperBag({ size = 64 }: { size?: number }) {
 }
 
 const styles = StyleSheet.create({
-  ground: { position: 'absolute', left: 0, right: 0, bottom: 0, height: '30%' },
+  ground: { position: 'absolute', left: 0, right: 0, bottom: 0, height: '42%' },
   kerb: { height: 8, backgroundColor: palette.tanDark, borderTopLeftRadius: 6, borderTopRightRadius: 6 },
   paving: { flex: 1, backgroundColor: '#EBD9B4', overflow: 'hidden' },
+  sideProp: { position: 'absolute', bottom: 2 },
   cobble: { position: 'absolute', height: 10, borderRadius: 5, backgroundColor: 'rgba(158,106,54,0.16)' },
   coin: { alignItems: 'center', justifyContent: 'center', borderRadius: radii.pill },
   coinLabel: { ...StyleSheet.absoluteFill, alignItems: 'center', justifyContent: 'center' },

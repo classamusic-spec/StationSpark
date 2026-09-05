@@ -27,6 +27,8 @@ import { Tray } from '@/ui/kit/Tray';
 import { VocabIcon } from '@/ui/kit/VocabIcon';
 import { RoundIconButton } from '@/ui/RoundIconButton';
 import { SpeakerIcon } from '@/ui/icons';
+import { GameCrew } from '@/characters';
+import { Stage as SceneStage } from '@/world';
 import { Stage, at } from '../../parts/Stage';
 import { RecipeCardFrame } from '../../parts/RecipeCardFrame';
 import { CookCTA } from '../../parts/SceneBits';
@@ -219,6 +221,9 @@ export function CountIngredients({ challenge, onComplete, onEvent, compact }: Mi
 
   return (
     <View style={styles.root}>
+      {/* a pantry, not a sky: shelves, jars, sacks and crates behind the play */}
+      <SceneStage variant="pantry" groundHeight={160} />
+      <GameCrew side="right" size={50} bottom={104} showPepper npc="rosa" mood={blended ? 'cheer' : Object.keys(bowl).length > 0 ? 'happy' : 'idle'} />
       <PromptBanner title="Fill the blender!" subtitle="Drag what the recipe asks for — no more, no less." compact={compact} />
 
       <View style={styles.listWrap}>
@@ -266,10 +271,18 @@ export function CountIngredients({ challenge, onComplete, onEvent, compact }: Mi
 
             {/* shelf */}
             <View style={at(s, 10, SHELF_Y, D.w - 20, 12)} pointerEvents="none">
-              <View style={[styles.shelf, { height: 12 * s, borderRadius: 6 * s }]} />
+              <View style={[styles.shelf, { height: 12 * s, borderRadius: 6 * s }]}>
+                <View style={[styles.shelfLip, { height: 4 * s, borderRadius: 2 * s }]} />
+                <View style={[styles.bracket, { left: 24 * s, borderTopWidth: 14 * s, borderRightWidth: 12 * s }]} />
+                <View style={[styles.bracket, styles.bracketRight, { right: 24 * s, borderTopWidth: 14 * s, borderLeftWidth: 12 * s }]} />
+              </View>
             </View>
             <View style={at(s, 10, SHELF_Y + ITEM + 20, D.w - 20, 12)} pointerEvents="none">
-              <View style={[styles.shelf, { height: 12 * s, borderRadius: 6 * s }]} />
+              <View style={[styles.shelf, { height: 12 * s, borderRadius: 6 * s }]}>
+                <View style={[styles.shelfLip, { height: 4 * s, borderRadius: 2 * s }]} />
+                <View style={[styles.bracket, { left: 24 * s, borderTopWidth: 14 * s, borderRightWidth: 12 * s }]} />
+                <View style={[styles.bracket, styles.bracketRight, { right: 24 * s, borderTopWidth: 14 * s, borderLeftWidth: 12 * s }]} />
+              </View>
             </View>
 
             {pantry.map((item) =>
@@ -415,6 +428,17 @@ const styles = StyleSheet.create({
   },
   fill: { flex: 1 },
   shelf: { backgroundColor: palette.wood, width: '100%' },
+  shelfLip: { position: 'absolute', left: 0, right: 0, top: 0, backgroundColor: 'rgba(255,255,255,0.32)' },
+  bracket: {
+    position: 'absolute',
+    top: '100%',
+    width: 0,
+    height: 0,
+    borderTopColor: palette.woodDark,
+    borderRightColor: 'transparent',
+    borderLeftColor: 'transparent',
+  },
+  bracketRight: {},
   token: {
     flex: 1,
     backgroundColor: palette.white,

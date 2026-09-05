@@ -40,7 +40,7 @@ function Pegboard({ x, y, w, h }: { x: number; y: number; w: number; h: number }
     <G>
       {/* the board casts onto the wall */}
       <Rect x={x + 4} y={y + 6} width={w} height={h} rx={radii.tile} fill={WALL_SHADOW} />
-      <Rect x={x} y={y} width={w} height={h} rx={radii.tile} fill={palette.creamDeep} />
+      <Rect x={x} y={y} width={w} height={h} rx={radii.tile} fill={palette.wood} />
       <Rect x={x} y={y} width={w} height={10} rx={5} fill={HILITE} />
       <Rect x={x} y={y + h - 12} width={w} height={12} rx={6} fill={SHADE} />
 
@@ -50,7 +50,7 @@ function Pegboard({ x, y, w, h }: { x: number; y: number; w: number; h: number }
           cx={x + w * ((i % cols) + 0.5) / cols}
           cy={y + 16 + (h - 30) * (Math.floor(i / cols) + 0.3) / rows}
           r={2}
-          fill={SHADE}
+          fill={palette.woodDark}
         />
       ))}
 
@@ -59,7 +59,7 @@ function Pegboard({ x, y, w, h }: { x: number; y: number; w: number; h: number }
         <Path d={`M ${x + w * 0.16} ${y + h * 0.32} l ${w * 0.1} ${h * 0.34}`} stroke={SHADE} strokeWidth={9} strokeLinecap="round" />
         <Path d={`M ${x + w * 0.15} ${y + h * 0.3} l ${w * 0.1} ${h * 0.34}`} stroke={palette.slate} strokeWidth={8} strokeLinecap="round" />
         <Circle cx={x + w * 0.15} cy={y + h * 0.3} r={9} fill={palette.slate} />
-        <Circle cx={x + w * 0.15} cy={y + h * 0.3} r={4} fill={palette.creamDeep} />
+        <Circle cx={x + w * 0.15} cy={y + h * 0.3} r={4} fill={palette.woodDark} />
       </G>
       {/* screwdriver */}
       <G>
@@ -132,39 +132,36 @@ function HoseReel({ cx, cy, r }: { cx: number; cy: number; r: number }) {
 /** A bank of two tall lockers with a spare helmet resting on top. */
 function Lockers({ x, y, w, floorY }: { x: number; y: number; w: number; floorY: number }) {
   const h = floorY - y;
-  const doorW = (w - 14) / 2;
-  const helmetR = Math.min(22, w * 0.26);
+  const doorW = (w - 12) / 2;
+  const helmetR = w * 0.2;
   return (
     <G>
-      <Ellipse cx={x + w / 2} cy={floorY + 6} rx={w * 0.62} ry={w * 0.14} fill={GROUND} />
+      <Ellipse cx={x + w / 2} cy={floorY + 4} rx={w * 0.66} ry={w * 0.15} fill={GROUND} />
       {/* carcass + a shaded side plane so it reads 2.5D */}
-      <Path d={`M ${x + w} ${y + 10} l 12 -10 l 0 ${h - 4} l -12 10 z`} fill={SHADE} />
+      <Path d={`M ${x + w} ${y + 8} l ${w * 0.13} -8 l 0 ${h - 4} l -${w * 0.13} 8 z`} fill={SHADE} />
       <Rect x={x} y={y} width={w} height={h} rx={radii.tag} fill={palette.slate} />
-      <Rect x={x} y={y} width={w} height={9} rx={4.5} fill={HILITE} />
+      <Rect x={x} y={y} width={w} height={7} rx={3.5} fill={HILITE} />
 
       {[0, 1].map((i) => {
-        const dx = x + 5 + i * (doorW + 4);
+        const dx = x + 4 + i * (doorW + 4);
         return (
           <G key={i}>
-            <Rect x={dx} y={y + 12} width={doorW} height={h - 24} rx={12} fill={palette.slateLight} />
-            <Rect x={dx} y={y + 12} width={doorW} height={7} rx={3.5} fill={HILITE} />
-            {/* vents */}
+            <Rect x={dx} y={y + 9} width={doorW} height={h - 18} rx={10} fill={palette.slateLight} />
+            <Rect x={dx} y={y + 9} width={doorW} height={5} rx={2.5} fill={HILITE} />
             {[0, 1, 2].map((v) => (
-              <Rect key={v} x={dx + doorW * 0.22} y={y + 26 + v * 8} width={doorW * 0.56} height={3.4} rx={1.7} fill={SHADE} />
+              <Rect key={v} x={dx + doorW * 0.24} y={y + h * 0.12 + v * h * 0.045} width={doorW * 0.52} height={h * 0.018} rx={h * 0.009} fill={SHADE} />
             ))}
-            {/* number plate */}
-            <Rect x={dx + doorW * 0.28} y={y + 58} width={doorW * 0.44} height={14} rx={6} fill={palette.cream} />
-            <Rect x={dx + doorW * 0.38} y={y + 63} width={doorW * 0.24} height={4} rx={2} fill={palette.navySoft} />
-            {/* handle */}
-            <Rect x={dx + doorW * 0.72} y={y + h * 0.52} width={7} height={22} rx={3.5} fill={palette.navySoft} />
-            <Rect x={dx} y={y + h - 30} width={doorW} height={18} rx={8} fill={SHADE} />
+            <Rect x={dx + doorW * 0.26} y={y + h * 0.31} width={doorW * 0.48} height={h * 0.07} rx={h * 0.03} fill={palette.cream} />
+            <Rect x={dx + doorW * 0.36} y={y + h * 0.335} width={doorW * 0.28} height={h * 0.02} rx={h * 0.01} fill={palette.navySoft} />
+            <Rect x={dx + doorW * 0.7} y={y + h * 0.52} width={doorW * 0.14} height={h * 0.13} rx={doorW * 0.07} fill={palette.navySoft} />
+            <Rect x={dx} y={y + h - 18} width={doorW} height={9} rx={4.5} fill={SHADE} />
           </G>
         );
       })}
 
-      {/* spare helmet, fully in frame, sitting on the lockers */}
+      {/* spare helmet, fully in frame, resting on the lockers */}
       <G>
-        <Ellipse cx={x + w * 0.5} cy={y - 2} rx={helmetR * 1.15} ry={helmetR * 0.24} fill={SHADE} />
+        <Ellipse cx={x + w * 0.5} cy={y - 2} rx={helmetR * 1.2} ry={helmetR * 0.26} fill={SHADE} />
         <Path
           d={`M ${x + w * 0.5 - helmetR} ${y - 4} c 0 -${helmetR * 1.25} ${helmetR * 0.55} -${helmetR * 1.5} ${helmetR} -${helmetR * 1.5} c ${helmetR * 0.45} 0 ${helmetR} ${helmetR * 0.25} ${helmetR} ${helmetR * 1.5} z`}
           fill={palette.engineRed}
@@ -176,8 +173,8 @@ function Lockers({ x, y, w, floorY }: { x: number; y: number; w: number; floorY:
           strokeLinecap="round"
           fill="none"
         />
-        <Ellipse cx={x + w * 0.5} cy={y - 4} rx={helmetR * 1.3} ry={helmetR * 0.3} fill={palette.engineRedDark} />
-        <Circle cx={x + w * 0.5} cy={y - helmetR * 0.85} r={helmetR * 0.3} fill={palette.safetyYellow} />
+        <Ellipse cx={x + w * 0.5} cy={y - 4} rx={helmetR * 1.32} ry={helmetR * 0.3} fill={palette.engineRedDark} />
+        <Circle cx={x + w * 0.5} cy={y - helmetR * 0.82} r={helmetR * 0.28} fill={palette.safetyYellow} />
       </G>
     </G>
   );
@@ -186,52 +183,56 @@ function Lockers({ x, y, w, floorY }: { x: number; y: number; w: number; floorY:
 /** Workbench: wooden top, two drawers, a toolbox and a little task lamp. */
 function Workbench({ x, y, w, floorY }: { x: number; y: number; w: number; floorY: number }) {
   const h = floorY - y;
-  const boxW = w * 0.3;
+  const legW = w * 0.08;
+  const boxW = w * 0.26;
+  const lampX = x + w * 0.86;
   return (
     <G>
-      <Ellipse cx={x + w / 2} cy={floorY + 5} rx={w * 0.56} ry={w * 0.1} fill={GROUND} />
-      {/* legs */}
-      <Rect x={x + 10} y={y + 26} width={12} height={h - 20} rx={6} fill={palette.woodDark} />
-      <Rect x={x + w - 22} y={y + 26} width={12} height={h - 20} rx={6} fill={palette.woodDark} />
-      {/* drawer block */}
-      <Rect x={x + w * 0.34} y={y + 24} width={w * 0.52} height={h - 30} rx={radii.tag} fill={palette.wood} />
-      {[0, 1].map((i) => (
-        <G key={i}>
-          <Rect x={x + w * 0.37} y={y + 32 + i * (h * 0.3)} width={w * 0.46} height={h * 0.24} rx={9} fill={palette.woodDark} />
-          <Rect x={x + w * 0.52} y={y + 40 + i * (h * 0.3)} width={w * 0.16} height={6} rx={3} fill={palette.slateLight} />
-        </G>
-      ))}
-      {/* top */}
-      <Rect x={x} y={y + 12} width={w} height={16} rx={8} fill={palette.woodDark} />
-      <Rect x={x} y={y + 6} width={w} height={16} rx={8} fill={palette.wood} />
-      <Rect x={x + 4} y={y + 8} width={w - 8} height={5} rx={2.5} fill={HILITE} />
-
-      {/* toolbox on the bench */}
+      <Ellipse cx={x + w / 2} cy={floorY + 4} rx={w * 0.58} ry={w * 0.1} fill={GROUND} />
+      {/* task lamp, clamped to the right end so it never reaches past the bench */}
       <G>
-        <Ellipse cx={x + w * 0.24} cy={y + 6} rx={boxW * 0.6} ry={4} fill={SHADE} />
-        <Rect x={x + w * 0.24 - boxW / 2} y={y - 20} width={boxW} height={26} rx={8} fill={palette.engineRed} />
-        <Rect x={x + w * 0.24 - boxW / 2} y={y - 20} width={boxW} height={7} rx={3.5} fill={HILITE} />
+        <Rect x={lampX - w * 0.07} y={y - h * 0.04} width={w * 0.14} height={h * 0.1} rx={h * 0.05} fill={palette.slate} />
         <Path
-          d={`M ${x + w * 0.24 - boxW * 0.22} ${y - 20} a ${boxW * 0.22} ${boxW * 0.22} 0 0 1 ${boxW * 0.44} 0`}
+          d={`M ${lampX} ${y - h * 0.02} l 0 -${h * 0.34} l -${w * 0.16} -${h * 0.1}`}
           stroke={palette.slate}
-          strokeWidth={4}
-          fill="none"
-        />
-      </G>
-
-      {/* task lamp */}
-      <G>
-        <Rect x={x + w * 0.74} y={y - 4} width={18} height={10} rx={5} fill={palette.slate} />
-        <Path
-          d={`M ${x + w * 0.74 + 9} ${y - 2} l 0 -26 l 20 -14`}
-          stroke={palette.slate}
-          strokeWidth={5}
+          strokeWidth={w * 0.06}
           strokeLinecap="round"
           strokeLinejoin="round"
           fill="none"
         />
-        <Path d={`M ${x + w * 0.74 + 22} ${y - 46} l 22 -8 l 6 16 l -22 8 z`} fill={palette.safetyYellow} />
-        <Path d={`M ${x + w * 0.74 + 24} ${y - 44} l 18 -6 l 2 5 l -18 6 z`} fill={HILITE} />
+        <Path
+          d={`M ${lampX - w * 0.1} ${y - h * 0.5} l -${w * 0.17} -${h * 0.05} l -${w * 0.03} ${h * 0.19} l ${w * 0.15} ${h * 0.02} z`}
+          fill={palette.safetyYellow}
+        />
+        <Path d={`M ${lampX - w * 0.13} ${y - h * 0.48} l -${w * 0.13} -${h * 0.03} l -${w * 0.01} ${h * 0.06} l ${w * 0.12} ${h * 0.02} z`} fill={HILITE} />
+      </G>
+      {/* legs */}
+      <Rect x={x + w * 0.06} y={y + h * 0.16} width={legW} height={h * 0.86} rx={legW / 2} fill={palette.woodDark} />
+      <Rect x={x + w - w * 0.14} y={y + h * 0.16} width={legW} height={h * 0.86} rx={legW / 2} fill={palette.woodDark} />
+      {/* drawer block */}
+      <Rect x={x + w * 0.34} y={y + h * 0.16} width={w * 0.54} height={h * 0.8} rx={radii.tag} fill={palette.wood} />
+      {[0, 1].map((i) => (
+        <G key={i}>
+          <Rect x={x + w * 0.38} y={y + h * 0.24 + i * h * 0.34} width={w * 0.46} height={h * 0.26} rx={h * 0.09} fill={palette.woodDark} />
+          <Rect x={x + w * 0.53} y={y + h * 0.34 + i * h * 0.34} width={w * 0.16} height={h * 0.05} rx={h * 0.025} fill={palette.slateLight} />
+        </G>
+      ))}
+      {/* top */}
+      <Rect x={x} y={y + h * 0.08} width={w} height={h * 0.13} rx={h * 0.065} fill={palette.woodDark} />
+      <Rect x={x} y={y + h * 0.02} width={w} height={h * 0.13} rx={h * 0.065} fill={palette.wood} />
+      <Rect x={x + w * 0.03} y={y + h * 0.04} width={w * 0.94} height={h * 0.04} rx={h * 0.02} fill={HILITE} />
+
+      {/* toolbox on the bench */}
+      <G>
+        <Ellipse cx={x + w * 0.3} cy={y + h * 0.03} rx={boxW * 0.62} ry={h * 0.03} fill={SHADE} />
+        <Rect x={x + w * 0.3 - boxW / 2} y={y - h * 0.24} width={boxW} height={h * 0.27} rx={h * 0.06} fill={palette.engineRed} />
+        <Rect x={x + w * 0.3 - boxW / 2} y={y - h * 0.24} width={boxW} height={h * 0.07} rx={h * 0.035} fill={HILITE} />
+        <Path
+          d={`M ${x + w * 0.3 - boxW * 0.22} ${y - h * 0.24} a ${boxW * 0.22} ${boxW * 0.22} 0 0 1 ${boxW * 0.44} 0`}
+          stroke={palette.slate}
+          strokeWidth={w * 0.03}
+          fill="none"
+        />
       </G>
     </G>
   );
@@ -258,18 +259,28 @@ function TyreStack({ cx, floorY, rx }: { cx: number; floorY: number; rx: number 
   );
 }
 
-/** The one plaque motif: cream sign board on a tan edge. */
-function BaySign({ x, y, w }: { x: number; y: number; w: number }) {
-  const h = w * 0.4;
+/** A fire extinguisher on its wall bracket — instantly readable, on theme. */
+function Extinguisher({ cx, y, h }: { cx: number; y: number; h: number }) {
+  const w = h * 0.34;
   return (
     <G>
-      <Rect x={x + 3} y={y + 5} width={w} height={h} rx={radii.tag} fill={WALL_SHADOW} />
-      <Rect x={x} y={y} width={w} height={h} rx={radii.tag} fill={palette.tanDark} />
-      <Rect x={x + 4} y={y + 4} width={w - 8} height={h - 8} rx={radii.tag - 4} fill={palette.cream} />
-      {/* "BAY 1" as drawn marks — no type inside the world layer */}
-      <Rect x={x + w * 0.16} y={y + h * 0.4} width={w * 0.4} height={h * 0.16} rx={h * 0.08} fill={palette.navySoft} />
-      <Rect x={x + w * 0.62} y={y + h * 0.32} width={h * 0.12} height={h * 0.34} rx={h * 0.06} fill={palette.engineRed} />
-      <Rect x={x + w * 0.16} y={y + h * 0.66} width={w * 0.28} height={h * 0.1} rx={h * 0.05} fill={palette.slateLight} />
+      <Rect x={cx - w / 2 + 3} y={y + 5} width={w} height={h} rx={w * 0.4} fill={WALL_SHADOW} />
+      {/* bracket */}
+      <Rect x={cx - w * 0.72} y={y + h * 0.5} width={w * 1.44} height={h * 0.11} rx={h * 0.055} fill={palette.slate} />
+      {/* body */}
+      <Rect x={cx - w / 2} y={y + h * 0.16} width={w} height={h * 0.84} rx={w * 0.34} fill={palette.engineRed} />
+      <Rect x={cx - w * 0.34} y={y + h * 0.22} width={w * 0.2} height={h * 0.6} rx={w * 0.1} fill={HILITE} />
+      <Rect x={cx - w * 0.42} y={y + h * 0.62} width={w * 0.84} height={h * 0.18} rx={h * 0.05} fill={palette.cream} />
+      {/* neck, handle and hose */}
+      <Rect x={cx - w * 0.16} y={y + h * 0.04} width={w * 0.32} height={h * 0.16} rx={w * 0.1} fill={palette.slate} />
+      <Rect x={cx - w * 0.36} y={y} width={w * 0.78} height={h * 0.08} rx={h * 0.04} fill={palette.slateLight} />
+      <Path
+        d={`M ${cx + w * 0.3} ${y + h * 0.08} q ${w * 0.6} ${h * 0.16} ${w * 0.28} ${h * 0.4}`}
+        stroke={palette.charcoal}
+        strokeWidth={w * 0.13}
+        strokeLinecap="round"
+        fill="none"
+      />
     </G>
   );
 }
@@ -284,6 +295,8 @@ export const GarageBay = memo(function GarageBay() {
   const h = Math.max(600, height);
   /** The floor meets the wall behind the truck, so the truck stands in front of it. */
   const floorY = clamp(Math.round(h * 0.37), 210, 420);
+  /** Nothing hangs above this: the back button, title banner and strapline live there. */
+  const sill = clamp(Math.round(h * 0.185), 120, 220);
 
   /** Life: the lamps sway, their glow breathes, a sheen crosses the wet floor. */
   const sway = useIdleBob(1.4, 5200);
@@ -291,12 +304,12 @@ export const GarageBay = memo(function GarageBay() {
   const glow = usePulse(3800, 0.55);
   const sheen = useLoop(26000);
 
-  const lampX = useMemo(() => [w * 0.2, w * 0.8] as const, [w]);
+  const lampX = useMemo(() => [w * 0.27, w * 0.85] as const, [w]);
   const lampH = floorY + 40;
 
   const lampAStyle = useAnimatedStyle(() => ({ transform: [{ rotate: `${sway.value}deg` }] }));
   const lampBStyle = useAnimatedStyle(() => ({ transform: [{ rotate: `${sway2.value}deg` }] }));
-  const glowStyle = useAnimatedStyle(() => ({ opacity: 0.34 + glow.value * 0.3 }));
+  const glowStyle = useAnimatedStyle(() => ({ opacity: 0.42 + glow.value * 0.34 }));
   const sheenStyle = useAnimatedStyle(() => ({
     opacity: 0.1 + Math.sin(sheen.value * Math.PI) * 0.12,
     transform: [{ translateX: -w * 0.5 + sheen.value * w * 1.6 }],
@@ -340,19 +353,15 @@ export const GarageBay = memo(function GarageBay() {
         })}
         <Rect x={0} y={0} width={w} height={floorY * 0.45} fill="url(#bayVignette)" />
 
-        {/* red hazard band along the wall */}
-        <Rect x={0} y={floorY - 62} width={w} height={16} rx={8} fill={palette.engineRed} opacity={0.9} />
-        <Rect x={0} y={floorY - 62} width={w} height={5} rx={2.5} fill={HILITE} />
-
         {/* ceiling beam */}
         <Rect x={0} y={0} width={w} height={22} fill={palette.charcoal} />
         <Rect x={0} y={18} width={w} height={5} fill={SHADE} />
         <Rect x={0} y={2} width={w} height={4} fill={HILITE} />
 
         {/* ── wall furniture ───────────────────────────────── */}
-        <BaySign x={w * 0.04} y={38} w={Math.min(120, w * 0.3)} />
-        <HoseReel cx={w * 0.72} cy={clamp(floorY * 0.32, 76, 130)} r={Math.min(30, w * 0.075)} />
-        <Pegboard x={w * 0.56} y={clamp(floorY * 0.52, 118, 210)} w={w * 0.4} h={clamp(floorY * 0.3, 84, 130)} />
+        <Extinguisher cx={w * 0.245} y={sill + 6} h={clamp(h * 0.062, 44, 76)} />
+        <HoseReel cx={w * 0.9} cy={sill + 22} r={clamp(w * 0.052, 16, 26)} />
+        <Pegboard x={w * 0.6} y={sill + 58} w={w * 0.34} h={clamp(floorY - sill - 96, 54, 92)} />
 
         {/* ── floor ─────────────────────────────────────────── */}
         <Rect x={0} y={floorY} width={w} height={h - floorY} fill="url(#bayFloor)" />
@@ -364,23 +373,36 @@ export const GarageBay = memo(function GarageBay() {
         <Path d={`M ${w * 0.2} ${floorY + 26} L ${w * 0.02} ${h} L ${w * 0.09} ${h} L ${w * 0.26} ${floorY + 26} Z`} fill={palette.safetyYellow} opacity={0.5} />
         <Path d={`M ${w * 0.8} ${floorY + 26} L ${w * 0.98} ${h} L ${w * 0.91} ${h} L ${w * 0.74} ${floorY + 26} Z`} fill={palette.safetyYellow} opacity={0.5} />
 
-        {/* oil stain + puddle */}
-        <Ellipse cx={w * 0.36} cy={floorY + (h - floorY) * 0.34} rx={w * 0.1} ry={(h - floorY) * 0.05} fill={palette.navy} opacity={0.07} />
+        {/* tyre marks curving out of the bay */}
+        <Path
+          d={`M ${w * 0.3} ${floorY + 30} q ${w * 0.06} ${(h - floorY) * 0.2} -${w * 0.04} ${(h - floorY) * 0.42}`}
+          stroke={palette.navy}
+          strokeWidth={7}
+          strokeLinecap="round"
+          opacity={0.06}
+          fill="none"
+        />
+        <Path
+          d={`M ${w * 0.66} ${floorY + 30} q ${w * 0.07} ${(h - floorY) * 0.2} ${w * 0.02} ${(h - floorY) * 0.42}`}
+          stroke={palette.navy}
+          strokeWidth={7}
+          strokeLinecap="round"
+          opacity={0.06}
+          fill="none"
+        />
+
+        {/* oil stain + puddle, in the open floor in front of the bay */}
+        <Ellipse cx={w * 0.78} cy={floorY + (h - floorY) * 0.24} rx={w * 0.09} ry={(h - floorY) * 0.035} fill={palette.navy} opacity={0.07} />
         <G>
-          <Ellipse cx={w * 0.63} cy={floorY + (h - floorY) * 0.3} rx={w * 0.16} ry={(h - floorY) * 0.06} fill={palette.waterCyan} opacity={0.22} />
-          <Ellipse cx={w * 0.63} cy={floorY + (h - floorY) * 0.29} rx={w * 0.12} ry={(h - floorY) * 0.04} fill={palette.waterCyanLight} opacity={0.35} />
-          <Ellipse cx={w * 0.58} cy={floorY + (h - floorY) * 0.275} rx={w * 0.05} ry={(h - floorY) * 0.014} fill="#FFFFFF" opacity={0.45} />
+          <Ellipse cx={w * 0.3} cy={floorY + (h - floorY) * 0.2} rx={w * 0.15} ry={(h - floorY) * 0.05} fill={palette.waterCyan} opacity={0.24} />
+          <Ellipse cx={w * 0.3} cy={floorY + (h - floorY) * 0.192} rx={w * 0.11} ry={(h - floorY) * 0.034} fill={palette.waterCyanLight} opacity={0.36} />
+          <Ellipse cx={w * 0.255} cy={floorY + (h - floorY) * 0.182} rx={w * 0.045} ry={(h - floorY) * 0.012} fill="#FFFFFF" opacity={0.5} />
         </G>
 
         {/* ── things standing on the floor ─────────────────── */}
-        <Lockers x={w * 0.025} y={clamp(floorY * 0.34, 84, 150)} w={Math.min(104, w * 0.2)} floorY={floorY} />
-        <TyreStack cx={w * 0.15} floorY={floorY + (h - floorY) * 0.2} rx={Math.min(46, w * 0.1)} />
-        <Workbench
-          x={w * 0.6}
-          y={floorY + (h - floorY) * 0.06}
-          w={Math.min(180, w * 0.37)}
-          floorY={floorY + (h - floorY) * 0.28}
-        />
+        <Lockers x={w * 0.02} y={sill} w={clamp(w * 0.16, 54, 84)} floorY={floorY} />
+        <TyreStack cx={w * 0.205} floorY={floorY + 26} rx={clamp(w * 0.066, 22, 34)} />
+        <Workbench x={w * 0.72} y={floorY + 34} w={clamp(w * 0.26, 92, 150)} floorY={floorY + 112} />
       </Svg>
 
       {/* ── the two work lamps, swaying on their cables ────── */}
@@ -394,11 +416,11 @@ export const GarageBay = memo(function GarageBay() {
           ]}
         >
           <Svg width={lampW} height={lampH} viewBox={`0 0 ${lampW} ${lampH}`}>
-            <Rect x={lampW / 2 - 2.5} y={0} width={5} height={30} rx={2.5} fill={palette.charcoalDark} />
-            <Path d={`M ${lampW / 2 - 30} 52 Q ${lampW / 2} 20 ${lampW / 2 + 30} 52 Z`} fill={palette.engineRed} />
-            <Path d={`M ${lampW / 2 - 20} 44 Q ${lampW / 2 - 6} 27 ${lampW / 2 + 2} 26`} stroke={HILITE} strokeWidth={5} strokeLinecap="round" fill="none" />
-            <Ellipse cx={lampW / 2} cy={52} rx={30} ry={7} fill={palette.engineRedDark} />
-            <Ellipse cx={lampW / 2} cy={51} rx={22} ry={5} fill={palette.safetyYellow} />
+            <Rect x={lampW / 2 - 2.5} y={0} width={5} height={20} rx={2.5} fill={palette.charcoalDark} />
+            <Path d={`M ${lampW / 2 - 28} 44 Q ${lampW / 2} 14 ${lampW / 2 + 28} 44 Z`} fill={palette.engineRed} />
+            <Path d={`M ${lampW / 2 - 19} 37 Q ${lampW / 2 - 6} 21 ${lampW / 2 + 2} 20`} stroke={HILITE} strokeWidth={5} strokeLinecap="round" fill="none" />
+            <Ellipse cx={lampW / 2} cy={44} rx={28} ry={6.5} fill={palette.engineRedDark} />
+            <Ellipse cx={lampW / 2} cy={43} rx={21} ry={4.6} fill={palette.safetyYellow} />
           </Svg>
         </Animated.View>
       ))}
@@ -414,7 +436,7 @@ export const GarageBay = memo(function GarageBay() {
               </LinearGradient>
             </Defs>
             <Path
-              d={`M ${lampW / 2 - 28} 54 L ${lampW / 2 - lampW * 0.44} ${lampH} L ${lampW / 2 + lampW * 0.44} ${lampH} L ${lampW / 2 + 28} 54 Z`}
+              d={`M ${lampW / 2 - 26} 46 L ${lampW / 2 - lampW * 0.46} ${lampH} L ${lampW / 2 + lampW * 0.46} ${lampH} L ${lampW / 2 + 26} 46 Z`}
               fill={`url(#cone${i})`}
             />
           </Svg>

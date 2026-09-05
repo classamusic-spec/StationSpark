@@ -90,6 +90,20 @@ describe('hit testing', () => {
     expect(regionAtPoint({ x: 100, y: 161 }, CENTER, 60, 4)).toBeNull();
   });
 
+  // A press whose coordinates never arrived used to slip past `NaN > radius`
+  // and hand back a NaN index, which the game then wrote into `assigned[NaN]`.
+  it('treats a point with no coordinates as a miss, never a NaN region', () => {
+    for (const bad of [
+      { x: NaN, y: 100 },
+      { x: 100, y: NaN },
+      { x: NaN, y: NaN },
+      { x: Infinity, y: 100 },
+      { x: undefined as unknown as number, y: 100 },
+    ]) {
+      expect(regionAtPoint(bad, CENTER, 60, 4)).toBeNull();
+    }
+  });
+
   it('always returns a region inside the circle, for every angle', () => {
     for (let a = 0; a < TAU; a += 0.05) {
       const p = polar(CENTER, 40, a);

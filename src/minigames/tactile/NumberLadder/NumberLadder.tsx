@@ -242,6 +242,8 @@ export function NumberLadder({ challenge, ageBand, onComplete, onEvent, compact 
       onStageLayout={onLayout}
       hint={hints.bubble}
       onDismissHint={hints.dismiss}
+      backdrop={<Stage variant="street" groundHeight={130} />}
+      overlay={<GameCrew side="left" size={58} bottom={compact ? 108 : 132} showPepper mood={state.phase === 'done' ? 'cheer' : state.phase === 'hopping' ? 'happy' : 'idle'} />}
       footer={
         <View style={styles.mathRow}>
           <Text variant="h3" color={state.pos === target ? palette.leafGreenDark : palette.navy}>
@@ -333,6 +335,7 @@ export function NumberLadder({ challenge, ageBand, onComplete, onEvent, compact 
             pointerEvents="none"
           >
             <Rookie size={rookieSize * 1.7} emotion={state.phase === 'done' ? 'proud' : 'happy'} pose={state.phase === 'done' ? 'cheer' : 'stand'} jumping={state.phase === 'done'} />
+          </Animated.View>
         </View>
       ) : null}
     </GameShell>
@@ -352,7 +355,25 @@ const styles = StyleSheet.create({
   },
   flag: { position: 'absolute', alignItems: 'center' },
   flagPet: { marginTop: -6 },
-  ground: { position: 'absolute', left: 0, right: 0, backgroundColor: palette.grass },
+  wall: { position: 'absolute' },
+  ground: {
+    position: 'absolute',
+    left: -20,
+    right: -20,
+    backgroundColor: '#C4CCDE',
+    borderTopLeftRadius: radii.panel * 3,
+    borderTopRightRadius: radii.panel * 3,
+  },
+  groundLip: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    height: 9,
+    backgroundColor: '#DDE3F0',
+    borderTopLeftRadius: radii.panel * 3,
+    borderTopRightRadius: radii.panel * 3,
+  },
   rookie: { position: 'absolute', alignItems: 'center' },
   mathRow: {
     alignItems: 'center',

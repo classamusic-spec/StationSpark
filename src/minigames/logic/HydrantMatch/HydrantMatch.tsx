@@ -8,6 +8,8 @@ import { sfx } from '@/services/audio';
 import { haptics } from '@/services/haptics';
 import { speech } from '@/services/speech';
 import { Button, EquipmentIcon, SpeakerIcon, Text } from '@/ui';
+import { GameCrew } from '@/characters';
+import { Stage } from '@/world';
 import { Draggable } from '../shared/Draggable';
 import { GameFrame } from '../shared/GameFrame';
 import { SlotZone } from '../shared/SlotZone';
@@ -111,6 +113,8 @@ export function HydrantMatch({ challenge, ageBand, onComplete, onEvent, compact 
       title={`Connect to Hydrant ${challenge.label}`}
       subtitle={ageBand === 'A' ? undefined : 'Drag the hose to the matching hydrant.'}
       compact={compact}
+      backdrop={<Stage variant="street" groundHeight={168} />}
+      overlay={<GameCrew side="right" size={54} bottom={compact ? 138 : 162} showPepper mood={state.phase === 'connected' ? 'cheer' : 'idle'} />}
       hint={{ text: hintText, visible: hintLadder.showBubble, onDismiss: hintLadder.dismiss }}
       tray={
         <View style={styles.tray}>
@@ -166,11 +170,13 @@ export function HydrantMatch({ challenge, ageBand, onComplete, onEvent, compact 
     >
       <View style={styles.stage}>
         <View style={styles.truckRow}>
-          <TruckSide width={Math.min(layout.s(180), layout.boxWidth * 0.5)} />
-          <View style={[styles.hoseLine, { width: layout.s(60) }]} />
+          {/* the whole engine, not a cropped van */}
+          <TruckSide width={Math.min(layout.s(240), layout.boxWidth * 0.66)} />
+          <View style={[styles.hoseLine, { width: layout.s(44) }]} />
         </View>
         <View style={styles.street}>
           <View style={styles.curb} />
+          <View style={styles.curbLip} />
           <View style={styles.hydrants}>
             {challenge.options.map((value, i) => {
               const isMatch = state.phase === 'connected' && value === challenge.correct;
@@ -215,7 +221,7 @@ export function HydrantMatch({ challenge, ageBand, onComplete, onEvent, compact 
 
 const styles = StyleSheet.create({
   stage: { flex: 1, justifyContent: 'flex-end', paddingBottom: spacing.sm },
-  truckRow: { flexDirection: 'row', alignItems: 'center', paddingLeft: spacing.xs },
+  truckRow: { flexDirection: 'row', alignItems: 'flex-end', paddingLeft: spacing.xs, marginBottom: -6 },
   hoseLine: {
     height: 12,
     borderRadius: 6,
@@ -224,19 +230,28 @@ const styles = StyleSheet.create({
     borderBottomWidth: 3,
     borderBottomColor: palette.engineRedDark,
   },
+  /* a real pavement: a light kerb lip on a grey slab, not a placeholder box */
   street: {
-    backgroundColor: '#C9D0E0',
-    borderTopLeftRadius: radii.card,
-    borderTopRightRadius: radii.card,
-    paddingTop: spacing.sm,
+    backgroundColor: '#C4CCDE',
+    borderTopLeftRadius: radii.panel + 20,
+    borderTopRightRadius: radii.panel + 20,
+    paddingTop: spacing.xs,
     paddingBottom: spacing.md,
+    marginHorizontal: -spacing.md,
+    paddingHorizontal: spacing.md,
     ...shadows.soft,
   },
   curb: {
-    height: 8,
-    backgroundColor: palette.slateLight,
-    borderRadius: 4,
-    marginHorizontal: spacing.sm,
+    height: 9,
+    backgroundColor: '#E7EBF4',
+    borderTopLeftRadius: radii.panel + 20,
+    borderTopRightRadius: radii.panel + 20,
+    marginHorizontal: -spacing.md,
+  },
+  curbLip: {
+    height: 5,
+    backgroundColor: 'rgba(31,42,90,0.08)',
+    marginHorizontal: -spacing.md,
     marginBottom: spacing.xs,
   },
   hydrants: { flexDirection: 'row', justifyContent: 'space-evenly', alignItems: 'flex-end' },

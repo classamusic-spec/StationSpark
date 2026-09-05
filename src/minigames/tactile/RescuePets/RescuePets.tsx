@@ -18,7 +18,9 @@ import { Chip, Text } from '@/ui';
 import { sfx } from '@/services/audio';
 import { haptics } from '@/services/haptics';
 import { speech } from '@/services/speech';
-import { CharacterPortrait } from '@/characters/CharacterPortrait';
+import Svg, { Path } from 'react-native-svg';
+import { GameCrew, Rookie } from '@/characters';
+import { Stage } from '@/world';
 import { Animal, RescueBasket, RescueTree, animalName, sceneTheme } from '@/world/props';
 import { AskQuestion, GameShell, PulseRing, optionsFor, useHintLadder, useMeasuredBox, useSpokenPrompt, useStage } from '../shared';
 
@@ -189,7 +191,9 @@ export function RescuePets({ challenge, ageBand, onComplete, onEvent, compact }:
       petSize,
       basket: { x: basketX, y: basketY, w: basketW, h: basketH },
       basketCentre: { x: basketX + basketW / 2, y: basketY + basketH / 2, r: Math.max(90, basketW * 0.85) },
-      rookie: { x: basketX + basketW * 0.5 - rookieSize * 0.5, y: basketY - rookieSize * 0.72, size: rookieSize },
+      // the rig is drawn ~1.55 × the old portrait box, so it stands *behind*
+      // the basket rather than sitting in it
+      rookie: { x: basketX + basketW * 0.5 - rookieSize * 0.45, y: basketY - rookieSize * 1.32, size: rookieSize },
     };
   }, [box.h, box.w, stage]);
 
@@ -305,6 +309,7 @@ export function RescuePets({ challenge, ageBand, onComplete, onEvent, compact }:
       onStageLayout={onLayout}
       hint={hints.bubble}
       onDismissHint={hints.dismiss}
+      backdrop={<Stage variant="park" groundHeight={140} />}
       footer={
         <View style={styles.counter}>
           <Chip label={`${safeCount} safe`} tone="green" />
@@ -314,6 +319,8 @@ export function RescuePets({ challenge, ageBand, onComplete, onEvent, compact }:
         </View>
       }
       overlay={
+        <>
+        <GameCrew side="left" size={58} bottom={compact ? 92 : 112} showPepper npc="okafor" mood={state.phase === 'done' ? 'cheer' : state.saved.length > 0 ? 'happy' : 'idle'} />
         <AskQuestion
           visible={state.phase === 'asking'}
           question={askText}
@@ -326,6 +333,7 @@ export function RescuePets({ challenge, ageBand, onComplete, onEvent, compact }:
           compact={compact}
           onAnswer={onAnswer}
         />
+        </>
       }
     >
       {ready ? (
@@ -334,15 +342,23 @@ export function RescuePets({ challenge, ageBand, onComplete, onEvent, compact }:
             <RescueTree width={geo.tree.w} height={geo.tree.h} />
           </View>
 
-          {/* grass */}
-          <View style={[styles.grass, { top: geo.h - stage.s(26) }]} pointerEvents="none" />
+          {/* grass — the park plane the tree and the basket stand on */}
+          <View style={[styles.grass, { top: geo.h - stage.s(40) }]} pointerEvents="none">
+            <View style={styles.grassLip} />
+          </View>
 
           {/* Rookie with the basket */}
           <Animated.View
             style={[styles.rookie, { left: geo.rookie.x, top: geo.rookie.y, width: geo.rookie.size }, hugStyle]}
             pointerEvents="none"
           >
-            <CharacterPortrait id="rookie" emotion={state.phase === 'done' ? 'proud' : 'happy'} size={geo.rookie.size} />
+            {/* critique #23 — a head in a basket is unsettling; use the full rig */}
+            <Rookie
+              size={geo.rookie.size * 1.55}
+              emotion={state.phase === 'done' ? 'proud' : 'happy'}
+              pose={state.phase === 'done' ? 'cheer' : 'stand'}
+              jumping={state.phase === 'done'}
+            />
           </Animated.View>
           <Animated.View
             style={[styles.basket, { left: geo.basket.x, top: geo.basket.y, width: geo.basket.w, height: geo.basket.h }, hugStyle]}
@@ -380,7 +396,14 @@ export function RescuePets({ challenge, ageBand, onComplete, onEvent, compact }:
 
           {state.phase === 'done' ? (
             <Animated.View entering={FadeIn} style={[styles.hearts, { left: geo.rookie.x, top: geo.rookie.y - stage.s(30) }]} pointerEvents="none">
-              <Text variant="h1">💛</Text>
+              {/* rule #5 — drawn, never an emoji glyph */}
+              <Svg width={stage.s(44)} height={stage.s(44)} viewBox="0 0 44 44">
+                <Path
+                  d="M22 39C10 30 4 24 4 16.5A9.5 9.5 0 0 1 22 12a9.5 9.5 0 0 1 18 4.5C40 24 34 30 22 39z"
+                  fill={palette.safetyYellow}
+                />
+                <Path d="M13 15a6 6 0 0 1 7-3c-4 1-6 3-7 7z" fill="rgba(255,255,255,0.32)" />
+              </Svg>
             </Animated.View>
           ) : null}
         </View>
@@ -391,7 +414,8 @@ export function RescuePets({ challenge, ageBand, onComplete, onEvent, compact }:
 
 const styles = StyleSheet.create({
   tree: { position: 'absolute' },
-  grass: { position: 'absolute', left: 0, right: 0, bottom: 0, backgroundColor: palette.grass, borderTopLeftRadius: 24, borderTopRightRadius: 24 },
+  grass: { position: 'absolute', left: -18, right: -18, bottom: 0, backgroundColor: palette.grassDark, borderTopLeftRadius: 60, borderTopRightRadius: 60 },
+  grassLip: { position: 'absolute', left: 0, right: 0, top: 0, height: 9, backgroundColor: palette.grass, borderTopLeftRadius: 60, borderTopRightRadius: 60 },
   rookie: { position: 'absolute', alignItems: 'center' },
   basket: { position: 'absolute', alignItems: 'center', justifyContent: 'center' },
   basketPets: { position: 'absolute', top: -6, flexDirection: 'row', justifyContent: 'center', flexWrap: 'wrap' },

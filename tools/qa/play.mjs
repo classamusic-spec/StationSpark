@@ -447,11 +447,15 @@ function subsetIndices(pieces, target, avoid = new Set()) {
 
 const NAMES = { fire: 'fire', water: 'water', cone: 'cone', star: 'star' };
 
-/** Answer whatever AskQuestion / mid-game modal is on screen, if any. */
+/**
+ * Answer whatever AskQuestion / mid-game modal is on screen, if any.
+ * The scrim fades out over ~300 ms after the card closes and still takes
+ * touches while it does, so give it room before the caller starts playing.
+ */
 async function answerAsk(page, value) {
   const tile = byLabel(page, String(value));
   if ((await tile.count()) > 0) {
-    await tap(page, tile, { after: 900 });
+    await tap(page, tile, { after: 1500 });
     return true;
   }
   return false;
@@ -512,10 +516,20 @@ const drivers = {
     });
     if (!program) throw new Error('rescue-route: generated maze has no solution');
     if (program.length > c.maxCommands) throw new Error(`rescue-route: shortest route ${program.length} > maxCommands ${c.maxCommands}`);
+    if (process.env.QA_DEBUG) console.log('  route:', program.join(','), 'max', c.maxCommands);
     const LABEL = { forward: 'Forward', left: 'Left', right: 'Right', 'turn-around': 'Turn Around' };
-    for (const cmd of program) await tapLabel(page, LABEL[cmd], { after: 90 });
+    const steps = () => page.locator('[aria-label^="Remove step "]').count();
+    for (const cmd of program) {
+      for (let attempt = 0; attempt < 3; attempt += 1) {
+        const before = await steps();
+        await tapLabel(page, LABEL[cmd], { after: 160 });
+        if ((await steps()) > before) break;
+      }
+    }
+    const filled = await steps();
+    if (process.env.QA_DEBUG) console.log('  filled slots:', filled, 'of', program.length);
     await tapLabel(page, 'Go', { after: 400 });
-    await sleep(program.length * 420 + 1500);
+    await sleep(program.length * 460 + 2000);
   },
 
   async signals(page, c) {
@@ -553,12 +567,34 @@ const drivers = {
       await dragSel(page, `[data-testid="drag:piece-${tray.index}"]`, `[data-testid="slot:cell:${cell}"]`);
       placed.push({ cell, rotation: target.rotation });
     }
+    // Rotate each piece until its rendered angle really is the one we want —
+    // a dropped tap here silently leaves the line unconnected.
     for (const p of placed) {
-      for (let r = 0; r < p.rotation; r += 1) {
-        await tap(page, page.locator(`[data-testid="slot:cell:${p.cell}"] [role="button"]`), { after: 160 });
+      const piece = page.locator(`[data-testid="slot:cell:${p.cell}"] [role="button"] > *`).first();
+      const want = (((p.rotation * 90) % 360) + 360) % 360;
+      const angle = () =>
+        piece
+          .evaluate((n) => {
+            const m = new DOMMatrixReadOnly(getComputedStyle(n).transform);
+            return (((Math.round((Math.atan2(m.b, m.a) * 180) / Math.PI) % 360) + 360) % 360);
+          })
+          .catch(() => -1);
+      const off = (now) => {
+        const d = (((now - want) % 360) + 360) % 360;
+        return Math.min(d, 360 - d);
+      };
+      for (let guard = 0; guard < 8; guard += 1) {
+        const now = await angle();
+        if (process.env.QA_DEBUG) console.log(`  cell ${p.cell} want ${want} now ${now}`);
+        if (now >= 0 && off(now) < 12) break;
+        await tap(page, page.locator(`[data-testid="slot:cell:${p.cell}"] [role="button"]`), { after: 420 });
       }
     }
-    await sleep(path.length * 220 + 1400);
+    if (process.env.QA_DEBUG) {
+      console.log('  path:', path.map((p) => `${p.row},${p.col}`).join(' → '));
+      console.log('  want:', [...want].map(([k, v]) => `${k}=${v.piece}@${v.rotation}`).join(' '));
+    }
+    await sleep(path.length * 260 + 1800);
   },
 
   /* ---------------- tactile ---------------- */
@@ -675,8 +711,14 @@ const drivers = {
 
   async 'measure-pour'(page, c) {
     const shots = Math.round(frac(c.target) / frac(c.step));
+    // the jug is press-and-hold (onPressIn/onPressOut), so hold each pour
+    const jug = await boxOf(page, '[aria-label^="Hold to pour"]');
     for (let i = 0; i < shots; i += 1) {
-      await tap(page, byLabel(page, 'Hold to pour', false), { after: 200 });
+      await page.mouse.move(jug.cx, jug.cy);
+      await page.mouse.down();
+      await sleep(160);
+      await page.mouse.up();
+      await sleep(220);
     }
     await tapLabel(page, 'Done', { after: 600 });
     // if we are not exactly on the line, use the assist ladder
@@ -737,10 +779,9 @@ const drivers = {
     const pizza = page.locator('[aria-label^="Pizza — tap a slice"]').first();
     let region = 0;
     for (const p of plan) {
-      // pick the bowl, then fill `need` empty regions
-      const bowl = page.locator('[aria-label]').filter({ hasText: '' });
-      void bowl;
-      await tap(page, byLabel(page, toppingLabel(p.topping)), { after: 200 });
+      // the bowl's label is the kid-facing word ("Bell pepper" for `pepper`),
+      // so match on the id case-insensitively rather than guessing the label
+      await tap(page, page.locator(`[role="button"][aria-label*="${p.topping}" i]`), { after: 250 });
       for (let n = 0; n < p.need && region < count; n += 1, region += 1) {
         const b = await pizza.boundingBox();
         if (!b) break;
@@ -789,20 +830,6 @@ const drivers = {
   },
 };
 
-/** kitchen/food.ts toppingLabel, inlined for the harness. */
-function toppingLabel(id) {
-  const map = {
-    cheese: 'Cheese',
-    tomato: 'Tomato',
-    mushroom: 'Mushroom',
-    pepper: 'Pepper',
-    olive: 'Olive',
-    basil: 'Basil',
-    pineapple: 'Pineapple',
-    corn: 'Corn',
-  };
-  return map[id] ?? id.charAt(0).toUpperCase() + id.slice(1);
-}
 
 /* ------------------------------------------------------------------ */
 /* training runs                                                        */
@@ -845,7 +872,7 @@ async function runTraining(kind) {
     const challenge = await waitForChallenge(page);
     if (!challenge) throw new Error('the mini-game never published a challenge (did the stage fall back?)');
     if (challenge.kind !== kind) throw new Error(`stage rendered "${challenge.kind}" for /training/${kind}`);
-    await sleep(700); // entrance springs + arena measure
+    await sleep(1400); // entrance springs (the tray spring lands ~1 s) + arena measure
 
     const drive = drivers[kind];
     if (!drive) throw new Error('no driver');

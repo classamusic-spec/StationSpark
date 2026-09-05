@@ -16,17 +16,44 @@ export const PERSON_VB = { w: 120, h: 165 } as const;
 
 const HEAD = { cx: 60, cy: 60, rx: 27, ry: 26 } as const;
 const FACE_CY = 64;
+/**
+ * Shoulders sit *inside* the jacket silhouette so a rotating arm never shows a
+ * gap at the joint — the shoulder cap is drawn on the body, the arm root under
+ * it (art critique item #22: "arms stop reading as detached ovals").
+ */
 const ARM = {
-  right: { s: { x: 80, y: 102 }, e: { x: 86, y: 118 }, h: { x: 89, y: 133 } },
-  left: { s: { x: 40, y: 102 }, e: { x: 34, y: 118 }, h: { x: 31, y: 133 } },
+  right: { s: { x: 78.5, y: 102 }, e: { x: 85, y: 118 }, h: { x: 88, y: 133 } },
+  left: { s: { x: 41.5, y: 102 }, e: { x: 35, y: 118 }, h: { x: 32, y: 133 } },
 } as const;
 const ARM_WIN = {
-  right: { x: 58, y: 50, w: 62, h: 106 },
-  left: { x: 0, y: 50, w: 62, h: 106 },
+  right: { x: 56, y: 46, w: 64, h: 110 },
+  left: { x: 0, y: 46, w: 64, h: 110 },
 } as const;
 
+/**
+ * The jacket. Ends at a hem (y ≈ 128) with the trousers below it — that break
+ * is what stops Rookie reading as one navy blob at thumbnail size.
+ */
 const TORSO =
-  'M 38 104 C 38 94 46 89 60 89 C 74 89 82 94 82 104 L 85.5 133 C 86.5 140 82 143 77 143 L 43 143 C 38 143 33.5 140 34.5 133 Z';
+  'M 36.5 105 C 36.5 95 44 90 60 90 C 76 90 83.5 95 83.5 105 L 85 122 C 85.6 126.6 82.4 129 78.4 129 L 41.6 129 C 37.6 129 34.4 126.6 35 122 Z';
+
+/** Where the jacket hem, the trouser block and the boots meet. */
+const HEM_Y = 129;
+const BOOT_TOP = 139;
+
+/**
+ * How far each hat is lifted off the brow, in rig units. Without the lift the
+ * fire helmet's brim sits on the eyelashes and no hairstyle is visible at all.
+ */
+const HEADWEAR_LIFT: Record<HeadwearKind, number> = {
+  none: 0,
+  'fire-helmet': 8,
+  'captain-cap': 6,
+  bandana: 4,
+  'park-cap': 4,
+  'chef-hat': 0,
+  beanie: 4,
+};
 
 export type PersonPose = 'stand' | 'wave' | 'cheer' | 'point';
 export type HairStyle = 'fringe' | 'short' | 'bun' | 'curly' | 'long' | 'ponytail' | 'none';
@@ -144,24 +171,39 @@ export function Person({
   const hat = tones(hatColor);
   const sleeveEnd = outfit.shortSleeves ? sk.base : outfit.top;
 
+  /**
+   * One arm: shoulder cap → upper sleeve → cuff band → forearm → hand.
+   * The shoulder cap is drawn at the pivot so the joint stays closed at every
+   * pose angle, and the cuff makes the sleeve end read as clothing, not paint.
+   */
   const arm = (side: 'left' | 'right') => {
     const a = ARM[side];
+    const out = side === 'left' ? -1 : 1;
+    /** where the cuff sits along elbow → wrist */
+    const cuff = (t: number) => ({ x: a.e.x + (a.h.x - a.e.x) * t, y: a.e.y + (a.h.y - a.e.y) * t });
+    const shortS = !!outfit.shortSleeves;
+    const c0 = cuff(shortS ? -0.06 : 0.56);
+    const c1 = cuff(shortS ? 0.16 : 0.8);
+    const cuffColor = outfit.stripes ?? top.light;
     return (
       <G>
-        <Path d={`M ${a.s.x} ${a.s.y} L ${a.e.x} ${a.e.y}`} stroke={top.shade} strokeWidth={14} strokeLinecap="round" />
-        <Path d={`M ${a.s.x} ${a.s.y - 1} L ${a.e.x} ${a.e.y - 2}`} stroke={outfit.top} strokeWidth={12.5} strokeLinecap="round" />
-        {outfit.stripes ? (
-          <Path
-            d={`M ${a.s.x + (side === 'left' ? -5.5 : 5.5)} ${a.e.y - 4} L ${a.e.x + (side === 'left' ? -5.5 : 5.5)} ${a.e.y - 1}`}
-            stroke={outfit.stripes}
-            strokeWidth={3.4}
-            strokeLinecap="round"
-            opacity={0.95}
-          />
-        ) : null}
-        <Path d={`M ${a.e.x} ${a.e.y} L ${a.h.x} ${a.h.y}`} stroke={sleeveEnd} strokeWidth={11} strokeLinecap="round" />
-        <Circle cx={a.h.x} cy={a.h.y + 1.4} r={6.9} fill={sk.shade} />
-        <Circle cx={a.h.x} cy={a.h.y} r={6.6} fill={sk.base} />
+        {/* upper sleeve — shade first, then the flat fill lifted 1 unit */}
+        <Path d={`M ${a.s.x} ${a.s.y + 1.5} L ${a.e.x + out * 1} ${a.e.y + 1.5}`} stroke={top.shade} strokeWidth={14.5} strokeLinecap="round" />
+        <Path d={`M ${a.s.x} ${a.s.y} L ${a.e.x} ${a.e.y}`} stroke={outfit.top} strokeWidth={13} strokeLinecap="round" />
+        {/* forearm */}
+        <Path d={`M ${a.e.x} ${a.e.y + 1.4} L ${a.h.x} ${a.h.y + 1.4}`} stroke={shortS ? sk.shade : top.shade} strokeWidth={12.5} strokeLinecap="round" />
+        <Path d={`M ${a.e.x} ${a.e.y} L ${a.h.x} ${a.h.y}`} stroke={sleeveEnd} strokeWidth={11.4} strokeLinecap="round" />
+        {/* the reflective cuff band */}
+        <Path d={`M ${c0.x} ${c0.y} L ${c1.x} ${c1.y}`} stroke={mix(cuffColor, palette.navy, 0.2)} strokeWidth={13.4} strokeLinecap="butt" />
+        <Path d={`M ${c0.x} ${c0.y} L ${c1.x} ${c1.y}`} stroke={cuffColor} strokeWidth={12.2} strokeLinecap="butt" />
+        {/* shoulder cap — keeps the joint closed however the arm swings */}
+        <Circle cx={a.s.x} cy={a.s.y + 0.8} r={8.2} fill={top.shade} />
+        <Circle cx={a.s.x} cy={a.s.y - 0.4} r={7.6} fill={outfit.top} />
+        <Path d={`M ${a.s.x - out * 3.4} ${a.s.y - 5.4} A 7 7 0 0 ${out === 1 ? 1 : 0} ${a.s.x + out * 4.8} ${a.s.y - 1.6}`} stroke={top.light} strokeWidth={2.6} strokeLinecap="round" fill="none" opacity={0.75} />
+        {/* hand */}
+        <Circle cx={a.h.x} cy={a.h.y + 1.6} r={7.1} fill={sk.shade} />
+        <Circle cx={a.h.x} cy={a.h.y} r={6.7} fill={sk.base} />
+        <Circle cx={a.h.x - out * 2} cy={a.h.y - 2.4} r={2.2} fill={sk.light} opacity={0.6} />
         {pose === 'point' && side === 'right' ? <Circle cx={a.h.x + 5} cy={a.h.y + 3} r={2.6} fill={sk.base} /> : null}
       </G>
     );
@@ -170,75 +212,95 @@ export function Person({
   return (
     <Animated.View testID={testID} style={[{ width, height: size }, bodyStyle, style]}>
       <Svg width={width} height={size} viewBox={`0 0 ${PERSON_VB.w} ${PERSON_VB.h}`}>
-        {/* ground shadow */}
-        <Ellipse cx={60} cy={159} rx={30} ry={5} fill={ink.shadow} />
+        {/* ground shadow — rule 3 */}
+        <Ellipse cx={60} cy={159} rx={30} ry={6.6} fill={ink.shadow} />
 
-        {/* legs + boots */}
-        <Rect x={46} y={134} width={11} height={22} rx={5.5} fill={pants.base} />
-        <Rect x={63} y={134} width={11} height={22} rx={5.5} fill={pants.base} />
-        <Rect x={46} y={134} width={4} height={22} rx={2} fill={pants.shade} opacity={0.55} />
-        <Rect x={63} y={134} width={4} height={22} rx={2} fill={pants.shade} opacity={0.55} />
-        <Path d="M 42 150 h 17 a 4 4 0 0 1 4 4 v 3 a 3 3 0 0 1 -3 3 h -18 a 3 3 0 0 1 -3 -3 v -3 a 4 4 0 0 1 3 -4 z" fill={shoes.base} />
-        <Path d="M 61 150 h 17 a 4 4 0 0 1 3 4 v 3 a 3 3 0 0 1 -3 3 h -18 a 3 3 0 0 1 -3 -3 v -3 a 4 4 0 0 1 4 -4 z" fill={shoes.base} />
-        <Rect x={38} y={156} width={22} height={4} rx={2} fill={shoes.shade} />
-        <Rect x={60} y={156} width={22} height={4} rx={2} fill={shoes.shade} />
+        {/* --- boots: a real silhouette, shaft + toe + sole --- */}
+        <Path d={`M 44 ${BOOT_TOP} h 13 v 15 a 5 5 0 0 1 -5 5 h -14 a 4 4 0 0 1 -4 -4 v -2 c 0 -3.4 4 -4.4 6.5 -6 c 2.5 -1.6 3.5 -4 3.5 -8 z`} fill={shoes.shade} transform="translate(0 1.4)" />
+        <Path d={`M 44 ${BOOT_TOP} h 13 v 15 a 5 5 0 0 1 -5 5 h -14 a 4 4 0 0 1 -4 -4 v -2 c 0 -3.4 4 -4.4 6.5 -6 c 2.5 -1.6 3.5 -4 3.5 -8 z`} fill={shoes.base} />
+        <Path d={`M 76 ${BOOT_TOP} h -13 v 15 a 5 5 0 0 0 5 5 h 14 a 4 4 0 0 0 4 -4 v -2 c 0 -3.4 -4 -4.4 -6.5 -6 c -2.5 -1.6 -3.5 -4 -3.5 -8 z`} fill={shoes.shade} transform="translate(0 1.4)" />
+        <Path d={`M 76 ${BOOT_TOP} h -13 v 15 a 5 5 0 0 0 5 5 h 14 a 4 4 0 0 0 4 -4 v -2 c 0 -3.4 -4 -4.4 -6.5 -6 c -2.5 -1.6 -3.5 -4 -3.5 -8 z`} fill={shoes.base} />
+        {/* soles */}
+        <Path d="M 21 154.5 h 36 a 5 5 0 0 1 -5 5 h -27 a 4 4 0 0 1 -4 -4 z" fill={shoes.shade} opacity={0.9} />
+        <Path d="M 99 154.5 h -36 a 5 5 0 0 0 5 5 h 27 a 4 4 0 0 0 4 -4 z" fill={shoes.shade} opacity={0.9} />
+        {/* boot cuffs */}
+        <Rect x={42.6} y={BOOT_TOP - 3} width={15.8} height={6} rx={3} fill={shoes.light} />
+        <Rect x={61.6} y={BOOT_TOP - 3} width={15.8} height={6} rx={3} fill={shoes.light} />
+        <Rect x={44.6} y={BOOT_TOP + 3} width={3.4} height={9} rx={1.7} fill="rgba(255,255,255,0.22)" />
 
-        {/* torso */}
-        <Path d={TORSO} fill={top.shade} transform="translate(2 2.5)" />
+        {/* --- trousers: the waist break between jacket and boots --- */}
+        <Rect x={40} y={116} width={40} height={20} rx={8} fill={pants.shade} />
+        <Rect x={40} y={115} width={40} height={19} rx={8} fill={pants.base} />
+        <Rect x={44} y={HEM_Y - 4} width={13} height={17} rx={5} fill={pants.shade} />
+        <Rect x={44} y={HEM_Y - 5} width={13} height={17} rx={5} fill={pants.base} />
+        <Rect x={63} y={HEM_Y - 4} width={13} height={17} rx={5} fill={pants.shade} />
+        <Rect x={63} y={HEM_Y - 5} width={13} height={17} rx={5} fill={pants.base} />
+        <Rect x={58.8} y={HEM_Y - 3} width={2.4} height={14} rx={1.2} fill={pants.shade} />
+
+        {/* --- jacket --- */}
+        <Path d={TORSO} fill={top.shade} transform="translate(1.6 2.4)" />
         <Path d={TORSO} fill={outfit.top} />
-        <Path d="M 44 95 C 48 92 54 90 60 90 L 60 97 C 54 97 49 99 45 101 Z" fill={top.light} opacity={0.5} />
+        <Path d="M 44 96 C 48 92.6 54 90.6 60 90.6 L 60 98 C 54 98 49 100 45 102.4 Z" fill={top.light} opacity={0.5} />
+        {/* the hem lip — a value step, never a keyline (rule 1) */}
+        <Path d={`M 36.4 ${HEM_Y - 4.4} C 46 ${HEM_Y - 2.4} 74 ${HEM_Y - 2.4} 83.6 ${HEM_Y - 4.4} L 84.2 ${HEM_Y - 1.6} C 74 ${HEM_Y + 0.4} 46 ${HEM_Y + 0.4} 35.8 ${HEM_Y - 1.6} Z`} fill={top.shade} opacity={0.85} />
 
         {/* vest panels */}
         {outfit.vest ? (
           <G>
-            <Path d="M 37.6 100 C 39 94 44 90.5 49 89.6 L 52 141.5 L 41.5 141.5 C 37 141.5 34.6 139 35 133.5 Z" fill={outfit.vest} />
-            <Path d="M 82.4 100 C 81 94 76 90.5 71 89.6 L 68 141.5 L 78.5 141.5 C 83 141.5 85.4 139 85 133.5 Z" fill={outfit.vest} />
-            <Path d="M 37.6 100 C 39 94 44 90.5 49 89.6 L 49.4 96 C 45 97.4 41.6 100.4 40 104 Z" fill={mix(outfit.vest, '#FFFFFF', 0.28)} opacity={0.7} />
+            <Path d="M 37.6 100 C 39 94.4 44 91 49 90.2 L 51.4 128 L 41.6 128 C 37.6 128 34.6 126 35 121.4 Z" fill={outfit.vest} />
+            <Path d="M 82.4 100 C 81 94.4 76 91 71 90.2 L 68.6 128 L 78.4 128 C 82.4 128 85.4 126 85 121.4 Z" fill={outfit.vest} />
+            <Path d="M 37.6 100 C 39 94.4 44 91 49 90.2 L 49.4 96.4 C 45 97.8 41.6 100.8 40 104.4 Z" fill={mix(outfit.vest, '#FFFFFF', 0.28)} opacity={0.7} />
           </G>
         ) : null}
 
         {/* apron */}
         {outfit.apron ? (
           <G>
-            <Path d="M 50 92 L 70 92 L 71.5 104 C 76 108 77 116 76.5 124 L 75.5 141.5 L 44.5 141.5 L 43.5 124 C 43 116 44 108 48.5 104 Z" fill={outfit.apron} />
+            <Path d="M 50 92 L 70 92 L 71.4 103.6 C 75.6 107.4 76.6 115 76.2 122 L 75.6 133 L 44.4 133 L 43.8 122 C 43.4 115 44.4 107.4 48.6 103.6 Z" fill={outfit.apron} />
             <Path d="M 50 92 L 70 92 L 70.6 98.5 L 49.4 98.5 Z" fill={mix(outfit.apron, palette.navy, 0.1)} />
-            <Path d="M 46 120 h 28" stroke={mix(outfit.apron, palette.navy, 0.12)} strokeWidth={2.4} strokeLinecap="round" />
+            <Path d="M 46 118 h 28" stroke={mix(outfit.apron, palette.navy, 0.12)} strokeWidth={2.4} strokeLinecap="round" />
             <Path d="M 52 92 L 47 100 M 68 92 L 73 100" stroke={mix(outfit.apron, palette.navy, 0.08)} strokeWidth={3} strokeLinecap="round" />
           </G>
         ) : null}
 
         {/* collar */}
-        <Path d="M 45 90.5 L 60 104 L 75 90.5 L 80.5 94.5 L 60 113 L 39.5 94.5 Z" fill={collar} />
+        <Path d="M 45 90.5 L 60 103 L 75 90.5 L 80 94.4 L 60 111 L 40 94.4 Z" fill={collar} />
 
-        {/* reflective stripes */}
+        {/*
+         * Reflective bands. One across the chest, one at the jacket hem — the
+         * hem band IS the waist break (art critique item #22), so the eye reads
+         * jacket / trousers / boots instead of one navy mass.
+         */}
         {outfit.stripes ? (
           <G>
-            <Path d="M 37.2 114 Q 60 118 82.8 114" stroke={outfit.stripes} strokeWidth={5.4} strokeLinecap="round" fill="none" />
-            <Path d="M 35.6 126 Q 60 130 84.4 126" stroke={outfit.stripes} strokeWidth={5.4} strokeLinecap="round" fill="none" />
-            <Path d="M 37.2 112.4 Q 60 116.4 82.8 112.4" stroke="rgba(255,255,255,0.5)" strokeWidth={1.4} strokeLinecap="round" fill="none" />
+            <Path d="M 37.6 111 Q 60 115 82.4 111" stroke={mix(outfit.stripes, palette.navy, 0.22)} strokeWidth={6.2} strokeLinecap="round" fill="none" />
+            <Path d="M 37.6 110.4 Q 60 114.4 82.4 110.4" stroke={outfit.stripes} strokeWidth={5} strokeLinecap="round" fill="none" />
+            <Path d={`M 36.4 ${HEM_Y - 8.6} Q 60 ${HEM_Y - 4.6} 83.6 ${HEM_Y - 8.6}`} stroke={mix(outfit.stripes, palette.navy, 0.22)} strokeWidth={6.2} strokeLinecap="round" fill="none" />
+            <Path d={`M 36.4 ${HEM_Y - 9.2} Q 60 ${HEM_Y - 5.2} 83.6 ${HEM_Y - 9.2}`} stroke={outfit.stripes} strokeWidth={5} strokeLinecap="round" fill="none" />
+            <Path d="M 39 108.6 Q 60 112.4 81 108.6" stroke="rgba(255,255,255,0.45)" strokeWidth={1.4} strokeLinecap="round" fill="none" />
           </G>
         ) : null}
 
         {/* buttons */}
         {outfit.buttons ? (
           <G>
-            <Circle cx={60} cy={116} r={2.6} fill={outfit.buttons} />
+            <Circle cx={60} cy={109} r={2.6} fill={outfit.buttons} />
+            <Circle cx={60} cy={118} r={2.6} fill={outfit.buttons} />
             <Circle cx={60} cy={127} r={2.6} fill={outfit.buttons} />
-            <Circle cx={60} cy={138} r={2.6} fill={outfit.buttons} />
           </G>
         ) : null}
 
-        {/* chest emblem */}
+        {/* ONE small chest badge — the chest is jacket + two bands + this, nothing else */}
         {outfit.emblem && outfit.emblem !== 'none' ? (
           <G>
-            <Path d="M 73 106 L 81 106 L 81 114 C 81 118 77 120 77 120 C 77 120 73 118 73 114 Z" fill={palette.engineRed} />
-            <Path d="M 73.6 106.6 L 80.4 106.6 L 80.4 113.8 C 80.4 117 77 118.8 77 118.8 C 77 118.8 73.6 117 73.6 113.8 Z" fill={palette.safetyYellow} opacity={0.95} />
+            <Path d="M 71.4 98 L 80.6 98 L 80.6 105.4 C 80.6 109.6 76 111.8 76 111.8 C 76 111.8 71.4 109.6 71.4 105.4 Z" fill={palette.engineRedDark} />
+            <Path d="M 72.2 98.8 L 79.8 98.8 L 79.8 105.2 C 79.8 108.8 76 110.6 76 110.6 C 76 110.6 72.2 108.8 72.2 105.2 Z" fill={palette.safetyYellow} />
             {outfit.emblem === 'flame' ? (
-              <Path d="M 77 108.4 C 79 110.4 79.6 112.6 77 115.6 C 74.4 112.6 75 110.4 77 108.4 Z" fill={palette.engineRed} />
+              <Path d="M 76 100.6 C 78.2 102.8 78.8 105 76 108 C 73.2 105 73.8 102.8 76 100.6 Z" fill={palette.engineRed} />
             ) : outfit.emblem === 'cross' ? (
-              <Path d="M 75.8 109 h 2.4 v 2.2 h 2.2 v 2.4 h -2.2 v 2.2 h -2.4 v -2.2 h -2.2 v -2.4 h 2.2 z" fill={palette.engineRed} />
+              <Path d="M 74.8 101.2 h 2.4 v 2.2 h 2.2 v 2.4 h -2.2 v 2.2 h -2.4 v -2.2 h -2.2 v -2.4 h 2.2 z" fill={palette.engineRed} />
             ) : (
-              <Path d="M 77 108.2 l 1.3 2.7 3 .4 -2.2 2.1 .5 3 -2.6 -1.4 -2.6 1.4 .5 -3 -2.2 -2.1 3 -.4 z" fill={palette.engineRed} />
+              <Path d="M 76 100.4 l 1.3 2.7 3 .4 -2.2 2.1 .5 3 -2.6 -1.4 -2.6 1.4 .5 -3 -2.2 -2.1 3 -.4 z" fill={palette.engineRed} />
             )}
           </G>
         ) : null}
@@ -296,8 +358,17 @@ export function Person({
         {/* hair in front */}
         {hairStyle !== 'none' ? <HairFront style={hairStyle} tone={hr} /> : null}
 
-        {/* headwear */}
-        <Headwear kind={headwear} tone={hat} />
+        {/* headwear — lifted so the hairline is not swallowed whole */}
+        <G transform={`translate(0 ${-HEADWEAR_LIFT[headwear]})`}>
+          <Headwear kind={headwear} tone={hat} />
+        </G>
+
+        {/*
+         * Hair that shows UNDER a hat. Without this the helmet swallows the
+         * whole hairstyle and three of the four hair swatches change nothing
+         * visible (art critique item #22).
+         */}
+        {hairStyle !== 'none' && headwear !== 'none' ? <HairPeek style={hairStyle} tone={hr} /> : null}
       </Svg>
 
       <RigPart unit={unit} win={ARM_WIN.left} pivot={ARM.left.s} style={leftArmStyle}>
@@ -406,6 +477,55 @@ function HairFront({ style, tone }: { style: HairStyle; tone: { base: string; sh
         </G>
       );
   }
+}
+
+/**
+ * Hair that escapes from under a hat: two temple locks in front of the ears,
+ * a fringe flick under the brim, and the length at the back for long styles.
+ * Drawn *after* the headwear so it always reads, whatever the hat.
+ */
+function HairPeek({ style, tone }: { style: HairStyle; tone: { base: string; shade: string; light: string } }) {
+  const curly = style === 'curly';
+  const longBack = style === 'long' || style === 'ponytail';
+  return (
+    <G>
+      {curly ? (
+        <G>
+          <Circle cx={31.5} cy={62} r={7.6} fill={tone.shade} />
+          <Circle cx={30.5} cy={61} r={7} fill={tone.base} />
+          <Circle cx={36} cy={72} r={5.8} fill={tone.base} />
+          <Circle cx={88.5} cy={62} r={7.6} fill={tone.shade} />
+          <Circle cx={89.5} cy={61} r={7} fill={tone.base} />
+          <Circle cx={84} cy={72} r={5.8} fill={tone.base} />
+          <Circle cx={33.8} cy={58} r={3} fill={tone.light} opacity={0.55} />
+        </G>
+      ) : (
+        <G>
+          {/* temple locks, in front of the ears */}
+          <Path d="M 30.5 55 C 25.5 63 26.5 72 32 77 C 36.5 73 38.5 64 37 55 Z" fill={tone.shade} />
+          <Path d="M 31.5 55 C 27.5 62.5 28.5 70.5 32.6 74.6 C 36 71 37.4 63.5 36.4 55 Z" fill={tone.base} />
+          <Path d="M 89.5 55 C 94.5 63 93.5 72 88 77 C 83.5 73 81.5 64 83 55 Z" fill={tone.shade} />
+          <Path d="M 88.5 55 C 92.5 62.5 91.5 70.5 87.4 74.6 C 84 71 82.6 63.5 83.6 55 Z" fill={tone.base} />
+          <Path d="M 32.4 58 C 31 62 30.8 66 31.6 69.4" stroke={tone.light} strokeWidth={2.2} strokeLinecap="round" fill="none" opacity={0.6} />
+        </G>
+      )}
+      {/* the fringe under the brim — a centre point and two flicks, both eyes clear */}
+      <Path d="M 51 45 C 53 54.6 56 59 60 59 C 64 59 67 54.6 69 45 Z" fill={tone.shade} />
+      <Path d="M 52 45 C 53.8 53.6 56.4 57.6 60 57.6 C 63.6 57.6 66.2 53.6 68 45 Z" fill={tone.base} />
+      <Path d="M 34.6 45 C 35.6 52.6 39.6 57 45 55.4 C 40.8 54 38 50.6 37.4 45 Z" fill={tone.shade} />
+      <Path d="M 85.4 45 C 84.4 52.6 80.4 57 75 55.4 C 79.2 54 82 50.6 82.6 45 Z" fill={tone.shade} />
+      <Path d="M 35.6 45 C 36.4 51.6 40 55.4 44.6 54.2 C 41 53 38.6 49.8 38.2 45 Z" fill={tone.base} />
+      <Path d="M 84.4 45 C 83.6 51.6 80 55.4 75.4 54.2 C 79 53 81.4 49.8 81.8 45 Z" fill={tone.base} />
+      {longBack ? (
+        <G>
+          <Path d="M 30 62 C 26 74 27 86 31 92 C 36 88 37 74 35.5 62 Z" fill={tone.shade} />
+          <Path d="M 90 62 C 94 74 93 86 89 92 C 84 88 83 74 84.5 62 Z" fill={tone.shade} />
+          <Path d="M 31 63 C 27.6 74 28.6 84.6 32 89.4 C 36 85.6 36.4 74 35 63 Z" fill={tone.base} />
+          <Path d="M 89 63 C 92.4 74 91.4 84.6 88 89.4 C 84 85.6 83.6 74 85 63 Z" fill={tone.base} />
+        </G>
+      ) : null}
+    </G>
+  );
 }
 
 /* ------------------------------------------------------------------ */
