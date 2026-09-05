@@ -13,7 +13,9 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "export:web": "expo export --platform web",
-    "sfx:build": "node tools/sfx/build-sfx.mjs"
+    "sfx:build": "node tools/sfx/build-sfx.mjs",
+    "qa:shots": "node tools/qa/shoot.mjs dist screenshots 390x844 \"/,/dispatch,/map,/training,/kitchen,/garage,/badges\"",
+    "qa:icons": "node tools/qa/icons.mjs dist"
   },
   "dependencies": {
     "@expo-google-fonts/fredoka": "^0.4.1",
@@ -58,6 +60,7 @@
     "eslint-config-expo": "^57.0.2",
     "jest": "^29.7.0",
     "jest-expo": "^57.0.5",
+    "playwright-core": "^1.63.0",
     "prettier": "^3.9.6",
     "react-test-renderer": "^19.2.3",
     "typescript": "~6.0.3"

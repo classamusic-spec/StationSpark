@@ -75,10 +75,15 @@ export function NumberLadder({ challenge, ageBand, onComplete, onEvent, compact 
   const start = clampNum(challenge.start, min, max);
   const target = clampNum(challenge.target, min, max);
 
+  // The challenge carries jump *sizes*; direction is ours. Climbing down to a
+  // lower rung needs "−" buttons (18 → 12 is −6). The youngest band only sees
+  // the direction it needs; older bands get both so an overshoot can be fixed.
   const jumps = useMemo(() => {
-    const list = challenge.jumps.filter((j) => j !== 0);
-    return ageBand === 'A' ? list.filter((j) => j > 0) : list;
-  }, [ageBand, challenge.jumps]);
+    const sizes = Array.from(new Set(challenge.jumps.map((j) => Math.abs(j)).filter((j) => j > 0))).sort((a, b) => a - b);
+    const down = sizes.map((j) => -j);
+    if (ageBand === 'A') return target < start ? down : sizes;
+    return target < start ? [...down, ...sizes] : [...sizes, ...down];
+  }, [ageBand, challenge.jumps, start, target]);
   const positiveOnly = jumps.every((j) => j > 0);
 
   const best = useMemo(() => minJumps(start, target, jumps, min, max), [jumps, max, min, start, target]);

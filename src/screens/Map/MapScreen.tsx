@@ -32,22 +32,19 @@ export function layoutPins(mapW: number, unit: number): { place: (typeof MAP_PLA
   const charW = compact ? 8.4 : 10.2;
   const chrome = compact ? 52 : 62;
   const rowGap = compact ? 38 : 44;
-  const rows: number[] = [];
-  let rowIndex = 0;
+  // group into rows by y, then number each row's pins left → right so the
+  // leftmost pin (e.g. Fire Station, above the parked truck) is never dropped.
+  const byY = [...MAP_PLACES].sort((a, b) => a.y - b.y);
+  const rows: (typeof MAP_PLACES)[number][][] = [];
   let lastY = -999;
-  const ordered = [...MAP_PLACES].sort((a, b) => a.y - b.y || a.x - b.x);
-  const rowOf = new Map<string, number>();
-  const posInRow = new Map<string, number>();
-  let n = 0;
-  for (const p of ordered) {
-    if (Math.abs(p.y - lastY) > 30) {
-      rowIndex = rows.length;
-      rows.push(rowIndex);
-      n = 0;
-    }
-    rowOf.set(p.id, rowIndex);
-    posInRow.set(p.id, n++);
+  for (const p of byY) {
+    if (Math.abs(p.y - lastY) > 30 || rows.length === 0) rows.push([]);
+    rows[rows.length - 1]?.push(p);
     lastY = p.y;
+  }
+  const posInRow = new Map<string, number>();
+  for (const row of rows) {
+    row.sort((a, b) => a.x - b.x).forEach((p, i) => posInRow.set(p.id, i));
   }
   return MAP_PLACES.map((place) => {
     const est = Math.min(compact ? 170 : 200, chrome + place.name.length * charW);
@@ -209,7 +206,7 @@ export function MapScreen() {
     [],
   );
 
-  const truckWidth = Math.max(64, unit * 82);
+  const truckWidth = Math.max(56, unit * 64);
 
   return (
     <ScreenFrame

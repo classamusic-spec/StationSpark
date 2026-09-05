@@ -36,7 +36,7 @@ export const MAP_PLACES: readonly MapPlace[] = [
 ] as const;
 
 /** Where the fire truck parks outside the station, in MAP_VB units. */
-export const TRUCK_PARK = { x: 96, y: 150 } as const;
+export const TRUCK_PARK = { x: 44, y: 164 } as const;
 
 /** The wooden board at the bottom of the map — the screen letters it. */
 export const MAP_SIGN = { x: 246, y: 554, w: 86, h: 32 } as const;

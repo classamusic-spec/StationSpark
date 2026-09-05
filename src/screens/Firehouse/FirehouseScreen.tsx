@@ -279,7 +279,7 @@ const styles = StyleSheet.create({
   sign: { alignItems: 'center', justifyContent: 'center' },
   crewLeft: { position: 'absolute', left: 0, alignItems: 'flex-start', gap: 2 },
   crewRight: { position: 'absolute', right: 2, flexDirection: 'row', alignItems: 'flex-end', gap: 0 },
-  beacon: { marginBottom: 12, marginRight: -4 },
+  beacon: { marginBottom: 58, marginRight: -6 },
   ctaWrap: { position: 'absolute', bottom: -6, left: 0, right: 0, alignItems: 'center', paddingHorizontal: spacing.lg },
   cta: { minWidth: 220, maxWidth: 300, alignSelf: 'center' },
   grownUps: {
