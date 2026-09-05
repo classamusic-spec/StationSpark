@@ -180,32 +180,6 @@ function building(b: BuildingSpec, gy: number, key: string) {
   );
 }
 
-/** Bunting swag — the top-of-frame dressing that kills raw sky. */
-function bunting(w: number, y: number, dip: number, colors: readonly string[]) {
-  const d = `M -10 ${y} Q ${w / 2} ${y + dip} ${w + 10} ${y}`;
-  const flags: React.ReactElement[] = [];
-  const n = Math.max(6, Math.round(w / 34));
-  for (let i = 1; i < n; i += 1) {
-    const t = i / n;
-    // point on the quadratic
-    const px = (1 - t) * (1 - t) * -10 + 2 * (1 - t) * t * (w / 2) + t * t * (w + 10);
-    const py = (1 - t) * (1 - t) * y + 2 * (1 - t) * t * (y + dip) + t * t * y;
-    const col = colors[i % colors.length] ?? palette.engineRed;
-    flags.push(
-      <G key={`f${i}`}>
-        <Path d={`M ${px - 8} ${py} L ${px + 8} ${py} L ${px} ${py + 17} Z`} fill={col} />
-        <Path d={`M ${px - 8} ${py} L ${px - 2} ${py} L ${px - 4} ${py + 9} Z`} fill={HILITE} />
-      </G>,
-    );
-  }
-  return (
-    <G>
-      <Path d={d} stroke={palette.navySoft} strokeWidth={2} fill="none" opacity={0.5} />
-      {flags}
-    </G>
-  );
-}
-
 /** Warm street lamp: post, arm, lantern and a soft pool of light. */
 function lampPost(x: number, gy: number, hgt: number) {
   const top = gy - hgt;
@@ -343,12 +317,19 @@ function jars(x: number, y: number, s: number, tints: readonly string[]) {
 
 function streetArt(w: number, h: number, gy: number, s: number) {
   const roadY = gy + 64;
+  /* The shop fronts are anchored to the TOP of the frame, not to the ground:
+     on a tall game box a fixed offset from the kerb left 400 px of bare sky
+     above them (art director's note on Hydrant Match). The centre of the frame
+     still stays calm — only the flanks are built up. */
+  const leftTop = Math.max(48, Math.min(h * 0.17, gy - 150));
+  const rightTop = Math.max(58, Math.min(h * 0.21, gy - 140));
+  const midTop = Math.max(120, Math.min(h * 0.45, gy - 110));
   return (
     <G>
-      {skylineBand(w, gy - 128 * s, '#7FB6E4', 2)}
-      {building({ x: -18, w: 138 * s, top: gy - 196 * s, wall: '#F4DCB0', roof: palette.engineRed, awning: 'stripe', rows: 2, cols: 2 }, gy, 'b1')}
-      {building({ x: w - 132 * s, w: 150 * s, top: gy - 168 * s, wall: '#EFD3B6', roof: '#4A5FA8', rows: 2, cols: 2 }, gy, 'b2')}
-      {building({ x: w * 0.42, w: 104 * s, top: gy - 138 * s, wall: '#F7E6C6', roof: '#3B8E3F', awning: 'stripe', awningA: '#3B8E3F', rows: 1, cols: 2 }, gy, 'b3')}
+      {skylineBand(w, Math.max(56, leftTop - 26), '#7FB6E4', 2)}
+      {building({ x: -18, w: 138 * s, top: leftTop, wall: '#F4DCB0', roof: palette.engineRed, awning: 'stripe', rows: 4, cols: 2 }, gy, 'b1')}
+      {building({ x: w - 132 * s, w: 150 * s, top: rightTop, wall: '#EFD3B6', roof: '#4A5FA8', rows: 4, cols: 2 }, gy, 'b2')}
+      {building({ x: w * 0.42, w: 104 * s, top: midTop, wall: '#F7E6C6', roof: '#3B8E3F', awning: 'stripe', awningA: '#3B8E3F', rows: 2, cols: 2 }, gy, 'b3')}
       {/* pavement, kerb and the road below it */}
       {groundPlane(w, h, gy, grounds.street.near, grounds.street.lip)}
       <Rect x={0} y={roadY} width={w} height={Math.max(0, h - roadY)} fill="#8E96AE" />
@@ -379,20 +360,23 @@ function streetArt(w: number, h: number, gy: number, s: number) {
 }
 
 function yardArt(w: number, h: number, gy: number, s: number) {
-  const wallTop = gy - 176 * s;
+  const wallTop = Math.max(52, Math.min(h * 0.26, gy - 150));
+  const towerTop = Math.max(24, Math.min(h * 0.1, gy - 240));
+  const towerH = gy - towerTop;
+  const rows = Math.max(2, Math.floor(towerH / (64 * s)));
   return (
     <G>
-      {skylineBand(w, gy - 118 * s, '#8CBEE7', 5)}
+      {skylineBand(w, Math.max(52, wallTop - 22), '#8CBEE7', 5)}
       {/* training tower silhouette */}
       <G>
         {contact(w * 0.845, gy + 6, 52 * s)}
-        <Rect x={w * 0.78} y={gy - 250 * s} width={62 * s} height={250 * s} rx={8} fill="#C2A377" />
-        <Rect x={w * 0.78} y={gy - 250 * s} width={16 * s} height={250 * s} fill={HILITE_SOFT} />
-        <Rect x={w * 0.78 - 8 * s} y={gy - 262 * s} width={78 * s} height={16 * s} rx={7} fill="#9E7F55" />
-        {[0, 1, 2].map((i) => (
+        <Rect x={w * 0.78} y={towerTop} width={62 * s} height={towerH} rx={8} fill="#C2A377" />
+        <Rect x={w * 0.78} y={towerTop} width={16 * s} height={towerH} fill={HILITE_SOFT} />
+        <Rect x={w * 0.78 - 8 * s} y={towerTop - 12 * s} width={78 * s} height={16 * s} rx={7} fill="#9E7F55" />
+        {Array.from({ length: rows }, (_, i) => (
           <G key={`t${i}`}>
-            <Rect x={w * 0.78 + 16 * s} y={gy - 228 * s + i * 64 * s} width={30 * s} height={34 * s} rx={6} fill="#33477A" />
-            <Rect x={w * 0.78 + 12 * s} y={gy - 192 * s + i * 64 * s} width={38 * s} height={5 * s} rx={2.5} fill={SHADE} />
+            <Rect x={w * 0.78 + 16 * s} y={towerTop + 26 * s + i * 64 * s} width={30 * s} height={34 * s} rx={6} fill="#33477A" />
+            <Rect x={w * 0.78 + 12 * s} y={towerTop + 62 * s + i * 64 * s} width={38 * s} height={5 * s} rx={2.5} fill={SHADE} />
           </G>
         ))}
       </G>
@@ -781,18 +765,27 @@ function storeRoomArt(w: number, h: number, gy: number, s: number) {
           <Rect x={w * 0.49} y={68} width={14 * s} height={10 * s} rx={4} fill={palette.charcoalDark} />
         </G>
       </G>
-      {/* lockers */}
+      {/* lockers — wall furniture ABOVE the bench, never a full-height band
+          behind the play area (they used to swallow the bin labels) */}
       <G>
-        {[0, 1, 2].map((i) => (
-          <G key={`lk${i}`}>
-            <Rect x={w * 0.64 + i * (w * 0.12)} y={40} width={w * 0.108} height={gy - 40} rx={8} fill="#5F82B8" />
-            <Rect x={w * 0.64 + i * (w * 0.12)} y={40} width={w * 0.03} height={gy - 40} fill={HILITE_SOFT} />
-            <Rect x={w * 0.655 + i * (w * 0.12)} y={62} width={w * 0.078} height={7} rx={3.5} fill={SHADE} />
-            <Rect x={w * 0.655 + i * (w * 0.12)} y={76} width={w * 0.078} height={7} rx={3.5} fill={SHADE} />
-            <Circle cx={w * 0.725 + i * (w * 0.12)} cy={132} r={4.6} fill={palette.safetyYellow} />
-            <Rect x={w * 0.66 + i * (w * 0.12)} y={150} width={w * 0.066} height={18} rx={6} fill={palette.cream} />
-          </G>
-        ))}
+        {[0, 1, 2].map((i) => {
+          const lx = w * 0.64 + i * (w * 0.12);
+          const lTop = 40;
+          // wall furniture only: the lockers stop well above the bench so bin
+          // labels are never read against a blue door
+          const lH = Math.max(90, Math.min(184, gy - 300 - lTop));
+          return (
+            <G key={`lk${i}`}>
+              <Rect x={lx} y={lTop} width={w * 0.108} height={lH} rx={8} fill="#5F82B8" />
+              <Rect x={lx} y={lTop} width={w * 0.03} height={lH} fill={HILITE_SOFT} />
+              <Rect x={lx} y={lTop + lH - 8} width={w * 0.108} height={8} rx={4} fill={SHADE} />
+              <Rect x={lx + w * 0.015} y={lTop + 22} width={w * 0.078} height={7} rx={3.5} fill={SHADE} />
+              <Rect x={lx + w * 0.015} y={lTop + 36} width={w * 0.078} height={7} rx={3.5} fill={SHADE} />
+              <Circle cx={lx + w * 0.085} cy={lTop + 92} r={4.6} fill={palette.safetyYellow} />
+              <Rect x={lx + w * 0.02} y={lTop + 110} width={w * 0.066} height={18} rx={6} fill={palette.cream} />
+            </G>
+          );
+        })}
       </G>
       {/* work shelf */}
       {shelf(w * 0.05, gy - 116, w * 0.54, palette.slate)}

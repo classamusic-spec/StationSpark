@@ -67,10 +67,15 @@ export function Rookie({ size = 170, emotion = 'happy', pose = 'wave', animate =
         headwear="fire-helmet"
         headwearColor={helmetTones[avatar?.helmet ?? 'red'].base}
         outfit={{
+          /*
+           * Three separated values, darkest at the ground: jacket → trousers →
+           * boots. Without the step the whole rig reads as one navy blob at
+           * thumbnail size (art critique item #22).
+           */
           top: '#26315F',
           collar: palette.engineRed,
-          pants: '#2B3466',
-          shoes: '#1A2246',
+          pants: '#414E8C',
+          shoes: '#171E3E',
           stripes: palette.safetyYellow,
           emblem: 'flame',
         }}

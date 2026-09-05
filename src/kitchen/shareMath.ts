@@ -134,3 +134,29 @@ export function checkCounts(
   }
   return { done: over.length === 0 && under.length === 0 && extras.length === 0, over, under, extras };
 }
+
+/* ------------------------------------------------------------------ */
+/* The Count Ingredients shelf                                          */
+/* ------------------------------------------------------------------ */
+
+/**
+ * What goes on the pantry shelf, in order.
+ *
+ * NEVER DEAD-END: every ingredient the shopping list asks for is laid out
+ * first, so the recipe can always be cooked. Whatever room is left over goes
+ * to `spare` (one extra of each ingredient, then the decoys) — the old build
+ * pushed `count + 2` of everything and then truncated, which silently dropped
+ * the last ingredient of a three-item list and made the recipe impossible.
+ *
+ * Generic over the item type so the game can pass `VocabWord`s straight in.
+ */
+export function pantryList<T>(
+  needs: readonly { item: T; count: number }[],
+  spare: readonly T[],
+  capacity: number,
+): T[] {
+  const required: T[] = [];
+  for (const need of needs) for (let i = 0; i < Math.max(0, need.count); i += 1) required.push(need.item);
+  const room = Math.max(0, capacity - required.length);
+  return [...required, ...spare.slice(0, room)];
+}

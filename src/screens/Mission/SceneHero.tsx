@@ -32,8 +32,8 @@ const GROUND_Y = 158;
 export interface SceneStyleDef {
   /** kid-facing name of the place */
   name: string;
-  /** fallback glyph for tiny surfaces (recap chips, lists) */
-  glyph: string;
+  /** drawn icon id for tiny surfaces (recap chips, lists) — never an emoji */
+  icon: string;
   sky: readonly [string, string];
   ground: string;
   groundShade: string;
@@ -44,7 +44,7 @@ export interface SceneStyleDef {
 export const sceneStyles: Record<SceneId, SceneStyleDef> = {
   bakery: {
     name: 'Bakery',
-    glyph: '🥖',
+    icon: 'bakery',
     sky: ['#8FD3FB', '#D6F0FF'],
     ground: '#C9D2E4',
     groundShade: '#B3BDD3',
@@ -52,7 +52,7 @@ export const sceneStyles: Record<SceneId, SceneStyleDef> = {
   },
   pizza: {
     name: 'Pizza Shop',
-    glyph: '🍕',
+    icon: 'pizza',
     sky: ['#8FD3FB', '#DCF2FF'],
     ground: '#C9D2E4',
     groundShade: '#B3BDD3',
@@ -60,7 +60,7 @@ export const sceneStyles: Record<SceneId, SceneStyleDef> = {
   },
   school: {
     name: 'School',
-    glyph: '🏫',
+    icon: 'school',
     sky: ['#7FCCFA', '#D2EEFF'],
     ground: '#B7DE93',
     groundShade: '#96C874',
@@ -68,7 +68,7 @@ export const sceneStyles: Record<SceneId, SceneStyleDef> = {
   },
   park: {
     name: 'Park',
-    glyph: '🌳',
+    icon: 'park',
     sky: ['#7FCCFA', '#D8F3FF'],
     ground: '#9BDA74',
     groundShade: '#77C458',
@@ -76,7 +76,7 @@ export const sceneStyles: Record<SceneId, SceneStyleDef> = {
   },
   'clock-tower': {
     name: 'Clock Tower',
-    glyph: '🕰️',
+    icon: 'museum',
     sky: ['#6FC3F8', '#CDEBFF'],
     ground: '#B7DE93',
     groundShade: '#96C874',
@@ -84,7 +84,7 @@ export const sceneStyles: Record<SceneId, SceneStyleDef> = {
   },
   apartments: {
     name: 'Apartments',
-    glyph: '🏢',
+    icon: 'house',
     sky: ['#84CFFA', '#D9F1FF'],
     ground: '#C9D2E4',
     groundShade: '#B3BDD3',
@@ -92,7 +92,7 @@ export const sceneStyles: Record<SceneId, SceneStyleDef> = {
   },
   'pet-shop': {
     name: 'Pet Shop',
-    glyph: '🐾',
+    icon: 'pet-shop',
     sky: ['#8FD3FB', '#DFF4FF'],
     ground: '#C9D2E4',
     groundShade: '#B3BDD3',
@@ -100,7 +100,7 @@ export const sceneStyles: Record<SceneId, SceneStyleDef> = {
   },
   library: {
     name: 'Library',
-    glyph: '📚',
+    icon: 'library',
     sky: ['#7FCCFA', '#D6F0FF'],
     ground: '#C9D2E4',
     groundShade: '#B3BDD3',
@@ -108,7 +108,7 @@ export const sceneStyles: Record<SceneId, SceneStyleDef> = {
   },
   market: {
     name: 'Market',
-    glyph: '🧺',
+    icon: 'market',
     sky: ['#8FD3FB', '#DFF4FF'],
     ground: '#C9D2E4',
     groundShade: '#B3BDD3',
@@ -116,7 +116,7 @@ export const sceneStyles: Record<SceneId, SceneStyleDef> = {
   },
   'station-yard': {
     name: 'Station Yard',
-    glyph: '🚒',
+    icon: 'truck',
     sky: ['#6FC3F8', '#CFEBFF'],
     ground: '#C9D2E4',
     groundShade: '#B3BDD3',
@@ -125,7 +125,8 @@ export const sceneStyles: Record<SceneId, SceneStyleDef> = {
 };
 
 export const sceneName = (scene: SceneId): string => sceneStyles[scene].name;
-export const sceneGlyph = (scene: SceneId): string => sceneStyles[scene].glyph;
+/** rule #5: the world layer never uses emoji — this is a `VocabIcon` id. */
+export const sceneIcon = (scene: SceneId): string => sceneStyles[scene].icon;
 
 /* ------------------------------------------------------------------ */
 /* Shared sticker parts                                                 */

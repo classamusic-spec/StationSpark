@@ -3,7 +3,7 @@ import { StyleSheet, View, type LayoutChangeEvent } from 'react-native';
 import Animated, { FadeInDown, useAnimatedStyle, useSharedValue, withSequence, withSpring, withTiming } from 'react-native-reanimated';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { useRouter, type Href } from 'expo-router';
-import { palette, radii, shadows, spacing, springs } from '@/theme';
+import { palette, shadows, spacing, springs } from '@/theme';
 import { Button, ChevronRightIcon, Panel, ScreenFrame, Text, TopBar } from '@/ui';
 import { sfx } from '@/services/audio';
 import { haptics } from '@/services/haptics';
@@ -211,11 +211,15 @@ export function MapScreen() {
   return (
     <ScreenFrame
       safeBottom={false}
-      backdrop={<Birds count={2} top={64} periodMs={22000} />}
+      // the map board is full-bleed, so the bird flies in the sky strip above
+      // it rather than behind the board
+      backdrop={<Birds count={1} top={40} arc={20} size={28} periodMs={22000} />}
       chrome={<TopBar right={<StarCounter />} />}
     >
-      <View style={[styles.body, { maxWidth: layout.contentWidth }]}>
-        <Animated.View entering={FadeInDown.springify().damping(17)} style={styles.header}>
+      <View style={styles.body}>
+        {/* critique #14: the map is the screen — it runs edge to edge and the
+            title and the CTA float over it instead of boxing it in. */}
+        <Animated.View entering={FadeInDown.springify().damping(17)} style={styles.header} pointerEvents="box-none">
           <Panel tone="cream" padding="xs" radius="pill" style={styles.banner}>
             <Text variant="h2" center>
               Spark City
@@ -238,7 +242,15 @@ export function MapScreen() {
                   ]}
                   pointerEvents="none"
                 >
-                  <Text variant="tiny" color={palette.white} center style={{ fontSize: Math.max(9, MAP_SIGN.h * unit * 0.3) }}>
+                  <Text
+                    variant="tiny"
+                    color={palette.white}
+                    center
+                    style={{
+                      fontSize: Math.max(9, MAP_SIGN.h * unit * 0.28),
+                      lineHeight: Math.max(11, MAP_SIGN.h * unit * 0.34),
+                    }}
+                  >
                     {'SPARK\nCITY'}
                   </Text>
                 </View>
@@ -269,7 +281,7 @@ export function MapScreen() {
           ) : null}
         </View>
 
-        <View style={styles.ctaWrap}>
+        <View style={[styles.ctaWrap, { maxWidth: layout.contentWidth }]} pointerEvents="box-none">
           <Button
             label="Choose a Mission"
             size="xl"
@@ -299,12 +311,29 @@ export function MapScreen() {
 }
 
 const styles = StyleSheet.create({
-  body: { flex: 1, width: '100%', alignSelf: 'center' },
-  header: { alignItems: 'center', marginTop: 56, paddingHorizontal: spacing.md },
+  body: { flex: 1, width: '100%' },
+  header: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 56,
+    zIndex: 6,
+    alignItems: 'center',
+    paddingHorizontal: spacing.md,
+  },
   banner: { paddingHorizontal: spacing.lg, minWidth: 190 },
-  viewport: { flex: 1, overflow: 'hidden', alignItems: 'center', justifyContent: 'center', marginTop: spacing.xs },
-  mapWrap: { borderRadius: radii.card },
+  viewport: { flex: 1, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
+  mapWrap: {},
   abs: { position: 'absolute' },
   sign: { alignItems: 'center', justifyContent: 'center' },
-  ctaWrap: { paddingHorizontal: spacing.lg, paddingVertical: spacing.sm },
+  ctaWrap: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 6,
+    alignSelf: 'center',
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+  },
 });

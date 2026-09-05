@@ -43,8 +43,10 @@ export function TownBackdrop({
       {sun ? evening ? <Moon size={124} top={10} right={8} /> : <Sun size={260} top={-136} right={-128} /> : null}
       {evening ? <Stars band={300} count={9} /> : null}
       <Clouds count={cloudCount} top={30} height={180} opacity={evening ? 0.7 : 1} />
-      <SkyHaze bottom={hills - 26} height={92} tint={evening ? '#9FA9D8' : '#BBD8F2'} />
-      {skyline ? <TownSkyline mood={mood} bottom={hills - 34} height={116} opacity={evening ? 0.72 : 0.86} /> : null}
+      <SkyHaze bottom={hills + 46} height={104} tint={evening ? '#9FA9D8' : '#BBD8F2'} />
+      {/* the distant town sits *above* the treeline's tops, so the horizon
+          actually reads instead of hiding behind the trees (critique #5) */}
+      {skyline ? <TownSkyline mood={mood} bottom={hills + 26} height={116} opacity={evening ? 0.72 : 0.88} /> : null}
       {birds ? <Birds count={2} top={92} periodMs={20000} /> : null}
       {trees ? <TreeLine bottom={hills - 46} height={96} count={7} tone={evening ? 'dark' : 'mid'} /> : null}
       <Hills height={hills} mood={mood} />

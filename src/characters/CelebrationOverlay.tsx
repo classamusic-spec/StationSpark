@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { Suspense, lazy, useEffect, useRef, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import Animated, { FadeIn, FadeInDown, useAnimatedStyle, useSharedValue, withDelay, withSequence, withSpring, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -21,10 +21,36 @@ import { Rookie } from './Rookie';
 import type { CelebrationOverlayProps } from './types';
 
 const CREW_HEIGHT = 128;
+const BADGE_SIZE = 104;
+/** Jest never touches `@/three` (see docs/THREE.md), so don't even try there. */
+const USE_BADGE_3D = process.env.NODE_ENV !== 'test';
 
-/** The badge flips in on its Y axis, like a medal being turned to face you. */
-function BadgeFlip({ badge }: { badge: NonNullable<CelebrationOverlayProps['badge']> }) {
-  const def = badgeById(badge);
+/**
+ * The badge arrives as a real medal.
+ *
+ * `@/three` is pulled in lazily and behind a boundary: it is the only place in
+ * the app that wants a WebGL context, Jest never loads it, and if the import or
+ * the GL context fails for any reason the child still gets the SVG badge doing
+ * its own flip. Earning a badge can never be the thing that breaks.
+ */
+const LazyBadge3D = lazy(async () => {
+  const mod = await import('@/three');
+  return { default: mod.Badge3D };
+});
+
+/** Never let a decoration take the celebration down. */
+class BadgeBoundary extends React.Component<{ fallback: React.ReactNode; children: React.ReactNode }, { failed: boolean }> {
+  state = { failed: false };
+  static getDerivedStateFromError() {
+    return { failed: true };
+  }
+  render() {
+    return this.state.failed ? this.props.fallback : this.props.children;
+  }
+}
+
+/** The 2D badge, flipping on its Y axis — the fallback, and the reduced-motion path. */
+function BadgeFlipSvg({ color, icon }: { color: string; icon: string }) {
   const flip = useSharedValue(180);
   const reduced = useReducedMotion();
 
@@ -43,10 +69,27 @@ function BadgeFlip({ badge }: { badge: NonNullable<CelebrationOverlayProps['badg
   }));
 
   return (
+    <Animated.View style={style}>
+      <BadgeArt color={color} icon={icon} size={BADGE_SIZE} />
+    </Animated.View>
+  );
+}
+
+function BadgeFlip({ badge, play }: { badge: NonNullable<CelebrationOverlayProps['badge']>; play: number }) {
+  const def = badgeById(badge);
+  const svg = <BadgeFlipSvg color={def.color} icon={def.icon} />;
+
+  return (
     <View style={styles.badgeBlock}>
-      <Animated.View style={style}>
-        <BadgeArt color={def.color} icon={def.icon} size={104} />
-      </Animated.View>
+      {USE_BADGE_3D ? (
+        <BadgeBoundary fallback={svg}>
+          <Suspense fallback={svg}>
+            <LazyBadge3D color={def.color} icon={def.icon} size={BADGE_SIZE} flipKey={play} />
+          </Suspense>
+        </BadgeBoundary>
+      ) : (
+        svg
+      )}
       <Animated.View entering={FadeInDown.delay(880).springify().damping(14)} style={styles.badgeName}>
         <Text variant="tiny" color={palette.navyMuted} center>
           BADGE EARNED
@@ -137,7 +180,7 @@ export function CelebrationOverlay({
             </View>
           ) : null}
 
-          {badge ? <BadgeFlip badge={badge} /> : null}
+          {badge ? <BadgeFlip badge={badge} play={play} /> : null}
 
           {xp !== undefined || sparks !== undefined ? (
             <Animated.View entering={FadeIn.delay(760)} style={styles.rewards}>

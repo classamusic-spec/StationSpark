@@ -342,8 +342,12 @@ function PlateSpot({
   return (
     <Animated.View style={[at(s, x, y, width, PLATE_H), fb.style]}>
       <Animated.View style={[styles.plateCol, hopStyle]}>
-        {/* critique #23 — the whole rig stands behind the plate, not a head */}
-        <CrewFigure id={crew.id} size={96 * s} emotion={eating ? 'excited' : 'happy'} jumping={eating} bobPhase={delay / 900} />
+        {/* critique #23 — the whole rig stands behind the plate, not a head.
+            The slot has a fixed height so Beacon (who is shorter than the
+            humans) does not pull his whole plate card out of the row. */}
+        <View style={[styles.figureSlot, { height: 100 * s }]}>
+          <CrewFigure id={crew.id} size={96 * s} emotion={eating ? 'excited' : 'happy'} jumping={eating} bobPhase={delay / 900} />
+        </View>
         <Text variant="tiny" center numberOfLines={1} color={palette.navySoft} style={{ fontSize: 12 * s, lineHeight: 15 * s }}>
           {crew.name}
         </Text>
@@ -384,6 +388,7 @@ const styles = StyleSheet.create({
   },
   answerWrap: { flexDirection: 'row', justifyContent: 'center', gap: spacing.md, flexWrap: 'wrap' },
   plateCol: { alignItems: 'center' },
+  figureSlot: { alignItems: 'center', justifyContent: 'flex-end' },
   plateHit: { alignItems: 'center', justifyContent: 'center', padding: 3, borderWidth: 3, borderColor: 'transparent' },
   plateGlow: { borderColor: palette.safetyYellow, backgroundColor: 'rgba(255,199,44,0.2)' },
   plateItems: { position: 'absolute', flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', maxWidth: '70%' },

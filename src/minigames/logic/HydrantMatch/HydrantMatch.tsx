@@ -171,7 +171,7 @@ export function HydrantMatch({ challenge, ageBand, onComplete, onEvent, compact 
       <View style={styles.stage}>
         <View style={styles.truckRow}>
           {/* the whole engine, not a cropped van */}
-          <TruckSide width={Math.min(layout.s(240), layout.boxWidth * 0.66)} />
+          <TruckSide width={Math.min(layout.s(210), layout.boxWidth * 0.58)} />
           <View style={[styles.hoseLine, { width: layout.s(44) }]} />
         </View>
         <View style={styles.street}>

@@ -282,11 +282,13 @@ function Bakery() {
       <Path d="M 10 216 L 62 186 L 114 216 Z" fill="#C44B3F" />
       <Path d="M 62 186 L 114 216 L 62 216 Z" fill={SHADE} />
       <Rect x={8} y={212} width={108} height={8} rx={4} fill="#A83A30" />
-      {/* the big loaf sign in the gable */}
-      <Ellipse cx={62} cy={198} rx={22} ry={12} fill="#E4A13E" />
-      <Ellipse cx={62} cy={196} rx={20} ry={10} fill="#F0BC63" />
-      <Path d="M 50 194 q 12 -7 24 0" stroke="#B87A28" strokeWidth={2} fill="none" strokeLinecap="round" />
-      <Path d="M 52 199 q 10 -5 20 0" stroke="#B87A28" strokeWidth={1.6} fill="none" strokeLinecap="round" />
+      {/* the loaf sign, tucked into the gable */}
+      <Ellipse cx={62} cy={206} rx={17} ry={9} fill="#C98C34" />
+      <Ellipse cx={62} cy={204} rx={16} ry={8} fill="#F0BC63" />
+      <Ellipse cx={57} cy={201} rx={7} ry={2.6} fill="rgba(255,255,255,0.32)" />
+      {[-8, -1, 6].map((dx) => (
+        <Path key={dx} d={`M ${62 + dx} 200 q 3 3 -1.6 7`} stroke="#B87A28" strokeWidth={1.8} fill="none" strokeLinecap="round" />
+      ))}
       {/* shop window + striped awning */}
       <Rect x={22} y={234} width={40} height={22} rx={3} fill={palette.creamDeep} />
       <Rect x={24} y={236} width={36} height={18} rx={2} fill={GLASS} />
@@ -888,13 +890,18 @@ function Puff({ u, periodMs, delay, size }: { u: number; periodMs: number; delay
 
 /** The station flag, waving on its pole. */
 function StationFlag({ u }: { u: number }) {
-  const wave = useIdleBob(5, 1400);
-  const style = useAnimatedStyle(() => ({ transform: [{ skewY: `${wave.value * 0.6}deg` }, { scaleX: 1 - Math.abs(wave.value) * 0.02 }] }));
+  const wave = useIdleBob(2.6, 1400);
+  const style = useAnimatedStyle(() => ({
+    transform: [{ rotate: `${wave.value}deg` }, { scaleX: 1 - Math.abs(wave.value) * 0.012 }],
+  }));
   return (
-    <Animated.View style={[styles.layer, { left: 108 * u, top: 16 * u, transformOrigin: 'left center' }, style]} pointerEvents="none">
-      <Svg width={30 * u} height={20 * u} viewBox="0 0 30 20">
-        <Path d="M0 1 L 28 6 L 0 16 Z" fill={palette.engineRed} />
-        <Path d="M0 1 L 12 3.2 L 0 7 Z" fill="rgba(255,255,255,0.32)" />
+    <Animated.View
+      style={[styles.layer, { left: 109 * u, top: 17 * u, transformOrigin: 'left top' }, style]}
+      pointerEvents="none"
+    >
+      <Svg width={30 * u} height={18 * u} viewBox="0 0 30 18">
+        <Path d="M0 0 h 26 q -5 5 0 10 q -6 5 -12 2 q -8 -3 -14 1 z" fill={palette.engineRed} />
+        <Path d="M0 0 h 9 q -2 5 0 10 q -4 2 -9 1 z" fill="rgba(255,255,255,0.32)" />
       </Svg>
     </Animated.View>
   );

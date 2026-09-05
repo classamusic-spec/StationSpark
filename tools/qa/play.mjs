@@ -19,7 +19,8 @@
  * The live challenge is read from `globalThis.__SS_CHALLENGE__`, published by
  * MiniGameStage / KitchenRunner on web.
  *
- * Flags:  --only=kind,kind   --skip-mission   --skip-shift   --headed
+ * Flags:  --only=kind,kind   --skip-training   --missions
+ *         --skip-mission   --skip-shift   --headed
  */
 import { chromium } from 'playwright-core';
 import http from 'node:http';
@@ -37,6 +38,9 @@ const only = (flag('only') ?? '').split('=')[1];
 const onlyKinds = only ? only.split(',').map((s) => s.trim()) : null;
 const skipMission = !!flag('skip-mission');
 const skipShift = !!flag('skip-shift');
+const skipTraining = !!flag('skip-training');
+/** run the story flows even when --only narrows the training sweep */
+const forceStories = !!flag('missions');
 
 const outDir = path.join('tools', 'qa', 'out');
 fs.mkdirSync(outDir, { recursive: true });
@@ -1166,13 +1170,15 @@ const MISSIONS = [
   ['festival-exchange', 'rescue-exchange'],
 ];
 
-const kinds = onlyKinds ?? KINDS;
+const kinds = skipTraining ? [] : (onlyKinds ?? KINDS);
 for (const kind of kinds) await runTraining(kind);
-if (!skipMission && !onlyKinds) {
+
+const stories = !skipMission && (!onlyKinds || forceStories);
+if (stories) {
   for (const [id, badge] of MISSIONS) await runMission(id, badge);
   await runRecipe('quesadillas');
 }
-if (!skipShift && !onlyKinds) await runShift();
+if (!skipShift && (!onlyKinds || forceStories)) await runShift();
 
 await browser.close();
 server.close();

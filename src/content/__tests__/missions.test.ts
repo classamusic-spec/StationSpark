@@ -10,6 +10,7 @@ import { validateChallenge } from '@/learning/validate';
 import { beatsForBand } from '@/machines/missionMachine';
 import { missionById, missions, unlockedMissions } from '@/content/missions';
 import { recipes } from '@/content/recipes';
+import { pantryList } from '@/kitchen/shareMath';
 import type { DialogueLine, MissionBeat, MissionDef } from '@/content/types';
 
 const BANDS: AgeBand[] = ['A', 'B', 'C'];
@@ -427,6 +428,35 @@ describe('the twelve-mission town', () => {
     expect(text.toLowerCase()).toContain('world map');
     const kitchen = mission?.beats.find((b) => b.type === 'kitchen');
     expect(kitchen?.type === 'kitchen' && kitchen.recipe).toBe('quesadillas');
+  });
+
+  /**
+   * The Count Ingredients shelf holds fourteen things. Every ingredient a
+   * mission's shopping list asks for has to fit on it, or the child is asked
+   * for something that is not there and the beat cannot be finished.
+   */
+  it('never asks a mission beat for an ingredient the shelf cannot hold', () => {
+    for (const mission of missions) {
+      for (const band of BANDS) {
+        for (const beat of beatsForBand(mission, band)) {
+          if (beat.type !== 'minigame' || beat.game !== 'count-ingredients') continue;
+          for (const seed of SEEDS) {
+            const challenge = beat.challenge({ ageBand: band, rng: createRng(seed) });
+            if (challenge.kind !== 'count-ingredients') throw new Error('expected count-ingredients');
+            const spare = [...challenge.needs.map((n) => n.item), ...challenge.extras];
+            const shelf = pantryList(challenge.needs, spare, 14);
+            for (const need of challenge.needs) {
+              const onShelf = shelf.filter((w) => w.id === need.item.id).length;
+              if (onShelf < need.count) {
+                throw new Error(
+                  `${mission.id} (band ${band}) asks for ${need.count} ${need.item.id} but the shelf holds ${onShelf}`,
+                );
+              }
+            }
+          }
+        }
+      }
+    }
   });
 
   it('gives every new mission a band-restricted swap', () => {

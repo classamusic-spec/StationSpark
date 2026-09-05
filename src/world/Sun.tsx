@@ -21,8 +21,8 @@ const Bloom = memo(function Bloom({ size }: { size: number }) {
           <Stop offset="1" stopColor="#FFE9A8" stopOpacity={0} />
         </RadialGradient>
         <RadialGradient id="sunHalo" cx="50%" cy="50%" r="50%">
-          <Stop offset="0.42" stopColor="#FFE07A" stopOpacity={0.85} />
-          <Stop offset="0.72" stopColor="#FFE07A" stopOpacity={0.28} />
+          <Stop offset="0.16" stopColor="#FFE07A" stopOpacity={0.7} />
+          <Stop offset="0.56" stopColor="#FFE07A" stopOpacity={0.3} />
           <Stop offset="1" stopColor="#FFE07A" stopOpacity={0} />
         </RadialGradient>
       </Defs>

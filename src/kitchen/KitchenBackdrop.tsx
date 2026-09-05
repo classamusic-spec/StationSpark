@@ -151,84 +151,77 @@ function Room({ s }: { s: number }) {
         <Rect x={196} y={26} width={186} height={252} rx={26} fill="none" stroke={palette.creamDeep} strokeWidth={6} />
       </G>
 
-      {/* shelf with jars */}
-      <G>
-        <Rect x={8} y={236} width={158} height={12} rx={6} fill={palette.wood} />
-        <Rect x={8} y={236} width={158} height={5} rx={2.5} fill="rgba(255,255,255,0.35)" />
-        <Rect x={26} y={198} width={34} height={38} rx={9} fill="#CFE9F8" />
-        <Rect x={26} y={198} width={34} height={9} rx={4} fill={palette.leafGreen} />
-        <Rect x={74} y={190} width={30} height={46} rx={9} fill="#FFE1B8" />
-        <Rect x={74} y={190} width={30} height={9} rx={4} fill={palette.engineRed} />
-        <Rect x={118} y={204} width={32} height={32} rx={9} fill="#E7D8FF" />
-        <Rect x={118} y={204} width={32} height={9} rx={4} fill={palette.safetyYellow} />
-      </G>
+      {/* ── wall furniture ──────────────────────────────────────────────
+          Zoning matters as much as density: the upper-left wall is kept clear
+          because the FIREHOUSE KITCHEN sign hangs there, and the recipe cards
+          scroll over the lower half. Everything drawn here lives in the band
+          between the window and the counter. */}
 
-      {/* COOK · LEARN · HELP! poster board */}
+      {/* pot rack, hung under the window */}
       <G>
-        <Rect x={16} y={54} width={124} height={120} rx={16} fill={palette.cream} />
-        <Rect x={16} y={54} width={124} height={120} rx={16} fill="none" stroke={palette.tanDark} strokeWidth={4} />
-        <Path d="M78 74c9 8 13 14 13 20a13 13 0 0 1-26 0c0-6 4-12 13-20z" fill={palette.flameOuter} />
-        <Path d="M78 84c5 5 7 8 7 11a7 7 0 0 1-14 0c0-3 2-6 7-11z" fill={palette.flameCore} />
-      </G>
-
-      {/* ── wall furniture (critique #20: 40 % of the frame was bare brick) ── */}
-
-      {/* pot rack */}
-      <G>
-        <Rect x={24} y={296} width={166} height={9} rx={4.5} fill={palette.charcoal} />
-        <Rect x={24} y={296} width={166} height={3.5} rx={1.75} fill="rgba(255,255,255,0.32)" />
-        <Rect x={26} y={288} width={7} height={14} rx={3.5} fill={palette.charcoalDark} />
-        <Rect x={181} y={288} width={7} height={14} rx={3.5} fill={palette.charcoalDark} />
-        {[52, 104, 154].map((x, i) => (
+        <Rect x={198} y={300} width={172} height={9} rx={4.5} fill={palette.charcoal} />
+        <Rect x={198} y={300} width={172} height={3.5} rx={1.75} fill="rgba(255,255,255,0.32)" />
+        <Rect x={200} y={292} width={7} height={14} rx={3.5} fill={palette.charcoalDark} />
+        <Rect x={361} y={292} width={7} height={14} rx={3.5} fill={palette.charcoalDark} />
+        {[228, 282, 334].map((x, i) => (
           <G key={`pan${i}`}>
-            <Rect x={x - 2} y={305} width={4} height={13} rx={2} fill={palette.charcoalDark} />
-            <Path d={`M ${x - 22} 318 h 44 a 22 20 0 0 1 -44 0 z`} fill={i === 1 ? palette.slate : palette.charcoal} />
-            <Path d={`M ${x - 14} 323 h 13 a 13 10 0 0 1 -13 0 z`} fill="rgba(255,255,255,0.32)" />
-            <Rect x={x + 20} y={310} width={26} height={6} rx={3} fill={palette.charcoalDark} />
+            <Rect x={x - 2} y={309} width={4} height={13} rx={2} fill={palette.charcoalDark} />
+            <Path d={`M ${x - 22} 322 h 44 a 22 20 0 0 1 -44 0 z`} fill={i === 1 ? palette.slate : palette.charcoal} />
+            <Path d={`M ${x - 14} 327 h 13 a 13 10 0 0 1 -13 0 z`} fill="rgba(255,255,255,0.32)" />
+            <Rect x={x + 20} y={314} width={26} height={6} rx={3} fill={palette.charcoalDark} />
           </G>
         ))}
       </G>
 
-      {/* chalkboard menu */}
+      {/* chalkboard menu on the right */}
       <G>
-        <Rect x={210} y={292} width={164} height={112} rx={12} fill={palette.woodDark} />
-        <Rect x={218} y={300} width={148} height={88} rx={7} fill="#2E3A46" />
-        <Rect x={218} y={300} width={148} height={26} rx={7} fill="rgba(255,255,255,0.18)" />
-        <Rect x={214} y={392} width={156} height={9} rx={4.5} fill={palette.wood} />
-        <Rect x={234} y={394} width={18} height={4} rx={2} fill={palette.white} opacity={0.85} />
-        {[318, 336, 354, 372].map((y, i) => (
-          <Rect key={`menu${i}`} x={232} y={y} width={i % 2 === 0 ? 108 : 82} height={5} rx={2.5} fill={palette.white} opacity={0.55} />
+        <Rect x={202} y={356} width={172} height={116} rx={12} fill={palette.woodDark} />
+        <Rect x={210} y={364} width={156} height={92} rx={7} fill="#2E3A46" />
+        <Rect x={210} y={364} width={156} height={26} rx={7} fill="rgba(255,255,255,0.18)" />
+        <Rect x={206} y={460} width={164} height={9} rx={4.5} fill={palette.wood} />
+        <Rect x={226} y={462} width={18} height={4} rx={2} fill={palette.white} opacity={0.85} />
+        {[384, 402, 420, 438].map((y, i) => (
+          <Rect key={`menu${i}`} x={224} y={y} width={i % 2 === 0 ? 114 : 86} height={5} rx={2.5} fill={palette.white} opacity={0.55} />
         ))}
       </G>
 
-      {/* spice shelf */}
+      {/* COOK · LEARN · HELP! poster board, clear of the hanging sign */}
       <G>
-        <Rect x={24} y={420} width={166} height={9} rx={4.5} fill={palette.wood} />
-        <Rect x={24} y={420} width={166} height={3.5} rx={1.75} fill="rgba(255,255,255,0.32)" />
-        <Path d="M40 429 l0 12 l10 -12 z" fill={palette.woodDark} />
-        <Path d="M174 429 l-10 12 l10 0 z" fill={palette.woodDark} />
+        <Rect x={14} y={292} width={112} height={112} rx={16} fill={palette.tanDark} />
+        <Rect x={19} y={297} width={102} height={102} rx={13} fill={palette.cream} />
+        <Rect x={19} y={297} width={102} height={30} rx={13} fill="rgba(255,255,255,0.32)" />
+        <Path d="M70 314c9 8 13 14 13 20a13 13 0 0 1-26 0c0-6 4-12 13-20z" fill={palette.flameOuter} />
+        <Path d="M70 324c5 5 7 8 7 11a7 7 0 0 1-14 0c0-3 2-6 7-11z" fill={palette.flameCore} />
+      </G>
+
+      {/* spice shelf under the poster */}
+      <G>
+        <Rect x={10} y={452} width={176} height={9} rx={4.5} fill={palette.wood} />
+        <Rect x={10} y={452} width={176} height={3.5} rx={1.75} fill="rgba(255,255,255,0.32)" />
+        <Path d="M28 461 l0 12 l10 -12 z" fill={palette.woodDark} />
+        <Path d="M168 461 l-10 12 l10 0 z" fill={palette.woodDark} />
         {[
-          { x: 36, h: 30, c: '#E7D8FF' },
-          { x: 68, h: 24, c: '#FFE1B8' },
-          { x: 98, h: 34, c: '#D9F2D2' },
-          { x: 132, h: 26, c: '#FFD2E5' },
-          { x: 160, h: 30, c: '#CFE9F8' },
+          { x: 20, h: 30, c: '#E7D8FF' },
+          { x: 54, h: 24, c: '#FFE1B8' },
+          { x: 86, h: 34, c: '#D9F2D2' },
+          { x: 122, h: 26, c: '#FFD2E5' },
+          { x: 152, h: 30, c: '#CFE9F8' },
         ].map((j, i) => (
           <G key={`spice${i}`}>
-            <Rect x={j.x} y={420 - j.h} width={22} height={j.h} rx={6} fill={j.c} />
-            <Rect x={j.x} y={420 - j.h} width={7} height={j.h} rx={3.5} fill="rgba(255,255,255,0.32)" />
-            <Rect x={j.x - 2} y={420 - j.h - 6} width={26} height={7} rx={3.5} fill={palette.tanDark} />
+            <Rect x={j.x} y={452 - j.h} width={24} height={j.h} rx={6} fill={j.c} />
+            <Rect x={j.x} y={452 - j.h} width={8} height={j.h} rx={4} fill="rgba(255,255,255,0.32)" />
+            <Rect x={j.x - 2} y={452 - j.h - 6} width={28} height={7} rx={3.5} fill={palette.tanDark} />
           </G>
         ))}
       </G>
 
       {/* fire-shield tea towel on a rail */}
       <G>
-        <Rect x={206} y={422} width={72} height={7} rx={3.5} fill={palette.slate} />
-        <Path d="M214 428 h 56 v 44 q -28 9 -56 0 z" fill={palette.white} />
-        <Path d="M214 428 h 18 v 42 q -9 2 -18 1 z" fill="rgba(31,42,90,0.08)" />
-        <Path d="M242 440 c 7 6 10 10 10 14 a 10 10 0 0 1 -20 0 c 0 -4 3 -8 10 -14 z" fill={palette.engineRed} opacity={0.85} />
-        <Path d="M242 448 c 4 4 5 6 5 8 a 5 5 0 0 1 -10 0 c 0 -2 1 -4 5 -8 z" fill={palette.safetyYellow} />
+        <Rect x={196} y={480} width={68} height={7} rx={3.5} fill={palette.slate} />
+        <Path d="M204 486 h 52 v 36 q -26 8 -52 0 z" fill={palette.white} />
+        <Path d="M204 486 h 17 v 34 q -8 2 -17 1 z" fill="rgba(31,42,90,0.08)" />
+        <Path d="M230 494 c 7 6 10 10 10 14 a 10 10 0 0 1 -20 0 c 0 -4 3 -8 10 -14 z" fill={palette.engineRed} opacity={0.85} />
+        <Path d="M230 502 c 4 4 5 6 5 8 a 5 5 0 0 1 -10 0 c 0 -2 1 -4 5 -8 z" fill={palette.safetyYellow} />
       </G>
 
       {/* counter + checkered cloth */}
@@ -292,8 +285,8 @@ export function KitchenBackdrop({ still }: KitchenBackdropProps) {
           <View style={[styles.band, { top: stage.top + stage.height - 2, bottom: 0, backgroundColor: COUNTER_DEEP }]} />
           <View style={{ position: 'absolute', left: stage.left, top: stage.top, width: stage.width, height: stage.height }}>
             <Room s={s} />
-            <View style={[at(s, 16, 88, 124, 80), styles.poster]}>
-              <Text variant="tiny" center color={palette.navySoft} style={{ fontSize: 15 * s, lineHeight: 20 * s }}>
+            <View style={[at(s, 19, 336, 102, 60), styles.poster]}>
+              <Text variant="tiny" center color={palette.navySoft} style={{ fontSize: 14 * s, lineHeight: 19 * s }}>
                 {'COOK\nLEARN\nHELP!'}
               </Text>
             </View>

@@ -189,7 +189,11 @@ export function DispatchScreen() {
       <DingDing visible={ding} />
 
       <ScrollView
-        contentContainerStyle={[styles.scroll, { paddingBottom: desk + spacing.lg, paddingTop: spacing.sm }]}
+        contentContainerStyle={[
+          styles.scroll,
+          { paddingBottom: desk + spacing.lg, paddingTop: spacing.sm },
+          twoUp && styles.scrollFill,
+        ]}
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.logoRow} pointerEvents="none">
@@ -232,7 +236,7 @@ export function DispatchScreen() {
             </Panel>
           </Animated.View>
         ) : (
-          <View style={[styles.list, twoUp && styles.grid]}>
+          <View style={[styles.list, twoUp && styles.grid, twoUp && list.length <= 4 && styles.gridCentred]}>
             {list.map((m, i) => {
               const lock = lockInfo(m);
               return (
@@ -278,7 +282,9 @@ export function DispatchScreen() {
 const styles = StyleSheet.create({
   scroll: { paddingHorizontal: spacing.md, gap: spacing.sm },
   logoRow: { alignItems: 'center', marginTop: 0, marginBottom: -spacing.xxs },
-  headerWrap: { alignItems: 'center', marginBottom: spacing.xs },
+  headerWrap: { alignItems: 'center', marginBottom: spacing.xs, alignSelf: 'center', width: '92%' },
+  scrollFill: { flexGrow: 1 },
+  gridCentred: { flexGrow: 1, alignContent: 'center' },
   headerPlate: {
     position: 'absolute',
     left: spacing.lg,

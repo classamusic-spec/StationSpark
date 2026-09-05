@@ -33,7 +33,7 @@ import { Stage, at } from '../../parts/Stage';
 import { RecipeCardFrame } from '../../parts/RecipeCardFrame';
 import { CookCTA } from '../../parts/SceneBits';
 import { countPhraseEn, countPhraseEs, needsPhraseEn, needsPhraseEs, pluralEs } from '../../spanish';
-import { checkCounts } from '../../shareMath';
+import { checkCounts, pantryList } from '../../shareMath';
 import { kitchenFeel, nearestTarget, useBeaconHint, useDragSource } from '../useKitchenGame';
 
 const D = { w: 390, h: 400 };
@@ -53,19 +53,32 @@ export function CountIngredients({ challenge, onComplete, onEvent, compact }: Mi
   const session = useMiniGameSession('count-ingredients', onComplete, onEvent);
   const beacon = useBeaconHint(session);
 
+  /**
+   * The shelf.
+   *
+   * NEVER DEAD-END: every ingredient the list asks for has to be reachable.
+   * This used to push `count + 2` of each need, then the decoys, and finally
+   * slice the whole thing down to two rows — so a three-item list lost its last
+   * ingredient completely. Gino's quesadillas asked for two peppers and put
+   * none on the shelf, and "Show me" had nothing to hand over either: the
+   * recipe could not be finished at all. Lay the required items out first and
+   * spend whatever room is left on spares and decoys.
+   */
   const pantry = useMemo<PantryItem[]>(() => {
-    const words: VocabWord[] = [];
-    for (const need of challenge.needs) for (let i = 0; i < need.count + 2; i += 1) words.push(need.item);
-    for (const extra of challenge.extras) for (let i = 0; i < 2; i += 1) words.push(extra);
-    const list = words.slice(0, PER_ROW * 2);
+    // one spare of each ingredient (so over-counting is possible), then the decoys
+    const spare: VocabWord[] = [...challenge.needs.map((n) => n.item), ...challenge.extras];
+    const list = pantryList(challenge.needs, spare, PER_ROW * 2);
     // interleave so the needed items are not all clumped on the left
     const shuffled = list.map((w, i) => ({ w, k: (i * 7) % list.length })).sort((a, b) => a.k - b.k).map((e) => e.w);
+    // a long list packs tighter rather than spilling off the shelf
+    const perRow = Math.max(PER_ROW, Math.ceil(shuffled.length / 2));
+    const stepX = perRow <= PER_ROW ? ITEM + 4 : Math.max(28, (D.w - 12) / perRow);
     return shuffled.map((word, i) => {
-      const row = Math.floor(i / PER_ROW);
-      const col = i % PER_ROW;
-      const inRow = Math.min(PER_ROW, shuffled.length - row * PER_ROW);
-      const startX = (D.w - inRow * (ITEM + 4)) / 2;
-      return { uid: `${word.id}-${i}`, word, x: startX + col * (ITEM + 4), y: SHELF_Y + 18 + row * (ITEM + 24) };
+      const row = Math.floor(i / perRow);
+      const col = i % perRow;
+      const inRow = Math.min(perRow, shuffled.length - row * perRow);
+      const startX = (D.w - inRow * stepX) / 2;
+      return { uid: `${word.id}-${i}`, word, x: startX + col * stepX, y: SHELF_Y + 18 + row * (ITEM + 24) };
     });
   }, [challenge.extras, challenge.needs]);
 

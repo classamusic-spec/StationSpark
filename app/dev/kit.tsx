@@ -312,6 +312,16 @@ export default function KitGallery() {
               <GlyphIcon id="star" size={40} muted />
             </Cell>
           </View>
+          <Text variant="tiny" color={palette.navyMuted}>
+            The seven subject marks are authored white-forward — here they are on their own pills:
+          </Text>
+          <View style={styles.row}>
+            {SUBJECTS.map((s2) => (
+              <View key={s2} style={[styles.subjectSwatch, { backgroundColor: subjectColors[s2].bg }]}>
+                <GlyphIcon id={s2} size={34} />
+              </View>
+            ))}
+          </View>
         </Section>
 
         <Section title="Equipment" subtitle="12 pieces of gear · solid + ghost slot">
@@ -598,6 +608,7 @@ const styles = StyleSheet.create({
   ghostRow: { backgroundColor: palette.charcoal, borderRadius: radii.tile, padding: spacing.sm },
   ghostCell: { padding: 4 },
   boardTile: { width: 82, alignItems: 'center', gap: 2 },
+  subjectSwatch: { width: 52, height: 52, borderRadius: radii.tile, alignItems: 'center', justifyContent: 'center' },
   crewCell: { width: 190, height: 132, alignItems: 'center', justifyContent: 'flex-end' },
   crewPos: { position: 'absolute', left: 0, bottom: 18 },
   whiteRow: { backgroundColor: palette.white, borderRadius: radii.tile, padding: spacing.sm },

@@ -6,6 +6,7 @@ import {
   equationText,
   isScaleLineCorrect,
   nextPlate,
+  pantryList,
   scaleExplanation,
   scaleRatioText,
   scaledAmount,
@@ -13,7 +14,10 @@ import {
 } from '../shareMath';
 import { countPhraseEn, countPhraseEs, esArticleOne, esNumber, needsPhraseEs, pluralEn, pluralEs } from '../spanish';
 import { recipeCardState, recipeStars } from '../progress';
+import { recipes } from '@/content/recipes';
 import type { RecipeDef } from '@/content/types';
+import type { AgeBand, Challenge } from '@/learning/types';
+import { createRng } from '@/utils/rng';
 
 describe('sharing', () => {
   it('works out how many each person gets', () => {
@@ -187,5 +191,66 @@ describe('the recipe shelf', () => {
     expect(recipeStars([3, 2, 1])).toBe(2);
     expect(recipeStars([1, 1, 1])).toBe(1);
     expect(recipeStars([])).toBe(3);
+  });
+});
+
+
+describe('the Count Ingredients pantry shelf', () => {
+  const shelfCounts = <T extends { id: string }>(list: T[]) =>
+    list.reduce<Record<string, number>>((acc, item) => ({ ...acc, [item.id]: (acc[item.id] ?? 0) + 1 }), {});
+
+  it('lays out every required item before it runs out of shelf', () => {
+    const needs = [
+      { item: { id: 'tortilla' }, count: 6 },
+      { item: { id: 'cheese' }, count: 4 },
+      { item: { id: 'pepper' }, count: 2 },
+    ];
+    const spare = [{ id: 'tortilla' }, { id: 'cheese' }, { id: 'pepper' }, { id: 'tomato' }, { id: 'olive' }];
+    const have = shelfCounts(pantryList(needs, spare, 14));
+    for (const need of needs) expect(have[need.item.id] ?? 0).toBeGreaterThanOrEqual(need.count);
+  });
+
+  it('spends leftover room on spares and decoys, and never overflows', () => {
+    const needs = [{ item: { id: 'apple' }, count: 3 }];
+    const spare = [{ id: 'apple' }, { id: 'olive' }, { id: 'basil' }];
+    const list = pantryList(needs, spare, 5);
+    expect(list).toHaveLength(5);
+    expect(shelfCounts(list)).toEqual({ apple: 4, olive: 1 });
+  });
+
+  it('keeps every required item even when the list is bigger than the shelf', () => {
+    const needs = [{ item: { id: 'egg' }, count: 20 }];
+    const list = pantryList(needs, [{ id: 'olive' }], 6);
+    expect(list).toHaveLength(20);
+    expect(list.every((w) => w.id === 'egg')).toBe(true);
+  });
+
+  /**
+   * The real regression: Gino's quesadillas asked for two peppers and the old
+   * shelf put none out at all, so the recipe could not be finished.
+   */
+  it('can supply every count-ingredients step of every real recipe, in every band', () => {
+    const bands: AgeBand[] = ['A', 'B', 'C'];
+    for (const recipe of recipes) {
+      for (const [i, step] of recipe.steps.entries()) {
+        if (step.game !== 'count-ingredients') continue;
+        for (const ageBand of bands) {
+          const challenge = step.challenge({ ageBand, rng: createRng(i * 31 + 7) }) as Extract<
+            Challenge,
+            { kind: 'count-ingredients' }
+          >;
+          const spare = [...challenge.needs.map((n) => n.item), ...challenge.extras];
+          const have = shelfCounts(pantryList(challenge.needs, spare, 14));
+          for (const need of challenge.needs) {
+            const onShelf = have[need.item.id] ?? 0;
+            if (onShelf < need.count) {
+              throw new Error(
+                `${recipe.id} (band ${ageBand}) asks for ${need.count} ${need.item.id} but the shelf holds ${onShelf}`,
+              );
+            }
+          }
+        }
+      }
+    }
   });
 });

@@ -3,20 +3,20 @@ import Svg, { Circle, Ellipse, G, Path, Rect } from 'react-native-svg';
 import type { EquipmentId } from '@/learning/types';
 import { palette } from '@/theme';
 import { mix } from '@/characters/rig/palettes';
+import { HIGHLIGHT, SHADOW_FILL, SHADOW_OPACITY, shadowRy } from '@/world/tone';
 import { EquipmentIcon } from './EquipmentIcon';
 
 const VB = 48;
 
-/* House tones — rule 2 (base → one shade → one highlight) and rule 3 (ground). */
-const HI = 'rgba(255,255,255,0.32)';
+/* House tones — rules 2 and 3, from the one shared source (`@/world/tone`). */
+const HI = HIGHLIGHT;
 const HI_STRONG = 'rgba(255,255,255,0.55)';
-const GROUND = 'rgba(31,42,90,0.12)';
 const dk = (c: string, a = 0.18) => mix(c, palette.navy, a);
 const lt = (c: string, a = 0.3) => mix(c, '#FFFFFF', a);
 
 /** rule 3 — every grounded object gets a contact ellipse, ry ≈ rx × 0.22. */
 const Ground = ({ cy = 44, rx = 15, cx = 24 }: { cy?: number; rx?: number; cx?: number }) => (
-  <Ellipse cx={cx} cy={cy} rx={rx} ry={rx * 0.22} fill={GROUND} />
+  <Ellipse cx={cx} cy={cy} rx={rx} ry={shadowRy(rx)} fill={SHADOW_FILL} opacity={SHADOW_OPACITY} />
 );
 
 /** Sky objects float — they get no contact ellipse. */

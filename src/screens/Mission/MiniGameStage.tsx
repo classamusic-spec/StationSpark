@@ -26,6 +26,7 @@ import { haptics } from '@/services/haptics';
 import { speech } from '@/services/speech';
 import { createRng } from '@/utils/rng';
 import { Text } from '@/ui/Text';
+import { useTrayAnchor } from '@/ui/kit/playArea';
 import { CharacterPortrait } from '@/characters';
 import { UnderConstructionCard } from './UnderConstructionCard';
 import { BeatErrorBoundary } from './BeatErrorBoundary';
@@ -63,9 +64,15 @@ interface SayState {
  * decorative and auto-hides, so it is inert all the way down.
  */
 function SayBubble({ say }: { say: SayState | null }) {
+  const tray = useTrayAnchor();
   if (!say) return null;
   return (
-    <Animated.View entering={FadeInUp.springify().damping(15)} exiting={FadeOutDown} style={styles.say} pointerEvents="none">
+    <Animated.View
+      entering={FadeInUp.springify().damping(15)}
+      exiting={FadeOutDown}
+      style={[styles.say, { bottom: tray.height + spacing.sm }]}
+      pointerEvents="none"
+    >
       <View style={styles.sayRow} pointerEvents="none">
         <CharacterPortrait id={say.speaker} emotion="happy" size={56} />
         <View style={[styles.sayBubble, shadows.card]} pointerEvents="none">
@@ -205,7 +212,13 @@ export function MiniGameStage({ beat, ageBand, scene, seed, missionContext, comp
 
 const styles = StyleSheet.create({
   stage: { flex: 1 },
-  say: { position: 'absolute', left: spacing.md, right: spacing.md, bottom: spacing.md, zIndex: 45 },
+  /*
+   * Consistency rule 10 — one bubble motif, one anchoring. The say bubble sits
+   * where every game keeps its answer tiles, so it clears the measured `<Tray/>`
+   * exactly like Beacon's hint does (see `@/ui/kit/playArea`). It is decorative
+   * and auto-hides, so it is inert all the way down and never takes a touch.
+   */
+  say: { position: 'absolute', left: spacing.md, right: spacing.md, zIndex: 45 },
   sayRow: { flexDirection: 'row', alignItems: 'flex-end', gap: spacing.xs },
   sayBubble: {
     flex: 1,

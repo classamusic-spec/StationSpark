@@ -170,13 +170,16 @@ export function FirehouseScreen() {
     };
   }, [station]);
 
-  /** wide enough that the longest greeting never truncates (rule #10) */
-  const bubbleW = Math.max(150, Math.min(206, stage.w * 0.54));
+  /**
+   * Wide enough that the longest greeting never truncates (rule #10) but
+   * narrow enough to stop short of Beacon, who hovers on the right.
+   */
+  const bubbleW = Math.max(132, Math.min(152, stage.w * 0.42));
 
   /** the neighbouring block, sitting on the same ground line as the apron */
   const block = useMemo(() => {
     if (!station || stage.w < 40) return null;
-    const width = stage.w * 1.5;
+    const width = stage.w * 1.62;
     return {
       width,
       left: (stage.w - width) / 2,
@@ -268,7 +271,7 @@ export function FirehouseScreen() {
                 <Rookie size={crew.rookie} avatar={profile.avatar} pose="wave" emotion="happy" />
                 {/* the greeting reads out of Rookie's shoulder, so it never
                     sits over the room tiles */}
-                <View style={[styles.bubble, { left: crew.rookie * 0.5, bottom: crew.rookie * 0.66, width: bubbleW }]}>
+                <View style={[styles.bubble, { left: crew.rookie * 0.38, bottom: crew.rookie * 0.66, width: bubbleW }]}>
                   <GreetingBubble lines={greetings} maxWidth={bubbleW} />
                 </View>
               </View>
@@ -323,8 +326,8 @@ const styles = StyleSheet.create({
   sign: { alignItems: 'center', justifyContent: 'center' },
   crewLeft: { position: 'absolute', left: -8, alignItems: 'flex-start' },
   bubble: { position: 'absolute' },
-  crewRight: { position: 'absolute', right: -6, flexDirection: 'row', alignItems: 'flex-end', gap: 0 },
-  beacon: { marginBottom: 74, marginRight: -10 },
+  crewRight: { position: 'absolute', right: -12, flexDirection: 'row', alignItems: 'flex-end', gap: 0 },
+  beacon: { marginBottom: 74, marginRight: -16 },
   beaconGlow: { position: 'absolute', left: '5%', bottom: -10, alignItems: 'center' },
   ctaWrap: { position: 'absolute', bottom: -4, left: 0, right: 0, alignItems: 'center', paddingHorizontal: spacing.lg },
   cta: { minWidth: 220, maxWidth: 300, alignSelf: 'center' },

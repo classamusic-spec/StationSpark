@@ -22,8 +22,8 @@ const FACE_CY = 64;
  * it (art critique item #22: "arms stop reading as detached ovals").
  */
 const ARM = {
-  right: { s: { x: 78.5, y: 102 }, e: { x: 85, y: 118 }, h: { x: 88, y: 133 } },
-  left: { s: { x: 41.5, y: 102 }, e: { x: 35, y: 118 }, h: { x: 32, y: 133 } },
+  right: { s: { x: 78.5, y: 102 }, e: { x: 87.5, y: 117 }, h: { x: 90.5, y: 132 } },
+  left: { s: { x: 41.5, y: 102 }, e: { x: 32.5, y: 117 }, h: { x: 29.5, y: 132 } },
 } as const;
 const ARM_WIN = {
   right: { x: 56, y: 46, w: 64, h: 110 },
@@ -39,7 +39,7 @@ const TORSO =
 
 /** Where the jacket hem, the trouser block and the boots meet. */
 const HEM_Y = 129;
-const BOOT_TOP = 139;
+const BOOT_TOP = 143;
 
 /**
  * How far each hat is lifted off the brow, in rig units. Without the lift the
@@ -199,7 +199,7 @@ export function Person({
         {/* shoulder cap — keeps the joint closed however the arm swings */}
         <Circle cx={a.s.x} cy={a.s.y + 0.8} r={8.2} fill={top.shade} />
         <Circle cx={a.s.x} cy={a.s.y - 0.4} r={7.6} fill={outfit.top} />
-        <Path d={`M ${a.s.x - out * 3.4} ${a.s.y - 5.4} A 7 7 0 0 ${out === 1 ? 1 : 0} ${a.s.x + out * 4.8} ${a.s.y - 1.6}`} stroke={top.light} strokeWidth={2.6} strokeLinecap="round" fill="none" opacity={0.75} />
+        <Path d={`M ${a.s.x - out * 2.6} ${a.s.y - 5} A 6 6 0 0 ${out === 1 ? 1 : 0} ${a.s.x + out * 3.4} ${a.s.y - 2.4}`} stroke={top.light} strokeWidth={2} strokeLinecap="round" fill="none" opacity={0.42} />
         {/* hand */}
         <Circle cx={a.h.x} cy={a.h.y + 1.6} r={7.1} fill={sk.shade} />
         <Circle cx={a.h.x} cy={a.h.y} r={6.7} fill={sk.base} />
@@ -221,8 +221,8 @@ export function Person({
         <Path d={`M 76 ${BOOT_TOP} h -13 v 15 a 5 5 0 0 0 5 5 h 14 a 4 4 0 0 0 4 -4 v -2 c 0 -3.4 -4 -4.4 -6.5 -6 c -2.5 -1.6 -3.5 -4 -3.5 -8 z`} fill={shoes.shade} transform="translate(0 1.4)" />
         <Path d={`M 76 ${BOOT_TOP} h -13 v 15 a 5 5 0 0 0 5 5 h 14 a 4 4 0 0 0 4 -4 v -2 c 0 -3.4 -4 -4.4 -6.5 -6 c -2.5 -1.6 -3.5 -4 -3.5 -8 z`} fill={shoes.base} />
         {/* soles */}
-        <Path d="M 21 154.5 h 36 a 5 5 0 0 1 -5 5 h -27 a 4 4 0 0 1 -4 -4 z" fill={shoes.shade} opacity={0.9} />
-        <Path d="M 99 154.5 h -36 a 5 5 0 0 0 5 5 h 27 a 4 4 0 0 0 4 -4 z" fill={shoes.shade} opacity={0.9} />
+        <Path d="M 34.4 155 h 22.6 a 5 5 0 0 1 -5 5 h -13.6 a 4 4 0 0 1 -4 -4 z" fill={shoes.shade} opacity={0.85} />
+        <Path d="M 85.6 155 h -22.6 a 5 5 0 0 0 5 5 h 13.6 a 4 4 0 0 0 4 -4 z" fill={shoes.shade} opacity={0.85} />
         {/* boot cuffs */}
         <Rect x={42.6} y={BOOT_TOP - 3} width={15.8} height={6} rx={3} fill={shoes.light} />
         <Rect x={61.6} y={BOOT_TOP - 3} width={15.8} height={6} rx={3} fill={shoes.light} />
@@ -293,14 +293,14 @@ export function Person({
         {/* ONE small chest badge — the chest is jacket + two bands + this, nothing else */}
         {outfit.emblem && outfit.emblem !== 'none' ? (
           <G>
-            <Path d="M 71.4 98 L 80.6 98 L 80.6 105.4 C 80.6 109.6 76 111.8 76 111.8 C 76 111.8 71.4 109.6 71.4 105.4 Z" fill={palette.engineRedDark} />
-            <Path d="M 72.2 98.8 L 79.8 98.8 L 79.8 105.2 C 79.8 108.8 76 110.6 76 110.6 C 76 110.6 72.2 108.8 72.2 105.2 Z" fill={palette.safetyYellow} />
+            <Path d="M 67.4 97 L 76.6 97 L 76.6 104.4 C 76.6 108.6 72 110.8 72 110.8 C 72 110.8 67.4 108.6 67.4 104.4 Z" fill={palette.engineRedDark} />
+            <Path d="M 68.2 97.8 L 75.8 97.8 L 75.8 104.2 C 75.8 107.8 72 109.6 72 109.6 C 72 109.6 68.2 107.8 68.2 104.2 Z" fill={palette.safetyYellow} />
             {outfit.emblem === 'flame' ? (
-              <Path d="M 76 100.6 C 78.2 102.8 78.8 105 76 108 C 73.2 105 73.8 102.8 76 100.6 Z" fill={palette.engineRed} />
+              <Path d="M 72 99.6 C 74.2 101.8 74.8 104 72 107 C 69.2 104 69.8 101.8 72 99.6 Z" fill={palette.engineRed} />
             ) : outfit.emblem === 'cross' ? (
-              <Path d="M 74.8 101.2 h 2.4 v 2.2 h 2.2 v 2.4 h -2.2 v 2.2 h -2.4 v -2.2 h -2.2 v -2.4 h 2.2 z" fill={palette.engineRed} />
+              <Path d="M 70.8 100.2 h 2.4 v 2.2 h 2.2 v 2.4 h -2.2 v 2.2 h -2.4 v -2.2 h -2.2 v -2.4 h 2.2 z" fill={palette.engineRed} />
             ) : (
-              <Path d="M 76 100.4 l 1.3 2.7 3 .4 -2.2 2.1 .5 3 -2.6 -1.4 -2.6 1.4 .5 -3 -2.2 -2.1 3 -.4 z" fill={palette.engineRed} />
+              <Path d="M 72 99.4 l 1.3 2.7 3 .4 -2.2 2.1 .5 3 -2.6 -1.4 -2.6 1.4 .5 -3 -2.2 -2.1 3 -.4 z" fill={palette.engineRed} />
             )}
           </G>
         ) : null}
@@ -509,13 +509,20 @@ function HairPeek({ style, tone }: { style: HairStyle; tone: { base: string; sha
           <Path d="M 32.4 58 C 31 62 30.8 66 31.6 69.4" stroke={tone.light} strokeWidth={2.2} strokeLinecap="round" fill="none" opacity={0.6} />
         </G>
       )}
-      {/* the fringe under the brim — a centre point and two flicks, both eyes clear */}
-      <Path d="M 51 45 C 53 54.6 56 59 60 59 C 64 59 67 54.6 69 45 Z" fill={tone.shade} />
-      <Path d="M 52 45 C 53.8 53.6 56.4 57.6 60 57.6 C 63.6 57.6 66.2 53.6 68 45 Z" fill={tone.base} />
-      <Path d="M 34.6 45 C 35.6 52.6 39.6 57 45 55.4 C 40.8 54 38 50.6 37.4 45 Z" fill={tone.shade} />
-      <Path d="M 85.4 45 C 84.4 52.6 80.4 57 75 55.4 C 79.2 54 82 50.6 82.6 45 Z" fill={tone.shade} />
-      <Path d="M 35.6 45 C 36.4 51.6 40 55.4 44.6 54.2 C 41 53 38.6 49.8 38.2 45 Z" fill={tone.base} />
-      <Path d="M 84.4 45 C 83.6 51.6 80 55.4 75.4 54.2 C 79 53 81.4 49.8 81.8 45 Z" fill={tone.base} />
+      {/*
+       * The fringe under the brim: one shallow scalloped band, not a hanging
+       * spike. It hugs the brow, dips lowest between and outside the eyes, and
+       * never reaches the lashes — so the hair colour reads without the face
+       * losing anything.
+       */}
+      <Path
+        d="M 34.5 45 C 35 51.5 38.5 55.5 42.5 54.5 C 46 53.6 47.5 51 48 47.5 C 49.5 52.5 52.5 55.5 56 55 C 58.5 54.6 59.5 52.5 60 50 C 60.5 52.5 61.5 54.6 64 55 C 67.5 55.5 70.5 52.5 72 47.5 C 72.5 51 74 53.6 77.5 54.5 C 81.5 55.5 85 51.5 85.5 45 Z"
+        fill={tone.shade}
+      />
+      <Path
+        d="M 35.5 45 C 36 50.6 39 54 42.4 53.2 C 45.4 52.4 46.8 50 47.4 47 C 49 51.4 51.8 54 55 53.6 C 57.4 53.3 58.4 51.4 59 49.2 C 59.6 51.4 60.6 53.3 63 53.6 C 66.2 54 69 51.4 70.6 47 C 71.2 50 72.6 52.4 75.6 53.2 C 79 54 82 50.6 82.5 45 Z"
+        fill={tone.base}
+      />
       {longBack ? (
         <G>
           <Path d="M 30 62 C 26 74 27 86 31 92 C 36 88 37 74 35.5 62 Z" fill={tone.shade} />

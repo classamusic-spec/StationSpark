@@ -9,6 +9,8 @@ export * from './Flame';
 export * from './BuildingFacade';
 export * from './HoseRig';
 export * from './Hydrant';
+export * from './Cone';
+export * from './HoseReel';
 export * from './LadderPiece';
 export * from './WaterGauge';
 export * from './Animals';

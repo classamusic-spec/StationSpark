@@ -21,15 +21,13 @@ import React from 'react';
 import Svg, { Circle, Ellipse, G, Path, Rect } from 'react-native-svg';
 import { palette } from '@/theme';
 import { mix } from '@/characters/rig/palettes';
+import { HIGHLIGHT, SHADE, SHADOW_FILL, SHADOW_OPACITY, shadowRy } from '@/world/tone';
 
 const VB = 48;
 
-/** rule 2 — the one highlight and the one shade the whole app shares */
-const HI = 'rgba(255,255,255,0.32)';
+/** rules 2 and 3 come from one place for the whole app — see `@/world/tone`. */
+const HI = HIGHLIGHT;
 const HI_STRONG = 'rgba(255,255,255,0.55)';
-const SHADE = 'rgba(31,42,90,0.14)';
-/** rule 3 — the contact ellipse */
-const GROUND = 'rgba(31,42,90,0.12)';
 
 const dark = (c: string, amount = 0.18) => mix(c, palette.navy, amount);
 /** The drop-shade and the lift a subject mark uses, derived from its own ink. */
@@ -39,7 +37,7 @@ const lite = (c: string, amount = 0.3) => mix(c, '#FFFFFF', amount);
 
 /** rule 3: a contact ellipse, ry ≈ rx × 0.22, centred on the contact point. */
 const Ground = ({ cx = 24, cy = 43, rx = 15 }: { cx?: number; cy?: number; rx?: number }) => (
-  <Ellipse cx={cx} cy={cy} rx={rx} ry={rx * 0.22} fill={GROUND} />
+  <Ellipse cx={cx} cy={cy} rx={rx} ry={shadowRy(rx)} fill={SHADOW_FILL} opacity={SHADOW_OPACITY} />
 );
 
 /* ------------------------------------------------------------------ *
@@ -249,26 +247,30 @@ function Art({ id, muted, ink }: { id: GlyphId; muted: boolean; ink: string }) {
       );
     case 'wave': {
       const sk = '#FFD3B0';
-      const skS = mix(sk, palette.navy, 0.13);
+      const skS = mix(sk, palette.navy, 0.2);
+      const skD = mix(sk, palette.navy, 0.34);
       return (
         <G>
-          {/* a small waving hand — the "ask a grown-up" mark */}
-          <Path d="M 14 21 q 2.5 -3 2.5 -6 M 34 21 q -2.5 -3 -2.5 -6" stroke={palette.safetyYellow} strokeWidth={3.2} strokeLinecap="round" fill="none" />
-          <Rect x={15.5} y={24} width={17} height={19} rx={8} fill={skS} />
-          <Rect x={15.5} y={24} width={17} height={16.5} rx={8} fill={sk} />
+          {/* a small waving hand — the "ask a grown-up" mark. Four separated
+              fingers and a thumb, so it still reads at 16 px in a chip. */}
+          <Path d="M 12.5 17 q 2.5 -3.4 2.5 -7.4 M 35.5 17 q -2.5 -3.4 -2.5 -7.4" stroke={palette.safetyYellow} strokeWidth={3.4} strokeLinecap="round" fill="none" />
           {([
-            [18.6, 14],
-            [23.4, 11.4],
-            [28.2, 13],
+            [17.6, 12.5],
+            [23.2, 9.6],
+            [28.8, 11.4],
           ] as [number, number][]).map(([x, y], i) => (
             <G key={i}>
-              <Rect x={x - 2.7} y={y} width={5.4} height={17} rx={2.7} fill={skS} />
-              <Rect x={x - 2.7} y={y} width={5.4} height={15.4} rx={2.7} fill={sk} />
+              <Rect x={x - 3.1} y={y} width={6.2} height={20} rx={3.1} fill={skD} />
+              <Rect x={x - 2.6} y={y + 0.6} width={5.2} height={18.4} rx={2.6} fill={sk} />
             </G>
           ))}
-          <Rect x={31} y={19.5} width={5.4} height={13} rx={2.7} fill={skS} transform="rotate(24 33.7 26)" />
-          <Rect x={31} y={19.5} width={5.4} height={11.6} rx={2.7} fill={sk} transform="rotate(24 33.7 26)" />
-          <Rect x={18} y={27} width={4} height={5} rx={2} fill={HI} />
+          {/* thumb, swung out to the side */}
+          <Rect x={31.4} y={18} width={6.2} height={14} rx={3.1} fill={skD} transform="rotate(30 34.5 25)" />
+          <Rect x={31.9} y={18.6} width={5.2} height={12.8} rx={2.6} fill={sk} transform="rotate(30 34.5 25)" />
+          {/* palm */}
+          <Rect x={14.4} y={24} width={19.2} height={20} rx={9} fill={skS} />
+          <Rect x={14.4} y={24} width={19.2} height={17.4} rx={8.7} fill={sk} />
+          <Rect x={17.4} y={27.4} width={4.4} height={6} rx={2.2} fill={HI_STRONG} />
         </G>
       );
     }

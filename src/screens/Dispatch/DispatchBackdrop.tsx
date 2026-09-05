@@ -26,7 +26,7 @@ import { CaptainBea } from '@/characters/CaptainBea';
 
 /** how tall the hero band is, and how tall the console strip is */
 export const heroHeight = (tablet: boolean) => (tablet ? 254 : 210);
-export const deskHeight = (tablet: boolean) => (tablet ? 200 : 172);
+export const deskHeight = (tablet: boolean) => (tablet ? 288 : 172);
 /** the tan station wall at the foot of the hero band */
 const COPING = 78;
 

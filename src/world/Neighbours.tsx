@@ -74,12 +74,15 @@ const Art = memo(function Art({ width, height }: { width: number; height: number
 
       {/* ── the far tree mass, darkest, climbing high at both flanks ──── */}
       <G>
-        <Canopy cx={10} cy={92} rx={72} ry={64} fill={LEAF_BACK} />
-        <Canopy cx={84} cy={126} rx={62} ry={56} fill={LEAF_BACK} />
-        <Canopy cx={168} cy={196} rx={64} ry={46} fill={LEAF_BACK} />
-        <Canopy cx={252} cy={198} rx={62} ry={44} fill={LEAF_BACK} />
-        <Canopy cx={336} cy={122} rx={62} ry={56} fill={LEAF_BACK} />
-        <Canopy cx={412} cy={86} rx={74} ry={66} fill={LEAF_BACK} />
+        <Canopy cx={6} cy={98} rx={56} ry={52} fill={LEAF_BACK} />
+        <Canopy cx={58} cy={128} rx={48} ry={44} fill={LEAF_BACK} />
+        <Canopy cx={112} cy={168} rx={46} ry={40} fill={LEAF_BACK} />
+        <Canopy cx={170} cy={196} rx={48} ry={38} fill={LEAF_BACK} />
+        <Canopy cx={230} cy={200} rx={48} ry={38} fill={LEAF_BACK} />
+        <Canopy cx={288} cy={176} rx={46} ry={40} fill={LEAF_BACK} />
+        <Canopy cx={344} cy={132} rx={48} ry={44} fill={LEAF_BACK} />
+        <Canopy cx={402} cy={94} rx={56} ry={52} fill={LEAF_BACK} />
+        <Canopy cx={440} cy={140} rx={48} ry={46} fill={LEAF_BACK} />
       </G>
 
       {/* ── left neighbour: a hazy terrace rooftop peeking out ────────── */}
@@ -97,6 +100,16 @@ const Art = memo(function Art({ width, height }: { width: number; height: number
         <Rect x={44} y={82} width={24} height={9} rx={4.5} fill="#A97460" />
         <Window x={-6} y={162} w={28} h={24} />
         <Window x={36} y={162} w={28} h={24} />
+        {/* string course, then the shop front — no wall is ever left blank */}
+        <Rect x={-16} y={206} width={88} height={7} rx={3.5} fill={palette.creamDeep} />
+        <Rect x={-16} y={210} width={88} height={3} fill={SHADE} />
+        <Rect x={-10} y={230} width={74} height={62} rx={5} fill="#EBDCBE" />
+        <Rect x={-4} y={240} width={40} height={30} rx={4} fill="#5480B8" />
+        <Path d="M -4 264 L 22 240 L 34 240 L 8 268 Z" fill={HIGHLIGHT} />
+        <Path d="M 42 292 L 42 254 A 10 10 0 0 1 62 254 L 62 292 Z" fill="#9E6A45" />
+        <Path d="M 52 292 L 52 246 A 10 10 0 0 1 62 254 L 62 292 Z" fill={SHADE} />
+        <Rect x={-14} y={222} width={82} height={9} rx={4.5} fill={FAR_ROOF} />
+        <Rect x={-14} y={228} width={82} height={3.4} fill={SHADE} />
       </G>
 
       {/* ── right neighbour: the domed civic tower from the reference ── */}
@@ -119,27 +132,64 @@ const Art = memo(function Art({ width, height }: { width: number; height: number
         <Rect x={372} y={86} width={56} height={9} fill={SHADE} />
         <Window x={382} y={116} w={24} h={28} awning={false} />
         <Window x={382} y={176} w={24} h={28} awning={false} />
+        <Rect x={370} y={158} width={60} height={6} rx={3} fill={palette.creamDeep} />
+        <Rect x={370} y={161} width={60} height={2.6} fill={SHADE} />
+        <Rect x={370} y={218} width={60} height={6} rx={3} fill={palette.creamDeep} />
+        <Rect x={370} y={221} width={60} height={2.6} fill={SHADE} />
+        <Path d="M 386 292 L 386 254 A 13 13 0 0 1 412 254 L 412 292 Z" fill="#8E5A2C" />
+        <Path d="M 400 292 L 400 242 A 13 13 0 0 1 412 254 L 412 292 Z" fill={SHADE} />
       </G>
 
-      {/* ── the tree stand: mid tone over the dark mass, then highlights ── */}
+      {/* ── the tree stand ───────────────────────────────────────────
+          Many small lobes rather than a few big ones: the band is rendered
+          about 1.8× larger on a tablet, and a handful of giant ellipses reads
+          as flat blobs at that size. Trunks anchor the front row. */}
       <G>
-        <Canopy cx={30} cy={128} rx={58} ry={54} fill={LEAF} />
-        <Canopy cx={-10} cy={196} rx={58} ry={52} fill={LEAF} />
-        <Canopy cx={74} cy={202} rx={50} ry={44} fill={LEAF} />
-        <Canopy cx={132} cy={224} rx={48} ry={38} fill={LEAF_BACK} />
-        <Canopy cx={206} cy={238} rx={52} ry={34} fill={LEAF} />
-        <Canopy cx={276} cy={234} rx={46} ry={32} fill={LEAF_BACK} />
-        <Canopy cx={342} cy={206} rx={50} ry={44} fill={LEAF} />
-        <Canopy cx={396} cy={148} rx={54} ry={50} fill={LEAF} />
-        <Canopy cx={430} cy={210} rx={54} ry={48} fill={LEAF} />
-        {/* one shade, one highlight — the whole mass, not per blob */}
-        <Ellipse cx={26} cy={172} rx={56} ry={28} fill={SHADE} />
-        <Ellipse cx={220} cy={256} rx={62} ry={24} fill={SHADE} />
-        <Ellipse cx={412} cy={192} rx={56} ry={28} fill={SHADE} />
-        <Ellipse cx={16} cy={98} rx={24} ry={14} fill={LEAF_LIT} opacity={0.75} />
-        <Ellipse cx={62} cy={180} rx={20} ry={12} fill={LEAF_LIT} opacity={0.68} />
-        <Ellipse cx={196} cy={222} rx={22} ry={12} fill={LEAF_LIT} opacity={0.68} />
-        <Ellipse cx={384} cy={120} rx={24} ry={14} fill={LEAF_LIT} opacity={0.7} />
+        {/* trunks, so the mass is trees and not topiary */}
+        {[
+          [10, 246],
+          [66, 258],
+          [206, 272],
+          [352, 258],
+          [414, 246],
+        ].map(([tx, ty]) => (
+          <Path key={`t${tx}`} d={`M ${tx! - 5} 296 Q ${tx! - 3} ${ty! + 14} ${tx! - 3.5} ${ty!} L ${tx! + 3.5} ${ty!} Q ${tx! + 3} ${ty! + 14} ${tx! + 5} 296 Z`} fill="#7A5236" />
+        ))}
+
+        <Canopy cx={26} cy={132} rx={46} ry={42} fill={LEAF} />
+        <Canopy cx={-14} cy={172} rx={42} ry={38} fill={LEAF} />
+        <Canopy cx={54} cy={168} rx={34} ry={30} fill={LEAF_BACK} />
+        <Canopy cx={4} cy={206} rx={44} ry={36} fill={LEAF} />
+        <Canopy cx={62} cy={222} rx={38} ry={32} fill={LEAF} />
+        <Canopy cx={104} cy={244} rx={34} ry={26} fill={LEAF_BACK} />
+        <Canopy cx={146} cy={236} rx={38} ry={28} fill={LEAF} />
+        <Canopy cx={190} cy={252} rx={36} ry={26} fill={LEAF_BACK} />
+        <Canopy cx={232} cy={244} rx={38} ry={28} fill={LEAF} />
+        <Canopy cx={276} cy={254} rx={34} ry={24} fill={LEAF_BACK} />
+        <Canopy cx={318} cy={234} rx={38} ry={30} fill={LEAF} />
+        <Canopy cx={358} cy={214} rx={40} ry={34} fill={LEAF} />
+        <Canopy cx={400} cy={176} rx={40} ry={36} fill={LEAF_BACK} />
+        <Canopy cx={432} cy={140} rx={44} ry={40} fill={LEAF} />
+        <Canopy cx={416} cy={214} rx={38} ry={32} fill={LEAF} />
+        {/* edge caps: on a tablet the band runs past the screen, and these stop
+            the neighbours' walls ending in a bare slab at the frame edge */}
+        <Canopy cx={-34} cy={244} rx={44} ry={40} fill={LEAF} />
+        <Canopy cx={-46} cy={168} rx={40} ry={38} fill={LEAF_BACK} />
+        <Canopy cx={456} cy={238} rx={44} ry={40} fill={LEAF} />
+        <Canopy cx={466} cy={166} rx={40} ry={38} fill={LEAF_BACK} />
+        {/* one shade, one highlight — read across the whole mass, not per blob */}
+        <Ellipse cx={20} cy={176} rx={48} ry={22} fill={SHADE} />
+        <Ellipse cx={72} cy={244} rx={40} ry={18} fill={SHADE} />
+        <Ellipse cx={214} cy={266} rx={58} ry={18} fill={SHADE} />
+        <Ellipse cx={340} cy={248} rx={44} ry={18} fill={SHADE} />
+        <Ellipse cx={424} cy={182} rx={46} ry={22} fill={SHADE} />
+        <Ellipse cx={14} cy={106} rx={20} ry={12} fill={LEAF_LIT} opacity={0.75} />
+        <Ellipse cx={-6} cy={186} rx={16} ry={10} fill={LEAF_LIT} opacity={0.6} />
+        <Ellipse cx={52} cy={206} rx={16} ry={10} fill={LEAF_LIT} opacity={0.6} />
+        <Ellipse cx={140} cy={222} rx={16} ry={9} fill={LEAF_LIT} opacity={0.6} />
+        <Ellipse cx={226} cy={230} rx={16} ry={9} fill={LEAF_LIT} opacity={0.6} />
+        <Ellipse cx={350} cy={198} rx={16} ry={10} fill={LEAF_LIT} opacity={0.6} />
+        <Ellipse cx={424} cy={114} rx={20} ry={12} fill={LEAF_LIT} opacity={0.72} />
       </G>
 
       {/* ── the hedge lip that meets the station's ground plane ───────── */}

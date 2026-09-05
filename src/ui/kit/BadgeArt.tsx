@@ -103,9 +103,9 @@ function Icon({ id, fill, shade, accent }: { id: BadgeIconId; fill: string; shad
     case 'star':
       return (
         <G>
-          <Path d="M 50 24 L 58.4 42.4 L 78 45 L 63.5 58.6 L 67.4 78 L 50 68.4 L 32.6 78 L 36.5 58.6 L 22 45 L 41.6 42.4 Z" fill={fill} />
-          <Path d="M 50 29 L 57.2 44.8 L 74 47 L 61.6 58.6 L 65 75.2 L 50 66.9 L 35 75.2 L 38.4 58.6 L 26 47 L 42.8 44.8 Z" fill={accent} />
-          <Path d="M 50 34 L 55 45 L 66.6 46.6 L 58.2 54.4 L 60.4 65.6 L 50 60 Z" fill="#FFFFFF" opacity={0.4} />
+          <Path d="M 50 24 L 58.4 42.4 L 78 45 L 63.5 58.6 L 67.4 78 L 50 68.4 L 32.6 78 L 36.5 58.6 L 22 45 L 41.6 42.4 Z" fill={mix(accent, palette.navy, 0.16)} transform="translate(0 1.4)" />
+          <Path d="M 50 24 L 58.4 42.4 L 78 45 L 63.5 58.6 L 67.4 78 L 50 68.4 L 32.6 78 L 36.5 58.6 L 22 45 L 41.6 42.4 Z" fill={accent} />
+          <Path d="M 50 31 L 56 45 L 70 46.8 L 60 55.4 L 62.6 69 L 50 62.4 Z" fill={fill} opacity={0.42} />
         </G>
       );
     case 'chef-hat':
@@ -132,11 +132,14 @@ function Icon({ id, fill, shade, accent }: { id: BadgeIconId; fill: string; shad
     case 'hose':
       return (
         <G>
-          <Circle cx={52} cy={50} r={24} fill="none" stroke={fill} strokeWidth={9} />
-          <Circle cx={52} cy={50} r={17} fill="none" stroke={accent} strokeWidth={8} />
-          <Circle cx={52} cy={50} r={10} fill="none" stroke={fill} strokeWidth={8} />
-          <Path d="M 33 66 L 22 78" stroke={fill} strokeWidth={9} strokeLinecap="round" />
-          <Circle cx={22} cy={79} r={6} fill={accent} />
+          <Circle cx={52} cy={50} r={25} fill={mix(accent, palette.navy, 0.2)} />
+          <Circle cx={52} cy={49} r={24} fill={accent} />
+          <Circle cx={52} cy={49} r={15} fill={mix(accent, palette.navy, 0.18)} />
+          <Circle cx={52} cy={49} r={13.4} fill={mix(accent, '#FFFFFF', 0.34)} />
+          <Circle cx={52} cy={49} r={6} fill={mix(accent, palette.navy, 0.3)} />
+          <Path d="M 36 30 A 20 20 0 0 1 48 26" stroke="#FFFFFF" strokeWidth={4} strokeLinecap="round" fill="none" opacity={0.5} />
+          <Path d="M 35 67 L 24 79" stroke={fill} strokeWidth={10} strokeLinecap="round" />
+          <Circle cx={23} cy={80} r={6.4} fill={mix(accent, palette.navy, 0.24)} />
         </G>
       );
     case 'book':
