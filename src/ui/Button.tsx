@@ -20,6 +20,8 @@ const tones: Record<ButtonTone, { face: string; edge: string; text: string }> = 
   purple: { face: palette.purple, edge: '#6F52D9', text: palette.white },
 };
 
+const DISABLED_TONE = { face: '#DCE1EE', edge: '#BAC2D8', text: palette.navyMuted } as const;
+
 const sizes: Record<ButtonSize, { h: number; px: number; edge: number; variant: 'buttonSmall' | 'button' }> = {
   sm: { h: 48, px: 18, edge: 4, variant: 'buttonSmall' },
   md: { h: hit.min, px: 24, edge: 5, variant: 'buttonSmall' },
@@ -64,7 +66,8 @@ export function Button({
   children,
   glow = false,
 }: ButtonProps) {
-  const t = tones[tone];
+  // Disabled is a navy-tinted rest state, never a faded brand colour (a faded red reads as pink).
+  const t = disabled ? DISABLED_TONE : tones[tone];
   const s = sizes[size];
   const pressed = useSharedValue(0);
 
@@ -147,7 +150,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,199,44,0.55)',
   },
   block: { alignSelf: 'stretch' },
-  disabled: { opacity: 0.5 },
+  disabled: { opacity: 0.92 },
   edge: { alignSelf: 'stretch' },
   face: {
     flexDirection: 'row',

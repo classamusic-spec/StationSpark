@@ -1,8 +1,9 @@
 import React, { useCallback, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
-import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
-import { hit, palette, radii, shadows, spacing } from '@/theme';
-import { Panel, Text } from '@/ui';
+import Animated, { FadeIn, FadeInDown, useAnimatedStyle, useSharedValue, withSpring, withTiming } from 'react-native-reanimated';
+import Svg, { Path } from 'react-native-svg';
+import { hit, palette, radii, shadows, spacing, springs, timings } from '@/theme';
+import { CheckIcon, GlyphIcon, Panel, Text } from '@/ui';
 import { sfx } from '@/services/audio';
 import { haptics } from '@/services/haptics';
 import { useFeedbackAnim } from '@/hooks';
@@ -22,23 +23,51 @@ const QUESTIONS: Question[] = [
 ];
 
 const KEYS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'clear', '0', 'enter'] as const;
+const EDGE = 4;
 
-function Key({ label, onPress, wide }: { label: string; onPress: () => void; wide?: boolean }) {
-  const isAction = label === 'clear' || label === 'enter';
+const BackspaceIcon = () => (
+  <Svg width={26} height={26} viewBox="0 0 24 24" fill="none">
+    <Path d="M8.6 5h10.4a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8.6a2 2 0 0 1-1.5-.7L2.6 13a1.6 1.6 0 0 1 0-2l4.5-5.3A2 2 0 0 1 8.6 5z" fill={palette.navy} />
+    <Path d="M11 9.5l5 5M16 9.5l-5 5" stroke={palette.white} strokeWidth={2.2} strokeLinecap="round" />
+  </Svg>
+);
+
+/** One keypad key: a face resting on a darker edge that sinks when pressed. */
+function Key({ label, onPress }: { label: string; onPress: () => void }) {
+  const isClear = label === 'clear';
+  const isEnter = label === 'enter';
+  const pressed = useSharedValue(0);
+  const faceStyle = useAnimatedStyle(() => ({ transform: [{ translateY: pressed.value * EDGE }] }));
+  const edge = isEnter ? palette.leafGreenDark : isClear ? palette.tanDark : palette.slateLight;
+  const face = isEnter ? palette.leafGreen : isClear ? palette.creamDeep : palette.white;
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={label === 'clear' ? 'Clear' : label === 'enter' ? 'Check answer' : label}
+      accessibilityLabel={isClear ? 'Delete' : isEnter ? 'Check answer' : label}
+      onPressIn={() => {
+        pressed.value = withTiming(1, timings.fast);
+      }}
+      onPressOut={() => {
+        pressed.value = withSpring(0, springs.pop);
+      }}
       onPress={() => {
         sfx.play('tap-soft');
         haptics.select();
         onPress();
       }}
-      style={[styles.key, shadows.soft, isAction && styles.keyAction, label === 'enter' && styles.keyEnter, wide && styles.keyWide]}
+      style={[styles.keyEdge, { backgroundColor: edge }]}
     >
-      <Text variant="button" color={label === 'enter' ? palette.white : palette.navy}>
-        {label === 'clear' ? '⌫' : label === 'enter' ? '✓' : label}
-      </Text>
+      <Animated.View style={[styles.keyFace, { backgroundColor: face }, faceStyle]}>
+        {isClear ? (
+          <BackspaceIcon />
+        ) : isEnter ? (
+          <CheckIcon size={28} color={palette.white} />
+        ) : (
+          <Text variant="button" color={palette.navy} style={styles.keyLabel}>
+            {label}
+          </Text>
+        )}
+      </Animated.View>
     </Pressable>
   );
 }
@@ -85,8 +114,8 @@ export function ParentGate({ onPass, onFail }: { onPass: () => void; onFail: () 
           <Text variant="h2" center>
             {question?.prompt ?? ''}
           </Text>
-          <View style={styles.display}>
-            <Text variant="numeral" color={palette.navy} center>
+          <View style={styles.display} accessible accessibilityLabel={entry ? `Entered ${entry}` : 'Nothing entered yet'}>
+            <Text variant="numeral" color={entry ? palette.navy : palette.slate} center>
               {entry || '—'}
             </Text>
           </View>
@@ -109,9 +138,12 @@ export function ParentGate({ onPass, onFail }: { onPass: () => void; onFail: () 
 
       {failed ? (
         <Animated.View entering={FadeIn} style={[styles.failCard, shadows.card]}>
-          <Text variant="h3" center>
-            Ask a grown-up! 👋
-          </Text>
+          <View style={styles.failRow}>
+            <GlyphIcon id="wave" size={26} label="" />
+            <Text variant="h3" center>
+              Ask a grown-up!
+            </Text>
+          </View>
           <Text variant="small" color={palette.navySoft} center>
             Taking you back to the station.
           </Text>
@@ -121,10 +153,12 @@ export function ParentGate({ onPass, onFail }: { onPass: () => void; onFail: () 
   );
 }
 
+const KEY_W = 78;
+
 const styles = StyleSheet.create({
   wrap: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: spacing.md, gap: spacing.md },
   head: { gap: 4, alignItems: 'center' },
-  card: { gap: spacing.md, width: 320, maxWidth: '100%', alignItems: 'center' },
+  card: { gap: spacing.md, width: 330, maxWidth: '100%', alignItems: 'center' },
   display: {
     alignSelf: 'stretch',
     minHeight: 66,
@@ -133,19 +167,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  pad: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs, justifyContent: 'center' },
-  key: {
-    width: 76,
+  pad: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs, justifyContent: 'center', width: KEY_W * 3 + spacing.xs * 2 },
+  keyEdge: { width: KEY_W, height: hit.min + EDGE, borderRadius: radii.tile, ...shadows.soft },
+  keyFace: {
+    width: KEY_W,
     height: hit.min,
     borderRadius: radii.tile,
-    backgroundColor: palette.white,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 2,
-    borderColor: palette.slateLight,
+    borderColor: 'rgba(255,255,255,0.45)',
   },
-  keyAction: { backgroundColor: palette.creamDeep, borderColor: palette.tanDark },
-  keyEnter: { backgroundColor: palette.leafGreen, borderColor: palette.leafGreenDark },
-  keyWide: { width: 158 },
-  failCard: { backgroundColor: palette.white, borderRadius: radii.card, padding: spacing.md, gap: 2 },
+  keyLabel: { includeFontPadding: false },
+  failCard: { backgroundColor: palette.white, borderRadius: radii.card, padding: spacing.md, gap: 2, alignItems: 'center' },
+  failRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
 });
