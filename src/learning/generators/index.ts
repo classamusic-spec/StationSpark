@@ -22,16 +22,19 @@ import { generateHoseHero } from './hose-hero';
 import { generateHydrantMatch } from './hydrant-match';
 import { generateLadderBuilder } from './ladder-builder';
 import { generateListenCount } from './listen-count';
+import { generateMarketMoney } from './market-money';
 import { generateMeasurePour } from './measure-pour';
 import { generateNumberLadder } from './number-ladder';
 import { generatePizzaFractions } from './pizza-fractions';
 import { generateRecipeScale } from './recipe-scale';
 import { generateRescuePets } from './rescue-pets';
 import { generateRescueRoute } from './rescue-route';
+import { generateShapeBuilder } from './shape-builder';
 import { generateSignals } from './signals';
 import { generateSprayPattern } from './spray-pattern';
 import { generateVocabTap } from './vocab-tap';
 import { generateWaterTank } from './water-tank';
+import { generateWordBuilder } from './word-builder';
 
 export * from './build-barrier';
 export * from './clock-watch';
@@ -45,16 +48,19 @@ export * from './hose-path';
 export * from './hydrant-match';
 export * from './ladder-builder';
 export * from './listen-count';
+export * from './market-money';
 export * from './measure-pour';
 export * from './number-ladder';
 export * from './pizza-fractions';
 export * from './recipe-scale';
 export * from './rescue-pets';
 export * from './rescue-route';
+export * from './shape-builder';
 export * from './signals';
 export * from './spray-pattern';
 export * from './vocab-tap';
 export * from './water-tank';
+export * from './word-builder';
 
 export const generators: { [K in ChallengeKind]: ChallengeGenerator<K> } = {
   'hose-hero': generateHoseHero,
@@ -74,6 +80,9 @@ export const generators: { [K in ChallengeKind]: ChallengeGenerator<K> } = {
   signals: generateSignals,
   'vocab-tap': generateVocabTap,
   'listen-count': generateListenCount,
+  'market-money': generateMarketMoney,
+  'shape-builder': generateShapeBuilder,
+  'word-builder': generateWordBuilder,
   'pizza-fractions': generatePizzaFractions,
   'measure-pour': generateMeasurePour,
   'count-ingredients': generateCountIngredients,

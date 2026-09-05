@@ -69,7 +69,7 @@ export function SlotZone({
   });
 
   return (
-    <Animated.View ref={ref} collapsable={false} style={[styles.slot, style, hoverStyle]}>
+    <Animated.View ref={ref} collapsable={false} testID={`slot:${id}`} style={[styles.slot, style, hoverStyle]}>
       {children}
     </Animated.View>
   );

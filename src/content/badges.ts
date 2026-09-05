@@ -174,6 +174,86 @@ export const badges: BadgeDef[] = [
     color: palette.leafGreenDark,
     icon: 'broom',
   },
+  {
+    id: 'library-lights',
+    name: 'Library Lights',
+    nameEs: 'Luces de la biblioteca',
+    description: 'Story time never stopped — you found the lights in the dark.',
+    color: palette.skyTop,
+    icon: 'book',
+  },
+  {
+    id: 'pet-parade',
+    name: 'Pet Parade',
+    nameEs: 'Desfile de mascotas',
+    description: 'Every puppy, bunny and turtle marched in the right order.',
+    color: palette.grass,
+    icon: 'cat',
+  },
+  {
+    id: 'market-helper',
+    name: 'Market Helper',
+    nameEs: 'Ayudante del mercado',
+    description: 'Abuela Carmen kept her stall — and taught you her salsa.',
+    color: palette.orange,
+    icon: 'picnic',
+  },
+  {
+    id: 'museum-detective',
+    name: 'Museum Detective',
+    nameEs: 'Detective del museo',
+    description: 'You read the clues, finished the mosaic and opened on time.',
+    color: palette.purple,
+    icon: 'pattern',
+  },
+  {
+    id: 'timetable-pro',
+    name: 'Timetable Pro',
+    nameEs: 'Experto del horario',
+    description: 'Every train left on time because you read the clock.',
+    color: palette.navySoft,
+    icon: 'clock',
+  },
+  {
+    id: 'rescue-exchange',
+    name: 'Rescue Exchange',
+    nameEs: 'Intercambio de rescate',
+    description: 'Two stations, two languages, one crew. ¡Somos equipo!',
+    color: palette.engineRedLight,
+    icon: 'hands',
+  },
+  {
+    id: 'time-traveler',
+    name: 'Time Traveller',
+    nameEs: 'Viajero del tiempo',
+    description: 'Five clocks set exactly right. Nobody waits for you.',
+    color: palette.skyMid,
+    icon: 'clock',
+  },
+  {
+    id: 'shape-shaper',
+    name: 'Shape Shaper',
+    nameEs: 'Maestro de formas',
+    description: 'Three shape puzzles solved — corners, gaps and all.',
+    color: palette.mint,
+    icon: 'pattern',
+  },
+  {
+    id: 'chef-de-station',
+    name: 'Chef de Station',
+    nameEs: 'Chef del cuartel',
+    description: 'Every recipe in the book, cooked with the crew.',
+    color: palette.woodDark,
+    icon: 'chef-hat',
+  },
+  {
+    id: 'bilingual-buddy',
+    name: 'Bilingual Buddy',
+    nameEs: 'Amigo bilingüe',
+    description: 'Thirty Spanish words in your locker. ¡Qué increíble!',
+    color: palette.pink,
+    icon: 'speech-bubble',
+  },
 ];
 
 const badgeMap = new Map(badges.map((b) => [b.id, b]));
@@ -202,12 +282,21 @@ export const numberGameKinds = ['number-ladder', 'hydrant-match', 'ladder-builde
 export const fractionGameKinds = ['water-tank', 'pizza-fractions', 'measure-pour'];
 /** Games that count as "ladder games" for Ladder Legend. */
 export const ladderGameKinds = ['ladder-builder', 'number-ladder'];
+/** Games that count as "shape games" for Shape Shaper (see `challengeSkills`). */
+export const geometryGameKinds = ['hose-path', 'build-barrier', 'pizza-fractions'];
 
 const played = (progress: BadgeProgressLike, kinds: readonly string[]): number =>
   kinds.reduce((total, kind) => total + (progress.gamesPlayed[kind] ?? 0), 0);
 
-/** Total missions in the MVP; community-helper needs all of them. */
-export const TOTAL_MISSIONS = 6;
+/**
+ * Every mission in Spark City; community-helper needs all of them.
+ * Kept as a constant (not `missions.length`) so this module stays free of the
+ * mission graph — `content.test.ts` asserts the two never drift apart.
+ */
+export const TOTAL_MISSIONS = 12;
+
+/** Every recipe in the kitchen book; chef-de-station needs all of them. */
+export const TOTAL_RECIPES = 10;
 
 /**
  * Every skill badge the child has earned right now. Pure — call it after
@@ -223,15 +312,19 @@ export function earnedSkillBadges(progress: BadgeProgressLike): BadgeId[] {
   if (played(progress, numberGameKinds) >= 5) out.push('number-navigator');
   if (played(progress, fractionGameKinds) >= 3) out.push('fraction-firefighter');
   if (played(progress, ladderGameKinds) >= 3) out.push('ladder-legend');
+  if (played(progress, geometryGameKinds) >= 3) out.push('shape-shaper');
   if ((progress.gamesPlayed['hose-hero'] ?? 0) >= 3) out.push('hose-hero');
   if ((progress.gamesPlayed['rescue-route'] ?? 0) >= 3) out.push('map-master');
   if ((progress.gamesPlayed['spray-pattern'] ?? 0) >= 3) out.push('pattern-pro');
   if ((progress.gamesPlayed['clock-watch'] ?? 0) >= 3) out.push('time-keeper');
+  if ((progress.gamesPlayed['clock-watch'] ?? 0) >= 5) out.push('time-traveler');
   if (progress.words.length >= 20) out.push('word-watcher');
   if (spanishWords >= 10) out.push('spanish-speaker');
+  if (spanishWords >= 30) out.push('bilingual-buddy');
   if (progress.shiftDays.length >= 3) out.push('team-player');
   if (progress.recipes.length >= 3) out.push('recipe-rescuer');
   if (progress.recipes.length >= 5) out.push('kitchen-pro');
+  if (progress.recipes.length >= TOTAL_RECIPES) out.push('chef-de-station');
 
   return out;
 }

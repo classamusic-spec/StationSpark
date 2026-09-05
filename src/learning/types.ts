@@ -21,6 +21,7 @@ export type SkillTag =
   | 'fraction-quarter'
   | 'fraction-equivalent'
   | 'measurement'
+  | 'money'
   | 'time'
   | 'patterns'
   | 'sorting'
@@ -32,6 +33,7 @@ export type SkillTag =
   | 'reading-words'
   | 'reading-sentences'
   | 'reading-directions'
+  | 'spelling'
   | 'vocabulary-en'
   | 'vocabulary-es'
   | 'listening-es'
@@ -280,6 +282,67 @@ export interface ListenCountChallenge {
   support?: 'full' | 'some' | 'min';
 }
 
+/* ---- Market, workshop & spelling ----------------------------------- */
+
+export interface MarketMoneyChallenge {
+  kind: 'market-money';
+  /** what the child is buying at the stall (drawn with VocabIcon) */
+  item: VocabWord;
+  /** price in whole coins */
+  price: number;
+  /** the coins lying in the purse, e.g. [1,1,1,5,5,10,10,25] */
+  coins: number[];
+  /** the distinct coin values in play */
+  denominations: number[];
+  /** true = the counter total must match the price exactly; false = counting up (paying over is fine) */
+  exactChange: boolean;
+  /** every distinct set of purse coins that adds up to the price */
+  solutions: number[][];
+  /** band C follow-up: "she paid with 50 — how much change?" */
+  askChange?: { paid: number; change: number };
+}
+
+export type ShapePieceKind = 'square' | 'rect' | 'triangle' | 'semicircle' | 'circle' | 'quarter';
+
+/** Only these shapes look different when you turn them, so only these rotate. */
+export const rotatableShapes: readonly ShapePieceKind[] = ['triangle', 'semicircle', 'quarter'];
+
+export interface ShapePiece {
+  id: string;
+  shape: ShapePieceKind;
+  /** blueprint units — every blueprint is drawn inside a 100 × 100 box */
+  w: number;
+  h: number;
+  x: number;
+  y: number;
+  /** the turn the piece must end at (non-rotatable shapes are always 0) */
+  rotation: 0 | 90 | 180 | 270;
+  color: string;
+}
+
+export interface ShapeBuilderChallenge {
+  kind: 'shape-builder';
+  blueprint: 'house' | 'truck' | 'ladder' | 'hydrant' | 'rocket' | 'tower' | 'boat';
+  pieces: ShapePiece[];
+  /** band B/C: pieces arrive turned the wrong way and have to be tapped round */
+  needsRotation: boolean;
+  /** band C: "how many triangles did you use?" */
+  askCount?: { shape: ShapePieceKind; count: number };
+}
+
+export interface WordBuilderChallenge {
+  kind: 'word-builder';
+  word: VocabWord;
+  /** the language being spelled */
+  lang: 'en' | 'es';
+  /** the answer, one upper-case letter per slot */
+  letters: string[];
+  /** tray tiles: the letters still to place plus 0–2 distractors, shuffled */
+  tiles: string[];
+  /** how many leading letters start already in their slots */
+  prefilled: number;
+}
+
 /* ---- Kitchen ------------------------------------------------------- */
 
 export type ToppingId = 'cheese' | 'tomato' | 'pepper' | 'mushroom' | 'olive' | 'basil';
@@ -344,6 +407,9 @@ export type Challenge =
   | SignalsChallenge
   | VocabTapChallenge
   | ListenCountChallenge
+  | MarketMoneyChallenge
+  | ShapeBuilderChallenge
+  | WordBuilderChallenge
   | PizzaFractionsChallenge
   | MeasurePourChallenge
   | CountIngredientsChallenge
@@ -383,6 +449,9 @@ export const challengeSkills: Record<ChallengeKind, SkillTag[]> = {
   signals: ['sequencing'],
   'vocab-tap': ['vocabulary-en', 'vocabulary-es'],
   'listen-count': ['listening-es', 'counting'],
+  'market-money': ['money', 'addition', 'subtraction', 'counting'],
+  'shape-builder': ['geometry', 'spatial'],
+  'word-builder': ['spelling', 'reading-words', 'vocabulary-en', 'vocabulary-es'],
   'pizza-fractions': ['fraction-half', 'fraction-quarter', 'division', 'geometry'],
   'measure-pour': ['measurement', 'fraction-quarter'],
   'count-ingredients': ['counting', 'vocabulary-es'],

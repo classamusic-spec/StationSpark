@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Platform, Pressable, StyleSheet, View } from 'react-native';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import type { AgeBand, Challenge } from '@/learning/types';
 import { challengeSkills } from '@/learning/types';
@@ -258,6 +258,17 @@ function StepGame({
 
   /** the runner owns no sound of its own — every game speaks for itself */
   const onEvent = useCallback((_e: MiniGameEvent) => undefined, []);
+
+  /** QA hook — mirrors MiniGameStage so the play-through harness can read the
+   *  live challenge on web. Read-only; nothing in the app consumes it. */
+  useEffect(() => {
+    if (Platform.OS !== 'web') return;
+    const g = globalThis as { __SS_CHALLENGE__?: Challenge | null };
+    g.__SS_CHALLENGE__ = usable ? (challenge ?? null) : null;
+    return () => {
+      g.__SS_CHALLENGE__ = null;
+    };
+  }, [challenge, usable]);
 
   if (!usable || !entry || !challenge) {
     return (

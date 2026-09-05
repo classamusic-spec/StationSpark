@@ -43,11 +43,25 @@ export const upgrades: StationUpgradeDef[] = [
     room: 'yard',
   },
   {
+    id: 'reading-nook',
+    name: 'Reading Nook',
+    description: 'Maya lent us a shelf: bean bags, a lamp and a stack of picture books.',
+    cost: 50,
+    room: 'classroom',
+  },
+  {
     id: 'community-table',
     name: 'Community Table',
     description: 'A long table where the whole neighbourhood squeezes in for dinner.',
     cost: 60,
     room: 'kitchen',
+  },
+  {
+    id: 'festival-lights',
+    name: 'Festival Lights',
+    description: 'Papel picado and warm bulbs strung across the front of the station.',
+    cost: 65,
+    room: 'facade',
   },
   {
     id: 'map-room-2',
@@ -64,6 +78,13 @@ export const upgrades: StationUpgradeDef[] = [
     room: 'roof',
   },
   {
+    id: 'world-map',
+    name: 'World Map',
+    description: 'A big map of the world with a pin on every station that writes to us.',
+    cost: 85,
+    room: 'dispatch',
+  },
+  {
     id: 'kitchen-2',
     name: 'Big Kitchen',
     description: 'A second oven, a huge mixing bowl and shelves of shiny pans.',
@@ -75,6 +96,13 @@ export const upgrades: StationUpgradeDef[] = [
     name: 'Training Tower',
     description: 'A padded practice tower in the yard with rungs at every height.',
     cost: 90,
+    room: 'yard',
+  },
+  {
+    id: 'garden-pond',
+    name: 'Garden Pond',
+    description: 'A little pond behind the garden. Ducklings visit on Tuesdays.',
+    cost: 95,
     room: 'yard',
   },
   {

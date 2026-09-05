@@ -268,6 +268,198 @@ export const recipes: RecipeDef[] = [
       },
     ],
   },
+  {
+    id: 'quesadillas',
+    name: 'Capitana Sofía’s Quesadillas',
+    nameEs: 'Las quesadillas de la capitana Sofía',
+    blurb: 'Tortilla, queso, hot pan, fair shares. The visiting crew’s favourite.',
+    subjects: ['cooking', 'math', 'spanish'],
+    grownUp: true,
+    xp: 25,
+    intro: [
+      bea('Sofía’s recipe. Say the words as we cook!'),
+      grownUpLine('hot pan'),
+    ],
+    steps: [
+      {
+        game: 'count-ingredients',
+        challenge: countThese([{ id: 'tortilla', count: 6 }, { id: 'cheese', count: 4 }, { id: 'pepper', count: 2 }], ['tomato', 'olive', 'mushroom'], true),
+        intro: [beacon('Seis tortillas, cuatro quesos. Count them out!', 'Seis tortillas y cuatro quesos.')],
+      },
+      {
+        game: 'divide-share',
+        challenge: (ctx) => ({
+          ...generateDivideShare(ctx),
+          item: wordById('quesadilla'),
+          ...(ctx.ageBand === 'A' ? { total: 8, among: 2, each: 4 } : { total: 12, among: 4, each: 3 }),
+        }),
+        intro: [bea('Everybody gets the same. Share them out.')],
+      },
+      {
+        game: 'recipe-scale',
+        bands: ['C'],
+        challenge: (ctx) => ({
+          ...generateRecipeScale(ctx),
+          serves: 4,
+          eating: 6,
+          lines: [
+            { item: wordById('tortilla'), amount: 4, scaled: 6 },
+            { item: wordById('cheese'), amount: 2, scaled: 3 },
+            { item: wordById('onion'), amount: 2, scaled: 3 },
+          ],
+        }),
+        intro: [beacon('Two more friends arrived! Grow the recipe.')],
+      },
+    ],
+  },
+  {
+    id: 'fruit-salad',
+    name: 'Rainbow Fruit Salad',
+    nameEs: 'Ensalada de frutas',
+    blurb: 'Every colour in one bowl — count it, pour it, then share it out.',
+    subjects: ['cooking', 'math', 'spanish'],
+    grownUp: true,
+    xp: 20,
+    intro: [
+      bea('A bowl of every colour. Sounds like our crew!'),
+      grownUpLine('knife'),
+    ],
+    steps: [
+      {
+        game: 'count-ingredients',
+        challenge: (ctx) => ({
+          ...generateCountIngredients(ctx),
+          needs:
+            ctx.ageBand === 'A'
+              ? [{ item: wordById('strawberry'), count: 3 }, { item: wordById('banana'), count: 2 }]
+              : [
+                  { item: wordById('strawberry'), count: 4 },
+                  { item: wordById('grape'), count: 6 },
+                  { item: wordById('orange-fruit'), count: 2 },
+                ],
+          extras: [wordById('tomato'), wordById('olive'), wordById('mushroom')],
+          spokenEs: true,
+        }),
+        intro: [beacon('Fresas, uvas, naranjas. Read the card twice!', 'Fresas, uvas y naranjas.')],
+      },
+      {
+        game: 'measure-pour',
+        challenge: measureByBand('juice', 'cup'),
+        intro: [bea('Pour the juice to the line. Nice and slow.')],
+      },
+      {
+        game: 'divide-share',
+        challenge: (ctx) => ({
+          ...generateDivideShare(ctx),
+          item: wordById('strawberry'),
+          ...(ctx.ageBand === 'A' ? { total: 8, among: 2, each: 4 } : { total: 12, among: 4, each: 3 }),
+        }),
+        intro: [beacon('Same number of berries in every bowl!')],
+      },
+    ],
+  },
+  {
+    id: 'lemonade',
+    name: 'Spark Lemonade',
+    nameEs: 'Limonada Spark',
+    blurb: 'One cup of water to one quarter of honey. Taste, then make more!',
+    subjects: ['cooking', 'math', 'spanish'],
+    grownUp: true,
+    xp: 20,
+    intro: [
+      bea('Hot shift, cold lemonade. Measure carefully!'),
+      grownUpLine('knife'),
+    ],
+    steps: [
+      {
+        game: 'count-ingredients',
+        challenge: countThese([{ id: 'lemon', count: 4 }, { id: 'strawberry', count: 2 }], ['apple', 'banana', 'olive'], true),
+        intro: [beacon('Cuatro limones, dos fresas. Count them in!', 'Cuatro limones y dos fresas.')],
+      },
+      {
+        game: 'measure-pour',
+        challenge: measureByBand('water', 'cup'),
+        intro: [bea('Water to the line. That is the big one.')],
+      },
+      {
+        game: 'measure-pour',
+        challenge: measure('honey', 1, 4, 'spoon'),
+        intro: [beacon('One quarter of honey for every cup. That is the ratio!')],
+      },
+      {
+        game: 'recipe-scale',
+        bands: ['C'],
+        challenge: (ctx) => ({
+          ...generateRecipeScale(ctx),
+          serves: 4,
+          eating: 6,
+          lines: [
+            { item: wordById('lemon'), amount: 4, scaled: 6 },
+            { item: wordById('strawberry'), amount: 2, scaled: 3 },
+            { item: wordById('grape'), amount: 6, scaled: 9 },
+          ],
+        }),
+        intro: [bea('The whole station is thirsty. Grow it by half.')],
+      },
+    ],
+  },
+  {
+    id: 'garden-salsa',
+    name: 'Garden Salsa',
+    nameEs: 'Salsa de la huerta',
+    blurb: 'Tomate, cebolla, cilantro, limón — Abuela Carmen’s market salsa.',
+    subjects: ['cooking', 'math', 'spanish'],
+    grownUp: true,
+    xp: 25,
+    intro: [
+      bea('Carmen’s salsa. Four words, four ingredients.'),
+      grownUpLine('knife'),
+    ],
+    steps: [
+      {
+        game: 'count-ingredients',
+        challenge: (ctx) => ({
+          ...generateCountIngredients(ctx),
+          needs:
+            ctx.ageBand === 'A'
+              ? [{ item: wordById('tomato'), count: 3 }, { item: wordById('onion'), count: 1 }]
+              : ctx.ageBand === 'B'
+                ? [
+                    { item: wordById('tomato'), count: 4 },
+                    { item: wordById('onion'), count: 2 },
+                    { item: wordById('cilantro'), count: 1 },
+                  ]
+                : [
+                    { item: wordById('tomato'), count: 5 },
+                    { item: wordById('onion'), count: 2 },
+                    { item: wordById('cilantro'), count: 3 },
+                  ],
+          extras: [wordById('apple'), wordById('banana'), wordById('strawberry')],
+          spokenEs: true,
+        }),
+        intro: [
+          {
+            speaker: 'npc',
+            npcName: 'Abuela Carmen',
+            text: 'Tomate, cebolla, cilantro. Say them with me!',
+            es: 'Tomate, cebolla, cilantro. ¡Díganlos conmigo!',
+            emotion: 'happy',
+          },
+        ],
+      },
+      {
+        game: 'measure-pour',
+        challenge: measure('lemon', 1, 4, 'cup'),
+        intro: [beacon('A quarter cup of limón. Limón means lime!', 'Limón.')],
+      },
+      {
+        game: 'measure-pour',
+        bands: ['B', 'C'],
+        challenge: measure('salt', 1, 2, 'spoon'),
+        intro: [bea('Half a spoon of salt. Taste it after.')],
+      },
+    ],
+  },
 ];
 
 const recipeMap = new Map(recipes.map((r) => [r.id, r]));
@@ -278,11 +470,12 @@ export function recipeById(id: RecipeId): RecipeDef | undefined {
 
 /**
  * Badges for having cooked `count` different recipes.
- * Three recipes → Recipe Rescuer. Five → Kitchen Pro.
+ * Three recipes → Recipe Rescuer. Five → Kitchen Pro. All ten → Chef de Station.
  */
 export function badgesForRecipes(count: number): BadgeId[] {
   const out: BadgeId[] = [];
   if (count >= 3) out.push('recipe-rescuer');
   if (count >= 5) out.push('kitchen-pro');
+  if (count >= recipes.length) out.push('chef-de-station');
   return out;
 }

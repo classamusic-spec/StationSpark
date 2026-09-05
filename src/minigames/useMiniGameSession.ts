@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 import type { ChallengeKind, SkillTag } from '@/learning/types';
 import { challengeSkills } from '@/learning/types';
+import { speech } from '@/services/speech';
 import type { MiniGameEvent, MiniGameResult, Stars } from './types';
 
 /**
@@ -22,6 +23,13 @@ export function useMiniGameSession(
   useEffect(() => {
     startedAt.current = Date.now();
   }, []);
+
+  /**
+   * Every mini-game speaks. When one is torn down (the child quits, the mission
+   * moves to the next beat, "Play again" reseeds the stage) the voice has to go
+   * with it — otherwise Beacon keeps talking over the next screen.
+   */
+  useEffect(() => () => speech.stop(), []);
 
   const correct = useCallback(
     (detail?: string) => {

@@ -47,6 +47,7 @@ export function Draggable({
       <Animated.View
         ref={nodeRef}
         collapsable={false}
+        testID={`drag:${id}`}
         accessibilityLabel={accessibilityLabel ?? id}
         accessible={!disabled}
         style={[styles.base, dragging && styles.dragging, style, animatedStyle]}

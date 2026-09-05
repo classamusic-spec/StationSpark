@@ -49,6 +49,16 @@ export const badgeLook: Record<BadgeId, { color: string; icon: BadgeIconId }> = 
   'kitchen-pro': { color: palette.gold, icon: 'chef-hat' },
   'ladder-legend': { color: palette.goldDark, icon: 'ladder' },
   'time-keeper': { color: palette.skyTop, icon: 'clock' },
+  'library-lights': { color: palette.skyTop, icon: 'book' },
+  'pet-parade': { color: palette.grass, icon: 'cat' },
+  'market-helper': { color: palette.orange, icon: 'picnic' },
+  'museum-detective': { color: palette.purple, icon: 'pattern' },
+  'timetable-pro': { color: palette.navySoft, icon: 'clock' },
+  'rescue-exchange': { color: palette.engineRedLight, icon: 'hands' },
+  'time-traveler': { color: palette.skyMid, icon: 'clock' },
+  'shape-shaper': { color: palette.mint, icon: 'pattern' },
+  'chef-de-station': { color: palette.woodDark, icon: 'chef-hat' },
+  'bilingual-buddy': { color: palette.pink, icon: 'speech-bubble' },
 };
 
 /* Icons live in a 100×112 box, centred on (50, 52) and ~46 units across. */

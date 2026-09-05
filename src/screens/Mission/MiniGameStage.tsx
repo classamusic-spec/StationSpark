@@ -12,8 +12,8 @@
  * haptic + a character line. (Games also play their own feedback via the UI kit;
  * `sfx.play` pools one player per sound, so a doubled call is still one sound.)
  */
-import React, { useCallback, useMemo, useRef, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Platform, StyleSheet, View } from 'react-native';
 import Animated, { FadeInUp, FadeOutDown } from 'react-native-reanimated';
 import type { AgeBand, Challenge, SceneId } from '@/learning/types';
 import { challengeSkills } from '@/learning/types';
@@ -102,6 +102,20 @@ export function MiniGameStage({ beat, ageBand, scene, seed, missionContext, comp
       return null;
     }
   }, [ageBand, beat, scene, seed]);
+
+  /**
+   * QA hook: the automated play-through harness (tools/qa/play.mjs) reads the
+   * live challenge to decide what the right answer is. Web only, read-only, and
+   * nothing in the app ever reads it back.
+   */
+  useEffect(() => {
+    if (Platform.OS !== 'web') return;
+    const g = globalThis as { __SS_CHALLENGE__?: Challenge | null };
+    g.__SS_CHALLENGE__ = challenge;
+    return () => {
+      g.__SS_CHALLENGE__ = null;
+    };
+  }, [challenge]);
 
   const finish = useCallback(
     (result: MiniGameResult) => {

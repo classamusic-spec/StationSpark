@@ -10,3 +10,4 @@ export * from './Npc';
 export * from './rig/Person';
 export * from './rig/palettes';
 export * from './rig/faceSpec';
+export * from './GameCrew';

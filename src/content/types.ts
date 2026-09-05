@@ -39,7 +39,18 @@ export type LocationId =
   | 'train-station'
   | 'clock-tower';
 
-export type RecipeId = 'pancakes' | 'pizza' | 'tacos' | 'smoothie' | 'soup' | 'bread';
+export type RecipeId =
+  | 'pancakes'
+  | 'pizza'
+  | 'tacos'
+  | 'smoothie'
+  | 'soup'
+  | 'bread'
+  /* ---- added with the twelve-mission town ---- */
+  | 'quesadillas'
+  | 'fruit-salad'
+  | 'lemonade'
+  | 'garden-salsa';
 
 export type MissionBeat =
   | { type: 'dialogue'; lines: DialogueLine[]; backdrop?: SceneId }
@@ -78,7 +89,19 @@ export type BadgeId =
   | 'clean-up-crew'
   | 'kitchen-pro'
   | 'ladder-legend'
-  | 'time-keeper';
+  | 'time-keeper'
+  /* ---- mission badges for the six new calls ---- */
+  | 'library-lights'
+  | 'pet-parade'
+  | 'market-helper'
+  | 'museum-detective'
+  | 'timetable-pro'
+  | 'rescue-exchange'
+  /* ---- skill badges that go with them ---- */
+  | 'time-traveler'
+  | 'shape-shaper'
+  | 'chef-de-station'
+  | 'bilingual-buddy';
 
 export interface BadgeDef {
   id: BadgeId;
@@ -119,7 +142,12 @@ export type StationUpgradeId =
   | 'community-table'
   | 'flag-gold'
   | 'bell-brass'
-  | 'mural';
+  | 'mural'
+  /* ---- added with the twelve-mission town ---- */
+  | 'reading-nook'
+  | 'world-map'
+  | 'festival-lights'
+  | 'garden-pond';
 
 export interface StationUpgradeDef {
   id: StationUpgradeId;

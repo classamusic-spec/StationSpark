@@ -16,3 +16,4 @@ export * from './StationFacade';
 export * from './StationDetails';
 export * from './FireTruck';
 export * from './TownMap';
+export * from './Stage';

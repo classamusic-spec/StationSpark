@@ -8,6 +8,7 @@
 import { add, equals, toNumber } from '@/utils/fractions';
 import { pathPieces, posKey, samePos, solveHosePath, solveRoute } from '@/utils/grid';
 import type { Challenge, Fraction, GridPos } from './types';
+import { rotatableShapes } from './types';
 import { isSubMultiset, solveNumberLadder, sumOf } from './solvers';
 
 const isWholeMultiple = (value: Fraction, step: Fraction): boolean => {
@@ -245,6 +246,83 @@ export function validateChallenge(challenge: Challenge): string[] {
       if (challenge.phraseEs.trim().length === 0) bad('missing Spanish phrase');
       if (challenge.phraseEn.trim().length === 0) bad('missing English phrase');
       if (challenge.item.es.trim().length === 0) bad('item is missing its Spanish word');
+      break;
+    }
+
+    case 'market-money': {
+      if (challenge.price < 1) bad('the price must be at least one coin');
+      if (challenge.coins.length === 0) bad('the purse is empty');
+      if (challenge.coins.some((c) => c < 1 || !Number.isInteger(c))) bad('every coin must be a positive whole number');
+      if (challenge.denominations.length === 0) bad('no coin values on the sign');
+      const values = new Set(challenge.denominations);
+      if (challenge.coins.some((c) => !values.has(c))) bad('a purse coin is not one of the denominations');
+      if (sumOf(challenge.coins) < challenge.price) bad('the purse holds less than the price');
+      if (challenge.solutions.length === 0) bad('no way to pay this price');
+      for (const solution of challenge.solutions) {
+        if (sumOf(solution) !== challenge.price) bad(`${solution.join('+')} does not add up to ${challenge.price}`);
+        if (!isSubMultiset(solution, challenge.coins)) bad('a way to pay uses coins the child does not have');
+      }
+      if (challenge.item.en.trim().length === 0 || challenge.item.es.trim().length === 0) bad('the item is missing a name');
+      if (challenge.askChange) {
+        const { paid, change } = challenge.askChange;
+        if (paid <= challenge.price) bad('the customer paid less than the price');
+        if (change !== paid - challenge.price) bad('the change is not paid − price');
+        if (change < 1) bad('there would be no change to work out');
+      }
+      break;
+    }
+
+    case 'shape-builder': {
+      const pieces = challenge.pieces;
+      if (pieces.length < 3) bad('a blueprint needs at least three pieces');
+      if (pieces.length > 7) bad('too many pieces for small hands');
+      if (uniqueCount(pieces.map((p) => p.id)) !== pieces.length) bad('duplicate piece ids');
+      for (const piece of pieces) {
+        if (piece.w <= 0 || piece.h <= 0) bad(`piece ${piece.id} has no size`);
+        if (piece.x < 0 || piece.y < 0 || piece.x + piece.w > 100 || piece.y + piece.h > 100) {
+          bad(`piece ${piece.id} falls outside the blueprint`);
+        }
+        if (![0, 90, 180, 270].includes(piece.rotation)) bad(`piece ${piece.id} has an odd rotation`);
+        if (!rotatableShapes.includes(piece.shape) && piece.rotation !== 0) {
+          bad(`piece ${piece.id} is a ${piece.shape}, which cannot be turned`);
+        }
+        if (piece.color.trim().length === 0) bad(`piece ${piece.id} has no colour`);
+      }
+      for (let i = 0; i < pieces.length; i++) {
+        for (let j = i + 1; j < pieces.length; j++) {
+          const a = pieces[i];
+          const b = pieces[j];
+          if (!a || !b) continue;
+          const overlaps = a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
+          if (overlaps) bad(`pieces ${a.id} and ${b.id} sit on top of each other`);
+        }
+      }
+      if (challenge.needsRotation && !pieces.some((p) => rotatableShapes.includes(p.shape))) {
+        bad('rotation is asked for but nothing in the blueprint can be turned');
+      }
+      if (challenge.askCount) {
+        const actual = pieces.filter((p) => p.shape === challenge.askCount?.shape).length;
+        if (actual !== challenge.askCount.count) bad('askCount does not match the pieces');
+        if (challenge.askCount.count < 1) bad('askCount asks about a shape that is not there');
+      }
+      break;
+    }
+
+    case 'word-builder': {
+      const { letters, tiles, prefilled, word, lang } = challenge;
+      if (letters.length < 2) bad('the word is too short to build');
+      if (letters.some((l) => l.length !== 1)) bad('every slot holds exactly one letter');
+      if (letters.join('').toLowerCase() !== word[lang].toLowerCase()) bad('the letters do not spell the word');
+      if (prefilled < 0 || prefilled >= letters.length) bad('prefilled must leave letters to place');
+      if (tiles.some((t) => t.length !== 1)) bad('every tile holds exactly one letter');
+      const bag = new Map<string, number>();
+      for (const tile of tiles) bag.set(tile, (bag.get(tile) ?? 0) + 1);
+      for (const letter of letters.slice(prefilled)) {
+        const left = bag.get(letter) ?? 0;
+        if (left === 0) bad(`there is no “${letter}” tile in the tray`);
+        else bag.set(letter, left - 1);
+      }
+      if (word.en.trim().length === 0 || word.es.trim().length === 0) bad('the word is missing a translation');
       break;
     }
 

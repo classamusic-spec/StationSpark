@@ -427,6 +427,7 @@ export function HoseHero({ challenge, ageBand, onComplete, onEvent, compact, mis
             return (
               <View
                 key={`${slot}-${i}`}
+                testID={`flame:${i}:${st}`}
                 pointerEvents="none"
                 style={[
                   styles.flameSlot,

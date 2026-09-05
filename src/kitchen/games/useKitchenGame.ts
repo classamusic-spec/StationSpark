@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Gesture } from 'react-native-gesture-handler';
 import { runOnJS, useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 import { springs } from '@/theme';
@@ -44,6 +44,14 @@ export function useBeaconHint(session: Session): BeaconHint {
     misses: 0,
   });
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // the auto-hide timer must not outlive the game
+  useEffect(
+    () => () => {
+      if (timer.current) clearTimeout(timer.current);
+    },
+    [],
+  );
 
   const show = useCallback((text: string, es: string | undefined, countsAsMiss: boolean) => {
     setState((s) => ({ text, es, visible: true, misses: s.misses + (countsAsMiss ? 1 : 0) }));
