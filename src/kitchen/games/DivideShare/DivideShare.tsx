@@ -36,7 +36,7 @@ import { kitchenFeel, nearestTarget, useBeaconHint, useDragSource } from '../use
 const D = { w: 390, h: 486 };
 const TRAY = { x: 18, y: 10, w: 354, h: 104 };
 const ASK_Y = 126;
-const PLATE_TOP = 224;
+const PLATE_TOP = 250;
 const PLATE_H = 210;
 const PLATE_Y = PLATE_TOP + 120;
 const ITEM = 42;
@@ -174,7 +174,7 @@ export function DivideShare({ challenge, ageBand, onComplete, onEvent, compact }
             </View>
 
             {phase === 'ask' ? (
-              <View style={[at(s, 20, ASK_Y, 350), styles.answerWrap]}>
+              <View style={[at(s, 8, ASK_Y, 374), styles.answerWrap]}>
                 {answerOptions(each).map((value, i) => (
                   <AnswerTile
                     key={value}
@@ -386,7 +386,9 @@ const styles = StyleSheet.create({
     backgroundColor: palette.tan,
     borderColor: palette.wood,
   },
-  answerWrap: { flexDirection: 'row', justifyContent: 'center', gap: spacing.md, flexWrap: 'wrap' },
+  /* the third option used to wrap onto a second line and land on the crew
+     row — the art director's "orphan card". One row, always. */
+  answerWrap: { flexDirection: 'row', justifyContent: 'center', gap: spacing.xs, flexWrap: 'nowrap' },
   plateCol: { alignItems: 'center' },
   figureSlot: { alignItems: 'center', justifyContent: 'flex-end' },
   plateHit: { alignItems: 'center', justifyContent: 'center', padding: 3, borderWidth: 3, borderColor: 'transparent' },

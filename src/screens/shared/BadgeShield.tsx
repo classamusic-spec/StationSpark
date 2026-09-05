@@ -87,7 +87,7 @@ export function BadgeShield({ name, color, icon, earned, size = 84, index = 0, o
             </View>
           </View>
           <View style={[styles.plaque, earned ? styles.plaqueOn : styles.plaqueOff, { maxWidth: size + 12 }]}>
-            <Text variant="tiny" color={earned ? palette.navy : palette.navyMuted} center>
+            <Text variant="tiny" color={earned ? palette.navy : palette.navyMuted} center style={styles.plaqueText}>
               {name}
             </Text>
           </View>
@@ -103,7 +103,9 @@ const styles = StyleSheet.create({
   shield: { alignItems: 'center', justifyContent: 'flex-start' },
   shadow: { position: 'absolute', left: 0 },
   pin: { position: 'absolute', alignSelf: 'center' },
-  plaque: { marginTop: -4, paddingHorizontal: 8, paddingVertical: 4, borderRadius: radii.tag },
+  plaque: { marginTop: -4, paddingHorizontal: 4, paddingVertical: 4, borderRadius: radii.tag },
+  /** the longest single badge word ("Firefighter") must fit a 3-across cell on a phone */
+  plaqueText: { letterSpacing: 0 },
   plaqueOn: { backgroundColor: palette.creamDeep },
   plaqueOff: { backgroundColor: '#EEF1F7' },
 });

@@ -393,13 +393,17 @@ export function TravelCinematic({ from, to, onDone, durationMs }: TravelCinemati
 
       {arrived ? (
         <View style={styles.stickerWrap} pointerEvents="none">
-          <Animated.View entering={ZoomIn.springify().damping(9)} style={[styles.sticker, shadows.card]}>
-            <Text variant="display" color={palette.white} center>
-              We&apos;re here!
-            </Text>
-            <Text variant="bodyStrong" color={palette.white} center>
-              {locationName(to)}
-            </Text>
+          {/* the zoom-in and the jaunty tilt need separate nodes, or the layout
+              animation overwrites the transform (and Reanimated says so) */}
+          <Animated.View entering={ZoomIn.springify().damping(9)}>
+            <View style={[styles.sticker, shadows.card]}>
+              <Text variant="display" color={palette.white} center>
+                We&apos;re here!
+              </Text>
+              <Text variant="bodyStrong" color={palette.white} center>
+                {locationName(to)}
+              </Text>
+            </View>
           </Animated.View>
         </View>
       ) : null}

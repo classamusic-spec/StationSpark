@@ -71,7 +71,7 @@ function Plank() {
 export interface ShopShelfProps {
   entries: readonly ShopEntry[];
   /** tiles per shelf */
-  columns?: 2 | 3;
+  columns?: 2 | 3 | 4;
   onBuy: (def: StationUpgradeDef) => void;
 }
 

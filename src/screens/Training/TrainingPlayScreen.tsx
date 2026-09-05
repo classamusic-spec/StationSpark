@@ -126,7 +126,7 @@ export function TrainingPlayScreen({ kind }: { kind: string }) {
         stars={result?.stars}
         xp={TRAINING_XP}
         subjects={meta?.subjects}
-        ctaLabel="Play again ↻"
+        ctaLabel="Play again"
         onNext={playAgain}
       />
 

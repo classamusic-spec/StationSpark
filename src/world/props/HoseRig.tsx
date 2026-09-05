@@ -3,6 +3,7 @@ import type { SharedValue } from 'react-native-reanimated';
 import { useDerivedValue } from 'react-native-reanimated';
 import { Canvas, Group, Path, RoundedRect, Skia } from '@shopify/react-native-skia';
 import { palette } from '@/theme';
+import { SHADOW_FILL, SHADOW_OPACITY } from '../tone';
 
 /** Deterministic per-droplet jitter so the stream looks alive but never random-flickers. */
 export interface DropletSeeds {
@@ -189,20 +190,47 @@ export function HoseRig({ width, height, nozzle, aimX, aimY, power, clock, scale
   const streamWidthInner = useDerivedValue(() => 6 * scale * power.value + 0.01);
   const waterOpacity = useDerivedValue(() => Math.min(1, power.value * 1.2));
 
+  const s = scale;
+  const shadowShift = useMemo(() => [{ translateX: 3 * s }, { translateY: 7 * s }], [s]);
+  const shadeShift = useMemo(() => [{ translateX: 1.5 * s }, { translateY: 4 * s }], [s]);
+  const gleamShift = useMemo(() => [{ translateX: -1.5 * s }, { translateY: -4.5 * s }], [s]);
+
   return (
     <Canvas style={{ width, height }} pointerEvents="none">
-      {/* hose */}
-      <Path path={hosePath} style="stroke" strokeWidth={30 * scale} strokeCap="round" color={palette.engineRedDark} />
-      <Path path={hosePath} style="stroke" strokeWidth={24 * scale} strokeCap="round" color={palette.engineRed} />
-      <Path path={hosePath} style="stroke" strokeWidth={6 * scale} strokeCap="round" color="#FFFFFF" opacity={0.28} />
+      {/* soft navy shadow the hose casts on the pavement */}
+      <Group transform={shadowShift}>
+        <Path path={hosePath} style="stroke" strokeWidth={30 * s} strokeCap="round" color={SHADOW_FILL} opacity={SHADOW_OPACITY} />
+      </Group>
 
-      {/* nozzle */}
+      {/* hose body: base → shade along the underside → highlight along the top */}
+      <Path path={hosePath} style="stroke" strokeWidth={28 * s} strokeCap="round" color={palette.engineRedDark} />
+      <Path path={hosePath} style="stroke" strokeWidth={24 * s} strokeCap="round" color={palette.engineRed} />
+      <Group transform={shadeShift}>
+        <Path path={hosePath} style="stroke" strokeWidth={9 * s} strokeCap="round" color={SHADOW_FILL} opacity={0.14} />
+      </Group>
+      <Group transform={gleamShift}>
+        <Path path={hosePath} style="stroke" strokeWidth={6 * s} strokeCap="round" color="#FFFFFF" opacity={0.3} />
+      </Group>
+
+      {/* brass coupling ring, charcoal nozzle, gold bail, dark tip — all turn with the aim */}
       <Group transform={nozzleTransform}>
-        <RoundedRect x={-24 * scale} y={-13 * scale} width={34 * scale} height={26 * scale} r={11 * scale} color={palette.charcoal} />
-        <RoundedRect x={-20 * scale} y={-10 * scale} width={26 * scale} height={7 * scale} r={3.5 * scale} color="#FFFFFF" opacity={0.25} />
-        <RoundedRect x={4 * scale} y={-11 * scale} width={13 * scale} height={22 * scale} r={5 * scale} color={palette.gold} />
-        <RoundedRect x={15 * scale} y={-8 * scale} width={20 * scale} height={16 * scale} r={7 * scale} color={palette.safetyYellow} />
-        <RoundedRect x={30 * scale} y={-6 * scale} width={8 * scale} height={12 * scale} r={4 * scale} color={palette.charcoalDark} />
+        <RoundedRect x={-32 * s} y={-15 * s} width={16 * s} height={30 * s} r={5 * s} color={palette.gold} />
+        <RoundedRect x={-32 * s} y={1 * s} width={16 * s} height={14 * s} r={5 * s} color={SHADOW_FILL} opacity={0.14} />
+        <RoundedRect x={-30 * s} y={-12 * s} width={12 * s} height={4 * s} r={2 * s} color="#FFFFFF" opacity={0.32} />
+        <RoundedRect x={-25 * s} y={-15 * s} width={2.4 * s} height={30 * s} r={1.2 * s} color={palette.goldDark} opacity={0.6} />
+
+        <RoundedRect x={-18 * s} y={-12 * s} width={30 * s} height={24 * s} r={9 * s} color={palette.charcoal} />
+        <RoundedRect x={-18 * s} y={2 * s} width={30 * s} height={10 * s} r={5 * s} color={SHADOW_FILL} opacity={0.14} />
+        <RoundedRect x={-14 * s} y={-9 * s} width={20 * s} height={5 * s} r={2.5 * s} color="#FFFFFF" opacity={0.28} />
+
+        <RoundedRect x={10 * s} y={-10 * s} width={10 * s} height={20 * s} r={4 * s} color={palette.gold} />
+        <RoundedRect x={10 * s} y={1 * s} width={10 * s} height={9 * s} r={4 * s} color={SHADOW_FILL} opacity={0.14} />
+        <RoundedRect x={12 * s} y={-8 * s} width={6 * s} height={3 * s} r={1.5 * s} color="#FFFFFF" opacity={0.32} />
+
+        <RoundedRect x={18 * s} y={-8 * s} width={18 * s} height={16 * s} r={6 * s} color={palette.charcoal} />
+        <RoundedRect x={18 * s} y={1 * s} width={18 * s} height={7 * s} r={3.5 * s} color={SHADOW_FILL} opacity={0.14} />
+        <RoundedRect x={20 * s} y={-6 * s} width={10 * s} height={3 * s} r={1.5 * s} color="#FFFFFF" opacity={0.28} />
+        <RoundedRect x={31 * s} y={-5 * s} width={6 * s} height={10 * s} r={3 * s} color={palette.charcoalDark} />
       </Group>
 
       {/* water */}

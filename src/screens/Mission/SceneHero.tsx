@@ -624,22 +624,30 @@ export interface SceneHeroProps {
   style?: StyleProp<ViewStyle>;
   /** rounded corners on the panel (default: card radius) */
   radius?: number;
+  /**
+   * Full-bleed hero (critique #12): widens the view box vertically so a
+   * half-screen-tall panel is filled with sky and pavement instead of cropping
+   * a third of the storefront off each side.
+   */
+  bleed?: boolean;
 }
 
 /** The big illustrated storefront panel. Fills whatever box it is given. */
-export function SceneHero({ scene, compact, style, radius = radii.card }: SceneHeroProps) {
+export function SceneHero({ scene, compact, style, radius = radii.card, bleed }: SceneHeroProps) {
   const s = sceneStyles[scene] ?? sceneStyles.bakery;
   const Art = sceneArt[scene] ?? BakeryScene;
+  const top = bleed ? -86 : 0;
+  const height = bleed ? VB_H + 158 : VB_H;
   return (
     <View style={[styles.hero, { borderRadius: radius }, style]}>
-      <Svg width="100%" height="100%" viewBox={`0 0 ${VB_W} ${VB_H}`} preserveAspectRatio="xMidYMid slice">
+      <Svg width="100%" height="100%" viewBox={`0 ${top} ${VB_W} ${height}`} preserveAspectRatio="xMidYMid slice">
         <Defs>
           <LinearGradient id={`sky-${scene}`} x1="0" y1="0" x2="0" y2="1">
             <Stop offset="0" stopColor={s.sky[0]} />
             <Stop offset="1" stopColor={s.sky[1]} />
           </LinearGradient>
         </Defs>
-        <Rect x={0} y={0} width={VB_W} height={VB_H} fill={`url(#sky-${scene})`} />
+        <Rect x={0} y={top} width={VB_W} height={GROUND_Y - top} fill={`url(#sky-${scene})`} />
         {!compact ? (
           <G>
             <Cloud x={44} y={30} s={1} />
@@ -650,7 +658,7 @@ export function SceneHero({ scene, compact, style, radius = radii.card }: SceneH
           </G>
         ) : null}
         {/* ground */}
-        <Rect x={0} y={GROUND_Y} width={VB_W} height={VB_H - GROUND_Y} fill={s.ground} />
+        <Rect x={0} y={GROUND_Y} width={VB_W} height={top + height - GROUND_Y} fill={s.ground} />
         <Rect x={0} y={GROUND_Y} width={VB_W} height={4} fill={s.groundShade} />
         <Art />
       </Svg>

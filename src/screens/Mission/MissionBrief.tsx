@@ -1,8 +1,8 @@
 /**
  * MISSION BRIEF — the reference frame, exactly.
  *
- *   Logo · "Mission Brief" pill
- *   [ big illustrated storefront ]
+ *   [ FULL-BLEED illustrated storefront, ~half the screen, an NPC waiting
+ *     outside it, the "Mission Brief" pill floating on the sky ]
  *   ┌─────────────────────────────┐
  *   │  Smoke from the oven!       │
  *   │  (pin) 24 Market Street      │
@@ -11,18 +11,34 @@
  *            Get Ready!  ›
  */
 import React, { useEffect } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
 import Animated, { FadeIn, FadeInDown, FadeInUp } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle, Path } from 'react-native-svg';
 import type { MissionDef } from '@/content/types';
+import type { SceneId } from '@/learning/types';
 import { palette, radii, shadows, spacing, stagger, subjectColors, type SubjectId } from '@/theme';
 import { speech } from '@/services/speech';
-import { Button, Logo, Panel, Text } from '@/ui';
+import { Button, Panel, Text } from '@/ui';
 import { ChevronRightIcon } from '@/ui/icons';
 import { GlyphIcon } from '@/ui/kit/GlyphIcon';
 import { subjectLabel } from '@/ui/SubjectPill';
+import { Npc, type NpcVariant } from '@/characters';
 import { SceneHero } from './SceneHero';
+
+/** Who is standing outside, waiting for the crew. */
+const SCENE_NPC: Record<SceneId, NpcVariant> = {
+  bakery: 'rosa',
+  pizza: 'gino',
+  school: 'ms-lee',
+  park: 'okafor',
+  'clock-tower': 'maya',
+  apartments: 'twins',
+  'pet-shop': 'twins',
+  library: 'maya',
+  market: 'rosa',
+  'station-yard': 'okafor',
+};
 
 /** A soft-coloured square tile: the drawn subject mark over the subject name. */
 function SubjectTile({ subject, index }: { subject: SubjectId; index: number }) {
@@ -61,6 +77,11 @@ export interface MissionBriefProps {
 
 export function MissionBrief({ mission, onStart }: MissionBriefProps) {
   const insets = useSafeAreaInsets();
+  const { width, height } = useWindowDimensions();
+  /* ~half the screen, and never so tall that the storefront's flanks get
+     sliced away (the art is 1.6 : 1 before the bleed widens it). */
+  const heroH = Math.round(Math.min(height * 0.44, width * 1.02));
+  const npc = SCENE_NPC[mission.scene] ?? 'rosa';
 
   useEffect(() => {
     const t = setTimeout(() => speech.say(mission.brief, { speaker: 'bea' }), 600);
@@ -73,24 +94,29 @@ export function MissionBrief({ mission, onStart }: MissionBriefProps) {
   return (
     <View style={styles.root}>
       <ScrollView
-        contentContainerStyle={[styles.scroll, { paddingTop: insets.top + spacing.xxs, paddingBottom: insets.bottom + 116 }]}
+        contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + 116 }]}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.logoRow} pointerEvents="none">
-          <Logo size={150} tagline={false} />
-        </View>
-
-        <Animated.View entering={FadeInDown.springify().damping(16)} style={styles.titlePill}>
-          <Text variant="h1" center>
-            Mission Brief
-          </Text>
+        {/* critique #12: the storefront IS the promise of the adventure — it
+            runs edge to edge at half the screen, the title floats on its sky,
+            an NPC waits outside, and the brief card laps over its lower edge.
+            The logo is gone: the child knows what app they are in. */}
+        <Animated.View entering={FadeIn.duration(360)} style={[styles.heroWrap, { height: heroH }]}>
+          <SceneHero scene={mission.scene} radius={0} bleed style={styles.hero} />
+          <View style={[styles.npc, { bottom: heroH * 0.1 }]} pointerEvents="none">
+            <Npc variant={npc} size={Math.round(heroH * 0.36)} emotion="worried" pose="wave" />
+          </View>
+          <Animated.View
+            entering={FadeInDown.springify().damping(16)}
+            style={[styles.titlePill, { top: insets.top + spacing.xxl + spacing.xs }]}
+          >
+            <Text variant="h1" center>
+              Mission Brief
+            </Text>
+          </Animated.View>
         </Animated.View>
 
-        <Animated.View entering={FadeIn.duration(360)} style={[styles.heroWrap, shadows.card]}>
-          <SceneHero scene={mission.scene} radius={radii.panel} style={styles.hero} />
-        </Animated.View>
-
-        <Animated.View entering={FadeInUp.delay(120).springify().damping(16)}>
+        <Animated.View entering={FadeInUp.delay(120).springify().damping(16)} style={styles.cardWrap}>
           <Panel tone="cream" radius="panel" padding="md" style={styles.card}>
             <Text variant="h2" center>
               {mission.tagline}
@@ -141,9 +167,9 @@ export function MissionBrief({ mission, onStart }: MissionBriefProps) {
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
-  scroll: { paddingHorizontal: spacing.md, gap: spacing.sm },
-  logoRow: { alignItems: 'center', marginBottom: -spacing.xs },
+  scroll: { gap: spacing.sm },
   titlePill: {
+    position: 'absolute',
     alignSelf: 'center',
     backgroundColor: palette.white,
     borderRadius: radii.pill,
@@ -151,8 +177,11 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.xs,
     ...shadows.card,
   },
-  heroWrap: { borderRadius: radii.panel, marginTop: spacing.xs },
-  hero: { height: 210, width: '100%' },
+  heroWrap: { width: '100%' },
+  hero: { width: '100%', height: '100%' },
+  npc: { position: 'absolute', left: '6%' },
+  /* the card laps over the bottom edge of the hero, as in the reference */
+  cardWrap: { paddingHorizontal: spacing.md, marginTop: -26 },
   card: { gap: spacing.sm },
   addressRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: -4 },
   tiles: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs, justifyContent: 'center' },

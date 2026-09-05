@@ -123,7 +123,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.xs,
-    backgroundColor: 'rgba(255,255,255,0.88)',
+    // opaque: a translucent card let the wall poster read through it
+    backgroundColor: palette.white,
     borderRadius: radii.card,
     padding: spacing.sm,
   },

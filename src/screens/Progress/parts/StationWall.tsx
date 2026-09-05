@@ -61,7 +61,8 @@ export function StationWall({ top }: StationWallProps) {
   const h = Math.max(240, height - top);
   return (
     <View style={StyleSheet.absoluteFill} pointerEvents="none">
-      <TownBackdrop hills={h + 72} cloudCount={3} sun={false} />
+      {/* hazy skyline + hills peek over the cornice; the treeline would crowd the logo */}
+      <TownBackdrop hills={h + 72} cloudCount={3} sun={false} trees={false} />
       <View style={[styles.wall, { top, height: h }]}>
         <Wall w={w} h={h} />
       </View>

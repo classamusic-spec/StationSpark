@@ -1,13 +1,4 @@
-### mission/pizza-shop-panic  PASS 
-[warning] [Reanimated] Property [transform] may be overwritten by a layout animation. Please wrap your component with an animated view and apply the layout animation on the wrapper.
-[warning] THREE.Clock: This module has been deprecated. Please use THREE.Timer instead.
+### training/hose-hero  PASS 
 
-### mission/market-morning  PASS 
-[warning] [Reanimated] Property [transform] may be overwritten by a layout animation. Please wrap your component with an animated view and apply the layout animation on the wrapper.
-[warning] THREE.Clock: This module has been deprecated. Please use THREE.Timer instead.
 
-### mission/festival-exchange  PASS 
-[warning] [Reanimated] Property [transform] may be overwritten by a layout animation. Please wrap your component with an animated view and apply the layout animation on the wrapper.
-[warning] THREE.Clock: This module has been deprecated. Please use THREE.Timer instead.
-
-### kitchen/quesadillas  PASS 
+### training/water-tank  PASS 

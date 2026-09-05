@@ -66,19 +66,26 @@ export function ProgressScreen() {
   const [openEarned, setOpenEarned] = useState(false);
   const [bought, setBought] = useState<StationUpgradeDef | null>(null);
 
-  /* ── layout: one column on phones, two boards side by side on tablets ── */
+  /* ── layout: one column on phones; on tablets the progress and rank boards
+   *    hang side by side, then the badge wall and the shop run full width ── */
   const twoCol = layout.width >= 700;
   const maxWidth = twoCol ? Math.min(layout.width - spacing.lg * 2, 940) : layout.contentWidth;
   const logoSize = twoCol ? 190 : Math.min(layout.s(150), 176);
   const logoHeight = logoSize * 0.86 + 23;
   const wallTop = insets.top + 6 + logoHeight + 14;
-  const columnWidth = twoCol ? (maxWidth - spacing.md * 2 - spacing.md) / 2 : maxWidth - spacing.md * 2;
+  const fullWidth = maxWidth - spacing.md * 2;
 
+  /**
+   * Badge cells: the wood frame (12) and board padding (16) each side, minus
+   * the 6 px the grid claws back, split into columns. Three across on a phone
+   * is the narrowest cell that still fits "Firefighter" on one plaque line.
+   */
+  const badgeCols = twoCol ? 6 : 3;
   const badgeSize = useMemo(() => {
-    const inner = columnWidth - 12 * 2 - spacing.md * 2;
-    const cols = twoCol ? 4 : columnWidth >= 440 ? 5 : 4;
-    return Math.max(50, Math.floor((inner - (cols - 1) * spacing.sm) / cols) - 12);
-  }, [columnWidth, twoCol]);
+    const inner = fullWidth - 12 * 2 - spacing.md * 2 + 12;
+    return Math.max(56, Math.floor((inner - (badgeCols - 1) * spacing.sm) / badgeCols) - 12);
+  }, [badgeCols, fullWidth]);
+  const shopCols: 2 | 3 | 4 = twoCol ? 4 : fullWidth >= 470 ? 3 : 2;
 
   const onBuy = useCallback(
     (def: StationUpgradeDef) => {
@@ -99,10 +106,10 @@ export function ProgressScreen() {
           Small steps. A bigger you!
         </Text>
         <View style={styles.statGrid}>
-          <StatTile value={stats.missions} label={'Missions\nCompleted'} color={palette.engineRed} glyph={<TruckGlyph />} delayMs={120} />
-          <StatTile value={stats.skills} label={'Skills\nPractised'} color={palette.orange} glyph={<ConeGlyph />} delayMs={200} />
-          <StatTile value={stats.recipes} label={'Recipes\nCooked'} color={STAT_BLUE} glyph={<ChefGlyph />} delayMs={280} />
-          <StatTile value={stats.words} label={'Words\nLearned'} color={palette.leafGreen} glyph={<BookGlyph />} delayMs={360} />
+          <StatTile value={stats.missions} label={'Missions\nCompleted'} color={palette.engineRed} glyph={<TruckGlyph />} delayMs={120} wide={twoCol} />
+          <StatTile value={stats.skills} label={'Skills\nPractised'} color={palette.orange} glyph={<ConeGlyph />} delayMs={200} wide={twoCol} />
+          <StatTile value={stats.recipes} label={'Recipes\nCooked'} color={STAT_BLUE} glyph={<ChefGlyph />} delayMs={280} wide={twoCol} />
+          <StatTile value={stats.words} label={'Words\nLearned'} color={palette.leafGreen} glyph={<BookGlyph />} delayMs={360} wide={twoCol} />
         </View>
       </StationBoard>
     </Animated.View>
@@ -150,7 +157,7 @@ export function ProgressScreen() {
           </Text>
           <SparksCounter />
         </View>
-        <ShopShelf entries={board.entries} columns={twoCol ? 2 : columnWidth >= 440 ? 3 : 2} onBuy={onBuy} />
+        <ShopShelf entries={board.entries} columns={shopCols} onBuy={onBuy} />
       </StationBoard>
     </Animated.View>
   );
@@ -191,16 +198,14 @@ export function ProgressScreen() {
         </View>
 
         {twoCol ? (
-          <View style={styles.columns}>
-            <View style={styles.column}>
-              {progressBoard}
-              {ranksBoard}
+          <>
+            <View style={styles.columns}>
+              <View style={styles.column}>{progressBoard}</View>
+              <View style={styles.column}>{ranksBoard}</View>
             </View>
-            <View style={styles.column}>
-              {badgesBoard}
-              {shopBoard}
-            </View>
-          </View>
+            {badgesBoard}
+            {shopBoard}
+          </>
         ) : (
           <>
             {progressBoard}
@@ -251,7 +256,8 @@ const styles = StyleSheet.create({
   columns: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.md },
   column: { flex: 1, gap: spacing.md },
   statGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
-  badgeGrid: { justifyContent: 'flex-start', rowGap: spacing.sm },
+  /** claws 6 px back from the board padding each side so three plaques fit a phone */
+  badgeGrid: { justifyContent: 'flex-start', rowGap: spacing.sm, marginHorizontal: -6 },
   shopHead: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   shopBlurb: { flex: 1 },
   badgeModal: { alignItems: 'center', gap: spacing.sm },

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -145,6 +145,14 @@ export default function KitGallery() {
   const [celebrate, setCelebrate] = useState(false);
   const [hint, setHint] = useState(false);
   const [fxPlay, setFxPlay] = useState(1);
+
+  /* Dev-only: replay the one-shot bursts on a loop so a still screenshot of
+     this section actually shows them. */
+  useEffect(() => {
+    if (only && only !== 'fx') return;
+    const t = setInterval(() => setFxPlay((n) => n + 1), 650);
+    return () => clearInterval(t);
+  }, [only]);
 
   const line = DEMO_LINES[dialogue];
 
@@ -374,24 +382,34 @@ export default function KitGallery() {
           </View>
           <View style={styles.fxRow}>
             <View style={styles.fxCell}>
-              <SteamPuffs x={56} y={92} count={6} />
-              <Label>SteamPuffs</Label>
+              <SteamPuffs x={56} y={100} count={6} />
+              <Text variant="tiny" color={palette.white} center>
+                SteamPuffs
+              </Text>
             </View>
             <View style={styles.fxCell}>
-              <WaterDroplets x={56} y={80} trigger={fxPlay} radius={40} />
-              <Label>WaterDroplets</Label>
+              <WaterDroplets x={56} y={78} radius={40} count={12} />
+              <Text variant="tiny" color={palette.white} center>
+                WaterDroplets
+              </Text>
             </View>
             <View style={styles.fxCell}>
               <Sparkles x={56} y={60} trigger={fxPlay} />
-              <Label>Sparkles</Label>
+              <Text variant="tiny" color={palette.white} center>
+                Sparkles
+              </Text>
             </View>
             <View style={styles.fxCell}>
               <DustPuff x={56} y={96} trigger={fxPlay} />
-              <Label>DustPuff</Label>
+              <Text variant="tiny" color={palette.white} center>
+                DustPuff
+              </Text>
             </View>
             <View style={styles.fxCell}>
               <Confetti trigger={fxPlay} width={112} height={120} count={18} />
-              <Label>Confetti</Label>
+              <Text variant="tiny" color={palette.white} center>
+                Confetti
+              </Text>
             </View>
           </View>
         </Section>
@@ -616,7 +634,7 @@ const styles = StyleSheet.create({
   fxCell: {
     width: 112,
     height: 138,
-    backgroundColor: 'rgba(255,255,255,0.55)',
+    backgroundColor: '#5E6B99',
     borderRadius: radii.tile,
     alignItems: 'center',
     justifyContent: 'flex-end',

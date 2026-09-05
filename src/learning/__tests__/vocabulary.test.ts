@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { createRng } from '@/utils/rng';
 import {
   countPhraseEn,
@@ -13,18 +15,12 @@ import {
   wordsByCategory,
 } from '@/learning/vocabulary';
 
-/** The ids the UI's VocabIcon sheet draws (src/ui/kit/VocabIcon.tsx). */
-const ICON_IDS = new Set([
-  'water', 'help', 'open', 'closed', 'red', 'blue', 'one', 'two', 'three',
-  'ladder', 'hose', 'truck', 'hydrant', 'cone', 'flashlight', 'helmet', 'radio', 'boots',
-  'first-aid', 'bucket', 'extinguisher', 'rope', 'axe',
-  'tomato', 'cheese', 'milk', 'apple', 'bread', 'egg', 'flour', 'butter', 'sugar',
-  'strawberry', 'banana', 'mushroom', 'pepper', 'olive', 'basil', 'taco', 'pizza', 'soup',
-  'cat', 'dog', 'bunny', 'duck', 'turtle',
-  'bakery', 'school', 'library', 'park', 'pet-shop', 'market', 'house', 'tree',
-  'sun', 'cloud', 'rain',
-  'left', 'right', 'up', 'down', 'happy', 'sad',
-]);
+/** The ids the UI's VocabIcon sheet draws — read from the sheet itself so the two never drift. */
+const ICON_IDS = (() => {
+  const src = readFileSync(join(__dirname, '../../ui/kit/VocabIcon.tsx'), 'utf8');
+  const list = /export const vocabIconIds: readonly VocabIconId\[\] = \[([\s\S]*?)\];/.exec(src)?.[1] ?? '';
+  return new Set(Array.from(list.matchAll(/'([a-z0-9-]+)'/g), (m) => m[1]));
+})();
 
 const CATEGORIES = ['equipment', 'food', 'colors', 'numbers', 'places', 'actions', 'people', 'animals'] as const;
 

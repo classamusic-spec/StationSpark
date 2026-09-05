@@ -16,7 +16,12 @@ const COUNTER_DEEP = '#E2BC86';
 /* Hanging pendant lamp — sways from the ceiling                        */
 /* ------------------------------------------------------------------ */
 
-const LAMP_LEN = 110;
+/**
+ * The pendants hang low enough to clear the FIREHOUSE KITCHEN sign that swings
+ * in over them — before this their shades were cut in half by the plaque and
+ * only two red slivers showed at the frame edges.
+ */
+const LAMP_LEN = 210;
 
 function PendantLamp({ s, x, periodMs, delayMs }: { s: number; x: number; periodMs: number; delayMs: number }) {
   const sway = useSwing(2.6, periodMs, delayMs);
@@ -35,12 +40,12 @@ function PendantLamp({ s, x, periodMs, delayMs }: { s: number; x: number; period
               <Stop offset="1" stopColor={palette.engineRedDark} />
             </LinearGradient>
           </Defs>
-          <Rect x={w / 2 - 2.5} y={0} width={5} height={54} rx={2.5} fill={palette.charcoal} />
-          <Rect x={w / 2 - 9} y={48} width={18} height={12} rx={5} fill={palette.charcoalDark} />
-          <Path d={`M ${w / 2 - 44} 104 Q ${w / 2} 44 ${w / 2 + 44} 104 Z`} fill="url(#lampShade)" />
-          <Path d={`M ${w / 2 - 44} 104 Q ${w / 2} 44 ${w / 2 - 20} 104 Z`} fill="rgba(255,255,255,0.22)" />
-          <Ellipse cx={w / 2} cy={104} rx={44} ry={7} fill={palette.engineRedDark} />
-          <Ellipse cx={w / 2} cy={103} rx={31} ry={5} fill="#FFF3C4" />
+          <Rect x={w / 2 - 2.5} y={0} width={5} height={154} rx={2.5} fill={palette.charcoal} />
+          <Rect x={w / 2 - 9} y={148} width={18} height={12} rx={5} fill={palette.charcoalDark} />
+          <Path d={`M ${w / 2 - 44} 204 Q ${w / 2} 144 ${w / 2 + 44} 204 Z`} fill="url(#lampShade)" />
+          <Path d={`M ${w / 2 - 44} 204 Q ${w / 2} 144 ${w / 2 - 20} 204 Z`} fill="rgba(255,255,255,0.22)" />
+          <Ellipse cx={w / 2} cy={204} rx={44} ry={7} fill={palette.engineRedDark} />
+          <Ellipse cx={w / 2} cy={203} rx={31} ry={5} fill="#FFF3C4" />
         </Svg>
       </View>
     </Animated.View>
@@ -295,8 +300,8 @@ export function KitchenBackdrop({ still }: KitchenBackdropProps) {
                 <Wisp s={s} x={292} y={480} periodMs={3400} />
                 <Wisp s={s} x={310} y={476} periodMs={4100} delayMs={900} scale={0.8} />
                 <Wisp s={s} x={324} y={482} periodMs={3800} delayMs={1800} scale={0.6} />
-                <PendantLamp s={s} x={62} periodMs={4600} delayMs={0} />
-                <PendantLamp s={s} x={330} periodMs={5400} delayMs={700} />
+                <PendantLamp s={s} x={54} periodMs={4600} delayMs={0} />
+                <PendantLamp s={s} x={336} periodMs={5400} delayMs={700} />
               </>
             )}
           </View>
