@@ -72,8 +72,9 @@ export function TrainingStationTile({ meta, index = 0, plays = 0, stars = 0, onP
       entering={FadeInDown.delay(index * stagger.tile)
         .springify()
         .damping(15)}
-      style={[styles.wrap, a]}
+      style={styles.wrap}
     >
+      <Animated.View style={a}>
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={`${meta.title}. ${meta.blurb}. About ${meta.seconds} seconds.`}
@@ -127,6 +128,7 @@ export function TrainingStationTile({ meta, index = 0, plays = 0, stars = 0, onP
           )}
         </View>
       </Pressable>
+      </Animated.View>
     </Animated.View>
   );
 }

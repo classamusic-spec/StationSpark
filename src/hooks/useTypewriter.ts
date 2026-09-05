@@ -24,29 +24,28 @@ export interface Typewriter {
 export function useTypewriter(text: string, { cps = 28, enabled = true }: TypewriterOptions = {}): Typewriter {
   const reduced = useReducedMotion();
   const instant = reduced || !enabled || cps <= 0;
-  const [count, setCount] = useState(() => (instant ? text.length : 0));
+  // State remembers which text it belongs to, so a new line derives a fresh 0
+  // without a synchronous reset inside the effect.
+  const [state, setState] = useState<{ forText: string; count: number }>({ forText: text, count: 0 });
+  const count = instant ? text.length : state.forText === text ? state.count : 0;
   const textRef = useRef(text);
   textRef.current = text;
 
   useEffect(() => {
-    if (instant) {
-      setCount(text.length);
-      return;
-    }
-    setCount(0);
-    if (!text.length) return;
+    if (instant || !text.length) return;
     const step = Math.max(16, Math.round(1000 / cps));
     const id = setInterval(() => {
-      setCount((c) => {
-        const next = c + 1;
+      setState((s) => {
+        const current = s.forText === textRef.current ? s.count : 0;
+        const next = Math.min(current + 1, textRef.current.length);
         if (next >= textRef.current.length) clearInterval(id);
-        return Math.min(next, textRef.current.length);
+        return { forText: textRef.current, count: next };
       });
     }, step);
     return () => clearInterval(id);
   }, [cps, instant, text]);
 
-  const finish = useCallback(() => setCount(textRef.current.length), []);
+  const finish = useCallback(() => setState({ forText: textRef.current, count: textRef.current.length }), []);
 
   return { shown: text.slice(0, count), done: count >= text.length, finish };
 }

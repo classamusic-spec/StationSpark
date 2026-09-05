@@ -1,7 +1,7 @@
 import React, { memo, useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withSequence, withSpring, withTiming } from 'react-native-reanimated';
-import Svg, { Circle, Ellipse, Path, Rect } from 'react-native-svg';
+import Svg, { Circle, Ellipse, Path } from 'react-native-svg';
 import { palette, springs } from '@/theme';
 import { useBlinkState, usePulse, useReducedMotion } from '@/hooks';
 

@@ -42,7 +42,8 @@ export function DispatchSlip({ title, tagline, subjects, thumbnail, stars, locke
   const { style: anim, press } = useFeedbackAnim();
 
   return (
-    <Animated.View entering={FadeInDown.delay(index * stagger.card).springify().damping(16)} style={[anim, style]}>
+    <Animated.View entering={FadeInDown.delay(index * stagger.card).springify().damping(16)} style={style}>
+      <Animated.View style={anim}>
       <Pressable
         accessibilityRole="button"
         accessibilityState={{ disabled: locked }}
@@ -114,6 +115,7 @@ export function DispatchSlip({ title, tagline, subjects, thumbnail, stars, locke
           </View>
         </View>
       </Pressable>
+      </Animated.View>
     </Animated.View>
   );
 }

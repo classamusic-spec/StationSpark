@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useMemo, useReducer, useRef, useState } 
 import { StyleSheet, View } from 'react-native';
 import Animated, { runOnJS, useSharedValue, withTiming } from 'react-native-reanimated';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
-import type { AgeBand, Fraction } from '@/learning/types';
+import type { Fraction } from '@/learning/types';
 import type { MiniGameProps } from '@/minigames/types';
 import { useMiniGameSession } from '@/minigames/useMiniGameSession';
 import { palette, spacing } from '@/theme';
@@ -96,8 +96,8 @@ const DOUSE_MS = 600;
 const TICK_MS = 90;
 const FLAME_OUT_BEAT_MS = 620;
 
-function promptFor(band: AgeBand, total: number, fraction: Fraction | undefined, remainingInStage: number, hasStages: boolean) {
-  if (!hasStages) return band === 'A' ? `Put Out ${total} Flames!` : `Put Out ${total} Flames!`;
+function promptFor(total: number, fraction: Fraction | undefined, remainingInStage: number, hasStages: boolean) {
+  if (!hasStages) return `Put Out ${total} Flames!`;
   if (fraction) return `Put out ${formatFraction(fraction)} of the flames!`;
   return `Put out the last ${remainingInStage}!`;
 }
@@ -132,7 +132,7 @@ export function HoseHero({ challenge, ageBand, onComplete, onEvent, compact, mis
   const aimX = useSharedValue(0);
   const aimY = useSharedValue(0);
   const power = useSharedValue(0);
-  const clock = useClock(true);
+  const clock = useClock(state.phase !== 'asking' && state.phase !== 'done');
   const lastSentX = useSharedValue(-999);
   const lastSentY = useSharedValue(-999);
 
@@ -166,10 +166,11 @@ export function HoseHero({ challenge, ageBand, onComplete, onEvent, compact, mis
   /* ---- prompt ---- */
   const currentFraction = hasStages ? challenge.fractionTargets?.[state.stage] : undefined;
   const stageTarget = hasStages ? (stageTargets[state.stage] ?? 0) : 0;
-  const prompt = promptFor(ageBand, total, currentFraction, Math.max(0, stageTarget - state.stageDone), hasStages);
+  const prompt = promptFor(total, currentFraction, Math.max(0, stageTarget - state.stageDone), hasStages);
   const theme = sceneTheme(challenge.scene);
   const place = missionContext?.locationName ?? theme.name;
   const subtitle = compact || ageBand === 'A' ? undefined : `Drag to aim, hold to spray the ${place}.`;
+  const promptEs = hasStages && currentFraction ? `Apaga ${formatFraction(currentFraction)} de las llamas` : `¡Apaga ${total} llamas!`;
   useSpokenPrompt(state.phase === 'asking' ? null : prompt, { speaker: 'beacon' });
 
   /* ---- effects: idle nudges ---- */
@@ -279,6 +280,8 @@ export function HoseHero({ challenge, ageBand, onComplete, onEvent, compact, mis
       dispatch({ type: 'resume', pressing: pressingRef.current });
     }, FLAME_OUT_BEAT_MS);
     return () => clearTimeout(t);
+    // Deliberately keyed to the flame-out beat only: re-running this on every
+    // unrelated change would restart (and so never fire) the beat timer.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.phase, state.outCount]);
 
@@ -390,6 +393,7 @@ export function HoseHero({ challenge, ageBand, onComplete, onEvent, compact, mis
     <GameShell
       prompt={prompt}
       subtitle={subtitle}
+      es={promptEs}
       compact={compact}
       hud={hud}
       hint={hints.bubble}

@@ -211,6 +211,7 @@ export function BuildBarrier({ challenge, ageBand, onComplete, onEvent, compact 
     <GameShell
       prompt={prompt}
       subtitle={subtitle}
+      es={`Haz un círculo de ${target}`}
       compact={compact}
       onStageLayout={onLayout}
       hint={hints.bubble}

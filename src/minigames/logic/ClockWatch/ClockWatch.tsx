@@ -74,7 +74,7 @@ export function ClockWatch({ challenge, ageBand, onComplete, onEvent, compact }:
   const wobble = useSharedValue(0);
   const lastSnapped = useSharedValue((startTotal % 60 + 60) % 60);
 
-  useBeaconLine(`${challenge.event} Move the long hand to show ${clockLabel(targetTotal)}.`, session.say);
+  useBeaconLine(`${challenge.event.replace(/\.$/, '')}. Move the long hand to show ${clockLabel(targetTotal)}.`, session.say);
 
   const applyDelta = useCallback(
     (nextDelta: number) => {

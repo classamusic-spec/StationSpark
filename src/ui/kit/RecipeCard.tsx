@@ -95,7 +95,8 @@ export function RecipeCard({ title, titleEs, blurb, subjects, art, meta, locked 
   );
 
   return (
-    <Animated.View entering={FadeInDown.delay(index * stagger.card).springify().damping(16)} style={[anim, style]}>
+    <Animated.View entering={FadeInDown.delay(index * stagger.card).springify().damping(16)} style={style}>
+      <Animated.View style={anim}>
       {onPress ? (
         <Pressable
           accessibilityRole="button"
@@ -111,6 +112,7 @@ export function RecipeCard({ title, titleEs, blurb, subjects, art, meta, locked 
       ) : (
         content
       )}
+      </Animated.View>
     </Animated.View>
   );
 }

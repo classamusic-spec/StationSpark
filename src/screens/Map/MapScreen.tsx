@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { StyleSheet, View, type LayoutChangeEvent } from 'react-native';
 import Animated, { FadeInDown, useAnimatedStyle, useSharedValue, withSequence, withSpring, withTiming } from 'react-native-reanimated';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
-import { useRouter } from 'expo-router';
+import { useRouter, type Href } from 'expo-router';
 import { palette, radii, shadows, spacing, springs } from '@/theme';
 import { Button, ChevronRightIcon, Panel, ScreenFrame, Text, TopBar } from '@/ui';
 import { sfx } from '@/services/audio';
@@ -18,9 +18,44 @@ import { LocationSheet, type SheetMission } from './LocationSheet';
 
 const MIN_ZOOM = 1;
 const MAX_ZOOM = 2.6;
-const PIN_SLOT = 190;
 
 type PlaceState = 'open' | 'locked' | 'soon';
+
+/**
+ * Pin label placement. Labels are wider than the buildings they mark, so on a
+ * phone three neighbours in one row would collide. We estimate each pill's
+ * width from its name, clamp it inside the map, and drop every second pin in a
+ * row a little lower so the pills stagger instead of stacking.
+ */
+export function layoutPins(mapW: number, unit: number): { place: (typeof MAP_PLACES)[number]; left: number; top: number; compact: boolean }[] {
+  const compact = mapW < 560;
+  const charW = compact ? 8.4 : 10.2;
+  const chrome = compact ? 52 : 62;
+  const rowGap = compact ? 38 : 44;
+  const rows: number[] = [];
+  let rowIndex = 0;
+  let lastY = -999;
+  const ordered = [...MAP_PLACES].sort((a, b) => a.y - b.y || a.x - b.x);
+  const rowOf = new Map<string, number>();
+  const posInRow = new Map<string, number>();
+  let n = 0;
+  for (const p of ordered) {
+    if (Math.abs(p.y - lastY) > 30) {
+      rowIndex = rows.length;
+      rows.push(rowIndex);
+      n = 0;
+    }
+    rowOf.set(p.id, rowIndex);
+    posInRow.set(p.id, n++);
+    lastY = p.y;
+  }
+  return MAP_PLACES.map((place) => {
+    const est = Math.min(compact ? 170 : 200, chrome + place.name.length * charW);
+    const left = Math.min(Math.max(place.x * unit - est / 2, 4), Math.max(4, mapW - est - 4));
+    const stagger = (posInRow.get(place.id) ?? 0) % 2 === 1 ? rowGap : 0;
+    return { place, left, top: place.y * unit + stagger, compact };
+  });
+}
 
 export function MapScreen() {
   const router = useRouter();
@@ -35,6 +70,7 @@ export function MapScreen() {
   const mapW = viewport.w > 0 ? viewport.w : layout.contentWidth;
   const mapH = (MAP_VB.h / MAP_VB.w) * mapW;
   const unit = mapW / MAP_VB.w;
+  const pinLayout = useMemo(() => layoutPins(mapW, unit), [mapW, unit]);
 
   const scale = useSharedValue(1);
   const savedScale = useSharedValue(1);
@@ -158,7 +194,7 @@ export function MapScreen() {
       truckNudge.value = withSequence(withSpring(-10, springs.pop), withSpring(6, springs.pop), withSpring(0, springs.bounce));
       setOpenPlace(null);
       if (pending.current) clearTimeout(pending.current);
-      pending.current = setTimeout(() => router.push(`/mission/${id}`), 320);
+      pending.current = setTimeout(() => router.push(`/mission/${id}` as Href), 320);
     },
     [router, truckNudge],
   );
@@ -173,7 +209,7 @@ export function MapScreen() {
     [],
   );
 
-  const truckWidth = Math.max(72, unit * 96);
+  const truckWidth = Math.max(64, unit * 82);
 
   return (
     <ScreenFrame
@@ -214,20 +250,17 @@ export function MapScreen() {
                   <FireTruck truck={truck} width={truckWidth} />
                 </Animated.View>
 
-                {/* pins */}
-                {MAP_PLACES.map((place, i) => {
+                {/* pins — laid out so neighbouring labels never overlap or leave the map */}
+                {pinLayout.map(({ place, left, top, compact }, i) => {
                   const state = stateFor(place.id);
                   return (
-                    <View
-                      key={place.id}
-                      style={[styles.abs, styles.pinSlot, { left: place.x * unit - PIN_SLOT / 2, top: place.y * unit }]}
-                    >
+                    <View key={place.id} style={[styles.abs, { left, top }]}>
                       <PinLabel
                         name={place.name}
                         color={place.color}
                         locked={state !== 'open'}
                         index={i}
-                        compact={unit < 0.95}
+                        compact={compact}
                         onPress={() => openPin(place.id, state)}
                       />
                     </View>
@@ -274,7 +307,6 @@ const styles = StyleSheet.create({
   viewport: { flex: 1, overflow: 'hidden', alignItems: 'center', justifyContent: 'center', marginTop: spacing.xs },
   mapWrap: { borderRadius: radii.card },
   abs: { position: 'absolute' },
-  pinSlot: { width: PIN_SLOT, alignItems: 'center' },
   sign: { alignItems: 'center', justifyContent: 'center' },
   ctaWrap: { paddingHorizontal: spacing.lg, paddingVertical: spacing.sm },
 });

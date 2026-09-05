@@ -1,7 +1,6 @@
 import React from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import Animated, { FadeIn, FadeInDown, FadeOut } from 'react-native-reanimated';
-import { Pressable } from 'react-native';
 import { hit, palette, radii, shadows, spacing } from '@/theme';
 import type { MissionDef } from '@/content/types';
 import type { Stars } from '@/minigames/types';

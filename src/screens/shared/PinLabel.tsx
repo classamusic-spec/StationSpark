@@ -36,7 +36,8 @@ export function PinLabel({ name, color, onPress, locked, index = 0, compact }: P
   const style = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
 
   return (
-    <Animated.View entering={ZoomIn.delay(index * stagger.tile).springify().damping(13)} style={style}>
+    <Animated.View entering={ZoomIn.delay(index * stagger.tile).springify().damping(13)}>
+      <Animated.View style={style}>
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={locked ? `${name}, coming soon` : name}
@@ -62,6 +63,7 @@ export function PinLabel({ name, color, onPress, locked, index = 0, compact }: P
           {locked ? <LockIcon size={16} color={palette.slate} /> : <ChevronRightIcon size={17} color={palette.navySoft} />}
         </View>
       </Pressable>
+      </Animated.View>
     </Animated.View>
   );
 }

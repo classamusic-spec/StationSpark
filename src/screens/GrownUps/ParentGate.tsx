@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import { hit, palette, radii, shadows, spacing } from '@/theme';
@@ -49,7 +49,8 @@ function Key({ label, onPress, wide }: { label: string; onPress: () => void; wid
  * and hands the tablet back to the child.
  */
 export function ParentGate({ onPass, onFail }: { onPass: () => void; onFail: () => void }) {
-  const question = useMemo(() => QUESTIONS[Math.floor(Math.random() * QUESTIONS.length)] ?? QUESTIONS[0], []);
+  // A fresh random question per mount (lazy initializer, so it only runs once).
+  const [question] = useState(() => QUESTIONS[Math.floor(Math.random() * QUESTIONS.length)] ?? QUESTIONS[0]);
   const [entry, setEntry] = useState('');
   const [failed, setFailed] = useState(false);
   const { style, wobble } = useFeedbackAnim();

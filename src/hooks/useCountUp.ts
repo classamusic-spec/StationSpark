@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { durations } from '@/theme';
 import { useReducedMotion } from './useReducedMotion';
 
@@ -19,45 +19,40 @@ const easeOut = (t: number) => 1 - Math.pow(1 - t, 3);
 /**
  * Animated number for score/XP/Sparks read-outs. Runs on the JS thread with
  * requestAnimationFrame because the value has to become *text*.
- * Reduced motion jumps straight to the target.
+ * Reduced motion (or `enabled: false`) skips straight to the target.
  */
 export function useCountUp(target: number, { durationMs = durations.cinematic, delayMs = 0, from = 0, enabled = true }: CountUpOptions = {}): number {
   const reduced = useReducedMotion();
-  const [value, setValue] = useState(reduced || !enabled ? target : from);
-  const raf = useRef<number | undefined>(undefined);
+  const instant = reduced || durationMs <= 0;
+  const [progress, setProgress] = useState(0);
 
   useEffect(() => {
-    if (!enabled) {
-      setValue(from);
-      return;
-    }
-    if (reduced || durationMs <= 0) {
-      setValue(target);
-      return;
-    }
+    if (!enabled || instant) return;
     let cancelled = false;
-    let start = 0;
-    setValue(from);
+    let startTs = 0;
+    let raf = 0;
 
     const tick = (now: number) => {
       if (cancelled) return;
-      if (!start) start = now;
-      const elapsed = now - start - delayMs;
+      if (!startTs) startTs = now;
+      const elapsed = now - startTs - delayMs;
       if (elapsed < 0) {
-        raf.current = requestAnimationFrame(tick);
+        raf = requestAnimationFrame(tick);
         return;
       }
       const t = Math.min(1, elapsed / durationMs);
-      setValue(Math.round(from + (target - from) * easeOut(t)));
-      if (t < 1) raf.current = requestAnimationFrame(tick);
+      setProgress(t);
+      if (t < 1) raf = requestAnimationFrame(tick);
     };
-    raf.current = requestAnimationFrame(tick);
 
+    raf = requestAnimationFrame(tick);
     return () => {
       cancelled = true;
-      if (raf.current !== undefined) cancelAnimationFrame(raf.current);
+      cancelAnimationFrame(raf);
     };
-  }, [delayMs, durationMs, enabled, from, reduced, target]);
+  }, [delayMs, durationMs, enabled, instant, target]);
 
-  return value;
+  if (!enabled) return from;
+  if (instant) return target;
+  return Math.round(from + (target - from) * easeOut(progress));
 }

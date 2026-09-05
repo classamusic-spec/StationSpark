@@ -166,7 +166,9 @@ export function ProgressScreen() {
                   Helping today for a brighter tomorrow!
                 </Text>
                 <View style={styles.levelRow}>
-                  <Text variant="h3">Level {rank.level}</Text>
+                  <Text variant="h3" numberOfLines={1} style={styles.levelText}>
+                    Level {rank.level}
+                  </Text>
                   <View style={styles.nextLevel}>
                     <Text variant="small" color={palette.navySoft} numberOfLines={1}>
                       {rank.nextName ? `Next: ${rank.nextName}` : 'Top rank!'}
@@ -311,7 +313,8 @@ const styles = StyleSheet.create({
     borderRadius: radii.pill,
     backgroundColor: '#DCEBFF',
   },
-  levelRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.xs },
+  levelRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.xs, flexWrap: 'wrap' },
+  levelText: { flexShrink: 0 },
   nextLevel: { flexDirection: 'row', alignItems: 'center', gap: 4, flexShrink: 1 },
   sectionHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.xs, flexWrap: 'wrap' },
   statGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },

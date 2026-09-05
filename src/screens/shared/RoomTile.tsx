@@ -208,7 +208,8 @@ export function RoomTile({ room, label, index = 0, width, height, onPress, disab
   const iconSize = Math.min(width * 0.48, height * 0.5);
 
   return (
-    <Animated.View entering={FadeInDown.delay(index * stagger.tile).springify().damping(15)} style={[{ width, height }, style]}>
+    <Animated.View entering={FadeInDown.delay(index * stagger.tile).springify().damping(15)} style={{ width, height }}>
+      <Animated.View style={style}>
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={label}
@@ -232,6 +233,7 @@ export function RoomTile({ room, label, index = 0, width, height, onPress, disab
           {label}
         </Text>
       </Pressable>
+      </Animated.View>
     </Animated.View>
   );
 }

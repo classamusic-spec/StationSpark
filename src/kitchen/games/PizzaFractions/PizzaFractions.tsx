@@ -74,6 +74,7 @@ export function PizzaFractions({ challenge, ageBand, onComplete, onEvent, compac
   const [cuts, setCuts] = useState<boolean[]>(() => angles.map(() => false));
   const [countUpTo, setCountUpTo] = useState(0);
   const [plates, setPlates] = useState<number[]>(() => Array.from({ length: among }, () => 0));
+  const [usedSlices, setUsedSlices] = useState<number[]>([]);
   const [answered, setAnswered] = useState(ageBand === 'A');
   const [wrongAnswers, setWrongAnswers] = useState<number[]>([]);
   const counting = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -248,6 +249,8 @@ export function PizzaFractions({ challenge, ageBand, onComplete, onEvent, compac
 
   const onStroke = useCallback(
     (x0: number, y0: number, x1: number, y1: number) => {
+      // a tap or a twitch is not a mistake — it is a child finding the cutter
+      if (Math.hypot(x1 - x0, y1 - y0) < 14) return;
       const idx = matchCutLine({ x: x0, y: y0 }, { x: x1, y: y1 }, PC, R_SAUCE, angles);
       if (idx === null) {
         beacon.nudge('Roll the cutter all the way across a dotted line.');
@@ -279,12 +282,15 @@ export function PizzaFractions({ challenge, ageBand, onComplete, onEvent, compac
   }, [among]);
 
   const giveSlice = useCallback(
-    (plateIndex: number) => {
+    (plateIndex: number, sliceIndex?: number) => {
       if (slicesLeft <= 0) return;
       if ((plates[plateIndex] ?? 0) >= each) {
         beacon.nudge(`That plate already has ${each}. Everybody gets the same!`);
         return;
       }
+      const token = sliceIndex ?? Array.from({ length: challenge.cutInto }, (_, i) => i).find((i) => !usedSlices.includes(i));
+      if (token === undefined) return;
+      setUsedSlices((u) => (u.includes(token) ? u : [...u, token]));
       const next = [...plates];
       next[plateIndex] = (next[plateIndex] ?? 0) + 1;
       setPlates(next);
@@ -297,7 +303,7 @@ export function PizzaFractions({ challenge, ageBand, onComplete, onEvent, compac
         setTimeout(() => session.complete(), 900);
       }
     },
-    [beacon, each, plates, session, slicesLeft],
+    [beacon, challenge.cutInto, each, plates, session, slicesLeft, usedSlices],
   );
 
   const helpShare = useCallback(() => {
@@ -410,7 +416,8 @@ export function PizzaFractions({ challenge, ageBand, onComplete, onEvent, compac
                 s={s}
                 plates={plates}
                 each={each}
-                slicesLeft={slicesLeft}
+                total={challenge.cutInto}
+                used={usedSlices}
                 platePoints={platePoints}
                 highlight={beacon.highlight || ageBand === 'A'}
                 onGive={giveSlice}
@@ -792,7 +799,8 @@ function ShareScene({
   s,
   plates,
   each,
-  slicesLeft,
+  total,
+  used,
   platePoints,
   highlight,
   onGive,
@@ -801,16 +809,17 @@ function ShareScene({
   s: number;
   plates: number[];
   each: number;
-  slicesLeft: number;
+  total: number;
+  used: number[];
   platePoints: Pt[];
   highlight: boolean;
-  onGive: (i: number) => void;
+  onGive: (plate: number, slice?: number) => void;
   onMiss: () => void;
 }) {
   const nextIdx = nextPlate(plates, each);
   const pileY = 348;
   const tokenW = 46;
-  const perRow = Math.min(slicesLeft, 7);
+  const perRow = Math.min(total, 7);
   const startX = (D.w - perRow * (tokenW + 4)) / 2;
 
   return (
@@ -840,31 +849,33 @@ function ShareScene({
         );
       })}
 
-      {Array.from({ length: slicesLeft }, (_, i) => {
-        const row = Math.floor(i / 7);
-        const col = i % 7;
-        const x = startX + col * (tokenW + 4);
-        const y = pileY + row * 8;
-        return (
-          <SliceToken
-            key={`slice${i}`}
-            s={s}
-            x={x}
-            y={y}
-            width={tokenW}
-            onDrop={(dx, dy) => {
-              const p = { x: x + tokenW / 2 + dx, y: y + 22 + dy };
-              const idx = nearestTarget(p, platePoints, 74);
-              if (idx < 0) onMiss();
-              else onGive(idx);
-            }}
-            onTap={() => {
-              const idx = nextPlate(plates, each);
-              if (idx >= 0) onGive(idx);
-            }}
-          />
-        );
-      })}
+      {Array.from({ length: total }, (_, i) => i)
+        .filter((i) => !used.includes(i))
+        .map((i) => {
+          const row = Math.floor(i / 7);
+          const col = i % 7;
+          const x = startX + col * (tokenW + 4);
+          const y = pileY + row * 10;
+          return (
+            <SliceToken
+              key={`slice${i}`}
+              s={s}
+              x={x}
+              y={y}
+              width={tokenW}
+              onDrop={(dx, dy) => {
+                const p = { x: x + tokenW / 2 + dx, y: y + 22 + dy };
+                const idx = nearestTarget(p, platePoints, 74);
+                if (idx < 0) onMiss();
+                else onGive(idx, i);
+              }}
+              onTap={() => {
+                const idx = nextPlate(plates, each);
+                if (idx >= 0) onGive(idx, i);
+              }}
+            />
+          );
+        })}
     </>
   );
 }

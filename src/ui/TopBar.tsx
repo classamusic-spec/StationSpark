@@ -44,7 +44,7 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     zIndex: 50,
   },
-  side: { width: 64, alignItems: 'flex-start' },
+  side: { minWidth: 64, alignItems: 'flex-start' },
   right: { alignItems: 'flex-end' },
   center: { flex: 1, alignItems: 'center' },
 });

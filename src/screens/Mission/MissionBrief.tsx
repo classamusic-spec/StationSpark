@@ -100,7 +100,10 @@ export function MissionBrief({ mission, onStart }: MissionBriefProps) {
 
         <Animated.View entering={FadeInUp.delay(120).springify().damping(16)}>
           <Panel tone="cream" radius="panel" padding="md" style={styles.card}>
-            <Text variant="h1" center>
+            <Text variant="h2" center>
+              {mission.tagline}
+            </Text>
+            <Text variant="body" color={palette.navySoft} center>
               {mission.brief}
             </Text>
             <View style={styles.addressRow}>

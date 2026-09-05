@@ -124,7 +124,10 @@ export function useShift(): UseShift {
   const actor = getShiftActor();
   const snapshot = useSelector(actor, (s) => s);
   const ageBand = useGame((s) => s.profile.ageBand);
-  const completedIds = useGame((s) => Object.keys(s.progress.missions));
+  // Select the stable record, derive the key list with useMemo — a selector that
+  // returns a fresh array each call makes zustand's snapshot comparison loop.
+  const missionsRecord = useGame((s) => s.progress.missions);
+  const completedIds = useMemo(() => Object.keys(missionsRecord), [missionsRecord]);
   const storeStartShift = useGame((s) => s.startShift);
   const storeEndShift = useGame((s) => s.endShift);
 

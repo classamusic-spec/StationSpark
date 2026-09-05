@@ -83,7 +83,8 @@ export function CelebrationOverlay({
 
   useEffect(() => {
     if (!visible) return;
-    setPlay((n) => n + 1);
+    // bump the burst key on the next frame so the confetti re-fires per reveal
+    const burstFrame = requestAnimationFrame(() => setPlay((n) => n + 1));
     sfx.play('fanfare');
     haptics.celebrate();
     const confettiTimer = setTimeout(() => sfx.play('confetti'), 340);
@@ -95,6 +96,7 @@ export function CelebrationOverlay({
       : withDelay(140, withSequence(withSpring(1.08, springs.bounce), withSpring(1, springs.pop)));
 
     return () => {
+      cancelAnimationFrame(burstFrame);
       clearTimeout(confettiTimer);
       clearTimeout(spinTimer);
     };

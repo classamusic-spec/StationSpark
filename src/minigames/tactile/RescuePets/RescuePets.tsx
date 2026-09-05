@@ -300,6 +300,7 @@ export function RescuePets({ challenge, ageBand, onComplete, onEvent, compact }:
     <GameShell
       prompt={prompt}
       subtitle={subtitle}
+      es={`¡Rescata los ${pet.pluralEs}!`}
       compact={compact}
       onStageLayout={onLayout}
       hint={hints.bubble}

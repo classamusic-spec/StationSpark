@@ -204,7 +204,7 @@ const styles = StyleSheet.create({
   stat: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.sm,
+    gap: spacing.xs,
     backgroundColor: palette.white,
     borderRadius: radii.card,
     padding: spacing.sm,
@@ -212,6 +212,6 @@ const styles = StyleSheet.create({
     flexBasis: '46%',
     minHeight: 84,
   },
-  statIcon: { width: 54, height: 54, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
-  statText: { flexShrink: 1 },
+  statIcon: { width: 46, height: 46, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
+  statText: { flexShrink: 1, flex: 1, minWidth: 0 },
 });

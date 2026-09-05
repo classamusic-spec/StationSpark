@@ -196,7 +196,8 @@ export function BadgeShield({ name, color, icon, earned, size = 84, index = 0, o
   const style = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
 
   return (
-    <Animated.View entering={ZoomIn.delay(index * stagger.tile).springify().damping(13)} style={[styles.wrap, { width: size + 16 }, style]}>
+    <Animated.View entering={ZoomIn.delay(index * stagger.tile).springify().damping(13)} style={[styles.wrap, { width: size + 16 }]}>
+      <Animated.View style={style}>
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={earned ? `${name}, earned` : `${name}, not earned yet`}
@@ -224,6 +225,7 @@ export function BadgeShield({ name, color, icon, earned, size = 84, index = 0, o
           </Text>
         </View>
       </Pressable>
+      </Animated.View>
     </Animated.View>
   );
 }

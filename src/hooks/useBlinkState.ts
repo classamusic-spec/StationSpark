@@ -17,10 +17,7 @@ export function useBlinkState(minMs: number = idle.blinkMinMs, maxMs: number = i
   const reduced = useReducedMotion();
 
   useEffect(() => {
-    if (reduced) {
-      setClosed(false);
-      return;
-    }
+    if (reduced) return;
     let alive = true;
     let waitTimer: ReturnType<typeof setTimeout> | undefined;
     let openTimer: ReturnType<typeof setTimeout> | undefined;
@@ -46,5 +43,7 @@ export function useBlinkState(minMs: number = idle.blinkMinMs, maxMs: number = i
     };
   }, [closedMs, maxMs, minMs, reduced]);
 
-  return closed;
+  // Derived rather than reset in the effect, so turning reduced motion on
+  // opens the eyes immediately without a cascading render.
+  return closed && !reduced;
 }

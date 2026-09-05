@@ -19,7 +19,7 @@ import { BottomBar, SparksCounter, RoomTile, useScaledLayout, type RoomId } from
 import { ShiftChip } from './ShiftChip';
 import { GreetingBubble } from './GreetingBubble';
 
-const ROOMS: { id: RoomId; label: string; href: Href }[] = [
+const ROOMS: { id: RoomId; label: string; href: string }[] = [
   { id: 'dispatch', label: 'Dispatch', href: '/dispatch' },
   { id: 'map', label: 'Map', href: '/map' },
   { id: 'training', label: 'Training', href: '/training' },
@@ -56,6 +56,9 @@ function GrownUpsPill({ onPress }: { onPress: () => void }) {
     </Pressable>
   );
 }
+
+/** vertical space reserved below the station façade for the crew + CTA */
+const CREW_ZONE = 128;
 
 export function FirehouseScreen() {
   const router = useRouter();
@@ -114,16 +117,19 @@ export function FirehouseScreen() {
   const station = useMemo(() => {
     if (stage.w < 40 || stage.h < 40) return null;
     const ratio = FACADE_VB.w / FACADE_VB.h;
-    const width = Math.max(220, Math.min(stage.w, (stage.h - 52) * ratio));
+    // leave room under the façade for the crew and the Start Shift button
+    const width = Math.max(220, Math.min(stage.w, (stage.h - CREW_ZONE) * ratio));
     return facadeLayout(width);
   }, [stage.h, stage.w]);
 
   const enterRoom = useCallback(
-    (href: Href) => {
+    (href: string) => {
       sfx.play('whoosh');
       zoom.value = withTiming(1, { duration: durations.base, easing: easings.out });
       if (pending.current) clearTimeout(pending.current);
-      pending.current = setTimeout(() => router.push(href), 210);
+      // routes owned by other screens land as they are built; cast keeps typed
+      // routes happy while the app is still growing.
+      pending.current = setTimeout(() => router.push(href as Href), 210);
     },
     [router, zoom],
   );
@@ -149,9 +155,9 @@ export function FirehouseScreen() {
   const crew = useMemo(() => {
     const base = station?.height ?? 320;
     return {
-      rookie: Math.max(112, Math.min(200, base * 0.42)),
-      beacon: Math.max(78, Math.min(140, base * 0.3)),
-      pepper: Math.max(66, Math.min(118, base * 0.25)),
+      rookie: Math.max(104, Math.min(170, base * 0.4)),
+      beacon: Math.max(70, Math.min(120, base * 0.27)),
+      pepper: Math.max(62, Math.min(104, base * 0.24)),
     };
   }, [station?.height]);
 
@@ -174,7 +180,7 @@ export function FirehouseScreen() {
     >
       <View style={[styles.body, { maxWidth: layout.contentWidth }]}>
         <Animated.View entering={FadeInDown.springify().damping(18)} style={styles.logo}>
-          <Logo size={Math.min(layout.s(212), 260)} />
+          <Logo size={Math.min(layout.s(168), 210)} />
         </Animated.View>
 
         <View style={styles.chipRow}>
@@ -232,11 +238,11 @@ export function FirehouseScreen() {
               </Animated.View>
 
               {/* crew */}
-              <View style={[styles.crewLeft, { bottom: 18 }]} pointerEvents="none">
+              <View style={[styles.crewLeft, { bottom: 10 }]} pointerEvents="none">
                 <GreetingBubble lines={greetings} maxWidth={Math.min(210, stage.w * 0.56)} />
                 <Rookie size={crew.rookie} avatar={profile.avatar} pose="wave" emotion="happy" />
               </View>
-              <View style={[styles.crewRight, { bottom: 14 }]} pointerEvents="none">
+              <View style={[styles.crewRight, { bottom: 8 }]} pointerEvents="none">
                 <Beacon size={crew.beacon} emotion="happy" style={styles.beacon} />
                 <Pepper size={crew.pepper} emotion="happy" wag />
               </View>
@@ -265,17 +271,17 @@ export function FirehouseScreen() {
 
 const styles = StyleSheet.create({
   body: { flex: 1, width: '100%', alignSelf: 'center', paddingHorizontal: spacing.sm },
-  logo: { alignItems: 'center', marginTop: 44 },
+  logo: { alignItems: 'center', marginTop: 40 },
   chipRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: spacing.xs, marginTop: spacing.xs },
   stage: { flex: 1, alignItems: 'center', justifyContent: 'flex-end', marginTop: spacing.xs },
-  stationWrap: { position: 'absolute', bottom: 34, alignSelf: 'center' },
+  stationWrap: { position: 'absolute', bottom: CREW_ZONE - 10, alignSelf: 'center' },
   abs: { position: 'absolute' },
   sign: { alignItems: 'center', justifyContent: 'center' },
-  crewLeft: { position: 'absolute', left: -8, alignItems: 'flex-start', gap: 2 },
-  crewRight: { position: 'absolute', right: -6, flexDirection: 'row', alignItems: 'flex-end', gap: 0 },
-  beacon: { marginBottom: 10, marginRight: -8 },
+  crewLeft: { position: 'absolute', left: 0, alignItems: 'flex-start', gap: 2 },
+  crewRight: { position: 'absolute', right: 2, flexDirection: 'row', alignItems: 'flex-end', gap: 0 },
+  beacon: { marginBottom: 12, marginRight: -4 },
   ctaWrap: { position: 'absolute', bottom: -6, left: 0, right: 0, alignItems: 'center', paddingHorizontal: spacing.lg },
-  cta: { minWidth: 240, maxWidth: 420, alignSelf: 'stretch' },
+  cta: { minWidth: 220, maxWidth: 300, alignSelf: 'center' },
   grownUps: {
     flexDirection: 'row',
     alignItems: 'center',

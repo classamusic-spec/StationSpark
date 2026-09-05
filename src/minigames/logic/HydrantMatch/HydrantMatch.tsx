@@ -37,14 +37,19 @@ function reducer(state: State, action: Action): State {
 
 const spoken = (label: string) => label.replace(/×/g, ' times ').replace(/\s+/g, ' ').trim();
 
-/** "3 × 4" → { a: 3, b: 4 } so we can show the dot array helper. */
-function parseProduct(label: string): { a: number; b: number } | null {
-  const m = label.match(/(\d+)\s*[×x*]\s*(\d+)/);
+/** "3 × 4" / "5 + 20" → the parts we can draw as a dot helper. */
+function parseEquation(label: string): { op: 'times' | 'plus'; a: number; b: number } | null {
+  const m = label.match(/(\d+)\s*([×x*+])\s*(\d+)/);
   if (!m) return null;
   const a = Number(m[1]);
-  const b = Number(m[2]);
-  return Number.isFinite(a) && Number.isFinite(b) ? { a, b } : null;
+  const b = Number(m[3]);
+  if (!Number.isFinite(a) || !Number.isFinite(b)) return null;
+  return { op: m[2] === '+' ? 'plus' : 'times', a, b };
 }
+
+/** Dots stay readable: big numbers show one row of ten-frames instead of hundreds of dots. */
+const dotGroups = (eq: { op: 'times' | 'plus'; a: number; b: number }): number[] =>
+  eq.op === 'plus' ? [eq.a, eq.b] : Array.from({ length: Math.min(eq.a, 6) }, () => eq.b);
 
 export function HydrantMatch({ challenge, ageBand, onComplete, onEvent, compact }: MiniGameProps<'hydrant-match'>) {
   const session = useMiniGameSession('hydrant-match', onComplete, onEvent);
@@ -53,7 +58,7 @@ export function HydrantMatch({ challenge, ageBand, onComplete, onEvent, compact 
   const hintLadder = useHintLadder(state.misses, session.hint);
   const done = useRef(false);
 
-  const product = useMemo(() => parseProduct(challenge.label), [challenge.label]);
+  const equation = useMemo(() => parseEquation(challenge.label), [challenge.label]);
   const call = `Connect to hydrant ${spoken(challenge.label)}`;
   useBeaconLine(call, session.say);
 
@@ -95,9 +100,11 @@ export function HydrantMatch({ challenge, ageBand, onComplete, onEvent, compact 
   const hydrantWidth = Math.min(layout.s(84), (layout.boxWidth - spacing.md * 2 - (count - 1) * spacing.xs) / count);
   const coilSize = Math.max(hit.big, layout.s(76));
 
-  const hintText = product
-    ? `${product.a} × ${product.b} means ${product.a} groups of ${product.b}. Count them all: ${challenge.correct}!`
-    : `Look for the plate that says ${challenge.correct}.`;
+  const hintText = !equation
+    ? `Look for the plate that says ${challenge.correct}.`
+    : equation.op === 'plus'
+      ? `${equation.a} and ${equation.b} more makes ${challenge.correct}. Find hydrant ${challenge.correct}!`
+      : `${equation.a} × ${equation.b} means ${equation.a} groups of ${equation.b}. Count them all: ${challenge.correct}!`;
 
   return (
     <GameFrame
@@ -132,17 +139,22 @@ export function HydrantMatch({ challenge, ageBand, onComplete, onEvent, compact 
                 speech.say(call, { speaker: 'beacon' });
               }}
             />
-            {(ageBand === 'C' || hintLadder.level > 0) && product ? (
+            {(ageBand === 'C' || hintLadder.level > 0) && equation ? (
               <Animated.View entering={FadeIn} style={styles.helper}>
                 <Text variant="bodyStrong" center>
-                  {product.a} × {product.b} = ?
+                  {challenge.label} = ?
                 </Text>
                 <View style={styles.dots}>
-                  {Array.from({ length: product.a }, (_, g) => (
+                  {dotGroups(equation).map((n, g) => (
                     <View key={g} style={styles.dotGroup}>
-                      {Array.from({ length: product.b }, (_, d) => (
+                      {Array.from({ length: Math.min(n, 10) }, (_, d) => (
                         <View key={d} style={styles.dot} />
                       ))}
+                      {n > 10 ? (
+                        <Text variant="tiny" color={palette.navySoft}>
+                          +{n - 10}
+                        </Text>
+                      ) : null}
                     </View>
                   ))}
                 </View>

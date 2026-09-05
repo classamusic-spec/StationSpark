@@ -228,6 +228,7 @@ export function WaterTank({ challenge, ageBand, onComplete, onEvent, compact }: 
     <GameShell
       prompt={prompt}
       subtitle={subtitle}
+      es={`Llena el tanque hasta ${formatFraction(target)}`}
       compact={compact}
       onStageLayout={onLayout}
       hint={hints.bubble}

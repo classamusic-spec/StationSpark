@@ -264,6 +264,7 @@ export function LadderBuilder({ challenge, ageBand, onComplete, onEvent, compact
     <GameShell
       prompt={prompt}
       subtitle={subtitle}
+      es={`Llega hasta ${target}`}
       compact={compact}
       onStageLayout={onLayout}
       hint={hints.bubble}

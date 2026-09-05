@@ -42,34 +42,38 @@ export function AnswerTile({
     state === 'correct' ? palette.leafGreen : state === 'highlight' ? palette.safetyYellow : state === 'wrong' ? palette.slateLight : 'transparent';
 
   return (
-    <Animated.View entering={FadeInDown.delay(index * 60).springify().damping(14)} style={[anim, style]}>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={accessibilityLabel ?? label}
-        disabled={state === 'disabled' || state === 'correct'}
-        onPressIn={() => press(true)}
-        onPressOut={() => press(false)}
-        onPress={onPress}
-      >
-        <View
-          style={[
-            styles.tile,
-            shadows.card,
-            dims,
-            { borderColor: rim },
-            state === 'disabled' && styles.disabled,
-            state === 'highlight' && shadows.glowGold,
-            state === 'correct' && styles.correct,
-          ]}
+    // Outer view owns the layout (entering) animation, inner view owns the
+    // transform feedback — Reanimated needs them on separate nodes.
+    <Animated.View entering={FadeInDown.delay(index * 60).springify().damping(14)} style={style}>
+      <Animated.View style={anim}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={accessibilityLabel ?? label}
+          disabled={state === 'disabled' || state === 'correct'}
+          onPressIn={() => press(true)}
+          onPressOut={() => press(false)}
+          onPress={onPress}
         >
-          {label ? (
-            <Text variant={size === 'lg' ? 'h1' : 'h2'} center>
-              {label}
-            </Text>
-          ) : null}
-          {children}
-        </View>
-      </Pressable>
+          <View
+            style={[
+              styles.tile,
+              shadows.card,
+              dims,
+              { borderColor: rim },
+              state === 'disabled' && styles.disabled,
+              state === 'highlight' && shadows.glowGold,
+              state === 'correct' && styles.correct,
+            ]}
+          >
+            {label ? (
+              <Text variant={size === 'lg' ? 'h1' : 'h2'} center>
+                {label}
+              </Text>
+            ) : null}
+            {children}
+          </View>
+        </Pressable>
+      </Animated.View>
     </Animated.View>
   );
 }

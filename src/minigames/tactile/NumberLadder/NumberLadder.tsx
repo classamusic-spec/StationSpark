@@ -228,6 +228,7 @@ export function NumberLadder({ challenge, ageBand, onComplete, onEvent, compact 
     <GameShell
       prompt={prompt}
       subtitle={subtitle}
+      es={`Sube hasta ${target}`}
       compact={compact}
       onStageLayout={onLayout}
       hint={hints.bubble}

@@ -107,8 +107,8 @@ export function MissionSlip({ mission, index = 0, stars = 0, locked, lockLabel, 
       entering={FadeInDown.delay(index * stagger.card)
         .springify()
         .damping(15)}
-      style={a}
     >
+      <Animated.View style={a}>
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={
@@ -154,6 +154,7 @@ export function MissionSlip({ mission, index = 0, stars = 0, locked, lockLabel, 
         <GoChevron dim={locked} />
         <DispatchedStamp on={!!dispatched} />
       </Pressable>
+      </Animated.View>
     </Animated.View>
   );
 }
