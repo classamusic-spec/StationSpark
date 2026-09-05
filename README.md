@@ -35,12 +35,16 @@ rescue kittens, cook with the crew, and learn words in English and Spanish along
   a visiting crew from Mexico), each 10–14 beats of dialogue, travel cinematic, mini-games, a kitchen
   follow-up and a learning recap. Written for three age bands with different challenge generation.
   The unlock graph fans out: two calls on day one, never more than two prerequisites.
-- **22 mini-games**: Hose Hero (Skia particle water), Water Tank, Ladder Builder, Number Ladder,
+- **25 mini-games**: Hose Hero (Skia particle water), Water Tank, Ladder Builder, Number Ladder,
   Rescue Pets, Build the Barrier, Equipment Check, Gear Sort, Dispatch Decoder, Code the Route,
   Hydrant Match, Spray Patterns, Clock Watch, Hose Path, Firefighter Signals, Vocab Tap,
-  Listen & Count, Pizza Fractions, Measure & Pour, Count Ingredients, Divide & Share, Recipe Scale.
+  Listen & Count, Market Money, Shape Builder, Word Builder, Pizza Fractions, Measure & Pour,
+  Count Ingredients, Divide & Share, Recipe Scale — every one standing on a drawn scene with the
+  crew watching.
 - **The Firehouse Kitchen** — ten recipes with Spanish food vocabulary spoken aloud, from Sunday
   pancakes to Abuela Carmen's garden salsa and Capitana Sofía's quesadillas.
+- **A Three.js garage**: a procedural 3D fire truck you drag to turn around, honk and wash, with a 2D
+  fallback on devices without GL (see docs/THREE.md).
 - **Spark City map**, **Training Yard**, **Garage** truck customiser (with a truck wash), **Locker**
   avatar builder, **Badge Wall** with ranks from Cadet to Community Hero, and a parent-gated
   **Grown-Ups** area with settings, a progress report and the safety card.
@@ -77,6 +81,7 @@ npm test             # 500+ jest tests: generators (3 bands × 150 seeds), machi
 npm run export:web   # static web build in dist/
 npm run qa:shots     # headless Chromium screenshots of the web build (needs a Chromium)
 npm run qa:icons     # re-render icon / splash / favicon from the real logo component
+npm run qa:play      # play every mini-game, a full mission and the shift flow in headless Chromium
 npm run sfx:build    # regenerate assets/sfx/*.wav
 ```
 

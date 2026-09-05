@@ -112,3 +112,23 @@ export function SomeScreen() {
 }
 ```
 Routes: `app/index.tsx` (Firehouse), `app/dispatch.tsx`, `app/mission/[id].tsx`, `app/map.tsx`, `app/training/index.tsx`, `app/training/[kind].tsx`, `app/kitchen/index.tsx`, `app/kitchen/[recipe].tsx`, `app/garage.tsx`, `app/badges.tsx`, `app/locker.tsx`, `app/grownups.tsx`, `app/onboarding.tsx`, `app/dev/gallery.tsx`.
+
+## Pass-2 systems (art pass, QA, 3D, new games)
+
+- **`src/world/Stage.tsx`** — the shared three-layer backdrop every mini-game stands on (far haze → mid
+  silhouette → near ground with a soft lip). Variants: street, yard, park, counter, radio-room, classroom,
+  pantry, stall, store-room, tower, sky. `ContactShadow` is the navy ellipse every grounded object gets.
+  `src/world/scenes/` holds reusable scene props (PumperTruck, WallPanel, SlotPlaque, CrewFigure).
+- **`src/characters/GameCrew.tsx`** — the resident crew (Beacon, optional Pepper, optional NPC) placed in
+  every game above the Tray; `mood` drives reactions (`idle | happy | think | cheer`). Always pointerEvents none.
+- **`src/world/fx/`** — drawn particle FX (water droplets, steam, sparkles, dust, confetti), reduced-motion aware.
+- **`src/ui/kit/GlyphIcon.tsx`** — the drawn glyph set that replaced emoji (counters, subject pills, beats,
+  training tiles, sparks, check). Emoji are banned from the world layer (see docs/ART_CRITIQUE.md rules).
+- **`src/three/`** — Three.js via react-three-fiber for the Garage truck turntable and the badge flip, with
+  2D fallbacks. See docs/THREE.md.
+- **New challenge kinds** — `market-money`, `shape-builder`, `word-builder` (25 mini-games total), with
+  generators, validators and 150-seed tests like the rest.
+- **QA tools** — `tools/qa/shoot.mjs` (screenshots), `tools/qa/shoot-gl.mjs` (WebGL screenshots),
+  `tools/qa/icons.mjs` (icon set), `tools/qa/play.mjs` (drives every mini-game, a full mission and the shift
+  flow in headless Chromium; `npm run qa:play` after `npm run export:web`).
+- **Content** — 12 missions, 10 recipes, 191 vocabulary words; see docs/CURRICULUM.md.

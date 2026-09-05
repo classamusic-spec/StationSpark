@@ -1,7 +1,7 @@
 /**
  * Station Spark's 3D layer.
  *
- * ⚠️  Importing anything from here pulls `three` into the bundle. Only import
+ * NOTE: importing anything from here pulls `three` into the bundle. Only import
  * it from a screen that actually shows GL (today: the Garage and the dev
  * route). Nothing under `src/three` is loaded by Jest — see docs/THREE.md.
  *

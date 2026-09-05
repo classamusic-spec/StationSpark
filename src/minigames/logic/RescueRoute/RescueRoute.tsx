@@ -613,7 +613,7 @@ export function RescueRoute({ challenge, ageBand, onComplete, onEvent, compact }
         {state.phase === 'arrived' ? (
           <Animated.View entering={FadeIn} style={[styles.notice, styles.noticeGood]}>
             <Text variant="h3" color={palette.leafGreenDark} center>
-              {state.program.length <= optimal ? 'Perfect route! ⭐' : 'You made it!'}
+              {state.program.length <= optimal ? 'Perfect route!' : 'You made it!'}
             </Text>
           </Animated.View>
         ) : null}

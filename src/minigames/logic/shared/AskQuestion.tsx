@@ -138,7 +138,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(31,42,90,0.32)',
+    backgroundColor: 'rgba(58,54,74,0.18)',
     alignItems: 'center',
     justifyContent: 'center',
     padding: spacing.md,

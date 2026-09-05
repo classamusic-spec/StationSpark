@@ -324,7 +324,7 @@ const styles = StyleSheet.create({
   crewLeft: { position: 'absolute', left: -8, alignItems: 'flex-start' },
   bubble: { position: 'absolute' },
   crewRight: { position: 'absolute', right: -6, flexDirection: 'row', alignItems: 'flex-end', gap: 0 },
-  beacon: { marginBottom: 34, marginRight: -10 },
+  beacon: { marginBottom: 74, marginRight: -10 },
   beaconGlow: { position: 'absolute', left: '5%', bottom: -10, alignItems: 'center' },
   ctaWrap: { position: 'absolute', bottom: -4, left: 0, right: 0, alignItems: 'center', paddingHorizontal: spacing.lg },
   cta: { minWidth: 220, maxWidth: 300, alignSelf: 'center' },

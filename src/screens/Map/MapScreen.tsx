@@ -12,7 +12,7 @@ import type { Stars } from '@/minigames/types';
 import { missions } from '@/content/missions';
 import { useGame } from '@/state/store';
 import { selectTruck } from '@/state/selectors';
-import { FireTruck, MAP_PLACES, MAP_SIGN, MAP_VB, TRUCK_PARK, TownMap } from '@/world';
+import { Birds, FireTruck, MAP_PLACES, MAP_SIGN, MAP_VB, TRUCK_PARK, TownMap } from '@/world';
 import { BottomBar, PinLabel, StarCounter, useScaledLayout } from '@/screens/shared';
 import { LocationSheet, type SheetMission } from './LocationSheet';
 
@@ -211,6 +211,7 @@ export function MapScreen() {
   return (
     <ScreenFrame
       safeBottom={false}
+      backdrop={<Birds count={2} top={64} periodMs={22000} />}
       chrome={<TopBar right={<StarCounter />} />}
     >
       <View style={[styles.body, { maxWidth: layout.contentWidth }]}>

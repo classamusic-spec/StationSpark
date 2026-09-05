@@ -554,6 +554,48 @@ const drivers = {
     await tapLabel(page, 'Done', { after: 500 });
   },
 
+  async 'market-money'(page, c) {
+    // pay with the shortest set of coins the purse can make; coins are tappable
+    const solution = [...(c.solutions ?? [])].sort((a, b) => a.length - b.length)[0];
+    if (!solution || solution.length === 0) throw new Error(`market-money: no way to pay ${c.price} from ${c.coins.join(',')}`);
+    for (const value of solution) await tapLabel(page, `${value} coin`, { after: 260 });
+    await tapLabel(page, 'Pay', { after: 900 });
+    if (c.askChange) {
+      await sleep(1500);
+      if (!(await answerAsk(page, c.askChange.change))) throw new Error('market-money: the change question never appeared');
+    }
+    await sleep(1400);
+  },
+
+  async 'shape-builder'(page, c) {
+    // tapping a tray piece places it when its turn matches an outline, and
+    // turns it otherwise — so tap until the tray empties
+    const loose = () => page.locator('[aria-label*=" piece"]').count();
+    for (let placed = 0; placed < c.pieces.length; placed += 1) {
+      const before = await loose();
+      if (before === 0) break;
+      let landed = false;
+      // at most one full turn (4) plus the placing tap
+      for (let attempt = 0; attempt < 6 && !landed; attempt += 1) {
+        await tap(page, page.locator('[aria-label*=" piece"]'), { after: 280 });
+        landed = (await loose()) < before;
+      }
+      if (!landed) throw new Error(`shape-builder: piece ${placed + 1} of ${c.pieces.length} never found its outline`);
+    }
+    await sleep(1800);
+    if (c.askCount) {
+      if (!(await answerAsk(page, c.askCount.count))) throw new Error('shape-builder: the count question never appeared');
+      await sleep(1200);
+    }
+  },
+
+  async 'word-builder'(page, c) {
+    for (let i = c.prefilled; i < c.letters.length; i += 1) {
+      await tapLabel(page, `letter ${c.letters[i]}`, { after: 320 });
+    }
+    await sleep(2600);
+  },
+
   async 'hose-path'(page, c) {
     const path = solveHosePath({ grid: c.grid, start: c.start, end: c.end, blocked: c.blocked, pieces: c.pieces });
     if (!path) throw new Error('hose-path: generated board has no solution');
@@ -853,6 +895,9 @@ const KINDS = [
   'signals',
   'vocab-tap',
   'listen-count',
+  'market-money',
+  'shape-builder',
+  'word-builder',
   'pizza-fractions',
   'measure-pour',
   'count-ingredients',

@@ -5,7 +5,7 @@
  *   [ big illustrated storefront ]
  *   ┌─────────────────────────────┐
  *   │  Smoke from the oven!       │
- *   │  📍 24 Market Street        │
+ *   │  (pin) 24 Market Street      │
  *   │  [Math][Reading][Español][…]│
  *   └─────────────────────────────┘
  *            Get Ready!  ›
@@ -20,20 +20,11 @@ import { palette, radii, shadows, spacing, stagger, subjectColors, type SubjectI
 import { speech } from '@/services/speech';
 import { Button, Logo, Panel, Text } from '@/ui';
 import { ChevronRightIcon } from '@/ui/icons';
+import { GlyphIcon } from '@/ui/kit/GlyphIcon';
 import { subjectLabel } from '@/ui/SubjectPill';
 import { SceneHero } from './SceneHero';
 
-const SUBJECT_GLYPH: Record<SubjectId, string> = {
-  math: '➕',
-  reading: '📖',
-  english: '💬',
-  spanish: '🗣️',
-  logic: '💡',
-  teamwork: '🤝',
-  cooking: '🍳',
-};
-
-/** A soft-coloured square tile: big glyph over the subject name. */
+/** A soft-coloured square tile: the drawn subject mark over the subject name. */
 function SubjectTile({ subject, index }: { subject: SubjectId; index: number }) {
   const c = subjectColors[subject];
   return (
@@ -43,9 +34,9 @@ function SubjectTile({ subject, index }: { subject: SubjectId; index: number }) 
         .damping(14)}
       style={[styles.tile, { backgroundColor: c.soft }]}
     >
-      <Text variant="numeral" center style={styles.tileGlyph}>
-        {SUBJECT_GLYPH[subject]}
-      </Text>
+      <View style={styles.tileGlyph}>
+        <GlyphIcon id={subject} size={44} label={subjectLabel(subject)} />
+      </View>
       <Text variant="bodyStrong" center numberOfLines={1}>
         {subjectLabel(subject)}
       </Text>
@@ -176,6 +167,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
     gap: 2,
   },
-  tileGlyph: { lineHeight: 44 },
+  tileGlyph: { alignItems: 'center', justifyContent: 'center', height: 46 },
   ctaWrap: { position: 'absolute', left: spacing.md, right: spacing.md, bottom: 0 },
 });

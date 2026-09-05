@@ -46,7 +46,7 @@ function MealBreakCard({ onCook, onSkip }: { onCook: () => void; onSkip: () => v
     <Animated.View entering={FadeInDown.springify().damping(15)}>
       <Panel tone="cream" radius="panel" style={styles.meal}>
         <Text variant="h2" center>
-          🍳 Meal break!
+          Meal break!
         </Text>
         <Text variant="body" color={palette.navySoft} center>
           The crew is hungry. Fancy cooking something in the firehouse kitchen?

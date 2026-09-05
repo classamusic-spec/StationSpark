@@ -20,6 +20,7 @@ import { idle, palette, radii, spacing } from '@/theme';
 import { useLoop } from '@/hooks/useIdle';
 import { usePulse } from '@/hooks/usePulse';
 import { HIGHLIGHT, SHADE, SHADOW_FILL, SHADOW_OPACITY } from '@/world/tone';
+import { Birds } from '@/world/Birds';
 import { Text } from '@/ui/Text';
 import { CaptainBea } from '@/characters/CaptainBea';
 
@@ -181,6 +182,11 @@ export function DispatchBackdrop({ hero }: DispatchBackdropProps) {
 
       <View style={styles.hero}>
         <HeroBand w={width} h={h} />
+      </View>
+
+      {/* a bird crossing the hero band every ~20 s (rule #9, critique #8) */}
+      <View style={[styles.hero, { height: h }]}>
+        <Birds count={1} top={h * 0.3} periodMs={21000} arc={26} size={30} />
       </View>
 
       {/* the board: a cream page with a soft top edge, so the slips are pinned

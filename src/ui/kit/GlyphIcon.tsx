@@ -32,6 +32,9 @@ const SHADE = 'rgba(31,42,90,0.14)';
 const GROUND = 'rgba(31,42,90,0.12)';
 
 const dark = (c: string, amount = 0.18) => mix(c, palette.navy, amount);
+/** The drop-shade and the lift a subject mark uses, derived from its own ink. */
+const shadeOf = (c: string) => (c === palette.white ? 'rgba(31,42,90,0.16)' : mix(c, palette.navy, 0.34));
+const lightOf = (c: string) => (c === palette.white ? 'rgba(255,255,255,0.55)' : mix(c, '#FFFFFF', 0.45));
 const lite = (c: string, amount = 0.3) => mix(c, '#FFFFFF', amount);
 
 /** rule 3: a contact ellipse, ry ≈ rx × 0.22, centred on the contact point. */
@@ -157,7 +160,7 @@ const Walkie = ({ rays = true }: { rays?: boolean }) => (
   </G>
 );
 
-function Art({ id, muted }: { id: GlyphId; muted: boolean }) {
+function Art({ id, muted, ink }: { id: GlyphId; muted: boolean; ink: string }) {
   if (muted) return <Socket />;
   switch (id) {
     /* ---------------- counters and marks ---------------- */
@@ -285,8 +288,8 @@ function Art({ id, muted }: { id: GlyphId; muted: boolean }) {
     case 'subject-math':
       return (
         <G>
-          <Path d="M 20 8 h 8 v 12 h 12 v 8 h -12 v 12 h -8 v -12 h -12 v -8 h 12 z" fill="rgba(31,42,90,0.16)" transform="translate(0 1.6)" />
-          <Path d="M 20 8 h 8 v 12 h 12 v 8 h -12 v 12 h -8 v -12 h -12 v -8 h 12 z" fill={palette.white} />
+          <Path d="M 20 8 h 8 v 12 h 12 v 8 h -12 v 12 h -8 v -12 h -12 v -8 h 12 z" fill={shadeOf(ink)} transform="translate(0 1.6)" />
+          <Path d="M 20 8 h 8 v 12 h 12 v 8 h -12 v 12 h -8 v -12 h -12 v -8 h 12 z" fill={ink} />
           <Rect x={21.4} y={10} width={3.2} height={9} rx={1.6} fill={HI_STRONG} />
         </G>
       );
@@ -294,8 +297,8 @@ function Art({ id, muted }: { id: GlyphId; muted: boolean }) {
     case 'book':
       return (
         <G>
-          <Path d="M 24 13 C 18 8 10 6.5 3 7.5 v 28 C 10 34.6 18 36 24 41 C 30 36 38 34.6 45 35.5 v -28 C 38 6.5 30 8 24 13 Z" fill="rgba(31,42,90,0.16)" transform="translate(0 1.8)" />
-          <Path d="M 24 13 C 18 8 10 6.5 3 7.5 v 28 C 10 34.6 18 36 24 41 C 30 36 38 34.6 45 35.5 v -28 C 38 6.5 30 8 24 13 Z" fill={palette.white} />
+          <Path d="M 24 13 C 18 8 10 6.5 3 7.5 v 28 C 10 34.6 18 36 24 41 C 30 36 38 34.6 45 35.5 v -28 C 38 6.5 30 8 24 13 Z" fill={shadeOf(ink)} transform="translate(0 1.8)" />
+          <Path d="M 24 13 C 18 8 10 6.5 3 7.5 v 28 C 10 34.6 18 36 24 41 C 30 36 38 34.6 45 35.5 v -28 C 38 6.5 30 8 24 13 Z" fill={ink} />
           <Path d="M 24 13 v 28" stroke="#B9C3DC" strokeWidth={2.4} />
           <Path d="M 9 15 h 10 M 9 21 h 10 M 29 15 h 10 M 29 21 h 10" stroke="#C8D4EA" strokeWidth={2.4} strokeLinecap="round" />
           <Path d="M 6 10.4 C 11 10.4 17 12 20.5 14.4" stroke={HI_STRONG} strokeWidth={2} strokeLinecap="round" fill="none" />
@@ -306,7 +309,7 @@ function Art({ id, muted }: { id: GlyphId; muted: boolean }) {
     case 'beat-dialogue':
       return (
         <G>
-          <Bubble shade="rgba(31,42,90,0.16)" />
+          <Bubble shade={shadeOf(ink)} />
           <Circle cx={16} cy={26} r={3.4} fill="#8FA0C8" />
           <Circle cx={24} cy={26} r={3.4} fill="#8FA0C8" />
           <Circle cx={32} cy={26} r={3.4} fill="#8FA0C8" />
@@ -317,9 +320,9 @@ function Art({ id, muted }: { id: GlyphId; muted: boolean }) {
       return (
         <G>
           {/* two bubbles — a conversation across two languages */}
-          <Path d="M 20 6 h 20 a 7 7 0 0 1 7 7 v 9 a 7 7 0 0 1 -7 7 h -20 a 7 7 0 0 1 -7 -7 v -9 a 7 7 0 0 1 7 -7 z" fill="rgba(255,255,255,0.55)" />
-          <Path d="M 8 18 h 22 a 7.5 7.5 0 0 1 7.5 7.5 v 8 a 7.5 7.5 0 0 1 -7.5 7.5 h -12 l -8 6 l 1.4 -6 h -3.4 a 7.5 7.5 0 0 1 -7.5 -7.5 v -8 A 7.5 7.5 0 0 1 8 18 Z" fill="rgba(31,42,90,0.16)" transform="translate(0 1.6)" />
-          <Path d="M 8 18 h 22 a 7.5 7.5 0 0 1 7.5 7.5 v 8 a 7.5 7.5 0 0 1 -7.5 7.5 h -12 l -8 6 l 1.4 -6 h -3.4 a 7.5 7.5 0 0 1 -7.5 -7.5 v -8 A 7.5 7.5 0 0 1 8 18 Z" fill={palette.white} />
+          <Path d="M 20 6 h 20 a 7 7 0 0 1 7 7 v 9 a 7 7 0 0 1 -7 7 h -20 a 7 7 0 0 1 -7 -7 v -9 a 7 7 0 0 1 7 -7 z" fill={lightOf(ink)} />
+          <Path d="M 8 18 h 22 a 7.5 7.5 0 0 1 7.5 7.5 v 8 a 7.5 7.5 0 0 1 -7.5 7.5 h -12 l -8 6 l 1.4 -6 h -3.4 a 7.5 7.5 0 0 1 -7.5 -7.5 v -8 A 7.5 7.5 0 0 1 8 18 Z" fill={shadeOf(ink)} transform="translate(0 1.6)" />
+          <Path d="M 8 18 h 22 a 7.5 7.5 0 0 1 7.5 7.5 v 8 a 7.5 7.5 0 0 1 -7.5 7.5 h -12 l -8 6 l 1.4 -6 h -3.4 a 7.5 7.5 0 0 1 -7.5 -7.5 v -8 A 7.5 7.5 0 0 1 8 18 Z" fill={ink} />
           <Circle cx={13.5} cy={29.5} r={2.9} fill="#8FA0C8" />
           <Circle cx={21} cy={29.5} r={2.9} fill="#8FA0C8" />
           <Circle cx={28.5} cy={29.5} r={2.9} fill="#8FA0C8" />
@@ -329,8 +332,8 @@ function Art({ id, muted }: { id: GlyphId; muted: boolean }) {
     case 'bulb':
       return (
         <G>
-          <Path d="M 24 5 A 15 15 0 0 1 39 20 C 39 27 34.5 30 32.5 34 h -17 C 13.5 30 9 27 9 20 A 15 15 0 0 1 24 5 Z" fill="rgba(31,42,90,0.16)" transform="translate(0 1.8)" />
-          <Path d="M 24 5 A 15 15 0 0 1 39 20 C 39 27 34.5 30 32.5 34 h -17 C 13.5 30 9 27 9 20 A 15 15 0 0 1 24 5 Z" fill={palette.white} />
+          <Path d="M 24 5 A 15 15 0 0 1 39 20 C 39 27 34.5 30 32.5 34 h -17 C 13.5 30 9 27 9 20 A 15 15 0 0 1 24 5 Z" fill={shadeOf(ink)} transform="translate(0 1.8)" />
+          <Path d="M 24 5 A 15 15 0 0 1 39 20 C 39 27 34.5 30 32.5 34 h -17 C 13.5 30 9 27 9 20 A 15 15 0 0 1 24 5 Z" fill={ink} />
           <Path d="M 24 14 v 20 M 19 20 l 5 5 l 5 -5" stroke={palette.safetyYellow} strokeWidth={3} strokeLinecap="round" strokeLinejoin="round" fill="none" />
           <Rect x={16} y={35} width={16} height={5} rx={2.5} fill="#C8D4EA" />
           <Rect x={17.5} y={41} width={13} height={4.4} rx={2.2} fill="#8FA0C8" />
@@ -342,14 +345,14 @@ function Art({ id, muted }: { id: GlyphId; muted: boolean }) {
       return (
         <G>
           {/* three neighbours, shoulder to shoulder */}
-          <Circle cx={11} cy={17} r={6.4} fill="rgba(255,255,255,0.62)" />
-          <Path d="M 1 40 C 1 31.5 5.4 27 11 27 C 16.6 27 21 31.5 21 40 Z" fill="rgba(255,255,255,0.62)" />
-          <Circle cx={37} cy={17} r={6.4} fill="rgba(255,255,255,0.62)" />
-          <Path d="M 27 40 C 27 31.5 31.4 27 37 27 C 42.6 27 47 31.5 47 40 Z" fill="rgba(255,255,255,0.62)" />
-          <Circle cx={24} cy={14.5} r={8.4} fill="rgba(31,42,90,0.16)" transform="translate(0 1.6)" />
-          <Circle cx={24} cy={14.5} r={8.4} fill={palette.white} />
-          <Path d="M 11 42 C 11 31 16.8 25.5 24 25.5 C 31.2 25.5 37 31 37 42 Z" fill="rgba(31,42,90,0.16)" transform="translate(0 1.6)" />
-          <Path d="M 11 42 C 11 31 16.8 25.5 24 25.5 C 31.2 25.5 37 31 37 42 Z" fill={palette.white} />
+          <Circle cx={11} cy={17} r={6.4} fill={lightOf(ink)} />
+          <Path d="M 1 40 C 1 31.5 5.4 27 11 27 C 16.6 27 21 31.5 21 40 Z" fill={lightOf(ink)} />
+          <Circle cx={37} cy={17} r={6.4} fill={lightOf(ink)} />
+          <Path d="M 27 40 C 27 31.5 31.4 27 37 27 C 42.6 27 47 31.5 47 40 Z" fill={lightOf(ink)} />
+          <Circle cx={24} cy={14.5} r={8.4} fill={shadeOf(ink)} transform="translate(0 1.6)" />
+          <Circle cx={24} cy={14.5} r={8.4} fill={ink} />
+          <Path d="M 11 42 C 11 31 16.8 25.5 24 25.5 C 31.2 25.5 37 31 37 42 Z" fill={shadeOf(ink)} transform="translate(0 1.6)" />
+          <Path d="M 11 42 C 11 31 16.8 25.5 24 25.5 C 31.2 25.5 37 31 37 42 Z" fill={ink} />
           <Path d="M 19 10.5 C 20.4 8.6 22 8 23.6 8" stroke={HI_STRONG} strokeWidth={2.2} strokeLinecap="round" fill="none" />
         </G>
       );
@@ -360,8 +363,8 @@ function Art({ id, muted }: { id: GlyphId; muted: boolean }) {
           {/* a frying pan, seen from above-front, with an egg */}
           <Rect x={30} y={17} width={18} height={6} rx={3} fill="rgba(31,42,90,0.22)" transform="rotate(-12 39 20)" />
           <Rect x={30} y={16} width={17} height={5} rx={2.5} fill="#8FA0C8" transform="rotate(-12 38.5 18.5)" />
-          <Ellipse cx={21} cy={26} rx={18} ry={11.5} fill="rgba(31,42,90,0.16)" transform="translate(0 2)" />
-          <Ellipse cx={21} cy={26} rx={18} ry={11.5} fill={palette.white} />
+          <Ellipse cx={21} cy={26} rx={18} ry={11.5} fill={shadeOf(ink)} transform="translate(0 2)" />
+          <Ellipse cx={21} cy={26} rx={18} ry={11.5} fill={ink} />
           <Ellipse cx={21} cy={26} rx={14} ry={8.4} fill="#DDE5F4" />
           <Ellipse cx={21} cy={25.4} rx={7} ry={4.4} fill="#FFF6E5" />
           <Ellipse cx={21} cy={25.4} rx={3.2} ry={2.4} fill={palette.safetyYellow} />
@@ -763,6 +766,11 @@ export interface GlyphIconProps {
   size?: number;
   /** the empty / not-yet state — a soft socket, never a cross */
   muted?: boolean;
+  /**
+   * The seven subject marks are authored white-forward for a coloured pill.
+   * On a pale tile pass the subject's own strong hue so they still read.
+   */
+  ink?: string;
   /** screen-reader label; defaults to the id read as words */
   label?: string;
 }
@@ -771,12 +779,12 @@ export interface GlyphIconProps {
  * One drawn mark. Every UI glyph in the app comes from here so a flame in a
  * counter, a flame on a badge and a flame in a scene are the same flame.
  */
-export function GlyphIcon({ id, size = 32, muted = false, label }: GlyphIconProps) {
+export function GlyphIcon({ id, size = 32, muted = false, label, ink = palette.white }: GlyphIconProps) {
   const key = (ALIAS[id] ?? id) as string;
   if (!isGlyph(key)) return null;
   return (
     <Svg width={size} height={size} viewBox={`0 0 ${VB} ${VB}`} accessibilityLabel={label ?? key.replace(/^(subject|beat)-/, '').replace(/-/g, ' ')}>
-      <Art id={key} muted={muted} />
+      <Art id={key} muted={muted} ink={ink} />
     </Svg>
   );
 }

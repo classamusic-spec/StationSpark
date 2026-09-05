@@ -15,7 +15,8 @@
     "export:web": "expo export --platform web",
     "sfx:build": "node tools/sfx/build-sfx.mjs",
     "qa:shots": "node tools/qa/shoot.mjs dist screenshots 390x844 \"/,/dispatch,/map,/training,/kitchen,/garage,/badges\"",
-    "qa:icons": "node tools/qa/icons.mjs dist"
+    "qa:icons": "node tools/qa/icons.mjs dist",
+    "qa:play": "node tools/qa/play.mjs dist"
   },
   "dependencies": {
     "@expo-google-fonts/fredoka": "^0.4.1",
