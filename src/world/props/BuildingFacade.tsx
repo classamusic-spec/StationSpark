@@ -160,7 +160,13 @@ export function WindowArt({ rect, theme, lit, u }: WindowArtProps) {
             : null}
           <Rect x={rect.x - u * 0.6} y={rect.y - u * 0.25} width={rect.w + u * 1.2} height={u * 0.42} rx={u * 0.21} fill={theme.roofShade} />
         </G>
-      ) : null}
+      ) : (
+        /* rule #8 — a window is never a bare rectangle: no awning means a lintel */
+        <G>
+          <Rect x={rect.x - u * 0.55} y={rect.y - u * 0.75} width={rect.w + u * 1.1} height={u * 0.5} rx={u * 0.25} fill={theme.trim} />
+          <Rect x={rect.x - u * 0.55} y={rect.y - u * 0.4} width={rect.w + u * 1.1} height={u * 0.2} rx={u * 0.1} fill="rgba(31,42,90,0.14)" />
+        </G>
+      )}
     </G>
   );
 }
@@ -190,6 +196,8 @@ export function BuildingFacade({ scene, layout, width, height, litSlots, hideSig
   const { box, roof, body, sign, door, windows, groundY, u } = layout;
   const lit = new Set(litSlots ?? []);
   const signFont = Math.max(13, Math.min(26, sign.h * 0.52));
+  /** the A-frame chalkboard leans against the right-hand corner of the shop */
+  const cb = { x: Math.min(box.x + box.w - u * 4.4, width - u * 4.8), w: u * 3.4, h: u * 5.2 };
 
   return (
     <View style={[styles.wrap, { width, height }]} pointerEvents="none">
@@ -212,7 +220,19 @@ export function BuildingFacade({ scene, layout, width, height, litSlots, hideSig
         {/* soft shadow under the building */}
         <Ellipse cx={box.x + box.w / 2} cy={groundY + u * 0.5} rx={box.w * 0.55} ry={u * 0.8} fill={palette.navy} opacity={0.12} />
 
-        {/* body */}
+        {/* body — 2.5D: a front plane plus a shaded return down the right side */}
+        <Path
+          d={`M${body.x + body.w - u * 1.6} ${body.y + u * 0.6} L${body.x + body.w + u * 1.1} ${body.y + u * 1.8} L${
+            body.x + body.w + u * 1.1
+          } ${groundY} L${body.x + body.w - u * 1.6} ${groundY} Z`}
+          fill={t.wallShade}
+        />
+        <Path
+          d={`M${body.x + body.w - u * 1.6} ${body.y + u * 0.6} L${body.x + body.w + u * 1.1} ${body.y + u * 1.8} L${
+            body.x + body.w + u * 1.1
+          } ${groundY} L${body.x + body.w - u * 1.6} ${groundY} Z`}
+          fill="rgba(31,42,90,0.14)"
+        />
         <Rect x={body.x} y={body.y} width={body.w} height={body.h} rx={u * 0.7} fill="url(#ss-wall)" />
         <Rect x={body.x} y={body.y} width={body.w * 0.16} height={body.h} fill={palette.white} opacity={0.14} />
 
@@ -223,7 +243,16 @@ export function BuildingFacade({ scene, layout, width, height, litSlots, hideSig
           } Z`}
           fill={t.roof}
         />
+        <Path
+          d={`M${box.x + box.w / 2} ${roof.y - u * 0.1} L${box.x + box.w + u * 0.7} ${roof.y + roof.h} L${box.x + box.w / 2} ${
+            roof.y + roof.h
+          } Z`}
+          fill="rgba(31,42,90,0.14)"
+        />
+        {/* cornice + soffit shadow onto the wall */}
         <Rect x={box.x - u * 0.9} y={roof.y + roof.h - u * 0.5} width={box.w + u * 1.8} height={u * 0.9} rx={u * 0.45} fill={t.roofShade} />
+        <Rect x={box.x - u * 1.15} y={roof.y + roof.h + u * 0.2} width={box.w + u * 2.3} height={u * 0.55} rx={u * 0.27} fill={t.trim} />
+        <Rect x={body.x} y={roof.y + roof.h + u * 0.75} width={body.w} height={u * 0.5} fill="rgba(31,42,90,0.14)" />
 
         {/* windows */}
         {windows.map((w) => (
@@ -265,6 +294,35 @@ export function BuildingFacade({ scene, layout, width, height, litSlots, hideSig
             />
           </G>
         ))}
+
+        {/* A-frame chalkboard on the pavement, like the reference bakery */}
+        <G>
+          <Ellipse cx={cb.x + cb.w / 2} cy={groundY + u * 0.6} rx={u * 2.4} ry={u * 0.55} fill={palette.navy} opacity={0.12} />
+          <Path
+            d={`M${cb.x + cb.w * 0.86} ${groundY + u * 0.2} L${cb.x + cb.w * 0.6} ${groundY - cb.h * 0.86} L${cb.x + cb.w * 0.78} ${
+              groundY - cb.h * 0.86
+            } Z`}
+            fill={t.doorShade}
+          />
+          <Rect x={cb.x} y={groundY - cb.h} width={cb.w} height={cb.h} rx={u * 0.5} fill={palette.woodDark} />
+          <Rect x={cb.x + u * 0.35} y={groundY - cb.h + u * 0.35} width={cb.w - u * 0.7} height={cb.h - u * 0.8} rx={u * 0.35} fill="#2E3A46" />
+          <Rect x={cb.x + u * 0.35} y={groundY - cb.h + u * 0.35} width={cb.w - u * 0.7} height={u * 1.1} rx={u * 0.35} fill="rgba(255,255,255,0.18)" />
+          <Ellipse cx={cb.x + cb.w / 2} cy={groundY - cb.h * 0.46} rx={u * 0.95} ry={u * 0.55} fill="#E4B366" />
+          <Path
+            d={`M${cb.x + cb.w * 0.24} ${groundY - cb.h * 0.66} l ${u * 0.42} ${-u * 0.6}`}
+            stroke={palette.white}
+            strokeWidth={u * 0.16}
+            strokeLinecap="round"
+            opacity={0.7}
+          />
+          <Path
+            d={`M${cb.x + cb.w * 0.76} ${groundY - cb.h * 0.66} l ${-u * 0.42} ${-u * 0.6}`}
+            stroke={palette.white}
+            strokeWidth={u * 0.16}
+            strokeLinecap="round"
+            opacity={0.7}
+          />
+        </G>
 
         {/* sign plate */}
         {!hideSign ? (

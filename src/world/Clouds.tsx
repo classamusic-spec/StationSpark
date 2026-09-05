@@ -1,7 +1,7 @@
 import React, { memo } from 'react';
 import { StyleSheet, useWindowDimensions, View } from 'react-native';
 import Animated, { useAnimatedStyle } from 'react-native-reanimated';
-import Svg, { Ellipse, G } from 'react-native-svg';
+import Svg, { Defs, Ellipse, G, LinearGradient, Path, Stop } from 'react-native-svg';
 import { idle } from '@/theme';
 import { useLoop } from '@/hooks';
 
@@ -90,6 +90,59 @@ export function Clouds({ count = 4, top = 24, height = 190, opacity = 1 }: Cloud
   );
 }
 
+/* ── the far haze band ────────────────────────────────────────────── */
+
+/** One tile of the distant ridge. Drawn twice, side by side, so it can loop. */
+const HazeTile = memo(function HazeTile({ w, h, tint }: { w: number; h: number; tint: string }) {
+  return (
+    <Svg width={w} height={h} viewBox="0 0 400 120" preserveAspectRatio="none" pointerEvents="none">
+      <Defs>
+        <LinearGradient id="hazeFade" x1="0" y1="0" x2="0" y2="1">
+          <Stop offset="0" stopColor={tint} stopOpacity={0.34} />
+          <Stop offset="1" stopColor={tint} stopOpacity={0.72} />
+        </LinearGradient>
+      </Defs>
+      <Path
+        d="M 0 78 Q 26 44 58 60 Q 84 72 104 44 Q 128 12 160 46 Q 182 70 206 58 Q 232 44 254 66 Q 276 88 300 56 Q 326 22 352 54 Q 376 82 400 62 L 400 120 L 0 120 Z"
+        fill="url(#hazeFade)"
+      />
+    </Svg>
+  );
+});
+
+export interface SkyHazeProps {
+  /** how tall the band is */
+  height?: number;
+  /** distance from the bottom of the parent */
+  bottom?: number;
+  /** one full pass across the sky */
+  periodMs?: number;
+  tint?: string;
+}
+
+/**
+ * The far haze band: a pale ridge of distance that creeps sideways about three
+ * times slower than the clouds. It is what makes the horizon feel far away
+ * rather than painted on.
+ */
+export function SkyHaze({ height = 96, bottom = 190, periodMs = idle.cloudDriftMs * 3.4, tint = '#BBD8F2' }: SkyHazeProps) {
+  const { width } = useWindowDimensions();
+  const w = Math.max(360, width);
+  const t = useLoop(periodMs);
+  const style = useAnimatedStyle(() => ({ transform: [{ translateX: -t.value * w }] }));
+
+  return (
+    <View style={[styles.haze, { height, bottom }]} pointerEvents="none">
+      <Animated.View style={[styles.hazeRow, { width: w * 2 }, style]}>
+        <HazeTile w={w} h={height} tint={tint} />
+        <HazeTile w={w} h={height} tint={tint} />
+      </Animated.View>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   cloud: { position: 'absolute', left: 0 },
+  haze: { position: 'absolute', left: 0, right: 0, overflow: 'hidden' },
+  hazeRow: { flexDirection: 'row', height: '100%' },
 });

@@ -11,15 +11,16 @@ import Animated, { FadeIn, useAnimatedStyle, useSharedValue, withRepeat, withSeq
 import type { MissionBeat } from '@/content/types';
 import { palette, radii, shadows, spacing } from '@/theme';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
-import { Text } from '@/ui/Text';
+import { GlyphIcon, type GlyphId } from '@/ui/kit/GlyphIcon';
 
-const GLYPH: Record<MissionBeat['type'], string> = {
-  dialogue: '💬',
-  minigame: '⭐',
-  travel: '🚒',
-  scene: '📍',
-  kitchen: '🍳',
-  recap: '🎓',
+/** Drawn beat marks (art critique item #21) — emoji are banned from the world. */
+const GLYPH: Record<MissionBeat['type'], GlyphId> = {
+  dialogue: 'beat-dialogue',
+  minigame: 'beat-minigame',
+  travel: 'beat-travel',
+  scene: 'beat-scene',
+  kitchen: 'beat-kitchen',
+  recap: 'beat-recap',
 };
 
 function Dot({ beat, state }: { beat: MissionBeat; state: 'done' | 'current' | 'todo' }) {
@@ -39,7 +40,7 @@ function Dot({ beat, state }: { beat: MissionBeat; state: 'done' | 'current' | '
   if (state === 'current') {
     return (
       <Animated.View style={[styles.current, a]}>
-        <Text variant="tiny">{GLYPH[beat.type]}</Text>
+        <GlyphIcon id={GLYPH[beat.type]} size={22} />
       </Animated.View>
     );
   }
@@ -84,7 +85,7 @@ const styles = StyleSheet.create({
   current: {
     minWidth: 30,
     height: 26,
-    paddingHorizontal: 6,
+    paddingHorizontal: 4,
     borderRadius: radii.pill,
     backgroundColor: palette.safetyYellow,
     alignItems: 'center',

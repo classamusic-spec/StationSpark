@@ -112,6 +112,65 @@ export function StallFront({ width }: { width: number }) {
 }
 
 /* ================================================================= */
+/* Market dressing — bunting overhead, paving underfoot               */
+/* ================================================================= */
+
+const FLAG_COLORS = [palette.engineRed, palette.safetyYellow, palette.waterCyan, palette.leafGreen, palette.purple];
+
+/** A string of little flags across the top of the market. */
+export function Bunting({ width }: { width: number }) {
+  const flags = 11;
+  const step = 360 / flags;
+  return (
+    <Svg width={width} height={width * 0.1} viewBox="0 0 360 36">
+      <Path d="M0 6 Q180 26 360 6" stroke={palette.woodDark} strokeWidth={2.6} fill="none" />
+      {Array.from({ length: flags }, (_, i) => {
+        const x = step * (i + 0.5);
+        const dip = Math.sin((x / 360) * Math.PI) * 10;
+        const y = 6 + dip;
+        return (
+          <Path
+            key={i}
+            d={`M${x - 9} ${y} L${x + 9} ${y} L${x} ${y + 17} Z`}
+            fill={FLAG_COLORS[i % FLAG_COLORS.length]}
+            opacity={0.95}
+          />
+        );
+      })}
+    </Svg>
+  );
+}
+
+/**
+ * The market street the stall stands on: warm paving, a kerb and a few
+ * cobbles, so nothing floats in raw sky.
+ */
+export function MarketGround({ width }: { width: number }) {
+  return (
+    <View style={styles.ground} pointerEvents="none">
+      <View style={styles.kerb} />
+      <View style={styles.paving}>
+        {[0.08, 0.3, 0.52, 0.74].map((left, row) =>
+          [0, 1].map((col) => (
+            <View
+              key={`${left}-${col}`}
+              style={[
+                styles.cobble,
+                {
+                  left: `${(left + (col ? 0.11 : 0)) * 100}%`,
+                  top: 12 + col * 22 + (row % 2) * 6,
+                  width: width * 0.16,
+                },
+              ]}
+            />
+          )),
+        )}
+      </View>
+    </View>
+  );
+}
+
+/* ================================================================= */
 /* Coins                                                              */
 /* ================================================================= */
 
@@ -170,7 +229,11 @@ export function PaperBag({ size = 64 }: { size?: number }) {
 }
 
 const styles = StyleSheet.create({
+  ground: { position: 'absolute', left: 0, right: 0, bottom: 0, height: '30%' },
+  kerb: { height: 8, backgroundColor: palette.tanDark, borderTopLeftRadius: 6, borderTopRightRadius: 6 },
+  paving: { flex: 1, backgroundColor: '#EBD9B4', overflow: 'hidden' },
+  cobble: { position: 'absolute', height: 10, borderRadius: 5, backgroundColor: 'rgba(158,106,54,0.16)' },
   coin: { alignItems: 'center', justifyContent: 'center', borderRadius: radii.pill },
-  coinLabel: { ...StyleSheet.absoluteFillObject, alignItems: 'center', justifyContent: 'center' },
+  coinLabel: { ...StyleSheet.absoluteFill, alignItems: 'center', justifyContent: 'center' },
   dim: { opacity: 0.42 },
 });

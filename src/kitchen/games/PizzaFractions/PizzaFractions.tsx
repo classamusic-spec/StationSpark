@@ -904,23 +904,22 @@ function SliceToken({
     onTap,
     onDrop,
   });
+  // Outer node owns the entrance (layout) animation, inner node owns the drag
+  // transform — Reanimated warns and can drop one of them if they share a node.
   return (
-    <GestureDetector gesture={drag.gesture}>
-      <Animated.View
-        entering={ZoomIn.springify().damping(14)}
-        style={[at(s, x, y, width, width), drag.style]}
-        accessibilityRole="button"
-        accessibilityLabel="Pizza slice"
-      >
-        <Svg width={width * s} height={width * s} viewBox="0 0 46 46">
-          <Path d="M23 3 L43 39 A22 22 0 0 1 3 39 Z" fill="#F0B865" />
-          <Path d="M23 9 L39 37 A19 19 0 0 1 7 37 Z" fill="#E8543F" />
-          <Circle cx={20} cy={28} r={3.4} fill="#FFDF7A" />
-          <Circle cx={29} cy={33} r={3} fill="#FFDF7A" />
-          <Circle cx={25} cy={20} r={2.6} fill="#FFDF7A" />
-        </Svg>
-      </Animated.View>
-    </GestureDetector>
+    <Animated.View entering={ZoomIn.springify().damping(14)} style={at(s, x, y, width, width)}>
+      <GestureDetector gesture={drag.gesture}>
+        <Animated.View style={drag.style} accessibilityRole="button" accessibilityLabel="Pizza slice">
+          <Svg width={width * s} height={width * s} viewBox="0 0 46 46">
+            <Path d="M23 3 L43 39 A22 22 0 0 1 3 39 Z" fill="#F0B865" />
+            <Path d="M23 9 L39 37 A19 19 0 0 1 7 37 Z" fill="#E8543F" />
+            <Circle cx={20} cy={28} r={3.4} fill="#FFDF7A" />
+            <Circle cx={29} cy={33} r={3} fill="#FFDF7A" />
+            <Circle cx={25} cy={20} r={2.6} fill="#FFDF7A" />
+          </Svg>
+        </Animated.View>
+      </GestureDetector>
+    </Animated.View>
   );
 }
 

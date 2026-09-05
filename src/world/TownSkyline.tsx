@@ -26,14 +26,17 @@ const BUILDINGS: { x: number; w: number; h: number; roof?: 'flat' | 'pitch' }[] 
  * Hazy pastel town on the horizon: blocks of flats, a clock tower and a
  * suspension bridge. Static art (memoized) — it never animates.
  */
-export const TownSkyline = memo(function TownSkyline({ height = 120, bottom = 150, mood = 'day', opacity = 0.55 }: TownSkylineProps) {
+export const TownSkyline = memo(function TownSkyline({ height = 120, bottom = 150, mood = 'day', opacity = 0.82 }: TownSkylineProps) {
   const { width } = useWindowDimensions();
   const w = Math.max(340, width);
   const vbW = 340;
   const vbH = 120;
-  const base = mood === 'evening' ? '#8C93C8' : '#A9C9E8';
-  const light = mood === 'evening' ? '#A7ADDD' : '#C3DCF3';
-  const roofTint = mood === 'evening' ? '#7C84BC' : '#93B6DC';
+  // saturated enough to actually read against the sky — the old pale blue on
+  // pale blue was invisible (critique #5).
+  const base = mood === 'evening' ? '#6B72AE' : '#7FA9D8';
+  const light = mood === 'evening' ? '#828AC4' : '#94BBE2';
+  const roofTint = mood === 'evening' ? '#5B62A0' : '#6B93C6';
+  const side = 'rgba(31,42,90,0.14)';
 
   return (
     <View style={[styles.wrap, { height, bottom }]} pointerEvents="none">
@@ -42,22 +45,28 @@ export const TownSkyline = memo(function TownSkyline({ height = 120, bottom = 15
           {BUILDINGS.map((b) => (
             <G key={`b${b.x}`}>
               <Rect x={b.x} y={vbH - b.h} width={b.w} height={b.h} rx={3} fill={b.x % 3 === 0 ? light : base} />
+              {/* shaded side plane — even at horizon scale a block reads as a solid */}
+              <Rect x={b.x + b.w - 7} y={vbH - b.h} width={7} height={b.h} rx={3} fill={side} />
               {b.roof === 'pitch' ? (
                 <Path d={`M ${b.x - 3} ${vbH - b.h} L ${b.x + b.w / 2} ${vbH - b.h - 12} L ${b.x + b.w + 3} ${vbH - b.h} Z`} fill={roofTint} />
               ) : null}
-              {/* window grid — two columns of soft squares */}
-              <Rect x={b.x + 5} y={vbH - b.h + 12} width={6} height={7} rx={1.5} fill="#FFFFFF" opacity={0.42} />
-              <Rect x={b.x + b.w - 11} y={vbH - b.h + 12} width={6} height={7} rx={1.5} fill="#FFFFFF" opacity={0.42} />
-              <Rect x={b.x + 5} y={vbH - b.h + 26} width={6} height={7} rx={1.5} fill="#FFFFFF" opacity={0.3} />
-              <Rect x={b.x + b.w - 11} y={vbH - b.h + 26} width={6} height={7} rx={1.5} fill="#FFFFFF" opacity={0.3} />
+              {/* soffit shadow under the roof line */}
+              <Rect x={b.x} y={vbH - b.h} width={b.w} height={4} rx={2} fill={side} />
+              {/* window grid — two columns of soft squares, each with a sill */}
+              <Rect x={b.x + 5} y={vbH - b.h + 12} width={6} height={7} rx={1.5} fill="#FFF6E5" opacity={0.66} />
+              <Rect x={b.x + b.w - 11} y={vbH - b.h + 12} width={6} height={7} rx={1.5} fill="#FFF6E5" opacity={0.62} />
+              <Rect x={b.x + 5} y={vbH - b.h + 26} width={6} height={7} rx={1.5} fill="#FFF6E5" opacity={0.52} />
+              <Rect x={b.x + b.w - 11} y={vbH - b.h + 26} width={6} height={7} rx={1.5} fill="#FFF6E5" opacity={0.48} />
             </G>
           ))}
 
           {/* clock tower */}
           <Rect x={162} y={16} width={26} height={104} rx={4} fill={light} />
+          <Rect x={181} y={18} width={7} height={102} rx={3} fill={side} />
           <Path d="M 158 18 L 175 2 L 192 18 Z" fill={roofTint} />
-          <Circle cx={175} cy={38} r={9} fill="#FFFFFF" opacity={0.85} />
-          <Path d="M 175 38 L 175 33 M 175 38 L 179 40" stroke={base} strokeWidth={1.6} strokeLinecap="round" />
+          <Rect x={162} y={16} width={26} height={4} rx={2} fill={side} />
+          <Circle cx={175} cy={38} r={9} fill="#FFF6E5" opacity={0.92} />
+          <Path d="M 175 38 L 175 33 M 175 38 L 179 40" stroke={roofTint} strokeWidth={1.6} strokeLinecap="round" />
 
           {/* suspension bridge on the right */}
           <Path d="M 292 96 L 340 96" stroke={base} strokeWidth={4} strokeLinecap="round" />

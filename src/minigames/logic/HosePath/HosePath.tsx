@@ -23,6 +23,8 @@ interface State {
   phase: 'building' | 'flowing' | 'done';
   placed: Record<string, PlacedPiece & { from: number }>;
   misses: number;
+  /** idle escalations — they raise Beacon's ladder without scoring a mistake */
+  nudges: number;
   flow: number;
 }
 
@@ -31,6 +33,7 @@ type Action =
   | { type: 'ROTATE'; key: string }
   | { type: 'PICK_UP'; key: string }
   | { type: 'MISS' }
+  | { type: 'NUDGE' }
   | { type: 'RESET' }
   | { type: 'FLOW'; cells: number }
   | { type: 'DONE' };
@@ -57,6 +60,8 @@ function reducer(state: State, action: Action): State {
     }
     case 'MISS':
       return { ...state, misses: state.misses + 1 };
+    case 'NUDGE':
+      return { ...state, nudges: state.nudges + 1 };
     case 'RESET':
       return { ...state, placed: {}, flow: 0 };
     case 'FLOW':
@@ -71,8 +76,8 @@ function reducer(state: State, action: Action): State {
 export function HosePath({ challenge, ageBand, onComplete, onEvent, compact }: MiniGameProps<'hose-path'>) {
   const session = useMiniGameSession('hose-path', onComplete, onEvent);
   const layout = useGameLayout({ compact });
-  const [state, dispatch] = useReducer(reducer, { phase: 'building', placed: {}, misses: 0, flow: 0 });
-  const hintLadder = useHintLadder(state.misses, session.hint);
+  const [state, dispatch] = useReducer(reducer, { phase: 'building', placed: {}, misses: 0, nudges: 0, flow: 0 });
+  const hintLadder = useHintLadder(state.misses + state.nudges, session.hint);
   const finished = useRef(false);
   const allUsedRef = useRef(false);
 
@@ -151,12 +156,24 @@ export function HosePath({ challenge, ageBand, onComplete, onEvent, compact }: M
     const allUsed = remaining.length === 0 && challenge.pieces.length > 0;
     if (allUsed && !path && !allUsedRef.current) {
       allUsedRef.current = true;
-      dispatch({ type: 'MISS' });
+      dispatch({ type: 'NUDGE' });
       sfx.play('wrong-soft');
       haptics.nudge();
     }
     if (!allUsed) allUsedRef.current = false;
   }, [challenge.pieces.length, path, remaining.length]);
+
+  /**
+   * NEVER DEAD-END. Nothing in this game is "wrong" — a piece in the wrong cell
+   * is just a piece in the wrong cell — so the miss counter barely moves and
+   * Beacon's ladder used to sit at level 0 forever. Escalate on idle instead:
+   * ~14 s with no change shows the bubble, ~28 s highlights the cell to fix.
+   */
+  useEffect(() => {
+    if (state.phase !== 'building') return;
+    const t = setTimeout(() => dispatch({ type: 'NUDGE' }), 14000);
+    return () => clearTimeout(t);
+  }, [state.phase, state.placed, state.nudges]);
 
   useEffect(() => {
     session.progress(Object.keys(state.placed).length, challenge.pieces.length);

@@ -21,6 +21,9 @@ import { HosePath } from './HosePath/HosePath';
 import { Signals } from './Signals/Signals';
 import { VocabTap } from './VocabTap/VocabTap';
 import { ListenCount } from './ListenCount/ListenCount';
+import { MarketMoney } from './MarketMoney/MarketMoney';
+import { ShapeBuilder } from './ShapeBuilder/ShapeBuilder';
+import { WordBuilder } from './WordBuilder/WordBuilder';
 
 export const logicGames: Registry = {
   'equipment-check': {
@@ -164,6 +167,45 @@ export const logicGames: Registry = {
       yard: 'training',
       seconds: 100,
       icon: 'three',
+    },
+  },
+  'market-money': {
+    component: MarketMoney,
+    meta: {
+      kind: 'market-money',
+      title: 'Market Money',
+      titleEs: 'Dinero del Mercado',
+      blurb: 'Count coins onto the market counter until they add up to the price — then work out the change.',
+      subjects: ['math'],
+      yard: 'training',
+      seconds: 130,
+      icon: 'market',
+    },
+  },
+  'shape-builder': {
+    component: ShapeBuilder,
+    meta: {
+      kind: 'shape-builder',
+      title: 'Shape Builder',
+      titleEs: 'Construye Formas',
+      blurb: 'Drag squares, triangles and half circles onto the blueprint until the build comes alive.',
+      subjects: ['math', 'logic'],
+      yard: 'training',
+      seconds: 140,
+      icon: 'house',
+    },
+  },
+  'word-builder': {
+    component: WordBuilder,
+    meta: {
+      kind: 'word-builder',
+      title: 'Word Builder',
+      titleEs: 'Arma la Palabra',
+      blurb: 'Beacon says a word — build it letter by letter, in English or in Spanish.',
+      subjects: ['reading', 'english', 'spanish'],
+      yard: 'training',
+      seconds: 110,
+      icon: 'library',
     },
   },
 };

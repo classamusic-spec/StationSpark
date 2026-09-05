@@ -52,14 +52,23 @@ interface SayState {
   es?: string;
 }
 
-/** Transient speech bubble for `say` events coming out of a game. */
-function SayBubble({ say, onDone }: { say: SayState | null; onDone: () => void }) {
+/**
+ * Transient speech bubble for `say` events coming out of a game.
+ *
+ * It floats over the bottom of the play area — which is exactly where every
+ * game keeps its tray of answer tiles and draggables — so it must NEVER take a
+ * touch. `pointerEvents="box-none"` only frees the wrapper; the row and the
+ * bubble underneath it still swallowed taps, which made the tray dead for the
+ * 3.6 s the bubble was up (tap an answer, nothing happens). The whole thing is
+ * decorative and auto-hides, so it is inert all the way down.
+ */
+function SayBubble({ say }: { say: SayState | null }) {
   if (!say) return null;
   return (
-    <Animated.View entering={FadeInUp.springify().damping(15)} exiting={FadeOutDown} style={styles.say} pointerEvents="box-none">
-      <View style={styles.sayRow}>
+    <Animated.View entering={FadeInUp.springify().damping(15)} exiting={FadeOutDown} style={styles.say} pointerEvents="none">
+      <View style={styles.sayRow} pointerEvents="none">
         <CharacterPortrait id={say.speaker} emotion="happy" size={56} />
-        <View style={[styles.sayBubble, shadows.card]} onTouchEnd={onDone}>
+        <View style={[styles.sayBubble, shadows.card]} pointerEvents="none">
           <Text variant="bodyStrong">{say.text}</Text>
           {say.es && say.es !== say.text ? (
             <Text variant="small" color={palette.purple}>
@@ -116,6 +125,14 @@ export function MiniGameStage({ beat, ageBand, scene, seed, missionContext, comp
       g.__SS_CHALLENGE__ = null;
     };
   }, [challenge]);
+
+  /** the say-bubble timer must not outlive the stage */
+  useEffect(
+    () => () => {
+      if (sayTimer.current) clearTimeout(sayTimer.current);
+    },
+    [],
+  );
 
   const finish = useCallback(
     (result: MiniGameResult) => {
@@ -181,7 +198,7 @@ export function MiniGameStage({ beat, ageBand, scene, seed, missionContext, comp
           missionContext={missionContext}
         />
       </BeatErrorBoundary>
-      <SayBubble say={say} onDone={() => setSay(null)} />
+      <SayBubble say={say} />
     </View>
   );
 }

@@ -450,7 +450,7 @@ export const recipes: RecipeDef[] = [
       {
         game: 'measure-pour',
         challenge: measure('lemon', 1, 4, 'cup'),
-        intro: [beacon('A quarter cup of limón. Limón means lime!', 'Limón.')],
+        intro: [beacon('A quarter cup of limón. Limón means lemon!', 'Limón.')],
       },
       {
         game: 'measure-pour',

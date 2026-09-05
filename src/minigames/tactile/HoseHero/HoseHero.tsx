@@ -12,6 +12,8 @@ import { haptics } from '@/services/haptics';
 import { speech } from '@/services/speech';
 import { useReducedMotion } from '@/hooks';
 import { formatFraction, toNumber } from '@/utils/fractions';
+import { Stage } from '@/world';
+import { GameCrew } from '@/characters';
 import { BuildingFacade, Flame, FractionBar, HoseRig, Hydrant, facadeLayout, sceneTheme, windowAt } from '@/world/props';
 import {
   AskQuestion,
@@ -399,8 +401,17 @@ export function HoseHero({ challenge, ageBand, onComplete, onEvent, compact, mis
       hint={hints.bubble}
       onDismissHint={hints.dismiss}
       onStageLayout={onLayout}
+      backdrop={<Stage variant="street" groundHeight={110} />}
       footer={<CountStrip current={state.outCount} total={total} icon="flame" invert />}
       overlay={
+        <>
+        <GameCrew
+          side="right"
+          size={64}
+          bottom={compact ? 96 : 118}
+          showPepper
+          mood={state.phase === 'done' ? 'cheer' : state.phase === 'flameOut' ? 'happy' : 'idle'}
+        />
         <AskQuestion
           visible={state.phase === 'asking'}
           question={askText}
@@ -413,6 +424,7 @@ export function HoseHero({ challenge, ageBand, onComplete, onEvent, compact, mis
           compact={compact}
           onAnswer={onAnswer}
         />
+        </>
       }
     >
       {ready ? (

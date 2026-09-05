@@ -46,6 +46,10 @@ type Action =
 function reducer(state: State, action: Action): State {
   switch (action.type) {
     case 'PLACE': {
+      // Dropping a card back on the slot it already occupies is a no-op. The
+      // "clear the card's old slot" pass used to run first and blank it out, so
+      // a re-drop made the card vanish back into the tray.
+      if (state.slots[action.slot] === action.card) return state;
       const slots = state.slots.map((s, i) => (s === action.card ? null : i === action.slot ? action.card : s));
       return { ...state, slots };
     }

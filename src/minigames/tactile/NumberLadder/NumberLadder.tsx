@@ -9,7 +9,9 @@ import { Button, Chip, Text, Tray, TrayRow } from '@/ui';
 import { sfx } from '@/services/audio';
 import { haptics } from '@/services/haptics';
 import { speech } from '@/services/speech';
-import { CharacterPortrait } from '@/characters/CharacterPortrait';
+import { GameCrew, Rookie } from '@/characters';
+import { Stage } from '@/world';
+import { WallPanel } from '@/world/scenes';
 import { Animal, LadderRails } from '@/world/props';
 import { GameShell, clampNum, minJumps, useHintLadder, useMeasuredBox, useSpokenPrompt, useStage } from '../shared';
 
@@ -111,13 +113,15 @@ export function NumberLadder({ challenge, ageBand, onComplete, onEvent, compact 
   const geo = useMemo(() => {
     const w = Math.max(1, box.w);
     const h = Math.max(1, box.h);
-    const topPad = h * 0.07;
-    const botPad = h * 0.08;
+    // critique: the top and bottom rung labels were clipped by the banner and
+    // the grass. Reserve a real gutter for them at both ends.
+    const topPad = Math.max(h * 0.07, 26);
+    const botPad = Math.max(h * 0.1, 44);
     const unitPx = Math.max(16, (h - topPad - botPad) / span);
     const ladderW = Math.max(58, Math.min(stage.s(78), w * 0.24));
     const ladderX = w * 0.36;
     const bottomY = h - botPad;
-    return { w, h, unitPx, ladderW, ladderX, bottomY, ladderH: unitPx * span };
+    return { w, h, unitPx, ladderW, ladderX, bottomY, groundY: bottomY + 18, ladderH: unitPx * span };
   }, [box.h, box.w, span, stage]);
 
   const rookieSize = Math.max(48, Math.min(stage.s(74), geo.ladderW * 1.1));
@@ -268,6 +272,11 @@ export function NumberLadder({ challenge, ageBand, onComplete, onEvent, compact 
     >
       {ready ? (
         <View style={StyleSheet.absoluteFill}>
+          {/* the ladder now leans on a real building, not on the sky */}
+          <View style={[styles.wall, { left: geo.ladderX - stage.s(18), top: 0, width: geo.w - geo.ladderX + stage.s(18), height: geo.groundY }]} pointerEvents="none">
+            <WallPanel width={geo.w - geo.ladderX + stage.s(18)} height={geo.groundY} startX={0.34} cols={2} />
+          </View>
+
           {/* ladder */}
           <View
             style={[styles.ladder, { left: geo.ladderX, top: geo.bottomY - geo.ladderH, width: geo.ladderW, height: geo.ladderH }]}
@@ -309,20 +318,21 @@ export function NumberLadder({ challenge, ageBand, onComplete, onEvent, compact 
             </View>
           </View>
 
-          {/* ground */}
-          <View style={[styles.ground, { top: geo.bottomY, height: Math.max(0, geo.h - geo.bottomY) }]} pointerEvents="none" />
+          {/* ground — soft lip, never a hard-edged rectangle */}
+          <View style={[styles.ground, { top: geo.groundY, height: Math.max(0, geo.h - geo.groundY + 40) }]} pointerEvents="none">
+            <View style={styles.groundLip} />
+          </View>
 
-          {/* Rookie */}
+          {/* Rookie — critique #23: the full rig, not a head in a circle */}
           <Animated.View
             style={[
               styles.rookie,
-              { left: geo.ladderX + geo.ladderW / 2 - rookieSize / 2, top: geo.bottomY - rookieSize + 6 },
+              { left: geo.ladderX + geo.ladderW / 2 - rookieSize * 0.5, top: geo.groundY - rookieSize * 1.7 },
               climberStyle,
             ]}
             pointerEvents="none"
           >
-            <CharacterPortrait id="rookie" emotion={state.phase === 'done' ? 'proud' : 'happy'} size={rookieSize} />
-          </Animated.View>
+            <Rookie size={rookieSize * 1.7} emotion={state.phase === 'done' ? 'proud' : 'happy'} pose={state.phase === 'done' ? 'cheer' : 'stand'} jumping={state.phase === 'done'} />
         </View>
       ) : null}
     </GameShell>

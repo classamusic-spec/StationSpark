@@ -13,46 +13,98 @@ export interface LogoProps {
 }
 
 /**
- * The STATION SPARK wordmark.
+ * The STATION SPARK wordmark, drawn to the reference lock-up.
  *
- * Built the way the reference art is: a gold ray fan, then a navy sticker
- * outline around a red plaque, then the two stacked words in white with a red
- * and a navy outline, with the flame badge riding on top.
+ * Four layers, back to front:
+ *  1. a true gold **ray-arc** — a tapered elliptical band that rises out from
+ *     behind the plaque's shoulders and seats onto its top edge;
+ *  2. an **organic sticker plaque** — a rounded blob with softly bowed edges
+ *     and four slightly different corner radii, in a navy sticker outline;
+ *  3. the **flame nested into the arc**, sitting in its cradle rather than
+ *     floating above it;
+ *  4. the two stacked words, white with a red then a navy outline.
  *
- * The outlines are drawn as three stacked `<Text>` passes (widest stroke first,
- * plain white fill last). Stroke widths are kept to ~15 % of the font size so
- * they never close the counters of the O, A and R.
+ * The outlines are three stacked `<Text>` passes (widest stroke first, plain
+ * white fill last) — kept to ~15 % of the font size so they never close the
+ * counters of the O, A and R. Verified rendering in the web export.
  */
 export function Logo({ size = 240, tagline = true, style }: LogoProps) {
   const w = size;
   const h = size * 0.86;
   const cx = w / 2;
 
-  const fs1 = size * 0.155; // STATION
-  const fs2 = size * 0.235; // SPARK
+  const fs1 = size * 0.152; // STATION
+  const fs2 = size * 0.232; // SPARK
 
-  const plaque = { x: w * 0.045, y: h * 0.245, w: w * 0.91, h: h * 0.71, r: h * 0.21 };
-  const out = size * 0.028; // navy sticker outline thickness
+  const plaque = { x: w * 0.075, y: h * 0.275, w: w * 0.85, h: h * 0.665, r: h * 0.2 };
+  const out = size * 0.03; // navy sticker outline thickness
 
-  const rect = (x: number, y: number, width: number, height: number, r: number) =>
-    `M ${x + r} ${y} H ${x + width - r} A ${r} ${r} 0 0 1 ${x + width} ${y + r} V ${y + height - r} A ${r} ${r} 0 0 1 ${x + width - r} ${y + height} H ${x + r} A ${r} ${r} 0 0 1 ${x} ${y + height - r} V ${y + r} A ${r} ${r} 0 0 1 ${x + r} ${y} Z`;
+  /**
+   * An organic sticker: rounded corners of four slightly different radii, with
+   * every edge bowed outward a little. Never a rounded rect.
+   */
+  const sticker = (x: number, y: number, width: number, height: number, r: number, bow: number) => {
+    const r1 = r;
+    const r2 = r * 0.87;
+    const r3 = r * 1.06;
+    const r4 = r * 0.93;
+    return [
+      `M ${x + r1} ${y}`,
+      `Q ${x + width * 0.5} ${y - bow} ${x + width - r2} ${y}`,
+      `A ${r2} ${r2} 0 0 1 ${x + width} ${y + r2}`,
+      `Q ${x + width + bow} ${y + height * 0.5} ${x + width} ${y + height - r3}`,
+      `A ${r3} ${r3} 0 0 1 ${x + width - r3} ${y + height}`,
+      `Q ${x + width * 0.5} ${y + height + bow * 1.2} ${x + r4} ${y + height}`,
+      `A ${r4} ${r4} 0 0 1 ${x} ${y + height - r4}`,
+      `Q ${x - bow} ${y + height * 0.5} ${x} ${y + r1}`,
+      `A ${r1} ${r1} 0 0 1 ${x + r1} ${y}`,
+      'Z',
+    ].join(' ');
+  };
 
-  /** A tapered gold swoosh sweeping out from behind the flame. */
-  const wing = (dir: 1 | -1) =>
-    `M ${cx + dir * w * 0.05} ${h * 0.1}
-     C ${cx + dir * w * 0.2} ${h * 0.0} ${cx + dir * w * 0.36} ${h * 0.05} ${cx + dir * w * 0.45} ${h * 0.2}
-     C ${cx + dir * w * 0.34} ${h * 0.14} ${cx + dir * w * 0.2} ${h * 0.13} ${cx + dir * w * 0.06} ${h * 0.19} Z`;
+  /**
+   * The ray-arc: a tapered elliptical band sweeping over the plaque's top.
+   * `t` is the band thickness; the tips are pointed because the inner arc is
+   * shorter than the outer one.
+   */
+  const arcCy = h * 0.44;
+  const arcRx = w * 0.5;
+  const arcRy = h * 0.31;
+  const arcBand = (t: number, grow: number) => {
+    const rxO = arcRx + grow;
+    const ryO = arcRy + grow;
+    const rxI = rxO - t;
+    const ryI = ryO - t;
+    const pt = (deg: number, rx: number, ry: number) => {
+      const a = (deg * Math.PI) / 180;
+      return `${cx + rx * Math.cos(a)} ${arcCy + ry * Math.sin(a)}`;
+    };
+    return [
+      `M ${pt(184, rxO, ryO)}`,
+      `A ${rxO} ${ryO} 0 0 1 ${pt(356, rxO, ryO)}`,
+      `L ${pt(350, rxI, ryI)}`,
+      `A ${rxI} ${ryI} 0 0 0 ${pt(190, rxI, ryI)}`,
+      'Z',
+    ].join(' ');
+  };
 
-  const flameCx = cx;
-  const flameCy = h * 0.13;
-  const fr = size * 0.1;
+  const flameCy = h * 0.155;
+  const fr = size * 0.108;
+  /** a teardrop flame with one lick, drawn from its centre */
+  const flame = (k: number) =>
+    `M ${cx} ${flameCy - fr * 1.05 * k}
+     C ${cx + fr * 0.44 * k} ${flameCy - fr * 0.5 * k} ${cx + fr * 0.86 * k} ${flameCy - fr * 0.16 * k} ${cx + fr * 0.72 * k} ${flameCy + fr * 0.42 * k}
+     C ${cx + fr * 0.62 * k} ${flameCy + fr * 0.92 * k} ${cx + fr * 0.2 * k} ${flameCy + fr * 1.1 * k} ${cx} ${flameCy + fr * 1.1 * k}
+     C ${cx - fr * 0.2 * k} ${flameCy + fr * 1.1 * k} ${cx - fr * 0.62 * k} ${flameCy + fr * 0.92 * k} ${cx - fr * 0.72 * k} ${flameCy + fr * 0.42 * k}
+     C ${cx - fr * 0.86 * k} ${flameCy - fr * 0.16 * k} ${cx - fr * 0.3 * k} ${flameCy - fr * 0.44 * k} ${cx} ${flameCy - fr * 1.05 * k} Z`;
 
   return (
     <View style={[{ alignItems: 'center' }, style]}>
       <Svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} accessibilityLabel="Station Spark">
         <Defs>
           <LinearGradient id="ssGold" x1="0" y1="0" x2="0" y2="1">
-            <Stop offset="0" stopColor="#FFE07A" />
+            <Stop offset="0" stopColor="#FFE99B" />
+            <Stop offset="0.55" stopColor={palette.safetyYellow} />
             <Stop offset="1" stopColor={palette.gold} />
           </LinearGradient>
           <LinearGradient id="ssRed" x1="0" y1="0" x2="0" y2="1">
@@ -67,35 +119,28 @@ export function Logo({ size = 240, tagline = true, style }: LogoProps) {
           </LinearGradient>
         </Defs>
 
-        {/* gold ray fan */}
-        <Path d={wing(-1)} fill={palette.goldDark} />
-        <Path d={wing(1)} fill={palette.goldDark} />
-        <Path d={wing(-1)} fill="url(#ssGold)" transform={`translate(0 ${-size * 0.006})`} />
-        <Path d={wing(1)} fill="url(#ssGold)" transform={`translate(0 ${-size * 0.006})`} />
+        {/* the ray-arc: navy sticker edge, gold band, one highlight along the top */}
+        <Path d={arcBand(h * 0.085 + out * 1.6, out * 0.8)} fill={palette.navy} />
+        <Path d={arcBand(h * 0.085, 0)} fill={palette.goldDark} />
+        <Path d={arcBand(h * 0.072, -h * 0.008)} fill="url(#ssGold)" />
+        <Path d={arcBand(h * 0.026, -h * 0.012)} fill="#FFF3C4" opacity={0.75} />
 
-        {/* navy sticker outline + red plaque */}
-        <Path d={rect(plaque.x - out, plaque.y - out, plaque.w + out * 2, plaque.h + out * 2, plaque.r + out)} fill={palette.navy} />
-        <Path d={rect(plaque.x, plaque.y, plaque.w, plaque.h, plaque.r)} fill="url(#ssRed)" />
+        {/* the plaque: organic sticker, navy outline, red face, inner sheen */}
+        <Path d={sticker(plaque.x - out, plaque.y - out, plaque.w + out * 2, plaque.h + out * 2, plaque.r + out, h * 0.022)} fill={palette.navy} />
+        <Path d={sticker(plaque.x, plaque.y, plaque.w, plaque.h, plaque.r, h * 0.02)} fill="url(#ssRed)" />
         <Path
-          d={rect(plaque.x + out * 0.5, plaque.y + out * 0.5, plaque.w - out, plaque.h - out, plaque.r - out * 0.4)}
+          d={sticker(plaque.x + out * 0.55, plaque.y + out * 0.55, plaque.w - out * 1.1, plaque.h - out * 1.1, plaque.r - out * 0.4, h * 0.018)}
           fill="none"
           stroke="rgba(255,255,255,0.3)"
           strokeWidth={size * 0.008}
         />
-        <Ellipse cx={cx - w * 0.16} cy={plaque.y + h * 0.1} rx={w * 0.2} ry={h * 0.05} fill="#FFFFFF" opacity={0.16} />
+        <Ellipse cx={cx - w * 0.15} cy={plaque.y + h * 0.095} rx={w * 0.2} ry={h * 0.048} fill="#FFFFFF" opacity={0.17} />
 
-        {/* flame badge */}
+        {/* the flame, nested down into the arc's cradle */}
+        <Path d={flame(1.24)} fill={palette.navy} />
+        <Path d={flame(1)} fill="url(#ssFlame)" />
         <Path
-          d={`M ${flameCx} ${flameCy - fr * 0.95} C ${flameCx + fr * 0.72} ${flameCy - fr * 0.1} ${flameCx + fr * 0.55} ${flameCy + fr * 0.5} ${flameCx} ${flameCy + fr * 1.05} C ${flameCx - fr * 0.55} ${flameCy + fr * 0.5} ${flameCx - fr * 0.72} ${flameCy - fr * 0.1} ${flameCx} ${flameCy - fr * 0.95} Z`}
-          fill={palette.navy}
-          transform={`translate(${flameCx} ${flameCy}) scale(1.17) translate(${-flameCx} ${-flameCy})`}
-        />
-        <Path
-          d={`M ${flameCx} ${flameCy - fr * 0.95} C ${flameCx + fr * 0.72} ${flameCy - fr * 0.1} ${flameCx + fr * 0.55} ${flameCy + fr * 0.5} ${flameCx} ${flameCy + fr * 1.05} C ${flameCx - fr * 0.55} ${flameCy + fr * 0.5} ${flameCx - fr * 0.72} ${flameCy - fr * 0.1} ${flameCx} ${flameCy - fr * 0.95} Z`}
-          fill="url(#ssFlame)"
-        />
-        <Path
-          d={`M ${flameCx} ${flameCy - fr * 0.2} C ${flameCx + fr * 0.3} ${flameCy + fr * 0.16} ${flameCx + fr * 0.22} ${flameCy + fr * 0.5} ${flameCx} ${flameCy + fr * 0.78} C ${flameCx - fr * 0.22} ${flameCy + fr * 0.5} ${flameCx - fr * 0.3} ${flameCy + fr * 0.16} ${flameCx} ${flameCy - fr * 0.2} Z`}
+          d={`M ${cx} ${flameCy - fr * 0.24} C ${cx + fr * 0.34} ${flameCy + fr * 0.18} ${cx + fr * 0.26} ${flameCy + fr * 0.6} ${cx} ${flameCy + fr * 0.86} C ${cx - fr * 0.26} ${flameCy + fr * 0.6} ${cx - fr * 0.34} ${flameCy + fr * 0.18} ${cx} ${flameCy - fr * 0.24} Z`}
           fill={palette.flameCore}
         />
 
@@ -108,7 +153,7 @@ export function Logo({ size = 240, tagline = true, style }: LogoProps) {
           <SvgText
             key={`s${i}`}
             x={cx}
-            y={h * 0.535}
+            y={h * 0.555}
             fontFamily={fontFamily.display}
             fontSize={fs1}
             fontWeight="700"
@@ -132,7 +177,7 @@ export function Logo({ size = 240, tagline = true, style }: LogoProps) {
           <SvgText
             key={`p${i}`}
             x={cx}
-            y={h * 0.85}
+            y={h * 0.862}
             fontFamily={fontFamily.display}
             fontSize={fs2}
             fontWeight="700"
@@ -147,7 +192,7 @@ export function Logo({ size = 240, tagline = true, style }: LogoProps) {
           </SvgText>
         ))}
 
-        <SvgText x={w * 0.955} y={h * 0.99} fontFamily={fontFamily.body} fontSize={size * 0.045} fill={palette.navy} textAnchor="end">
+        <SvgText x={w * 0.94} y={h * 0.985} fontFamily={fontFamily.body} fontSize={size * 0.045} fill={palette.navy} textAnchor="end">
           ™
         </SvgText>
       </Svg>

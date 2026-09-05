@@ -14,7 +14,8 @@ import Animated, {
 } from 'react-native-reanimated';
 import type { MiniGameProps } from '@/minigames/types';
 import { useMiniGameSession } from '@/minigames/useMiniGameSession';
-import { hit, palette, radii, shadows, spacing, springs, timings } from '@/theme';
+import { palette, radii, shadows, spacing, springs, timings } from '@/theme';
+import { useIdleBob } from '@/hooks';
 import { sfx } from '@/services/audio';
 import { haptics } from '@/services/haptics';
 import { Button, Chip, ResetIcon, SparkleBurst, Text, TrayRow, VocabIcon } from '@/ui';
@@ -25,7 +26,7 @@ import { useGameLayout } from '../shared/layout';
 import { useBeaconLine } from '../shared/speak';
 import { useHintLadder } from '../shared/useHintLadder';
 import { useDragToSlot, type DropOutcome } from '../shared/useDragToSlot';
-import { CoinDisc, PaperBag, StallFront, stallRects } from './Stall';
+import { Bunting, CoinDisc, MarketGround, PaperBag, StallFront, stallRects } from './Stall';
 
 /* ---------------- state machine ---------------- */
 
@@ -70,27 +71,29 @@ function reducer(state: State, action: Action): State {
 
 /* ---------------- a coin you can drag OR tap ---------------- */
 
-function CoinToken({
-  index,
-  value,
-  size,
-  disabled,
-  highlight,
-  onDropCoin,
-  onTap,
-}: {
-  index: number;
+interface CoinTokenProps {
   value: number;
   size: number;
-  disabled?: boolean;
+  /** dim + ignore everything (a coin already spent) */
+  spent?: boolean;
+  /** tap still works, dragging does not (coins resting on the counter) */
+  dragDisabled?: boolean;
   highlight?: boolean;
-  onDropCoin: (slotId: string | null) => DropOutcome;
+  label: string;
+  onDropCoin?: (slotId: string | null) => DropOutcome;
   onTap: () => void;
-}) {
+}
+
+/**
+ * A coin the child can drag onto the counter — or simply tap, which is the
+ * accessibility path and how most five-year-olds actually play.
+ */
+function CoinToken({ value, size, spent, dragDisabled, highlight, label, onDropCoin, onTap }: CoinTokenProps) {
+  const noDrag = !!spent || !!dragDisabled;
   const { gesture, animatedStyle, dragging, nodeRef } = useDragToSlot({
-    disabled,
+    disabled: noDrag,
     snapRadius: 60,
-    onDrop: onDropCoin,
+    onDrop: onDropCoin ?? (() => ({ accept: false, silent: true })),
   });
 
   const composed = useMemo(
@@ -98,13 +101,13 @@ function CoinToken({
       Gesture.Race(
         gesture,
         Gesture.Tap()
-          .enabled(!disabled)
+          .enabled(!spent)
           .maxDistance(14)
           .onEnd((_e, ok) => {
             if (ok) runOnJS(onTap)();
           }),
       ),
-    [disabled, gesture, onTap],
+    [gesture, onTap, spent],
   );
 
   return (
@@ -112,9 +115,9 @@ function CoinToken({
       <Animated.View
         ref={nodeRef}
         collapsable={false}
-        accessible={!disabled}
+        accessible={!spent}
         accessibilityRole="button"
-        accessibilityLabel={`${value} coin`}
+        accessibilityLabel={label}
         style={[
           styles.coinToken,
           { width: size, height: size },
@@ -123,12 +126,8 @@ function CoinToken({
           animatedStyle,
         ]}
       >
-        <CoinDisc value={value} size={size} dim={disabled} />
-        <Animated.View
-          key={`glow-${index}`}
-          style={[styles.coinGlow, { borderRadius: size, opacity: highlight ? 1 : 0 }]}
-          pointerEvents="none"
-        />
+        <CoinDisc value={value} size={size} dim={spent} />
+        {highlight ? <View style={[styles.coinGlow, { borderRadius: size }]} pointerEvents="none" /> : null}
       </Animated.View>
     </GestureDetector>
   );
@@ -200,18 +199,22 @@ export function MarketMoney({ challenge, ageBand, onComplete, onEvent, compact }
   const itemDrop = useSharedValue(0);
   const stripShake = useSharedValue(0);
   const sparkPlay = useRef(0);
+  /** the produce breathes in its crate and the price board sways on its strings */
+  const bob = useIdleBob(3, 2600);
+  const sway = useIdleBob(1.5, 3200, 0.5);
 
-  const stall = stallRects(Math.min(layout.boxWidth - spacing.md * 2, layout.s(330)));
-  const stallWidth = Math.min(layout.boxWidth - spacing.md * 2, layout.s(330));
+  const stallWidth = Math.min(layout.boxWidth - spacing.md * 2, layout.s(352));
+  const stall = stallRects(stallWidth);
 
   const itemStyle = useAnimatedStyle(() => ({
     opacity: 1 - itemDrop.value * 0.85,
     transform: [
-      { translateY: itemDrop.value * stall.height * 0.5 },
+      { translateY: itemDrop.value * stall.height * 0.5 + bob.value * (1 - itemDrop.value) },
       { translateX: itemDrop.value * stallWidth * 0.28 },
       { scale: 1 - itemDrop.value * 0.45 },
     ],
   }));
+  const signStyle = useAnimatedStyle(() => ({ transform: [{ rotate: `${sway.value}deg` }] }));
   const bagStyle = useAnimatedStyle(() => ({
     opacity: bagPop.value,
     transform: [{ scale: 0.6 + bagPop.value * 0.4 }],
@@ -377,10 +380,10 @@ export function MarketMoney({ challenge, ageBand, onComplete, onEvent, compact }
               return (
                 <Animated.View key={index} entering={ZoomIn.delay(i * 55).springify().damping(14)}>
                   <CoinToken
-                    index={index}
                     value={value}
                     size={coinSize}
-                    disabled={spent || state.phase !== 'shopping'}
+                    label={`${value} coin`}
+                    spent={spent || state.phase !== 'shopping'}
                     highlight={hintLadder.highlight && wanted.has(index)}
                     onDropCoin={(slotId) => onDropCoin(index, slotId)}
                     onTap={() => tapPurseCoin(index)}
@@ -404,20 +407,26 @@ export function MarketMoney({ challenge, ageBand, onComplete, onEvent, compact }
       }
     >
       <View style={styles.stage}>
+        {/* ---- the market itself: bunting overhead, paving underfoot ---- */}
+        <View style={StyleSheet.absoluteFill} pointerEvents="none">
+          <Bunting width={layout.boxWidth} />
+          <MarketGround width={layout.boxWidth} />
+        </View>
+
         {/* ---- the stall ---- */}
         <View style={{ width: stallWidth, height: stall.height }}>
           <StallFront width={stallWidth} />
           <Animated.View style={[styles.abs, stall.item, itemStyle]} pointerEvents="none">
             <VocabIcon id={item.icon} size={stall.item.width} />
           </Animated.View>
-          <View style={[styles.abs, stall.sign, styles.sign]} pointerEvents="none">
+          <Animated.View style={[styles.abs, stall.sign, styles.sign, signStyle]} pointerEvents="none">
             <Text variant="tiny" color={palette.navyMuted}>
               PRICE
             </Text>
             <Text variant="h2" center style={{ lineHeight: stall.sign.height * 0.62 }}>
               {price}
             </Text>
-          </View>
+          </Animated.View>
           <Animated.View style={[styles.bag, bagStyle]} pointerEvents="none">
             <PaperBag size={layout.s(56)} />
             <SparkleBurst play={sparkPlay.current} radius={layout.s(40)} count={10} />
@@ -429,7 +438,7 @@ export function MarketMoney({ challenge, ageBand, onComplete, onEvent, compact }
           id="counter"
           enabled={state.phase === 'shopping'}
           hitPad={layout.s(14)}
-          style={[styles.counter, { width: stallWidth, minHeight: layout.s(86) }]}
+          style={[styles.counter, { width: stallWidth, minHeight: layout.s(74) }]}
         >
           <View style={styles.counterInner}>
             {state.counter.length === 0 ? (
@@ -437,23 +446,15 @@ export function MarketMoney({ challenge, ageBand, onComplete, onEvent, compact }
                 Drop your coins here
               </Text>
             ) : (
-              state.counter.map((index, i) => (
+              state.counter.map((index) => (
                 <Animated.View key={index} entering={ZoomIn.springify().damping(12)}>
                   <CoinToken
-                    index={index}
                     value={coins[index] ?? 0}
                     size={counterCoin}
-                    disabled
-                    onDropCoin={() => ({ accept: false, silent: true })}
+                    label={`Take back the ${coins[index] ?? 0} coin`}
+                    dragDisabled
                     onTap={() => takeBack(index)}
                   />
-                  <View style={StyleSheet.absoluteFill} accessible={false} pointerEvents="box-none">
-                    <Animated.View
-                      key={`tap-${i}`}
-                      style={StyleSheet.absoluteFill}
-                      onTouchEnd={() => takeBack(index)}
-                    />
-                  </View>
                 </Animated.View>
               ))
             )}
@@ -481,7 +482,7 @@ export function MarketMoney({ challenge, ageBand, onComplete, onEvent, compact }
 }
 
 const styles = StyleSheet.create({
-  stage: { alignItems: 'center', justifyContent: 'center', gap: spacing.xs },
+  stage: { flex: 1, alignSelf: 'stretch', alignItems: 'center', justifyContent: 'center', gap: spacing.xs },
   abs: { position: 'absolute' },
   sign: { alignItems: 'center', justifyContent: 'center' },
   bag: { position: 'absolute', right: 6, bottom: -6, alignItems: 'center', justifyContent: 'center' },
@@ -535,6 +536,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     minWidth: 48,
     minHeight: 48,
+    borderRadius: radii.pill,
     shadowColor: palette.navy,
     shadowOffset: { width: 0, height: 5 },
     shadowOpacity: 0.16,
@@ -542,12 +544,9 @@ const styles = StyleSheet.create({
   },
   coinHighlight: { ...shadows.glowGold },
   coinGlow: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     borderWidth: 4,
     borderColor: palette.safetyYellow,
   },
   dragging: { zIndex: 60, elevation: 14 },
 });
-
-/** keep `hit` referenced for the tap-target audit */
-export const MARKET_MIN_TARGET = hit.min;

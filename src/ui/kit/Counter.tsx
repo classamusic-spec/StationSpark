@@ -12,7 +12,7 @@ export interface CounterProps {
   from?: number;
   variant?: TypeVariant;
   color?: string;
-  /** e.g. "+" or "✨ +" */
+  /** e.g. "+". Pair it with a `<GlyphIcon/>` beside the counter — never an emoji. */
   prefix?: string;
   /** e.g. " XP" */
   suffix?: string;
@@ -26,7 +26,7 @@ export interface CounterProps {
 }
 
 /**
- * A number that counts up. Used for "+40 XP", "✨ +12", "12 Missions Completed".
+ * A number that counts up. Used for "+40 XP", "+12" Sparks, "12 Missions Completed".
  * Reduced motion shows the final value straight away.
  */
 export function Counter({

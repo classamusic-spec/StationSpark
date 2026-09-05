@@ -8,7 +8,8 @@ import { Chip, Text, Tray, TrayRow } from '@/ui';
 import { sfx } from '@/services/audio';
 import { haptics } from '@/services/haptics';
 import { speech } from '@/services/speech';
-import { CharacterPortrait } from '@/characters/CharacterPortrait';
+import { GameCrew, Pepper, Rookie } from '@/characters';
+import { Stage } from '@/world';
 import { Animal, LadderPiece, UnitWall, animalName } from '@/world/props';
 import {
   DragToken,
@@ -253,7 +254,9 @@ export function LadderBuilder({ challenge, ageBand, onComplete, onEvent, compact
   }, [hints, state.phase, state.placed.length, suggestion, target, total]);
 
   /* ---- climber + animal positions ---- */
+  /** full-rig height (the rig is drawn tall, so the box is 1.75 × the old head) */
   const rookieSize = Math.max(46, Math.min(stage.s(70), geo.ladderW * 1.15));
+  const rookieH = rookieSize * 1.75;
   const climberStyle = useAnimatedStyle(() => ({
     transform: [{ translateY: -climb.value * (geo.groundY - geo.ledgeY - rookieSize * 0.25) }],
   }));
@@ -269,6 +272,8 @@ export function LadderBuilder({ challenge, ageBand, onComplete, onEvent, compact
       onStageLayout={onLayout}
       hint={hints.bubble}
       onDismissHint={hints.dismiss}
+      backdrop={<Stage variant="park" groundHeight={150} />}
+      overlay={<GameCrew side="right" size={58} bottom={compact ? 108 : 132} mood={state.phase === 'done' ? 'cheer' : state.phase === 'climbing' ? 'happy' : 'idle'} />}
       footer={
         <View style={styles.mathRow}>
           <Text variant="h3" color={total === target ? palette.leafGreenDark : palette.navy}>
@@ -335,8 +340,15 @@ export function LadderBuilder({ challenge, ageBand, onComplete, onEvent, compact
             </View>
           ) : null}
 
-          {/* ground */}
-          <View style={[styles.ground, { top: geo.groundY, height: Math.max(0, geo.h - geo.groundY) }]} pointerEvents="none" />
+          {/* ground — a soft-lipped plane, never a hard-edged rectangle */}
+          <View style={[styles.ground, { top: geo.groundY, height: Math.max(0, geo.h - geo.groundY + 40) }]} pointerEvents="none">
+            <View style={styles.groundLip} />
+          </View>
+
+          {/* Pepper waits at the foot of the ladder */}
+          <View style={[styles.pepper, { left: Math.max(4, geo.stackX - stage.s(60)), top: geo.groundY - stage.s(62) }]} pointerEvents="none">
+            <Pepper size={stage.s(62)} emotion={state.phase === 'done' ? 'excited' : 'happy'} wag={state.phase !== 'building'} jumping={state.phase === 'done'} />
+          </View>
 
           {/* the ladder stack */}
           <Animated.View style={[styles.stack, { left: geo.stackX, width: geo.ladderW, height: geo.groundY }, stackStyle]}>
@@ -365,10 +377,16 @@ export function LadderBuilder({ challenge, ageBand, onComplete, onEvent, compact
 
           {/* Rookie climbing */}
           <Animated.View
-            style={[styles.rookie, { left: geo.stackX + geo.ladderW / 2 - rookieSize / 2, top: geo.groundY - rookieSize }, climberStyle]}
+            style={[styles.rookie, { left: geo.stackX + geo.ladderW / 2 - rookieH * 0.29, top: geo.groundY - rookieH }, climberStyle]}
             pointerEvents="none"
           >
-            <CharacterPortrait id="rookie" emotion={state.phase === 'done' ? 'proud' : 'happy'} size={rookieSize} />
+            {/* critique #23 — the full rig, never a head in a circle */}
+            <Rookie
+              size={rookieSize * 1.75}
+              emotion={state.phase === 'done' ? 'proud' : 'happy'}
+              pose={state.phase === 'climbing' ? 'cheer' : 'stand'}
+              jumping={state.phase === 'done'}
+            />
             {animalOnShoulder ? (
               <Animated.View entering={FadeIn.delay(900)} style={styles.shoulder}>
                 <Animal id={challenge.animal} size={rookieSize * 0.62} mood="happy" />
@@ -393,7 +411,16 @@ const styles = StyleSheet.create({
   },
   ledge: { position: 'absolute', height: 14, borderRadius: 7, backgroundColor: palette.wood, ...shadows.soft },
   animal: { position: 'absolute' },
-  ground: { position: 'absolute', left: 0, right: 0, backgroundColor: palette.grass },
+  ground: {
+    position: 'absolute',
+    left: -20,
+    right: -20,
+    backgroundColor: palette.grassDark,
+    borderTopLeftRadius: radii.panel * 3,
+    borderTopRightRadius: radii.panel * 3,
+  },
+  groundLip: { position: 'absolute', left: 0, right: 0, top: 0, height: 10, backgroundColor: palette.grass, borderTopLeftRadius: radii.panel * 3, borderTopRightRadius: radii.panel * 3 },
+  pepper: { position: 'absolute' },
   stack: { position: 'absolute', bottom: 0, justifyContent: 'flex-end' },
   stacked: { position: 'absolute', alignItems: 'center' },
   rookie: { position: 'absolute', alignItems: 'center' },

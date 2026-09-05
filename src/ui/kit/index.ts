@@ -7,6 +7,7 @@ export * from './Tray';
 export * from './HintBubble';
 export * from './EquipmentIcon';
 export * from './VocabIcon';
+export * from './GlyphIcon';
 export * from './BadgeArt';
 export * from './RadioCard';
 export * from './DispatchSlip';

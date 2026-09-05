@@ -3,8 +3,17 @@ import { createRng } from '@/utils/rng';
 import type { AgeBand, ChallengeKind, GeneratorContext } from '@/learning/types';
 import { challengeSkills } from '@/learning/types';
 import { validateChallenge } from '@/learning/validate';
-import { badgeById, badges, earnedSkillBadges, newlyEarnedBadges, type BadgeProgressLike } from '@/content/badges';
-import { buildDispatchBoard, dispatchBoardMissions, daySeed } from '@/content/dispatchBoard';
+import { vocabulary } from '@/learning/vocabulary';
+import {
+  badgeById,
+  badges,
+  earnedSkillBadges,
+  newlyEarnedBadges,
+  TOTAL_MISSIONS,
+  TOTAL_RECIPES,
+  type BadgeProgressLike,
+} from '@/content/badges';
+import { buildDispatchBoard, dispatchBoardMissions, daySeed, rustiestSubject, subjectPractice } from '@/content/dispatchBoard';
 import { missionById, missions, unlockedMissions } from '@/content/missions';
 import { nextRank, rankForXp, rankProgress, ranks } from '@/content/ranks';
 import { badgesForRecipes, recipeById, recipes } from '@/content/recipes';
@@ -18,11 +27,19 @@ const ALL_BADGE_IDS: BadgeId[] = [
   'spanish-speaker', 'recipe-rescuer', 'map-master', 'pattern-pro', 'team-player',
   'community-helper', 'clock-tower-cat', 'bakery-bell', 'pizza-rescue', 'park-picnic',
   'school-fair', 'clean-up-crew', 'kitchen-pro', 'ladder-legend', 'time-keeper',
+  'library-lights', 'pet-parade', 'market-helper', 'museum-detective', 'timetable-pro',
+  'rescue-exchange', 'time-traveler', 'shape-shaper', 'chef-de-station', 'bilingual-buddy',
 ];
 
 const ALL_UPGRADE_IDS: StationUpgradeId[] = [
   'kitchen-2', 'truck-bay-2', 'garden', 'library-corner', 'training-tower', 'map-room-2',
   'pet-area', 'roof-garden', 'community-table', 'flag-gold', 'bell-brass', 'mural',
+  'reading-nook', 'world-map', 'festival-lights', 'garden-pond',
+];
+
+const ALL_RECIPE_IDS = [
+  'bread', 'pancakes', 'pizza', 'smoothie', 'soup', 'tacos',
+  'quesadillas', 'fruit-salad', 'lemonade', 'garden-salsa',
 ];
 
 const BADGE_ICONS = new Set([
@@ -75,12 +92,60 @@ describe('badges', () => {
     expect(earnedSkillBadges(progress)).not.toContain('community-helper');
   });
 
-  it('awards Community Helper only after all six missions', () => {
+  it('awards Community Helper only after every mission in town', () => {
     const progress = {
       ...emptyProgress(),
       missions: Object.fromEntries(missions.map((m) => [m.id, { stars: 3 }])),
     };
     expect(earnedSkillBadges(progress)).toContain('community-helper');
+    const allButOne = {
+      ...emptyProgress(),
+      missions: Object.fromEntries(missions.slice(1).map((m) => [m.id, { stars: 3 }])),
+    };
+    expect(earnedSkillBadges(allButOne)).not.toContain('community-helper');
+  });
+
+  it('keeps its mission and recipe totals in step with the content', () => {
+    expect(TOTAL_MISSIONS).toBe(missions.length);
+    expect(TOTAL_RECIPES).toBe(recipes.length);
+  });
+
+  it('gives every mission its own badge', () => {
+    const missionBadges = missions.map((m) => m.badge);
+    expect(new Set(missionBadges).size).toBe(missions.length);
+    for (const id of missionBadges) expect(badges.some((b) => b.id === id)).toBe(true);
+  });
+
+  it('awards Time Traveller at five clocks, after Time Keeper at three', () => {
+    const three = { ...emptyProgress(), gamesPlayed: { 'clock-watch': 3 } };
+    expect(earnedSkillBadges(three)).toContain('time-keeper');
+    expect(earnedSkillBadges(three)).not.toContain('time-traveler');
+    const five = { ...emptyProgress(), gamesPlayed: { 'clock-watch': 5 } };
+    expect(earnedSkillBadges(five)).toEqual(expect.arrayContaining(['time-keeper', 'time-traveler']));
+  });
+
+  it('awards Shape Shaper after three shape games', () => {
+    const two = { ...emptyProgress(), gamesPlayed: { 'hose-path': 1, 'build-barrier': 1 } };
+    expect(earnedSkillBadges(two)).not.toContain('shape-shaper');
+    const three = { ...emptyProgress(), gamesPlayed: { 'hose-path': 1, 'build-barrier': 1, 'pizza-fractions': 1 } };
+    expect(earnedSkillBadges(three)).toContain('shape-shaper');
+  });
+
+  it('awards Chef de Station only for the whole recipe book', () => {
+    const nine = { ...emptyProgress(), recipes: recipes.slice(1).map((r) => r.id) };
+    expect(earnedSkillBadges(nine)).toContain('kitchen-pro');
+    expect(earnedSkillBadges(nine)).not.toContain('chef-de-station');
+    const all = { ...emptyProgress(), recipes: recipes.map((r) => r.id) };
+    expect(earnedSkillBadges(all)).toContain('chef-de-station');
+  });
+
+  it('awards Bilingual Buddy at thirty Spanish words', () => {
+    const words = vocabulary.slice(0, 29).map((w) => w.id);
+    expect(earnedSkillBadges({ ...emptyProgress(), words })).not.toContain('bilingual-buddy');
+    const thirty = vocabulary.slice(0, 30).map((w) => w.id);
+    expect(earnedSkillBadges({ ...emptyProgress(), words: thirty })).toEqual(
+      expect.arrayContaining(['spanish-speaker', 'bilingual-buddy']),
+    );
   });
 
   it('counts number games, fractions, ladders, hoses, routes, patterns and clocks', () => {
@@ -158,9 +223,14 @@ describe('ranks', () => {
     expect(rankProgress(5000).t).toBe(1);
   });
 
-  it('is reachable by playing the six missions a few times', () => {
+  it('is reachable by playing the town a few times', () => {
     const perRun = missions.reduce((sum, m) => sum + m.xp, 0);
-    expect(perRun).toBeGreaterThan(ranks[2]?.minXp ?? 0);
+    // One full tour of the twelve missions gets past Problem Solver…
+    expect(perRun).toBeGreaterThan(ranks[3]?.minXp ?? 0);
+    // …and the top rank still needs more than one tour, plus recipes and training.
+    expect(perRun).toBeLessThan(ranks[ranks.length - 1]?.minXp ?? 0);
+    const withKitchen = perRun + recipes.reduce((sum, r) => sum + r.xp, 0);
+    expect(withKitchen).toBeLessThan(ranks[ranks.length - 1]?.minXp ?? 0);
   });
 });
 
@@ -187,6 +257,18 @@ describe('station upgrades', () => {
     expect(affordableUpgrades(wholeTown, []).length).toBeGreaterThan(3);
   });
 
+  it('adds the four rooms the new missions unlock, in rooms that exist', () => {
+    const rooms = new Set(['kitchen', 'garage', 'yard', 'classroom', 'dispatch', 'roof', 'facade', 'badge-wall']);
+    for (const upgrade of upgrades) expect(rooms.has(upgrade.room)).toBe(true);
+    expect(upgradeById('world-map').room).toBe('dispatch');
+    expect(upgradeById('festival-lights').room).toBe('facade');
+    expect(upgradeById('reading-nook').room).toBe('classroom');
+    expect(upgradeById('garden-pond').room).toBe('yard');
+    // One tour of the town pays for the World Map the Exchange teases.
+    const wholeTown = missions.reduce((sum, m) => sum + m.sparks, 0);
+    expect(wholeTown).toBeGreaterThanOrEqual(upgradeById('world-map').cost);
+  });
+
   it('groups by room, cheapest first, and never re-sells what you own', () => {
     const kitchen = upgradesForRoom('kitchen');
     expect(kitchen.length).toBeGreaterThan(0);
@@ -199,10 +281,16 @@ describe('station upgrades', () => {
 /* ------------------------------------------------------------------ */
 
 describe('recipes', () => {
-  it('ships all six recipe ids', () => {
-    expect(recipes.map((r) => r.id).sort()).toEqual(['bread', 'pancakes', 'pizza', 'smoothie', 'soup', 'tacos']);
+  it('ships all ten recipe ids', () => {
+    expect(recipes.map((r) => r.id).sort()).toEqual([...ALL_RECIPE_IDS].sort());
+    expect(new Set(recipes.map((r) => r.id)).size).toBe(recipes.length);
     expect(recipeById('tacos')?.name).toBe('Station Tacos');
     expect(recipeById('pizza')?.steps.length).toBeGreaterThan(0);
+    expect(recipeById('garden-salsa')?.steps.length).toBeGreaterThan(0);
+  });
+
+  it('gives every recipe at least two cooking steps', () => {
+    for (const recipe of recipes) expect(recipe.steps.length).toBeGreaterThanOrEqual(2);
   });
 
   it('has a warm intro and a name in both languages', () => {
@@ -228,13 +316,20 @@ describe('recipes', () => {
     for (const recipe of recipes) {
       for (const step of recipe.steps) {
         if (step.bands && !step.bands.includes(band)) continue;
-        for (const seed of [1, 17, 88]) {
+        for (const seed of [1, 17, 88, 404, 1234]) {
           const ctx: GeneratorContext = { ageBand: band, rng: createRng(seed) };
           const challenge = step.challenge(ctx);
           expect(challenge.kind).toBe(step.game);
           expect(validateChallenge(challenge)).toEqual([]);
         }
       }
+    }
+  });
+
+  it.each(BANDS)('band %s: every recipe still has something to cook', (band) => {
+    for (const recipe of recipes) {
+      const steps = recipe.steps.filter((s) => !s.bands || s.bands.includes(band));
+      expect(steps.length).toBeGreaterThanOrEqual(2);
     }
   });
 
@@ -283,12 +378,52 @@ describe('recipes', () => {
     expect(challenge.eating).toBe(6);
   });
 
-  it('hands out Recipe Rescuer at three and Kitchen Pro at five', () => {
+  it('shares twelve quesadillas between four, and four between two for the youngest', () => {
+    const step = recipeById('quesadillas')?.steps.find((s) => s.game === 'divide-share');
+    const young = step?.challenge({ ageBand: 'A', rng: createRng(6) });
+    const older = step?.challenge({ ageBand: 'B', rng: createRng(6) });
+    if (young?.kind !== 'divide-share' || older?.kind !== 'divide-share') throw new Error('expected divide-share');
+    expect([young.total, young.among, young.each]).toEqual([8, 2, 4]);
+    expect([older.total, older.among, older.each]).toEqual([12, 4, 3]);
+    expect(older.item.id).toBe('quesadilla');
+  });
+
+  it('makes the garden salsa from tomate, cebolla, cilantro and limón', () => {
+    const step = recipeById('garden-salsa')?.steps.find((s) => s.game === 'count-ingredients');
+    const pour = recipeById('garden-salsa')?.steps.find((s) => s.game === 'measure-pour');
+    const counted = step?.challenge({ ageBand: 'C', rng: createRng(7) });
+    const poured = pour?.challenge({ ageBand: 'C', rng: createRng(7) });
+    if (counted?.kind !== 'count-ingredients' || poured?.kind !== 'measure-pour') throw new Error('unexpected kinds');
+    expect(counted.needs.map((n) => n.item.id)).toEqual(['tomato', 'onion', 'cilantro']);
+    expect(counted.spokenEs).toBe(true);
+    expect(poured.ingredient.es).toBe('limón');
+  });
+
+  it('scales the lemonade only for the oldest crew, and keeps the ratio whole', () => {
+    const scale = recipeById('lemonade')?.steps.find((s) => s.game === 'recipe-scale');
+    expect(scale?.bands).toEqual(['C']);
+    const honey = recipeById('lemonade')?.steps.filter((s) => s.game === 'measure-pour')[1];
+    const poured = honey?.challenge({ ageBand: 'B', rng: createRng(8) });
+    if (poured?.kind !== 'measure-pour') throw new Error('expected measure-pour');
+    expect(poured.target).toEqual({ num: 1, den: 4 });
+    expect(poured.unit).toBe('spoon');
+  });
+
+  it('pours, counts and shares the fruit salad for every band', () => {
+    const recipe = recipeById('fruit-salad');
+    expect(recipe?.steps.map((s) => s.game)).toEqual(['count-ingredients', 'measure-pour', 'divide-share']);
+    const counted = recipe?.steps[0]?.challenge({ ageBand: 'A', rng: createRng(9) });
+    if (counted?.kind !== 'count-ingredients') throw new Error('expected count-ingredients');
+    expect(counted.needs).toHaveLength(2);
+  });
+
+  it('hands out Recipe Rescuer at three, Kitchen Pro at five and Chef de Station at ten', () => {
     expect(badgesForRecipes(0)).toEqual([]);
     expect(badgesForRecipes(2)).toEqual([]);
     expect(badgesForRecipes(3)).toEqual(['recipe-rescuer']);
     expect(badgesForRecipes(5)).toEqual(['recipe-rescuer', 'kitchen-pro']);
     expect(badgesForRecipes(6)).toEqual(['recipe-rescuer', 'kitchen-pro']);
+    expect(badgesForRecipes(recipes.length)).toEqual(['recipe-rescuer', 'kitchen-pro', 'chef-de-station']);
   });
 });
 
@@ -326,8 +461,56 @@ describe('dispatch board', () => {
   });
 
   it('prefers missions the child has not played yet', () => {
-    const ids = board(['clock-tower-cat', 'bakery-bell', 'pizza-shop-panic', 'park-picnic'], 2);
-    expect(ids).toContain('school-fair');
+    const done = ['clock-tower-cat', 'bakery-bell', 'pizza-shop-panic', 'park-picnic'];
+    for (let seed = 1; seed <= 60; seed++) {
+      const ids = board(done, 2, seed);
+      expect(ids.some((id) => done.includes(id))).toBe(false);
+    }
+  });
+
+  it('never sends the crew to the same building twice on one board', () => {
+    // pet-shop-parade and community-cleanup share 6 Maple Street on purpose.
+    for (let seed = 1; seed <= 200; seed++) {
+      for (const size of [2, 3, 4]) {
+        for (const ageBand of BANDS) {
+          const ids = buildDispatchBoard({
+            progress: { missions: Object.fromEntries(missions.map((m) => [m.id, { stars: 3 }])) },
+            ageBand,
+            rng: createRng(seed),
+            size,
+          });
+          const locations = ids.map((id) => missionById(id)?.location);
+          expect(new Set(locations).size).toBe(locations.length);
+        }
+      }
+    }
+  });
+
+  it('leads with the subject the child has practised least', () => {
+    const played = Object.fromEntries(missions.map((m) => [m.id, { stars: 3 }]));
+    // Everything solid except Spanish, which is wobbly.
+    const mastery = {
+      counting: { attempts: 20, correct: 20 },
+      addition: { attempts: 20, correct: 20 },
+      'reading-words': { attempts: 20, correct: 20 },
+      patterns: { attempts: 20, correct: 20 },
+      'vocabulary-es': { attempts: 20, correct: 2 },
+      'listening-es': { attempts: 20, correct: 1 },
+    };
+    expect(rustiestSubject(mastery)).toBe('spanish');
+    for (let seed = 1; seed <= 40; seed++) {
+      const ids = buildDispatchBoard({ progress: { missions: played, mastery }, ageBand: 'B', rng: createRng(seed), size: 1 });
+      const first = missionById(ids[0] ?? '');
+      expect(first?.subjects).toContain('spanish');
+    }
+  });
+
+  it('reads practice as neutral until there is evidence', () => {
+    expect(rustiestSubject(undefined)).toBeUndefined();
+    expect(rustiestSubject({})).toBeUndefined();
+    const practice = subjectPractice(undefined);
+    expect(practice.math).toBe(0.5);
+    expect(practice.spanish).toBe(0.5);
   });
 
   it('then prefers the lowest star count once everything has been played', () => {
@@ -339,9 +522,11 @@ describe('dispatch board', () => {
   });
 
   it('keeps a variety of subjects on the board', () => {
-    const ids = board(missions.map((m) => m.id), 3, 7);
-    const subjects = new Set(ids.flatMap((id) => missionById(id)?.subjects ?? []));
-    expect(subjects.size).toBeGreaterThanOrEqual(4);
+    for (let seed = 1; seed <= 40; seed++) {
+      const ids = board(missions.map((m) => m.id), 3, seed);
+      const subjects = new Set(ids.flatMap((id) => missionById(id)?.subjects ?? []));
+      expect(subjects.size).toBeGreaterThanOrEqual(4);
+    }
   });
 
   it('is the same board all day and a different one tomorrow', () => {
@@ -360,9 +545,11 @@ describe('dispatch board', () => {
     expect(fromIds.every((id) => missionById(id))).toBe(true);
   });
 
-  it('resolves the board to mission definitions', () => {
+  it('resolves the board to mission definitions, in board order', () => {
     const defs = dispatchBoardMissions({ completed: [], ageBand: 'A', seed: 2, size: 3 });
     expect(defs.every((m) => (m.requires ?? []).length === 0)).toBe(true);
+    const ids = buildDispatchBoard({ completed: [], ageBand: 'A', seed: 2, size: 3 });
+    expect(defs.map((m) => m.id)).toEqual(ids);
   });
 
   it('works for every band and size', () => {

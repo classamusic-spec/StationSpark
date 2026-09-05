@@ -86,7 +86,10 @@ export function SprayPattern({ challenge, ageBand, onComplete, onEvent, compact 
 
   const choose = useCallback(
     (symbol: PatternSymbol) => {
-      if (state.phase === 'solved') return;
+      // `done` is set the moment the right tile is tapped. Without it, a second
+      // tap during the ~1.4 s victory beat was scored as a mistake and cost the
+      // child a star for a game they had already solved.
+      if (state.phase === 'solved' || done.current) return;
       sfx.play('tap');
       haptics.select();
       if (symbol === challenge.answer) {

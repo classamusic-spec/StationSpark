@@ -339,19 +339,22 @@ function PantryToken({
     onTap,
     onDrop,
   });
+  // Outer node owns the entrance (layout) animation, inner node owns the drag
+  // transform — Reanimated warns and can drop one of them if they share a node.
   return (
-    <GestureDetector gesture={drag.gesture}>
-      <Animated.View
-        entering={FadeInDown.springify().damping(15)}
-        style={[at(s, item.x, item.y, ITEM, ITEM), drag.style]}
-        accessibilityRole="button"
-        accessibilityLabel={`${item.word.en} — ${item.word.es}`}
-      >
-        <Pressable style={[styles.token, { borderRadius: 14 * s, borderWidth: 3 * s }]} onPress={onTap}>
-          <VocabIcon id={item.word.id} size={ITEM * 0.72 * s} />
-        </Pressable>
-      </Animated.View>
-    </GestureDetector>
+    <Animated.View entering={FadeInDown.springify().damping(15)} style={at(s, item.x, item.y, ITEM, ITEM)}>
+      <GestureDetector gesture={drag.gesture}>
+        <Animated.View
+          style={[styles.fill, drag.style]}
+          accessibilityRole="button"
+          accessibilityLabel={`${item.word.en} — ${item.word.es}`}
+        >
+          <Pressable style={[styles.token, { borderRadius: 14 * s, borderWidth: 3 * s }]} onPress={onTap}>
+            <VocabIcon id={item.word.id} size={ITEM * 0.72 * s} />
+          </Pressable>
+        </Animated.View>
+      </GestureDetector>
+    </Animated.View>
   );
 }
 
@@ -410,6 +413,7 @@ const styles = StyleSheet.create({
     paddingVertical: 3,
     alignSelf: 'flex-start',
   },
+  fill: { flex: 1 },
   shelf: { backgroundColor: palette.wood, width: '100%' },
   token: {
     flex: 1,

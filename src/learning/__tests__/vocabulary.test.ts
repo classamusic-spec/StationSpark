@@ -29,8 +29,28 @@ const ICON_IDS = new Set([
 const CATEGORIES = ['equipment', 'food', 'colors', 'numbers', 'places', 'actions', 'people', 'animals'] as const;
 
 describe('vocabulary bank', () => {
-  it('has at least 80 words', () => {
-    expect(vocabulary.length).toBeGreaterThanOrEqual(80);
+  it('has at least 160 words', () => {
+    expect(vocabulary.length).toBeGreaterThanOrEqual(160);
+  });
+
+  it('gives every category enough words for a four-picture question', () => {
+    for (const category of CATEGORIES) {
+      expect(wordsByCategory(category).length).toBeGreaterThanOrEqual(5);
+    }
+  });
+
+  it('knows the weather, the compass, feelings and the neighbourhood helpers', () => {
+    const spanish = new Set(vocabulary.map((w) => w.es));
+    for (const word of [
+      'nieve', 'viento', 'tormenta', // weather
+      'norte', 'sur', 'este', 'oeste', // directions
+      'feliz', 'triste', 'orgulloso', 'valiente', // feelings
+      'enfermera', 'policía', 'cartero', 'granjero', 'veterinaria', // helpers
+      'museo', 'estación de tren', 'festival', // the new places
+      'limón', 'cebolla', 'cilantro', 'tortilla', 'quesadilla', // the new food
+    ]) {
+      expect(spanish).toContain(word);
+    }
   });
 
   it('has unique ids', () => {
@@ -116,6 +136,18 @@ describe('Spanish counting phrases', () => {
     expect(countPhraseEs(5, wordById('mushroom'))).toBe('cinco champiñones');
     expect(pluralEs(wordById('first-aid'))).toBe('botiquines');
     expect(pluralEs(wordById('apple'))).toBe('manzanas');
+  });
+
+  it('gets the tricky new plurals right in both languages', () => {
+    expect(countPhraseEs(3, wordById('lemon'))).toBe('tres limones');
+    expect(countPhraseEs(2, wordById('mouse'))).toBe('dos ratones');
+    expect(countPhraseEs(4, wordById('fish'))).toBe('cuatro peces');
+    expect(countPhraseEs(1, wordById('onion'))).toBe('una cebolla');
+    expect(countPhraseEs(1, wordById('lizard'))).toBe('una lagartija');
+    expect(countPhraseEn(2, wordById('mouse'))).toBe('two mice');
+    expect(countPhraseEn(3, wordById('sheep'))).toBe('three sheep');
+    expect(countPhraseEn(5, wordById('tomato'))).toBe('five tomatoes');
+    expect(countPhraseEn(2, wordById('fish'))).toBe('two fish');
   });
 
   it('counts in English too', () => {

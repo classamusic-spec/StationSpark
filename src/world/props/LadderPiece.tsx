@@ -129,6 +129,13 @@ export function LadderRails({
  * by the caller (they need the app type scale).
  */
 export function UnitWall({ width, height, units, unitPx }: { width: number; height: number; units: number; unitPx: number }) {
+  /* critique: this is a *building*, not a tan rectangle — cornice, shaded side
+     plane, windows with sills and lintels, and a plinth at the bottom. The tick
+     column stays clear on the left so the number line still reads. */
+  const winW = Math.max(14, width * 0.2);
+  const winH = Math.max(16, Math.min(34, unitPx * 1.4));
+  const rows = Math.max(1, Math.floor((height - 60) / (winH + Math.max(16, unitPx))));
+  const colXs = [width * 0.42, width * 0.68].filter((x) => x + winW < width - 8);
   return (
     <Svg width={width} height={height}>
       <Defs>
@@ -138,6 +145,43 @@ export function UnitWall({ width, height, units, unitPx }: { width: number; heig
         </LinearGradient>
       </Defs>
       <Rect x={0} y={0} width={width} height={height} rx={14} fill="url(#ss-wall-brick)" />
+      <Rect x={0} y={0} width={width * 0.22} height={height} fill={palette.white} opacity={0.1} />
+      <Rect x={width - width * 0.16} y={0} width={width * 0.16} height={height} fill="rgba(31,42,90,0.14)" />
+
+      {/* cornice + soffit shadow */}
+      <Rect x={-6} y={0} width={width + 12} height={16} rx={8} fill={palette.engineRed} />
+      <Rect x={-6} y={12} width={width + 12} height={7} rx={3.5} fill={palette.engineRedDark} />
+      <Rect x={0} y={19} width={width} height={7} fill="rgba(31,42,90,0.14)" />
+
+      {/* windows with sills and lintels */}
+      {Array.from({ length: rows }, (_, r) =>
+        colXs.map((x, c) => {
+          const y = 44 + r * (winH + Math.max(18, unitPx));
+          if (y + winH > height - 40) return null;
+          return (
+            <React.Fragment key={`w${r}-${c}`}>
+              <Rect x={x - 4} y={y - 8} width={winW + 8} height={6} rx={3} fill={palette.creamDeep} />
+              <Rect x={x} y={y} width={winW} height={winH} rx={5} fill="#33477A" />
+              <Rect
+                x={x + winW * 0.12}
+                y={y + winH * 0.1}
+                width={winW * 0.34}
+                height={winH * 0.72}
+                rx={3}
+                fill={palette.white}
+                opacity={0.18}
+              />
+              <Rect x={x - 5} y={y + winH + 1} width={winW + 10} height={5} rx={2.5} fill="rgba(31,42,90,0.14)" />
+            </React.Fragment>
+          );
+        }),
+      )}
+
+      {/* plinth */}
+      <Rect x={0} y={height - 22} width={width} height={22} fill="rgba(31,42,90,0.08)" />
+      <Rect x={0} y={height - 24} width={width} height={5} rx={2.5} fill={palette.white} opacity={0.22} />
+
+      {/* unit ticks (the number line) */}
       {Array.from({ length: units + 1 }, (_, i) => {
         const y = height - i * unitPx;
         if (y < 0) return null;
@@ -155,7 +199,6 @@ export function UnitWall({ width, height, units, unitPx }: { width: number; heig
           />
         );
       })}
-      <Rect x={0} y={0} width={width * 0.22} height={height} fill={palette.white} opacity={0.1} />
     </Svg>
   );
 }

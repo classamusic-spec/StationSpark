@@ -81,10 +81,15 @@ export function useDragToSlot(opts: UseDragToSlotOptions) {
 
   const pickUp = useCallback(() => {
     setDragging(true);
+    // Refresh every drop target before this drag can land: the play area shifts
+    // whenever the tray loses a row, and the arena's own onLayout does not fire
+    // for that, so the registered hit rectangles would be a row out of date.
+    arena.refresh();
+    remeasure();
     sfx.play('tap-soft');
     haptics.select();
     optsRef.current.onPickUp?.();
-  }, []);
+  }, [arena, remeasure]);
 
   const settle = useCallback(
     (slotId: string | null) => {

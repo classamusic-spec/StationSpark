@@ -1,6 +1,13 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
-import Animated, { FadeInDown, ZoomIn, useAnimatedStyle, useSharedValue, withSequence, withSpring } from 'react-native-reanimated';
+import Animated, {
+  FadeInDown,
+  ZoomIn,
+  useAnimatedStyle,
+  useSharedValue,
+  withSequence,
+  withSpring,
+} from 'react-native-reanimated';
 import type { MiniGameProps } from '@/minigames/types';
 import { useMiniGameSession } from '@/minigames/useMiniGameSession';
 import { palette, radii, shadows, spacing, springs } from '@/theme';
@@ -24,7 +31,12 @@ import { kitchenFeel, useBeaconHint } from '../useKitchenGame';
 
 const CREW = ['rookie', 'bea', 'beacon', 'pepper'] as const;
 
-export function RecipeScale({ challenge, onComplete, onEvent, compact }: MiniGameProps<'recipe-scale'>) {
+export function RecipeScale({
+  challenge,
+  onComplete,
+  onEvent,
+  compact,
+}: MiniGameProps<'recipe-scale'>) {
   const session = useMiniGameSession('recipe-scale', onComplete, onEvent);
   const beacon = useBeaconHint(session);
 
@@ -38,9 +50,12 @@ export function RecipeScale({ challenge, onComplete, onEvent, compact }: MiniGam
   );
 
   useEffect(() => {
-    speech.say(`This recipe serves ${challenge.serves}, but ${challenge.eating} are eating. Fix the amounts!`, {
-      speaker: 'bea',
-    });
+    speech.say(
+      `This recipe serves ${challenge.serves}, but ${challenge.eating} are eating. Fix the amounts!`,
+      {
+        speaker: 'bea',
+      },
+    );
     return () => speech.stop();
   }, [challenge.eating, challenge.serves]);
 
@@ -74,14 +89,32 @@ export function RecipeScale({ challenge, onComplete, onEvent, compact }: MiniGam
     }
     const wrongIndex = challenge.lines.findIndex((l, i) => (values[i] ?? 0) !== l.scaled);
     const line = challenge.lines[wrongIndex];
-    setBumps((b) => b.map((v, i) => ((values[i] ?? 0) !== (challenge.lines[i]?.scaled ?? 0) ? v + 1 : v)));
+    setBumps((b) =>
+      b.map((v, i) => ((values[i] ?? 0) !== (challenge.lines[i]?.scaled ?? 0) ? v + 1 : v)),
+    );
     if (line) {
       beacon.nudge(
-        scaleExplanation(pluralEn(line.item.en, line.amount), line.amount, challenge.serves, challenge.eating, line.scaled),
+        scaleExplanation(
+          pluralEn(line.item.en, line.amount),
+          line.amount,
+          challenge.serves,
+          challenge.eating,
+          line.scaled,
+        ),
         line.item.es,
       );
     }
-  }, [allCorrect, beacon, challenge.eating, challenge.lines, challenge.serves, cooking, finish, session, values]);
+  }, [
+    allCorrect,
+    beacon,
+    challenge.eating,
+    challenge.lines,
+    challenge.serves,
+    cooking,
+    finish,
+    session,
+    values,
+  ]);
 
   const showMe = useCallback(() => {
     beacon.askedForHelp();
@@ -106,7 +139,11 @@ export function RecipeScale({ challenge, onComplete, onEvent, compact }: MiniGam
         <Text variant="h2" color={palette.engineRed}>
           →
         </Text>
-        <CrewRow label={`${challenge.eating} eating`} count={challenge.eating} extraFrom={challenge.serves} />
+        <CrewRow
+          label={`${challenge.eating} eating`}
+          count={challenge.eating}
+          extraFrom={challenge.serves}
+        />
       </View>
 
       <View style={styles.cardWrap}>
@@ -139,7 +176,9 @@ export function RecipeScale({ challenge, onComplete, onEvent, compact }: MiniGam
 
       <Tray tone="cream">
         <View style={styles.trayRow}>
-          {beacon.offerHelp && !cooking ? <Button label="Show me" tone="yellow" size="sm" onPress={showMe} sound="tap-soft" /> : null}
+          {beacon.offerHelp && !cooking ? (
+            <Button label="Show me" tone="yellow" size="sm" onPress={showMe} sound="tap-soft" />
+          ) : null}
         </View>
         <CookCTA
           label={cooking ? 'Simmering…' : 'Into the pot!'}
@@ -149,19 +188,34 @@ export function RecipeScale({ challenge, onComplete, onEvent, compact }: MiniGam
         />
       </Tray>
 
-      <HintBubble text={beacon.text} es={beacon.es} visible={beacon.visible} onDismiss={beacon.dismiss} />
+      <HintBubble
+        text={beacon.text}
+        es={beacon.es}
+        visible={beacon.visible}
+        onDismiss={beacon.dismiss}
+      />
     </View>
   );
 }
 
-function CrewRow({ label, count, extraFrom }: { label: string; count: number; extraFrom?: number }) {
+function CrewRow({
+  label,
+  count,
+  extraFrom,
+}: {
+  label: string;
+  count: number;
+  extraFrom?: number;
+}) {
   return (
     <View style={styles.crewCol}>
       <View style={styles.crewRow}>
         {Array.from({ length: Math.min(count, 8) }, (_, i) => (
           <Animated.View
             key={i}
-            entering={ZoomIn.delay(i * 50).springify().damping(13)}
+            entering={ZoomIn.delay(i * 50)
+              .springify()
+              .damping(13)}
             style={extraFrom !== undefined && i >= extraFrom ? styles.crewExtra : undefined}
           >
             <CharacterPortrait id={CREW[i % CREW.length] ?? 'rookie'} size={26} />
@@ -212,31 +266,43 @@ function ScaleLine({
 
   const numStyle = useAnimatedStyle(() => ({ transform: [{ scale: pulse.value }] }));
 
+  // Outer node owns the entrance (layout) animation, inner node owns the wobble
+  // transform — Reanimated warns and can drop one of them if they share a node.
   return (
-    <Animated.View entering={FadeInDown.delay(index * 70).springify()} style={fb.style}>
-      <View style={[styles.line, correct && styles.lineDone]}>
-        <VocabIcon id={icon} size={38} />
-        <View style={styles.lineText}>
-          <Text variant="bodyStrong" color={palette.navy} numberOfLines={1}>
-            {pluralEn(en, value)}
-          </Text>
-          <Text variant="tiny" color={palette.purple} numberOfLines={1}>
-            {es} · was {was}
-          </Text>
+    <Animated.View entering={FadeInDown.delay(index * 70).springify()}>
+      <Animated.View style={fb.style}>
+        <View style={[styles.line, correct && styles.lineDone]}>
+          <VocabIcon id={icon} size={38} />
+          <View style={styles.lineText}>
+            <Text variant="bodyStrong" color={palette.navy} numberOfLines={1}>
+              {pluralEn(en, value)}
+            </Text>
+            <Text variant="tiny" color={palette.purple} numberOfLines={1}>
+              {es} · was {was}
+            </Text>
+          </View>
+          <Stepper label="−" onPress={() => onStep(-1)} disabled={disabled || value <= 0} />
+          <Animated.View style={[styles.value, numStyle]}>
+            <Text variant="h1" color={correct ? palette.leafGreenDark : palette.navy}>
+              {value}
+            </Text>
+          </Animated.View>
+          <Stepper label="+" onPress={() => onStep(1)} disabled={disabled} />
         </View>
-        <Stepper label="−" onPress={() => onStep(-1)} disabled={disabled || value <= 0} />
-        <Animated.View style={[styles.value, numStyle]}>
-          <Text variant="h1" color={correct ? palette.leafGreenDark : palette.navy}>
-            {value}
-          </Text>
-        </Animated.View>
-        <Stepper label="+" onPress={() => onStep(1)} disabled={disabled} />
-      </View>
+      </Animated.View>
     </Animated.View>
   );
 }
 
-function Stepper({ label, onPress, disabled }: { label: string; onPress: () => void; disabled?: boolean }) {
+function Stepper({
+  label,
+  onPress,
+  disabled,
+}: {
+  label: string;
+  onPress: () => void;
+  disabled?: boolean;
+}) {
   return (
     <Pressable
       accessibilityRole="button"
@@ -255,7 +321,13 @@ function Stepper({ label, onPress, disabled }: { label: string; onPress: () => v
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
-  ratio: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm, marginTop: spacing.xs },
+  ratio: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    marginTop: spacing.xs,
+  },
   crewCol: { alignItems: 'center' },
   crewRow: { flexDirection: 'row', gap: 2 },
   crewExtra: { borderRadius: 999, borderWidth: 2, borderColor: palette.safetyYellow },
@@ -287,5 +359,11 @@ const styles = StyleSheet.create({
   },
   stepperOff: { backgroundColor: palette.lockedGrey },
   potRow: { flex: 1, alignItems: 'center', justifyContent: 'flex-end', paddingBottom: spacing.xs },
-  trayRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm, minHeight: 4 },
+  trayRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    minHeight: 4,
+  },
 });

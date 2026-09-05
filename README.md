@@ -29,15 +29,18 @@ rescue kittens, cook with the crew, and learn words in English and Spanish along
 - **The Firehouse** — a 2.5D cutaway station as the home screen. Every room is a real place: Dispatch,
   Map, Training Yard, Kitchen, Garage, Badge Wall. Clouds drift, the flag waves, the bell sways,
   pigeons hop, Pepper wags. Station upgrades bought with Sparks visibly change the building.
-- **Six story missions** (Cat in the Clock Tower, Bakery Bell, Pizza Shop Panic, Park Picnic Problem,
-  School Fair Rescue, Community Clean-Up), each 10–13 beats of dialogue, travel cinematic, mini-games,
-  a kitchen follow-up and a learning recap. Written for three age bands with different challenge
-  generation.
+- **Twelve story missions** across Spark City (Cat in the Clock Tower, Bakery Bell, Pizza Shop Panic,
+  Park Picnic Problem, Library Lights-Out, Pet Shop Parade, School Fair Rescue, Farmers Market Morning,
+  Community Clean-Up, Museum Mystery, Train Station Timetable and the Festival Rescue Exchange —
+  a visiting crew from Mexico), each 10–14 beats of dialogue, travel cinematic, mini-games, a kitchen
+  follow-up and a learning recap. Written for three age bands with different challenge generation.
+  The unlock graph fans out: two calls on day one, never more than two prerequisites.
 - **22 mini-games**: Hose Hero (Skia particle water), Water Tank, Ladder Builder, Number Ladder,
   Rescue Pets, Build the Barrier, Equipment Check, Gear Sort, Dispatch Decoder, Code the Route,
   Hydrant Match, Spray Patterns, Clock Watch, Hose Path, Firefighter Signals, Vocab Tap,
   Listen & Count, Pizza Fractions, Measure & Pour, Count Ingredients, Divide & Share, Recipe Scale.
-- **The Firehouse Kitchen** — six recipes with Spanish food vocabulary spoken aloud.
+- **The Firehouse Kitchen** — ten recipes with Spanish food vocabulary spoken aloud, from Sunday
+  pancakes to Abuela Carmen's garden salsa and Capitana Sofía's quesadillas.
 - **Spark City map**, **Training Yard**, **Garage** truck customiser (with a truck wash), **Locker**
   avatar builder, **Badge Wall** with ranks from Cadet to Community Hero, and a parent-gated
   **Grown-Ups** area with settings, a progress report and the safety card.
@@ -55,8 +58,9 @@ rescue kittens, cook with the crew, and learn words in English and Spanish along
 - Stylised, contained, friendly flames. Nobody is ever in danger. The real-world message is simple:
   *Get away from danger. Tell a grown-up. Trained grown-ups handle emergencies.*
 
-Read `docs/ART_DIRECTION.md` for the palette, shapes, characters and motion bible, and
-`docs/ARCHITECTURE.md` for the contracts every system is built on.
+Read `docs/ART_DIRECTION.md` for the palette, shapes, characters and motion bible,
+`docs/ARCHITECTURE.md` for the contracts every system is built on, and `docs/CURRICULUM.md` for the
+curriculum map — what each age band practises, in which mission, in what order.
 
 ## Tech
 

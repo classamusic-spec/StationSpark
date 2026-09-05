@@ -52,6 +52,7 @@ const loc = page.locator(`[aria-label="${label}"]`);
 console.log('count for', label, await loc.count());
 const b = await loc.first().boundingBox();
 console.log('box', JSON.stringify(b));
+console.log('deep chain:', await page.evaluate(([x,y]) => { let n = document.elementFromPoint(x,y); const out=[]; while(n && out.length<14){ out.push(`${n.tagName}[${n.getAttribute('aria-label')??''}]{${(n.className||'').toString().slice(0,24)}}`); n=n.parentElement; } return out.join(' < '); }, [b.x+b.width/2, b.y+b.height/2]));
 console.log('elementFromPoint:', await page.evaluate(([x, y]) => {
   const el = document.elementFromPoint(x, y);
   const chain = [];
@@ -63,6 +64,9 @@ console.log('elementFromPoint:', await page.evaluate(([x, y]) => {
 await loc.first().click({ force: true });
 await page.waitForTimeout(600);
 console.log('hits:', await page.evaluate(() => globalThis.__hits));
+console.log('body text after click:', (await page.evaluate(() => document.body.innerText)).replace(/\n+/g, ' | ').slice(0, 500));
+for (let i = 0; i < 3; i += 1) { await loc.first().click({ force: true }); await page.waitForTimeout(300); }
+console.log('after 3 more:', (await page.evaluate(() => document.body.innerText)).replace(/\n+/g, ' | ').slice(0, 500));
 await page.screenshot({ path: `/tmp/dbg-${kind}.png` });
 
 await browser.close();

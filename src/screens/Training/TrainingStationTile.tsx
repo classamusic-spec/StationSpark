@@ -10,45 +10,54 @@ import Animated, { FadeInDown, useAnimatedStyle, useSharedValue, withSpring } fr
 import type { MiniGameMeta, Stars } from '@/minigames/types';
 import { hit, palette, radii, shadows, spacing, springs, stagger, subjectColors, type SubjectId } from '@/theme';
 import { StarIcon } from '@/ui/icons';
+import { GlyphIcon, hasGlyph, type GlyphId } from '@/ui/kit/GlyphIcon';
 import { SubjectPill } from '@/ui/SubjectPill';
 import { Text } from '@/ui/Text';
 
-/** A big soft glyph badge in the game's subject colour. */
-function StationGlyph({ subject, glyph }: { subject: SubjectId; glyph: string }) {
+/** A big drawn station mark on a soft tile in the game's subject colour. */
+function StationGlyph({ subject, glyph }: { subject: SubjectId; glyph: GlyphId }) {
   return (
     <View style={[styles.glyph, { backgroundColor: subjectColors[subject].soft }]}>
-      <Text variant="numeral" center style={styles.glyphText}>
-        {glyph}
-      </Text>
+      <GlyphIcon id={glyph} size={52} />
     </View>
   );
 }
 
-/** Icon ids from `MiniGameMeta.icon` mapped to a glyph the yard can show. */
-const ICON_GLYPHS: Record<string, string> = {
-  hose: '💦',
-  water: '💧',
-  tank: '🫙',
-  ladder: '🪜',
-  numbers: '🔢',
-  radio: '📻',
-  equipment: '🎒',
-  gear: '🧰',
-  path: '🧩',
-  route: '🗺️',
-  hydrant: '🚰',
-  spray: '🌈',
-  clock: '🕰️',
-  pets: '🐾',
-  barrier: '🚧',
-  signals: '🚦',
-  vocab: '💬',
-  listen: '👂',
-  pizza: '🍕',
-  measure: '🥄',
-  count: '🧮',
-  share: '🍽️',
-  scale: '⚖️',
+/**
+ * Icon ids from `MiniGameMeta.icon` mapped to a drawn glyph (art critique
+ * item #21 — the yard used to carry an emoji map).
+ */
+const ICON_GLYPHS: Record<string, GlyphId> = {
+  hose: 'hose',
+  water: 'water',
+  tank: 'tank',
+  ladder: 'ladder',
+  numbers: 'numbers',
+  radio: 'radio',
+  equipment: 'equipment',
+  gear: 'gear',
+  path: 'path',
+  route: 'route',
+  hydrant: 'hydrant',
+  spray: 'spray',
+  clock: 'clock',
+  pets: 'pets',
+  barrier: 'barrier',
+  signals: 'signals',
+  vocab: 'vocab',
+  listen: 'listen',
+  pizza: 'pizza',
+  measure: 'measure',
+  count: 'count',
+  share: 'share',
+  scale: 'scale',
+  money: 'numbers',
+  shape: 'path',
+  word: 'vocab',
+  market: 'numbers',
+  truck: 'truck',
+  cone: 'cone',
+  map: 'route',
 };
 
 export interface TrainingStationTileProps {
@@ -65,7 +74,7 @@ export function TrainingStationTile({ meta, index = 0, plays = 0, stars = 0, onP
   const press = useSharedValue(0);
   const a = useAnimatedStyle(() => ({ transform: [{ scale: 1 - press.value * 0.03 }] }));
   const subject: SubjectId = meta.subjects[0] ?? 'logic';
-  const glyph = ICON_GLYPHS[meta.icon] ?? '⭐';
+  const glyph: GlyphId = ICON_GLYPHS[meta.icon] ?? (hasGlyph(meta.icon) ? (meta.icon as GlyphId) : 'star');
 
   return (
     <Animated.View
@@ -145,7 +154,6 @@ const styles = StyleSheet.create({
   head: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
   headText: { flex: 1, gap: 4, alignItems: 'flex-start' },
   glyph: { width: 64, height: 64, borderRadius: radii.tile, alignItems: 'center', justifyContent: 'center' },
-  glyphText: { lineHeight: 46 },
   blurb: { minHeight: 40 },
   foot: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   seconds: { backgroundColor: palette.creamDeep, borderRadius: radii.tag, paddingHorizontal: 10, paddingVertical: 4 },

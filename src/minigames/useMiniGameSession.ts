@@ -19,9 +19,15 @@ export function useMiniGameSession(
   const hints = useRef(0);
   const words = useRef<Set<string>>(new Set());
   const done = useRef(false);
+  /** false once the game is off screen — nearly every game finishes on a timer */
+  const mounted = useRef(true);
 
   useEffect(() => {
     startedAt.current = Date.now();
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
   }, []);
 
   /**
@@ -70,7 +76,10 @@ export function useMiniGameSession(
 
   const complete = useCallback(
     (extraSkills: SkillTag[] = []) => {
-      if (done.current) return;
+      // Every game calls complete() from a celebration timer. If the child left
+      // first, that timer must not report a result into a screen that has gone
+      // (a store write and a MINIGAME_DONE into a stopped mission actor).
+      if (done.current || !mounted.current) return;
       done.current = true;
       const penalty = mistakes.current + hints.current;
       const stars: Stars = penalty === 0 ? 3 : penalty === 1 ? 2 : 1;

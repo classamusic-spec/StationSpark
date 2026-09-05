@@ -176,10 +176,24 @@ function cssEscape(v) {
   return String(v).replace(/"/g, '\\"');
 }
 
+/**
+ * Beacon's hint bubble is a tap-to-dismiss card that floats over the tray, so
+ * while it is up the child's next tap dismisses it instead of answering. A real
+ * player does exactly this; the harness has to as well.
+ */
+async function clearHint(page) {
+  const hint = page.locator('[aria-label^="Hint: "]');
+  if ((await hint.count()) > 0) {
+    await hint.first().click({ force: true }).catch(() => {});
+    await sleep(150);
+  }
+}
+
 /** Reanimated entering animations start at opacity 0 — click regardless. */
 async function tap(page, locator, opts = {}) {
   const el = locator.first();
   await el.waitFor({ state: 'attached', timeout: opts.timeout ?? 8000 });
+  if (opts.clearHint !== false) await clearHint(page);
   await el.click({ force: true, timeout: opts.timeout ?? 8000, position: opts.position });
   await sleep(opts.after ?? 120);
 }
@@ -218,6 +232,7 @@ async function dragBetween(page, from, to, steps = 14) {
 }
 
 async function dragSel(page, fromSel, toSel) {
+  await clearHint(page);
   const a = await boxOf(page, fromSel);
   const b = await boxOf(page, toSel);
   await dragBetween(page, a, b);
@@ -856,14 +871,22 @@ async function runTraining(kind) {
 /* generic beat advancer (missions + kitchen)                           */
 /* ------------------------------------------------------------------ */
 
-async function advanceOnce(page) {
+/** kind + a cheap signature, so we can tell "same beat again" from "next beat". */
+const sigOf = (c) => (c ? `${c.kind}:${JSON.stringify(c).length}` : null);
+
+async function advanceOnce(page, seen = new Map()) {
   // a mini-game is on stage
   const challenge = await challengeOf(page);
   if (challenge && drivers[challenge.kind]) {
+    const sig = sigOf(challenge);
+    const tries = (seen.get(sig) ?? 0) + 1;
+    seen.set(sig, tries);
+    // three attempts at the same beat means the beat is stuck, not slow
+    if (tries > 3) return null;
     await sleep(600);
-    await drivers[challenge.kind](page, challenge);
+    await drivers[challenge.kind](page, challenge).catch(() => {});
     await sleep(900);
-    return 'minigame';
+    return `minigame:${challenge.kind}`;
   }
   // travel cinematic
   const skipDrive = byLabel(page, 'Skip the drive');
@@ -903,16 +926,20 @@ async function runMission() {
     await byLabel(page, 'Get ready for ', false).first().waitFor({ state: 'attached', timeout: 30000 });
 
     let stalled = 0;
-    for (let i = 0; i < 220 && stalled < 8; i += 1) {
+    const seen = new Map();
+    const trail = [];
+    for (let i = 0; i < 300 && stalled < 8; i += 1) {
       if ((await byLabel(page, 'Return to Station').count()) > 0) break;
-      const did = await advanceOnce(page);
+      const did = await advanceOnce(page, seen);
       if (did === null) {
         stalled += 1;
         await sleep(700);
       } else {
         stalled = 0;
+        if (trail[trail.length - 1] !== did) trail.push(did);
       }
     }
+    row.note = trail.join(' → ').slice(0, 200);
 
     const reward = byLabel(page, 'Return to Station');
     if ((await reward.count()) === 0) throw new Error('never reached the reward screen');
@@ -927,6 +954,7 @@ async function runMission() {
     if (!((p.words ?? []).length > 0)) problems.push('no wordsLearned recorded');
     if (problems.length) throw new Error(`store: ${problems.join('; ')}`);
     row.ok = true;
+    row.note = '';
   } catch (e) {
     row.note = String(e && e.message ? e.message : e).slice(0, 260);
     try {
@@ -983,7 +1011,7 @@ async function runShift() {
     await page.goto(`${base}/mission/pizza-shop-panic`, { waitUntil: 'domcontentloaded', timeout: 45000 });
     await byLabel(page, 'Get ready for ', false).first().waitFor({ state: 'attached', timeout: 25000 });
     await tap(page, byLabel(page, 'Get ready for ', false), { after: 900 });
-    const advanced = await advanceOnce(page);
+    const advanced = await advanceOnce(page, new Map());
     if (advanced === null) throw new Error('second play of pizza-shop-panic stalled after Get Ready');
 
     row.ok = true;

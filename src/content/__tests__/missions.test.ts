@@ -13,7 +13,7 @@ import { recipes } from '@/content/recipes';
 import type { DialogueLine, MissionBeat, MissionDef } from '@/content/types';
 
 const BANDS: AgeBand[] = ['A', 'B', 'C'];
-const SEEDS = [1, 7, 23, 99, 512];
+const SEEDS = [1, 7, 23, 99, 512, 1024, 4097, 31337];
 const KINDS = new Set(Object.keys(challengeSkills) as ChallengeKind[]);
 
 const linesOf = (beat: MissionBeat): DialogueLine[] => {
@@ -26,25 +26,39 @@ const linesOf = (beat: MissionBeat): DialogueLine[] => {
 
 const allLines = (mission: MissionDef): DialogueLine[] => mission.beats.flatMap(linesOf);
 
+const ALL_MISSION_IDS = [
+  'bakery-bell',
+  'clock-tower-cat',
+  'community-cleanup',
+  'festival-exchange',
+  'library-lights',
+  'market-morning',
+  'museum-mystery',
+  'park-picnic',
+  'pet-shop-parade',
+  'pizza-shop-panic',
+  'school-fair',
+  'train-timetable',
+];
+
 describe('mission set', () => {
-  it('ships the MVP six with unique ids', () => {
-    expect(missions).toHaveLength(6);
-    expect(new Set(missions.map((m) => m.id)).size).toBe(6);
-    expect(missions.map((m) => m.id).sort()).toEqual(
-      ['bakery-bell', 'clock-tower-cat', 'community-cleanup', 'park-picnic', 'pizza-shop-panic', 'school-fair'].sort(),
-    );
+  it('ships the twelve calls of Spark City with unique ids', () => {
+    expect(missions).toHaveLength(12);
+    expect(new Set(missions.map((m) => m.id)).size).toBe(12);
+    expect(missions.map((m) => m.id).sort()).toEqual([...ALL_MISSION_IDS].sort());
   });
 
   it('looks missions up by id', () => {
     expect(missionById('pizza-shop-panic')?.title).toBe('Pizza Shop Panic');
+    expect(missionById('festival-exchange')?.title).toBe('Festival Rescue Exchange');
     expect(missionById('nope')).toBeUndefined();
   });
 
   it('opens two missions on day one and unlocks the rest progressively', () => {
     const open = unlockedMissions([]);
     expect(open.map((m) => m.id).sort()).toEqual(['bakery-bell', 'clock-tower-cat']);
-    expect(unlockedMissions(['clock-tower-cat', 'bakery-bell']).length).toBeGreaterThan(2);
-    expect(unlockedMissions(missions.map((m) => m.id))).toHaveLength(6);
+    expect(unlockedMissions(['clock-tower-cat', 'bakery-bell']).length).toBeGreaterThan(4);
+    expect(unlockedMissions(missions.map((m) => m.id))).toHaveLength(missions.length);
   });
 
   it('only requires missions that exist, and never itself', () => {
@@ -56,12 +70,43 @@ describe('mission set', () => {
     }
   });
 
+  it('never asks for more than two missions first', () => {
+    for (const mission of missions) {
+      expect((mission.requires ?? []).length).toBeLessThanOrEqual(2);
+      expect(new Set(mission.requires ?? []).size).toBe((mission.requires ?? []).length);
+    }
+  });
+
   it('has no unreachable mission (the requires chain always resolves)', () => {
     let done: string[] = [];
     for (let pass = 0; pass < missions.length; pass++) {
       done = unlockedMissions(done).map((m) => m.id);
     }
     expect(done).toHaveLength(missions.length);
+  });
+
+  it('fans out instead of queueing: twelve missions open in five rounds', () => {
+    const rounds: number[] = [];
+    let done: string[] = [];
+    for (let pass = 0; pass < 10 && done.length < missions.length; pass++) {
+      done = unlockedMissions(done).map((m) => m.id);
+      rounds.push(done.length);
+    }
+    expect(done).toHaveLength(missions.length);
+    expect(rounds.length).toBeLessThanOrEqual(5);
+    // Day one opens two, and the second round already offers a real choice.
+    expect(rounds[0]).toBe(2);
+    expect(rounds[1]).toBeGreaterThanOrEqual(6);
+  });
+
+  it('gives every mission its own badge and a sensible reward', () => {
+    expect(new Set(missions.map((m) => m.badge)).size).toBe(missions.length);
+    for (const mission of missions) {
+      expect(mission.xp).toBeGreaterThanOrEqual(40);
+      expect(mission.xp).toBeLessThanOrEqual(50);
+      expect(mission.sparks).toBeGreaterThanOrEqual(10);
+      expect(mission.sparks).toBeLessThanOrEqual(20);
+    }
   });
 });
 
@@ -81,10 +126,21 @@ describe.each(missions)('$id', (mission: MissionDef) => {
     expect(new Set(mission.subjects).size).toBeGreaterThanOrEqual(3);
   });
 
-  it.each(BANDS)('band %s plays 8–14 beats', (band) => {
+  it.each(BANDS)('band %s plays 10–14 beats', (band) => {
     const beats = beatsForBand(mission, band);
-    expect(beats.length).toBeGreaterThanOrEqual(8);
+    expect(beats.length).toBeGreaterThanOrEqual(10);
     expect(beats.length).toBeLessThanOrEqual(14);
+  });
+
+  it.each(BANDS)('band %s gets at least four mini-games', (band) => {
+    const games = beatsForBand(mission, band).filter((b) => b.type === 'minigame');
+    expect(games.length).toBeGreaterThanOrEqual(4);
+  });
+
+  it('arrives somewhere and finishes the rescue', () => {
+    const scenes = mission.beats.filter((b) => b.type === 'scene').map((b) => (b.type === 'scene' ? b.scene : ''));
+    expect(scenes).toContain('arrive');
+    expect(scenes).toContain('rescue-complete');
   });
 
   it('mixes dialogue, travel, a mini-game and a recap', () => {
@@ -252,5 +308,133 @@ describe('story details from the design doc', () => {
     expect(challenge.bins.map((b) => b.id)).toEqual(['paper', 'plastic', 'cans']);
     expect(challenge.bins.every((b) => (b.labelEs ?? '').length > 0)).toBe(true);
     expect(challenge.items.every((i) => (i.label ?? '').length > 0)).toBe(true);
+  });
+});
+
+/* ------------------------------------------------------------------ */
+/* The six calls that grew the town                                     */
+/* ------------------------------------------------------------------ */
+
+const beatFor = (missionId: string, game: ChallengeKind, index = 0) => {
+  const found = (missionById(missionId)?.beats ?? []).filter((b) => b.type === 'minigame' && b.game === game);
+  const beat = found[index];
+  if (beat?.type !== 'minigame') throw new Error(`expected a ${game} beat in ${missionId}`);
+  return beat;
+};
+
+describe('the twelve-mission town', () => {
+  it('never puts two missions in the same room of the town, except the pet shop', () => {
+    const byLocation = new Map<string, string[]>();
+    for (const mission of missions) {
+      byLocation.set(mission.location, [...(byLocation.get(mission.location) ?? []), mission.id]);
+    }
+    for (const [location, ids] of byLocation) {
+      if (location === 'pet-shop') expect(ids.sort()).toEqual(['community-cleanup', 'pet-shop-parade']);
+      else expect(ids).toHaveLength(1);
+    }
+  });
+
+  it('covers every corner of Spark City', () => {
+    const locations = new Set(missions.map((m) => m.location));
+    for (const place of ['library', 'pet-shop', 'market', 'museum', 'train-station', 'festival']) {
+      expect(locations.has(place as (typeof missions)[number]['location'])).toBe(true);
+    }
+  });
+
+  it('reads a sentence, climbs a shelf and lights the library lamp', () => {
+    const decoder = beatFor('library-lights', 'dispatch-decoder').challenge({ ageBand: 'C', rng: createRng(3) });
+    if (decoder.kind !== 'dispatch-decoder') throw new Error('expected a dispatch-decoder');
+    expect(decoder.mode).toBe('sentence');
+    const vocab = beatFor('library-lights', 'vocab-tap').challenge({ ageBand: 'A', rng: createRng(3) });
+    if (vocab.kind !== 'vocab-tap') throw new Error('expected a vocab-tap');
+    expect(vocab.word.id).toBe('library');
+    expect(vocab.options.map((o) => o.id)).toContain('library');
+  });
+
+  it('sends the pet parade after a puppy, a bunny and a turtle by band', () => {
+    const beat = beatFor('pet-shop-parade', 'rescue-pets');
+    const animals = BANDS.map((band) => {
+      const challenge = beat.challenge({ ageBand: band, rng: createRng(5) });
+      if (challenge.kind !== 'rescue-pets') throw new Error('expected rescue-pets');
+      return challenge.animal;
+    });
+    expect(animals).toEqual(['puppy', 'bunny', 'turtle']);
+  });
+
+  it('sorts the parade baskets into three pens with Spanish labels', () => {
+    const challenge = beatFor('pet-shop-parade', 'gear-sort').challenge({ ageBand: 'A', rng: createRng(2) });
+    if (challenge.kind !== 'gear-sort') throw new Error('expected a gear-sort');
+    expect(challenge.bins.map((b) => b.id)).toEqual(['dogs', 'bunnies', 'turtles']);
+    expect(challenge.bins.every((b) => (b.labelEs ?? '').length > 0)).toBe(true);
+    for (const bin of challenge.bins) expect(challenge.items.some((i) => i.bin === bin.id)).toBe(true);
+  });
+
+  it('counts the market crates in Spanish and cooks the salsa', () => {
+    const counted = beatFor('market-morning', 'count-ingredients').challenge({ ageBand: 'C', rng: createRng(4) });
+    if (counted.kind !== 'count-ingredients') throw new Error('expected count-ingredients');
+    expect(counted.spokenEs).toBe(true);
+    expect(counted.needs.map((n) => n.item.es)).toEqual(['tomate', 'cebolla', 'limón']);
+    const kitchen = missionById('market-morning')?.beats.find((b) => b.type === 'kitchen');
+    expect(kitchen?.type === 'kitchen' && kitchen.recipe).toBe('garden-salsa');
+  });
+
+  it('finishes the museum mosaic with a rule a child can see', () => {
+    const beat = beatFor('museum-mystery', 'spray-pattern');
+    for (const band of BANDS) {
+      const challenge = beat.challenge({ ageBand: band, rng: createRng(11) });
+      if (challenge.kind !== 'spray-pattern') throw new Error('expected a spray-pattern');
+      expect(challenge.sequence[challenge.sequence.length - 1]).toBe(challenge.answer);
+      expect(challenge.sequence).toContain('star');
+      expect(challenge.sequence).toContain('cone');
+    }
+  });
+
+  it('names the streets and compares two roads to the platform', () => {
+    const beat = beatFor('train-timetable', 'rescue-route');
+    for (const band of BANDS) {
+      const challenge = beat.challenge({ ageBand: band, rng: createRng(13) });
+      if (challenge.kind !== 'rescue-route') throw new Error('expected a rescue-route');
+      expect(challenge.streetNames?.length).toBe(challenge.grid.rows);
+      expect(challenge.compareRoutes?.shorter).toBe('a');
+    }
+  });
+
+  it('runs the exchange call Spanish-first, with Beacon translating', () => {
+    const decoder = beatFor('festival-exchange', 'dispatch-decoder').challenge({ ageBand: 'B', rng: createRng(6) });
+    if (decoder.kind !== 'dispatch-decoder') throw new Error('expected a dispatch-decoder');
+    expect(decoder.messageEs).toContain('quince');
+    expect(decoder.correct).toBe('15');
+    expect([...decoder.options].sort()).toEqual(['15', '5', '51']);
+    const vocab = beatFor('festival-exchange', 'vocab-tap').challenge({ ageBand: 'B', rng: createRng(6) });
+    if (vocab.kind !== 'vocab-tap') throw new Error('expected a vocab-tap');
+    expect(vocab.promptLang).toBe('es');
+    expect(vocab.word.es).toBe('quesadilla');
+  });
+
+  it('keeps the festival grill small and contained for every band', () => {
+    const beat = beatFor('festival-exchange', 'hose-hero');
+    const flames = BANDS.map((band) => {
+      const challenge = beat.challenge({ ageBand: band, rng: createRng(9) });
+      if (challenge.kind !== 'hose-hero') throw new Error('expected a hose-hero');
+      return challenge.totalFlames;
+    });
+    expect(flames).toEqual([4, 6, 8]);
+  });
+
+  it('teases the world map in the exchange send-off', () => {
+    const mission = missionById('festival-exchange');
+    const text = (mission ? allLines(mission) : []).map((l) => `${l.text} ${l.es ?? ''}`).join(' ');
+    expect(text.toLowerCase()).toContain('world map');
+    const kitchen = mission?.beats.find((b) => b.type === 'kitchen');
+    expect(kitchen?.type === 'kitchen' && kitchen.recipe).toBe('quesadillas');
+  });
+
+  it('gives every new mission a band-restricted swap', () => {
+    for (const id of ['library-lights', 'pet-shop-parade', 'market-morning', 'museum-mystery', 'train-timetable', 'festival-exchange']) {
+      const swaps = (missionById(id)?.beats ?? []).filter((b) => b.type === 'minigame' && b.bands);
+      expect(swaps.length).toBeGreaterThanOrEqual(1);
+      const covered = new Set(swaps.flatMap((b) => (b.type === 'minigame' ? (b.bands ?? []) : [])));
+      expect([...covered].sort()).toEqual(['A', 'B', 'C']);
+    }
   });
 });

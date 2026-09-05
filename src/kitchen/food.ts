@@ -2,8 +2,9 @@
  * Kitchen food bank: the Spanish vocabulary the room teaches plus the colours
  * each pizza topping is drawn in. Pure data — no React.
  *
- * `id` values match the glyph ids in `@/ui/kit/VocabIcon` so the icon always
- * has real art (it is an emoji stub today, SVG later, same props).
+ * `icon` values are ids on the `@/ui/kit/VocabIcon` sheet — render the word with
+ * `<VocabIcon id={word.icon} />` and it is drawn art, never an emoji
+ * (art critique item #21: emoji are banned from the world layer).
  */
 import type { ToppingId, VocabWord } from '@/learning/types';
 
@@ -11,25 +12,25 @@ const food = (id: string, en: string, es: string, icon: string): VocabWord => ({
 
 /** tomate · queso · leche · agua · manzana · pan · huevo · harina · mantequilla · fresa · plátano · champiñón · pimiento · aceituna */
 export const foodWords = {
-  tomato: food('tomato', 'tomato', 'tomate', '🍅'),
-  cheese: food('cheese', 'cheese', 'queso', '🧀'),
-  milk: food('milk', 'milk', 'leche', '🥛'),
-  water: food('water', 'water', 'agua', '💧'),
-  apple: food('apple', 'apple', 'manzana', '🍎'),
-  bread: food('bread', 'bread', 'pan', '🍞'),
-  egg: food('egg', 'egg', 'huevo', '🥚'),
-  flour: food('flour', 'flour', 'harina', '🌾'),
-  butter: food('butter', 'butter', 'mantequilla', '🧈'),
-  sugar: food('sugar', 'sugar', 'azúcar', '🍬'),
-  strawberry: food('strawberry', 'strawberry', 'fresa', '🍓'),
-  banana: food('banana', 'banana', 'plátano', '🍌'),
-  mushroom: food('mushroom', 'mushroom', 'champiñón', '🍄'),
-  pepper: food('pepper', 'bell pepper', 'pimiento', '🫑'),
-  olive: food('olive', 'olive', 'aceituna', '🫒'),
-  basil: food('basil', 'basil', 'albahaca', '🌿'),
-  taco: food('taco', 'taco', 'taco', '🌮'),
-  pizza: food('pizza', 'pizza', 'pizza', '🍕'),
-  soup: food('soup', 'soup', 'sopa', '🍲'),
+  tomato: food('tomato', 'tomato', 'tomate', 'tomato'),
+  cheese: food('cheese', 'cheese', 'queso', 'cheese'),
+  milk: food('milk', 'milk', 'leche', 'milk'),
+  water: food('water', 'water', 'agua', 'water'),
+  apple: food('apple', 'apple', 'manzana', 'apple'),
+  bread: food('bread', 'bread', 'pan', 'bread'),
+  egg: food('egg', 'egg', 'huevo', 'egg'),
+  flour: food('flour', 'flour', 'harina', 'flour'),
+  butter: food('butter', 'butter', 'mantequilla', 'butter'),
+  sugar: food('sugar', 'sugar', 'azúcar', 'sugar'),
+  strawberry: food('strawberry', 'strawberry', 'fresa', 'strawberry'),
+  banana: food('banana', 'banana', 'plátano', 'banana'),
+  mushroom: food('mushroom', 'mushroom', 'champiñón', 'mushroom'),
+  pepper: food('pepper', 'bell pepper', 'pimiento', 'pepper'),
+  olive: food('olive', 'olive', 'aceituna', 'olive'),
+  basil: food('basil', 'basil', 'albahaca', 'basil'),
+  taco: food('taco', 'taco', 'taco', 'taco'),
+  pizza: food('pizza', 'pizza', 'pizza', 'pizza'),
+  soup: food('soup', 'soup', 'sopa', 'soup'),
 } as const satisfies Record<string, VocabWord>;
 
 export type FoodId = keyof typeof foodWords;

@@ -7,21 +7,38 @@ import { sfx } from '@/services/audio';
 import { haptics } from '@/services/haptics';
 import { Text } from '@/ui';
 import { useLoop, usePulse } from '@/hooks';
+import { HIGHLIGHT, SHADE, SHADOW_FILL, SHADOW_OPACITY, shadowRy } from '@/world/tone';
 
 export type RoomId = 'dispatch' | 'map' | 'training' | 'kitchen' | 'garage' | 'badges';
 
 /* ── room icons: each one is alive ────────────────────────────────── */
 
+/**
+ * One drawing language for all six (critique #7): every icon sits on the same
+ * navy contact ellipse, carries exactly one shade tone and one highlight, and
+ * is drawn — never a glyph, never an emoji.
+ */
+const GROUND = 43.5;
+
+const Shadow = ({ rx = 16, cx = 24 }: { rx?: number; cx?: number }) => (
+  <Ellipse cx={cx} cy={GROUND} rx={rx} ry={shadowRy(rx)} fill={SHADOW_FILL} opacity={SHADOW_OPACITY} />
+);
+
 const RadioBody = memo(function RadioBody({ s }: { s: number }) {
   return (
     <Svg width={s} height={s} viewBox="0 0 48 48">
-      <Rect x={13} y={4} width={4} height={10} rx={2} fill={palette.navy} />
-      <Rect x={9} y={12} width={22} height={32} rx={5} fill={palette.navy} />
-      <Rect x={12} y={16} width={16} height={9} rx={2} fill={palette.safetyYellow} />
-      <Circle cx={16} cy={31} r={2.4} fill={palette.slateLight} />
-      <Circle cx={24} cy={31} r={2.4} fill={palette.slateLight} />
-      <Circle cx={16} cy={38} r={2.4} fill={palette.slateLight} />
-      <Circle cx={24} cy={38} r={2.4} fill={palette.orange} />
+      <Shadow rx={14} cx={22} />
+      <Rect x={16} y={3} width={4} height={11} rx={2} fill={palette.charcoal} />
+      <Circle cx={18} cy={3.4} r={2.6} fill={palette.safetyYellow} />
+      <Rect x={10} y={12} width={24} height={30} rx={6} fill={palette.navy} />
+      <Rect x={26} y={14} width={7} height={26} rx={3.5} fill={SHADE} />
+      <Rect x={12} y={14} width={4} height={26} rx={2} fill={HIGHLIGHT} />
+      <Rect x={13} y={16} width={18} height={9} rx={3} fill={palette.safetyYellow} />
+      <Rect x={13} y={22} width={18} height={3} rx={1.5} fill={SHADE} />
+      <Circle cx={17} cy={31} r={2.4} fill={palette.slateLight} />
+      <Circle cx={25} cy={31} r={2.4} fill={palette.slateLight} />
+      <Circle cx={17} cy={37} r={2.4} fill={palette.slateLight} />
+      <Circle cx={25} cy={37} r={2.4} fill={palette.orange} />
     </Svg>
   );
 });
@@ -41,27 +58,46 @@ function DispatchIcon({ size }: { size: number }) {
   );
 }
 
+/**
+ * Not the folded-paper 🗺️ shape: a *survey board* of Spark City — a cream chart
+ * on a tan board with drawn asphalt, a park block and the river running
+ * through it. Reads as a hand-drawn map, not as a glyph.
+ */
 const MapBody = memo(function MapBody({ s }: { s: number }) {
   return (
     <Svg width={s} height={s} viewBox="0 0 48 48">
-      <Path d="M4 12 L17 7 L31 12 L44 7 L44 38 L31 43 L17 38 L4 43 Z" fill="#DDF0C9" />
-      <Path d="M17 7 L17 38 M31 12 L31 43" stroke="#B8D9A0" strokeWidth={2} />
-      <Path d="M4 24 Q 16 18 30 26 Q 38 30 44 25" stroke={palette.waterCyan} strokeWidth={3.4} fill="none" strokeLinecap="round" />
-      <Path d="M8 36 Q 22 30 44 33" stroke={palette.slateLight} strokeWidth={3} fill="none" strokeLinecap="round" />
+      <Shadow rx={17} />
+      <Rect x={5} y={8} width={38} height={33} rx={7} fill={palette.tanDark} />
+      <Rect x={6.5} y={9} width={35} height={29.5} rx={6} fill={palette.cream} />
+      {/* park block + river + roads, drawn not stroked-in */}
+      <Path d="M7 30 q 8 -3 14 1 q 8 4 20 0 v 6 q -1 1.5 -3 1.5 H 10 q -3 0 -3 -3 Z" fill="#B6E39A" />
+      <Path d="M6.5 20 q 8 -6 15 -1 q 7 5 20 -2 v 4 q -12 8 -20 3 q -7 -4 -15 2 Z" fill={palette.waterCyanLight} />
+      <Rect x={19} y={9} width={5} height={29.5} fill="#DDE2EF" />
+      <Rect x={6.5} y={25} width={35} height={4.4} fill="#DDE2EF" />
+      <Rect x={20.4} y={9} width={2.2} height={29.5} fill={palette.white} opacity={0.75} />
+      <Rect x={6.5} y={26.7} width={35} height={1.8} fill={palette.white} opacity={0.75} />
+      {/* two little town blocks so the plan has buildings on it */}
+      <Rect x={10} y={13} width={7} height={7} rx={2} fill={palette.tan} />
+      <Rect x={29} y={31} width={8} height={6} rx={2} fill={palette.tan} />
+      <Rect x={6.5} y={9} width={35} height={3} rx={1.5} fill={HIGHLIGHT} />
+      <Path d="M41.5 9 v29.5 q 0 1.5 -2 1.5 h -3 v -31 Z" fill={SHADE} />
     </Svg>
   );
 });
 
 function MapIcon({ size }: { size: number }) {
   const hop = usePulse(1700, 0.5);
-  const style = useAnimatedStyle(() => ({ transform: [{ translateY: -hop.value * size * 0.11 }] }));
+  const style = useAnimatedStyle(() => ({ transform: [{ translateY: -hop.value * size * 0.09 }] }));
   return (
     <View style={{ width: size, height: size }}>
       <MapBody s={size} />
       <Animated.View style={[styles.overlay, style]} pointerEvents="none">
         <Svg width={size} height={size} viewBox="0 0 48 48">
-          <Path d="M28 8 c6 0 10 4 10 10 c0 7 -10 16 -10 16 s-10 -9 -10 -16 c0 -6 4 -10 10 -10 z" fill={palette.engineRed} />
-          <Circle cx={28} cy={18} r={4} fill={palette.white} />
+          <Ellipse cx={31} cy={33.4} rx={5} ry={1.4} fill={SHADOW_FILL} opacity={0.18} />
+          <Path d="M31 9 c6 0 10 4.4 10 10 c0 7 -10 14.6 -10 14.6 s-10 -7.6 -10 -14.6 c0 -5.6 4 -10 10 -10 z" fill={palette.engineRedDark} />
+          <Path d="M31 10 c5.4 0 9 4 9 9 c0 6.2 -9 13 -9 13 s-9 -6.8 -9 -13 c0 -5 3.6 -9 9 -9 z" fill={palette.engineRed} />
+          <Path d="M31 10 c-4 0 -7 2.4 -8.4 5.6 c1.8 -2 4.4 -3.2 8.4 -3.2 z" fill={HIGHLIGHT} />
+          <Circle cx={31} cy={19} r={3.8} fill={palette.white} />
         </Svg>
       </Animated.View>
     </View>
@@ -71,12 +107,14 @@ function MapIcon({ size }: { size: number }) {
 const ConeBody = memo(function ConeBody({ s }: { s: number }) {
   return (
     <Svg width={s} height={s} viewBox="0 0 48 48">
-      <Ellipse cx={24} cy={41} rx={16} ry={3.6} fill={palette.navy} opacity={0.12} />
-      <Path d="M24 5 L36 39 L12 39 Z" fill={palette.orange} />
-      <Path d="M24 5 L30 22 L18 22 Z" fill={palette.orangeDark} opacity={0.35} />
-      <Rect x={17} y={20} width={14} height={5.4} fill={palette.white} />
-      <Rect x={14.6} y={28} width={18.8} height={5.4} fill={palette.white} />
-      <Rect x={8} y={38} width={32} height={6} rx={3} fill={palette.orangeDark} />
+      <Shadow rx={16} />
+      <Path d="M24 5 q 2.6 0 3.4 3 L 35 38 q 0.6 2 -1.6 2 H 14.6 q -2.2 0 -1.6 -2 L 20.6 8 Q 21.4 5 24 5 Z" fill={palette.orange} />
+      <Path d="M24 5 q 2.6 0 3.4 3 L 35 38 q 0.6 2 -1.6 2 H 25 Z" fill={SHADE} />
+      <Path d="M24 5 q -2.6 0 -3.4 3 L 18.6 20 h 3.2 L 24 5 Z" fill={HIGHLIGHT} />
+      <Path d="M20.8 19 h 6.4 l 1.2 5.4 h -8.8 Z" fill={palette.white} />
+      <Path d="M18.4 28 h 11.2 l 1.2 5.4 H 17.2 Z" fill={palette.white} />
+      <Rect x={8} y={37.6} width={32} height={6} rx={3} fill={palette.orangeDark} />
+      <Rect x={10} y={38.4} width={12} height={2} rx={1} fill={HIGHLIGHT} />
     </Svg>
   );
 });
@@ -94,9 +132,14 @@ function TrainingIcon({ size }: { size: number }) {
 const HatBody = memo(function HatBody({ s }: { s: number }) {
   return (
     <Svg width={s} height={s} viewBox="0 0 48 48">
+      <Shadow rx={14} />
       <Path d="M12 30 c-6 0 -8 -5 -6 -9 c-3 -5 2 -11 7 -9 c2 -5 10 -6 12 -1 c3 -4 11 -2 11 4 c5 1 6 8 1 11 c1 3 -1 4 -3 4 z" fill={palette.white} />
-      <Rect x={13} y={29} width={22} height={11} rx={3} fill="#EDF1FA" />
-      <Path d="M13 33 h22 M13 37 h22" stroke="#D6DCEC" strokeWidth={1.6} />
+      <Path d="M32 12 c4 0 6 4 5 7 c5 1 6 8 1 11 c1 3 -1 4 -3 4 h -8 c 6 -6 8 -16 5 -22 z" fill={SHADE} />
+      <Path d="M13 12 c2 -5 10 -6 12 -1 c-4 -1 -8 1 -9 4 c-2 -2 -4 -2.6 -3 -3 z" fill={HIGHLIGHT} />
+      <Path d="M13 29 h22 q 2 0 2 2 v 7 q 0 2 -2 2 H 13 q -2 0 -2 -2 v -7 q 0 -2 2 -2 z" fill="#EDF1FA" />
+      <Path d="M30 29 h5 q 2 0 2 2 v 7 q 0 2 -2 2 h -5 Z" fill={SHADE} />
+      <Rect x={12} y={32.4} width={24} height={1.8} rx={0.9} fill="#D6DCEC" />
+      <Rect x={12} y={36} width={24} height={1.8} rx={0.9} fill="#D6DCEC" />
     </Svg>
   );
 });
@@ -124,16 +167,20 @@ function KitchenIcon({ size }: { size: number }) {
 const TruckMini = memo(function TruckMini({ s }: { s: number }) {
   return (
     <Svg width={s} height={s} viewBox="0 0 48 48">
-      <Ellipse cx={24} cy={40} rx={19} ry={3.4} fill={palette.navy} opacity={0.12} />
-      <Rect x={5} y={18} width={38} height={16} rx={4} fill={palette.engineRed} />
-      <Rect x={5} y={26} width={38} height={4} fill={palette.safetyYellow} />
-      <Rect x={9} y={20} width={12} height={6} rx={2} fill="#2F5FA8" />
-      <Rect x={26} y={20} width={12} height={6} rx={2} fill="#2F5FA8" />
+      <Shadow rx={19} />
+      <Rect x={5} y={18} width={38} height={16} rx={5} fill={palette.engineRed} />
+      <Rect x={5} y={29} width={38} height={5} rx={2.5} fill={SHADE} />
+      <Rect x={5} y={19} width={38} height={3} rx={1.5} fill={HIGHLIGHT} />
+      <Rect x={5} y={25.6} width={38} height={3.6} fill={palette.safetyYellow} />
+      <Rect x={9} y={20} width={12} height={6} rx={2.5} fill="#204A86" />
+      <Rect x={9} y={20} width={12} height={3} rx={2} fill="#3C6FB4" />
+      <Rect x={26} y={20} width={12} height={6} rx={2.5} fill="#204A86" />
+      <Rect x={26} y={20} width={12} height={3} rx={2} fill="#3C6FB4" />
       <Rect x={17} y={12} width={14} height={5} rx={2.5} fill={palette.charcoal} />
-      <Circle cx={14} cy={36} r={5} fill={palette.charcoalDark} />
-      <Circle cx={34} cy={36} r={5} fill={palette.charcoalDark} />
-      <Circle cx={14} cy={36} r={2} fill={palette.slateLight} />
-      <Circle cx={34} cy={36} r={2} fill={palette.slateLight} />
+      <Circle cx={14} cy={35.4} r={5.2} fill={palette.charcoalDark} />
+      <Circle cx={34} cy={35.4} r={5.2} fill={palette.charcoalDark} />
+      <Circle cx={14} cy={35.4} r={2.2} fill={palette.slateLight} />
+      <Circle cx={34} cy={35.4} r={2.2} fill={palette.slateLight} />
     </Svg>
   );
 });
@@ -155,9 +202,13 @@ function GarageIcon({ size }: { size: number }) {
 const ShieldBody = memo(function ShieldBody({ s }: { s: number }) {
   return (
     <Svg width={s} height={s} viewBox="0 0 48 48">
-      <Path d="M24 4 L41 10 v14 c0 10 -8 17 -17 20 C15 41 7 34 7 24 V10 Z" fill={palette.navy} />
-      <Path d="M24 8 L37 12.6 v11.4 c0 8 -6.4 13.6 -13 16 C17.4 37.6 11 32 11 24 V12.6 Z" fill="#2E3C74" />
-      <Path d="M24 15 l3.4 7 7.6 1 -5.5 5.2 1.4 7.5 -6.9 -3.7 -6.9 3.7 1.4 -7.5 -5.5 -5.2 7.6 -1 z" fill={palette.safetyYellow} />
+      <Shadow rx={14} />
+      <Path d="M24 3 L41 9 v14 c0 10 -8 17 -17 20 C15 40 7 33 7 23 V9 Z" fill={palette.navy} />
+      <Path d="M24 7 L37 11.6 v11.4 c0 8 -6.4 13.6 -13 16 C17.4 36.6 11 31 11 23 V11.6 Z" fill="#2E3C74" />
+      <Path d="M24 3 L41 9 v14 c0 10 -8 17 -17 20 Z" fill={SHADE} />
+      <Path d="M24 7 L13 10.8 v3 L24 10 Z" fill={HIGHLIGHT} />
+      <Path d="M24 14 l3.4 7 7.6 1 -5.5 5.2 1.4 7.5 -6.9 -3.7 -6.9 3.7 1.4 -7.5 -5.5 -5.2 7.6 -1 z" fill={palette.gold} />
+      <Path d="M24 15.4 l2.9 6 6.4 0.9 -4.7 4.4 1.2 6.4 -5.8 -3.2 -5.8 3.2 1.2 -6.4 -4.7 -4.4 6.4 -0.9 z" fill={palette.safetyYellow} />
     </Svg>
   );
 });

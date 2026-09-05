@@ -10,6 +10,8 @@ export interface GameShellProps {
   subtitle?: string;
   es?: string;
   compact?: boolean;
+  /** scene dressing drawn behind everything (a `<Stage variant=… />`) */
+  backdrop?: React.ReactNode;
   /** the play area — the game measures it with `useMeasuredBox()` */
   onStageLayout?: (e: LayoutChangeEvent) => void;
   children?: React.ReactNode;
@@ -35,6 +37,7 @@ export function GameShell({
   subtitle,
   es,
   compact,
+  backdrop,
   onStageLayout,
   children,
   hud,
@@ -46,6 +49,7 @@ export function GameShell({
 }: GameShellProps) {
   return (
     <View style={styles.root}>
+      {backdrop}
       <View style={[styles.top, { paddingTop: compact ? spacing.xs : spacing.sm }]} pointerEvents="box-none">
         <PromptBanner title={prompt} subtitle={subtitle} es={es} compact={compact} />
         {hud}

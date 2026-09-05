@@ -19,6 +19,14 @@ interface ArenaApi {
   getSlot: (id: string) => SlotRect | undefined;
   /** re-measure notifications (arena moved / resized) */
   subscribe: (fn: () => void) => () => void;
+  /**
+   * Re-measure the arena origin and every registered slot right now.
+   * The arena's own `onLayout` only fires when the ARENA changes size, but the
+   * slots move whenever anything else reflows — a tray that loses a row as
+   * tokens are used shifts the whole play area and leaves every hit rectangle
+   * pointing at where the target used to be. Call this before a drag can land.
+   */
+  refresh: () => void;
 }
 
 const ArenaContext = createContext<ArenaApi | null>(null);
@@ -113,8 +121,8 @@ export function DragArena({ children, style }: { children: React.ReactNode; styl
   }, []);
 
   const api = useMemo<ArenaApi>(
-    () => ({ slots, hovered, origin, measureNode, putSlot, dropSlot, getSlot, subscribe }),
-    [slots, hovered, origin, measureNode, putSlot, dropSlot, getSlot, subscribe],
+    () => ({ slots, hovered, origin, measureNode, putSlot, dropSlot, getSlot, subscribe, refresh: remeasure }),
+    [slots, hovered, origin, measureNode, putSlot, dropSlot, getSlot, subscribe, remeasure],
   );
 
   return (

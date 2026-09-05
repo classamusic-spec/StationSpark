@@ -2,7 +2,7 @@ import React from 'react';
 import { StyleSheet, View } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import { palette, radii, shadows } from '@/theme';
-import { StarIcon, Text } from '@/ui';
+import { GlyphIcon, Text } from '@/ui';
 import { useGame } from '@/state/store';
 import { selectSparks, selectTotalStars } from '@/state/selectors';
 
@@ -14,13 +14,13 @@ function CounterPill({ children }: { children: React.ReactNode }) {
   );
 }
 
-/** ⭐ n — total stars earned, for the right side of a TopBar. */
+/** Star + n — total stars earned, for the right side of a TopBar. */
 export function StarCounter({ count, label }: { count?: number; label?: string }) {
   const stored = useGame(selectTotalStars);
   const value = count ?? stored;
   return (
     <CounterPill>
-      <StarIcon size={22} />
+      <GlyphIcon id="star" size={24} label="stars" />
       <Text variant="buttonSmall" color={palette.navy} style={styles.value}>
         {label ?? value}
       </Text>
@@ -28,14 +28,14 @@ export function StarCounter({ count, label }: { count?: number; label?: string }
   );
 }
 
-/** ✨ n — Sparks, the decoration currency. Only ever earned by playing. */
+/** Sparks — the decoration currency. Only ever earned by playing. Drawn mark, never an emoji. */
 export function SparksCounter({ count }: { count?: number }) {
   const stored = useGame(selectSparks);
   const value = count ?? stored;
   return (
     <CounterPill>
       <View style={styles.spark}>
-        <Text variant="small">✨</Text>
+        <GlyphIcon id="spark" size={22} label="sparks" />
       </View>
       <Text variant="buttonSmall" color={palette.navy} style={styles.value}>
         {value}

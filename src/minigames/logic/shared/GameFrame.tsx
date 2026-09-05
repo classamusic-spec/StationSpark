@@ -9,6 +9,8 @@ export interface GameFrameProps {
   subtitle?: string;
   es?: string;
   compact?: boolean;
+  /** scene dressing drawn behind everything (a `<Stage variant=… />`) */
+  backdrop?: React.ReactNode;
   /** the play area — gets all the space between the banner and the tray */
   children: React.ReactNode;
   tray?: React.ReactNode;
@@ -31,6 +33,7 @@ export function GameFrame({
   subtitle,
   es,
   compact,
+  backdrop,
   children,
   tray,
   trayTone = 'white',
@@ -41,6 +44,7 @@ export function GameFrame({
 }: GameFrameProps) {
   return (
     <DragArena style={styles.root}>
+      {backdrop}
       <View style={[styles.banner, compact && styles.bannerCompact]}>
         <PromptBanner title={title} subtitle={subtitle} es={es} compact={compact} />
       </View>

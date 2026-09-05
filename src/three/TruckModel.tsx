@@ -1,3 +1,4 @@
+/* eslint-disable react/no-unknown-property -- three.js JSX elements are declared by @react-three/fiber, not the DOM. */
 /**
  * The Station Spark fire engine, built out of Three primitives — no external
  * assets, no loaders, nothing to download.
@@ -202,7 +203,7 @@ function buildShadowMaterial(): THREE.ShaderMaterial {
   return new THREE.ShaderMaterial({
     transparent: true,
     depthWrite: false,
-    uniforms: { uColor: { value: new THREE.Color(trim.shadow) }, uOpacity: { value: 0.34 } },
+    uniforms: { uColor: { value: new THREE.Color(trim.shadow) }, uOpacity: { value: 0.46 } },
     vertexShader: /* glsl */ `
       varying vec2 vUv;
       void main() {
@@ -216,8 +217,10 @@ function buildShadowMaterial(): THREE.ShaderMaterial {
       varying vec2 vUv;
       void main() {
         float d = clamp(length(vUv - 0.5) * 2.0, 0.0, 1.0);
-        float a = 1.0 - d;
-        gl_FragColor = vec4(uColor, a * a * uOpacity);
+        // a wide ambient pool plus a tighter, darker contact core under the tyres
+        float ambient = (1.0 - d) * (1.0 - d);
+        float contact = smoothstep(0.58, 0.1, d);
+        gl_FragColor = vec4(uColor, min(1.0, ambient * 0.55 + contact * 0.5) * uOpacity);
       }
     `,
   });

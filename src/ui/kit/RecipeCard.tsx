@@ -43,7 +43,7 @@ export function RecipeCard({ title, titleEs, blurb, subjects, art, meta, locked 
             {title}
           </Text>
         </View>
-        {cooked ? <Chip label="Cooked ✓" tone="green" /> : null}
+        {cooked ? <Chip label="Cooked" tone="green" glyph="check" /> : null}
         {locked ? <Chip label="Locked" tone="cream" /> : null}
       </View>
 

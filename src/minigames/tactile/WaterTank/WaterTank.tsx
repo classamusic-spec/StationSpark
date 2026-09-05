@@ -19,6 +19,9 @@ import { haptics } from '@/services/haptics';
 import { speech } from '@/services/speech';
 import { formatFraction, speakFraction, toNumber } from '@/utils/fractions';
 import { FractionBar, PumpLever, TankShell, WaterSurface } from '@/world/props';
+import { Stage } from '@/world';
+import { PUMPER_DECK, PUMPER_VB, PumperTruck } from '@/world/scenes';
+import { GameCrew } from '@/characters';
 import { GameShell, clampNum, useClock, useHintLadder, useMeasuredBox, useSpokenPrompt, useStage } from '../shared';
 
 /* ------------------------------------------------------------------ */
@@ -200,20 +203,32 @@ export function WaterTank({ challenge, ageBand, onComplete, onEvent, compact }: 
 
   const leverStyle = useAnimatedStyle(() => ({ transform: [{ translateY: leverPress.value * 34 }] }));
 
-  /* ---- geometry ---- */
+  /* ---- geometry ----
+   * Critique #19: the tank is not a glass box floating in the sky — it is the
+   * booster tank *mounted on the engine's load deck*, with the pump lever on
+   * the truck body beside it. Everything is measured off the deck line so the
+   * two always read as one vehicle. */
   const geo = useMemo(() => {
     const w = Math.max(1, box.w);
     const h = Math.max(1, box.h);
-    const tankW = Math.min(w * 0.44, stage.s(190));
-    const tankH = Math.min(h * 0.9, stage.s(330));
-    const tankX = w * 0.56 - tankW / 2 + w * 0.06;
-    const tankY = (h - tankH) / 2;
+    const truckW = Math.min(w * 1.04, stage.s(440));
+    const truckH = truckW * (PUMPER_VB.h / PUMPER_VB.w);
+    const truckX = (w - truckW) / 2;
+    const truckY = h - truckH;
+    const deckY = truckY + truckH * (PUMPER_DECK.y / PUMPER_VB.h);
+
+    const tankW = Math.min(w * 0.36, stage.s(150));
+    const tankH = Math.min(Math.max(120, deckY - 6), stage.s(250));
+    const tankX = Math.min(truckX + truckW * 0.9 - tankW, w - tankW - 6);
+    const tankY = Math.max(0, deckY - tankH + 4);
     const inset = Math.max(6, tankW * 0.05);
-    const leverW = Math.min(w * 0.3, stage.s(112));
+    const leverW = Math.min(w * 0.21, stage.s(84));
+    const leverH = leverW * 1.3;
     return {
-      tank: { x: Math.min(tankX, w - tankW - 8), y: tankY, w: tankW, h: tankH },
+      truck: { x: truckX, y: truckY, w: truckW, h: truckH },
+      tank: { x: tankX, y: tankY, w: tankW, h: tankH },
       inner: { w: tankW - inset * 2, h: tankH - inset * 2, inset },
-      lever: { x: Math.max(8, w * 0.06), y: tankY + tankH * 0.28, w: leverW, h: leverW * 1.3 },
+      lever: { x: truckX + truckW * 0.33, y: Math.max(0, deckY - leverH), w: leverW, h: leverH },
     };
   }, [box.h, box.w, stage]);
 
@@ -233,6 +248,8 @@ export function WaterTank({ challenge, ageBand, onComplete, onEvent, compact }: 
       onStageLayout={onLayout}
       hint={hints.bubble}
       onDismissHint={hints.dismiss}
+      backdrop={<Stage variant="yard" groundHeight={150} />}
+      overlay={<GameCrew side="left" size={62} bottom={compact ? 104 : 128} showPepper mood={state.phase === 'done' ? 'cheer' : state.phase === 'confirming' ? 'happy' : 'idle'} />}
       hud={
         <View style={styles.hud}>
           <Text variant="h2">{formatFraction(target)}</Text>
@@ -281,6 +298,11 @@ export function WaterTank({ challenge, ageBand, onComplete, onEvent, compact }: 
     >
       {ready ? (
         <View style={StyleSheet.absoluteFill}>
+          {/* the engine the tank is bolted to */}
+          <View style={[styles.truck, { left: geo.truck.x, top: geo.truck.y, width: geo.truck.w }]} pointerEvents="none">
+            <PumperTruck width={geo.truck.w} />
+          </View>
+
           {/* pump lever */}
           <GestureDetector gesture={leverGesture}>
             <Animated.View
@@ -331,6 +353,7 @@ const styles = StyleSheet.create({
     borderRadius: radii.pill,
     ...shadows.soft,
   },
+  truck: { position: 'absolute' },
   lever: { position: 'absolute', alignItems: 'center' },
   pipe: { position: 'absolute', height: 14, backgroundColor: palette.slate, borderRadius: 7 },
   tank: { position: 'absolute', ...shadows.card },

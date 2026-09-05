@@ -1,6 +1,11 @@
 import type { RankDef, RankId } from './types';
 
-/** Playful, never military. XP thresholds are tuned for ~40 XP per mission. */
+/**
+ * Playful, never military. Thresholds are tuned for 40–50 XP per mission across
+ * the twelve calls of Spark City: one full tour of the town (~555 XP) reaches
+ * Problem Solver, and Community Hero lands somewhere in the second tour once
+ * recipes and the Training Yard are counted. Nothing here is ever taken away.
+ */
 export const ranks: RankDef[] = [
   { id: 'cadet', name: 'Cadet', minXp: 0, cheer: 'Welcome to Station Spark, Cadet!' },
   { id: 'helper', name: 'Helper', minXp: 80, cheer: 'You are a real Helper now!' },

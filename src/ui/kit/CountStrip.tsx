@@ -3,16 +3,23 @@ import { StyleSheet, View } from 'react-native';
 import Animated, { FadeIn, ZoomIn } from 'react-native-reanimated';
 import { palette, radii, shadows, spacing } from '@/theme';
 import { Text } from '../Text';
+import { GlyphIcon, type GlyphId } from './GlyphIcon';
 
 export type CountIcon = 'flame' | 'star' | 'drop' | 'dot' | 'paw';
 
-const glyph: Record<CountIcon, { on: string; off: string }> = {
-  flame: { on: '🔥', off: '💧' },
-  star: { on: '⭐', off: '☆' },
-  drop: { on: '💧', off: '○' },
-  dot: { on: '●', off: '○' },
-  paw: { on: '🐾', off: '○' },
+/**
+ * on  — the "done" mark; off — the "still to go" mark.
+ * All drawn (art critique item #21) — no emoji anywhere in the strip.
+ */
+const glyph: Record<CountIcon, { on: GlyphId; off: GlyphId | 'socket' }> = {
+  flame: { on: 'flame', off: 'drop' },
+  star: { on: 'star', off: 'star-empty' },
+  drop: { on: 'drop', off: 'socket' },
+  dot: { on: 'dot', off: 'socket' },
+  paw: { on: 'paw', off: 'socket' },
 };
+
+const GLYPH_SIZE = 30;
 
 /**
  * "3 / 6" progress strip with icons — done items render as `done` glyph.
@@ -37,11 +44,14 @@ export function CountStrip({
   return (
     <Animated.View entering={FadeIn} style={[styles.wrap, shadows.card]}>
       <View style={styles.row}>
-        {items.map((done, i) => (
-          <Animated.Text key={`${i}-${done}`} entering={done ? ZoomIn.springify() : undefined} style={[styles.glyph, !done && styles.dim]}>
-            {done ? (invert ? g.off : g.on) : invert ? g.on : g.off}
-          </Animated.Text>
-        ))}
+        {items.map((done, i) => {
+          const shown = done ? (invert ? g.off : g.on) : invert ? g.on : g.off;
+          return (
+            <Animated.View key={`${i}-${done}`} entering={done ? ZoomIn.springify() : undefined}>
+              <GlyphIcon id={shown} size={GLYPH_SIZE} muted={shown === 'socket'} />
+            </Animated.View>
+          );
+        })}
       </View>
       <Text variant="h2" center>
         {current} / {total}
@@ -66,6 +76,4 @@ const styles = StyleSheet.create({
     marginHorizontal: spacing.md,
   },
   row: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 6, marginBottom: 2 },
-  glyph: { fontSize: 30 },
-  dim: { opacity: 0.35 },
 });

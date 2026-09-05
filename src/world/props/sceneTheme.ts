@@ -164,7 +164,11 @@ export const sceneThemes: Record<SceneId, SceneTheme> = {
     signGlyph: 'helmet',
     wall: palette.tan,
     wallShade: palette.tanDark,
-    awning: 'none',
+    // critique #17 — the station is a shop-front like every other façade:
+    // striped awnings and sills, not a bare elevation.
+    awning: 'stripe',
+    awningA: palette.engineRed,
+    awningB: palette.white,
     signInk: palette.navy,
     door: palette.engineRed,
     doorShade: palette.engineRedDark,

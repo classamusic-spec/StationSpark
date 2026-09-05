@@ -260,17 +260,16 @@ function FoodToken({
     onTap,
     onDrop,
   });
+  // Outer node owns the entrance (layout) animation, inner node owns the drag
+  // transform — Reanimated warns and can drop one of them if they share a node.
   return (
-    <GestureDetector gesture={drag.gesture}>
-      <Animated.View
-        entering={ZoomIn.springify().damping(15)}
-        style={[at(s, x, y, ITEM, ITEM), drag.style]}
-        accessibilityRole="button"
-        accessibilityLabel={`${word.en} — ${word.es}`}
-      >
-        <VocabIcon id={word.id} size={ITEM * s} />
-      </Animated.View>
-    </GestureDetector>
+    <Animated.View entering={ZoomIn.springify().damping(15)} style={at(s, x, y, ITEM, ITEM)}>
+      <GestureDetector gesture={drag.gesture}>
+        <Animated.View style={drag.style} accessibilityRole="button" accessibilityLabel={`${word.en} — ${word.es}`}>
+          <VocabIcon id={word.id} size={ITEM * s} />
+        </Animated.View>
+      </GestureDetector>
+    </Animated.View>
   );
 }
 

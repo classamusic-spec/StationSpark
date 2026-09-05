@@ -1,19 +1,20 @@
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
-import Animated, { FadeIn, FadeInDown, runOnJS, useAnimatedStyle, useSharedValue, withSequence, withSpring, withTiming } from 'react-native-reanimated';
+import Animated, { FadeIn, FadeInDown, runOnJS, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Svg, { Circle, Ellipse, Rect } from 'react-native-svg';
-import { palette, radii, shadows, spacing, springs, timings } from '@/theme';
+import { palette, radii, shadows, spacing, timings } from '@/theme';
 import { Button, Panel, ScreenFrame, Text, TopBar } from '@/ui';
 import { sfx } from '@/services/audio';
 import { haptics } from '@/services/haptics';
 import { useGame } from '@/state/store';
 import { selectTruck } from '@/state/selectors';
 import type { TruckStyle } from '@/state/store';
-import { FireTruck, TRUCK_VB } from '@/world';
-import { Pepper } from '@/characters/Pepper';
-import { BottomBar, SegmentedPills, Swatch, useScaledLayout } from '@/screens/shared';
+import { TruckScene3D } from '@/three';
+import { Pepper, type PepperHandle } from '@/characters/Pepper';
+import { BottomBar, Swatch, useScaledLayout } from '@/screens/shared';
 import { GarageBay } from './GarageBay';
+import { PickerRow } from './PickerRow';
 
 const COLORS: { value: TruckStyle['color']; hex: string; label: string }[] = [
   { value: 'red', hex: palette.engineRed, label: 'Red' },
@@ -44,15 +45,8 @@ const HORNS: { value: TruckStyle['horn']; label: string }[] = [
 
 const hornRate: Record<TruckStyle['horn'], number> = { classic: 1, melody: 1.42, quack: 0.68 };
 
-/** Wash target: this many sponge dabs counts as sparkling. */
-const CLEAN_TARGET = 26;
-const MAX_SPOTS = 90;
-
-interface Spot {
-  x: number;
-  y: number;
-  r: number;
-}
+/** How much shine one sponge dab adds — ~28 dabs to sparkling. */
+const WASH_STEP = 0.036;
 
 function Sponge({ size = 46 }: { size?: number }) {
   return (
@@ -73,26 +67,27 @@ export function GarageScreen() {
   const setTruck = useGame((s) => s.setTruck);
 
   const [washing, setWashing] = useState(false);
-  const [spots, setSpots] = useState<Spot[]>([]);
-  const [sparkling, setSparkling] = useState(false);
-  const lastSpot = useRef<{ x: number; y: number } | null>(null);
+  const [shine, setShine] = useState(0);
+  const [honks, setHonks] = useState(0);
+  const lastDab = useRef<{ x: number; y: number } | null>(null);
+  const pepper = useRef<PepperHandle>(null);
 
-  const bounce = useSharedValue(0);
   const spongeX = useSharedValue(0);
   const spongeY = useSharedValue(0);
   const spongeOn = useSharedValue(0);
 
-  const truckWidth = Math.min(layout.contentWidth - spacing.md * 2, layout.s(340));
-  const unit = truckWidth / TRUCK_VB.w;
-  const truckHeight = TRUCK_VB.h * unit;
+  const stageWidth = Math.min(layout.contentWidth - spacing.md * 2, layout.s(400));
+  const stageHeight = Math.round(Math.min(Math.max(layout.s(292), 230), 380));
+  const sparkling = shine >= 1;
 
   const honk = useCallback(
     (style?: TruckStyle['horn']) => {
       sfx.play('horn', { rate: hornRate[style ?? truck.horn] });
       haptics.thud();
-      bounce.value = withSequence(withSpring(-10, springs.pop), withSpring(0, springs.bounce));
+      setHonks((n) => n + 1);
+      pepper.current?.jump();
     },
-    [bounce, truck.horn],
+    [truck.horn],
   );
 
   const change = useCallback(
@@ -103,25 +98,26 @@ export function GarageScreen() {
     [honk, setTruck],
   );
 
-  const addSpot = useCallback((x: number, y: number) => {
-    setSpots((prev) => {
-      const last = lastSpot.current;
-      if (last && Math.hypot(last.x - x, last.y - y) < 11) return prev;
-      lastSpot.current = { x, y };
-      if (prev.length >= MAX_SPOTS) return prev;
-      const next = [...prev, { x, y, r: 15 }];
-      if (next.length === CLEAN_TARGET) {
+  const dab = useCallback((x: number, y: number) => {
+    const last = lastDab.current;
+    if (last && Math.hypot(last.x - x, last.y - y) < 14) return;
+    lastDab.current = { x, y };
+    setShine((prev) => {
+      const next = Math.min(1, prev + WASH_STEP);
+      if (prev < 1 && next >= 1) {
         sfx.play('sparkle');
         haptics.success();
-        setSparkling(true);
       }
       return next;
     });
   }, []);
 
-  const setSponge = useCallback((on: boolean) => {
-    spongeOn.value = withTiming(on ? 1 : 0, timings.fast);
-  }, [spongeOn]);
+  const setSponge = useCallback(
+    (on: boolean) => {
+      spongeOn.value = withTiming(on ? 1 : 0, timings.fast);
+    },
+    [spongeOn],
+  );
 
   const wash = useMemo(
     () =>
@@ -132,37 +128,32 @@ export function GarageScreen() {
           spongeX.value = e.x;
           spongeY.value = e.y;
           runOnJS(setSponge)(true);
-          runOnJS(addSpot)(e.x / unit, e.y / unit);
+          runOnJS(dab)(e.x, e.y);
         })
         .onUpdate((e) => {
           spongeX.value = e.x;
           spongeY.value = e.y;
-          runOnJS(addSpot)(e.x / unit, e.y / unit);
+          runOnJS(dab)(e.x, e.y);
         })
         .onFinalize(() => {
           runOnJS(setSponge)(false);
         }),
-    [addSpot, setSponge, spongeX, spongeY, unit, washing],
+    [dab, setSponge, spongeX, spongeY, washing],
   );
 
-  const truckStyle = useAnimatedStyle(() => ({ transform: [{ translateY: bounce.value }] }));
   const spongeStyle = useAnimatedStyle(() => ({
     opacity: spongeOn.value,
     transform: [{ translateX: spongeX.value - 23 }, { translateY: spongeY.value - 16 }, { scale: 0.8 + spongeOn.value * 0.2 }],
   }));
 
   const startWash = useCallback(() => {
+    lastDab.current = null;
     if (washing) {
       setWashing(false);
-      setSpots([]);
-      setSparkling(false);
-      lastSpot.current = null;
       return;
     }
     setWashing(true);
-    setSpots([]);
-    setSparkling(false);
-    lastSpot.current = null;
+    setShine(0);
     sfx.play('splash');
     haptics.select();
   }, [washing]);
@@ -181,29 +172,36 @@ export function GarageScreen() {
             </Text>
           </Panel>
           <Text variant="small" color={palette.navy} center>
-            Make the engine yours.
+            {washing ? 'Rub the sponge to make it shine.' : 'Drag the truck to turn it around.'}
           </Text>
         </Animated.View>
 
-        {/* ── the truck ───────────────────────────────────────── */}
+        {/* ── the truck, on a turntable ────────────────────────── */}
         <View style={styles.stage}>
-          <GestureDetector gesture={wash}>
-            <Animated.View style={[{ width: truckWidth, height: truckHeight }, truckStyle]}>
-              <FireTruck truck={truck} width={truckWidth} lightsOn grime={washing} cleanSpots={spots} />
-              {/* Pepper rides shotgun */}
-              <View style={[styles.abs, { left: unit * 136, top: -unit * 16 }]} pointerEvents="none">
-                <Pepper size={Math.max(52, unit * 62)} emotion="happy" wag />
-              </View>
-              <Animated.View style={[styles.abs, styles.sponge, spongeStyle]} pointerEvents="none">
-                <Sponge />
-              </Animated.View>
-            </Animated.View>
-          </GestureDetector>
+          <View style={{ width: stageWidth, height: stageHeight }}>
+            <TruckScene3D style={truck} height={stageHeight} honk={honks} shine={shine} testID="garage-truck-3d" />
+
+            {/* Pepper stands beside the engine, watching the work */}
+            <View style={[styles.abs, styles.pepper]} pointerEvents="none">
+              <Pepper ref={pepper} size={Math.max(56, stageHeight * 0.28)} emotion="happy" wag />
+            </View>
+
+            {/* the sponge takes the stage while the child is washing */}
+            {washing ? (
+              <GestureDetector gesture={wash}>
+                <Animated.View style={StyleSheet.absoluteFill}>
+                  <Animated.View style={[styles.abs, styles.sponge, spongeStyle]} pointerEvents="none">
+                    <Sponge />
+                  </Animated.View>
+                </Animated.View>
+              </GestureDetector>
+            ) : null}
+          </View>
 
           {washing ? (
             <Animated.View entering={FadeIn} style={styles.washHint}>
               <Text variant="small" color={palette.navy} center>
-                {sparkling ? '✨ Sparkling clean! Great job.' : 'Rub the sponge over the truck to make it shine!'}
+                {sparkling ? 'Sparkling clean! Great job.' : 'Rub the sponge over the truck to make it shine!'}
               </Text>
             </Animated.View>
           ) : null}
@@ -224,13 +222,13 @@ export function GarageScreen() {
           </View>
 
           <Text variant="h3">Decal</Text>
-          <SegmentedPills options={DECALS} value={truck.decal} onChange={(v) => change({ decal: v })} />
+          <PickerRow options={DECALS} value={truck.decal} onChange={(v) => change({ decal: v })} />
 
           <Text variant="h3">Lights</Text>
-          <SegmentedPills options={LIGHTS} value={truck.lights} onChange={(v) => change({ lights: v })} tone="#3E8FE0" />
+          <PickerRow options={LIGHTS} value={truck.lights} onChange={(v) => change({ lights: v })} tone="#3E8FE0" />
 
           <Text variant="h3">Horn</Text>
-          <SegmentedPills options={HORNS} value={truck.horn} onChange={(v) => change({ horn: v })} tone={palette.gold} />
+          <PickerRow options={HORNS} value={truck.horn} onChange={(v) => change({ horn: v })} tone={palette.gold} />
         </Panel>
 
         <View style={styles.footerSpace} />
@@ -248,6 +246,7 @@ const styles = StyleSheet.create({
   banner: { paddingHorizontal: spacing.lg, minWidth: 190 },
   stage: { alignItems: 'center', gap: spacing.sm },
   abs: { position: 'absolute' },
+  pepper: { left: 2, bottom: 0 },
   sponge: { left: 0, top: 0 },
   washHint: {
     backgroundColor: 'rgba(255,255,255,0.9)',
