@@ -113,6 +113,44 @@ export function SomeScreen() {
   );
 }
 ```
+
+## Activity skeleton (every mini-game, kitchen game and mission beat)
+
+An *activity* is anything a child plays. All 25 of them share one shape, so a
+child who learns to read one screen can read them all:
+
+```
+  top     TaskBar   — back · the task · hear-it-again · progress dots
+  middle  play area — everything else gives it room
+  bottom  controls  — answers, tools, "done" (a side rail ≥ 900 px wide)
+```
+
+- **`src/ui/kit/TaskBar.tsx` is THE one instruction area.** Nothing else on an
+  activity screen may restate the task — not a banner, not a speech bubble, not
+  a host's own header. Captain Bea's bubble is reserved for *hints and
+  reactions*, which is what makes it worth reading when it appears.
+- **`src/ui/kit/ActivityFrame.tsx`** lays out that shape and owns the safe-area
+  inset. `GameFrame` (logic games) and `GameShell` (tactile games) are thin
+  adapters over it — change the shape here, not in 25 game files.
+- **`src/ui/kit/activityChrome.tsx`** lets the *host* (TrainingPlayScreen,
+  MissionRunner, KitchenRunner) supply back / replay / progress to the game's
+  TaskBar through context, so hosts draw no bar of their own. This is what
+  makes one bar possible without threading three props through every game.
+- **`src/theme/roles.ts` — reach for a semantic role, not a palette colour.**
+  `roles.action.primary` (exactly one per screen), `roles.state.retryFill`
+  (warm, never red), `roles.surface.card` / `.control` (two surfaces by
+  default; a third only when the *learning task* needs the structure),
+  `roles.lift.interactive` (things a child can touch sit up; scenery lies
+  flat). `activity` in the same file holds the chrome measurements.
+- **State is never colour alone.** `AnswerTile` carries a drawn mark and an
+  `accessibilityState` as well as its fill.
+- **Spanish outside a Spanish lesson is a setting**, not a default: chrome asks
+  `useShowTranslation()` before printing a second line. It is always *spoken*
+  either way.
+- **Tablets get a bigger activity, not wider chrome.** Past
+  `activity.sideLayoutMinWidth` the controls become a rail beside the play area.
+  Boards use `layout.gridWidth`/`layout.columns()`; reading columns stay at
+  `layout.contentWidth`.
 Routes: `app/index.tsx` (Firehouse), `app/dispatch.tsx`, `app/mission/[id].tsx`, `app/map.tsx`, `app/training/index.tsx`, `app/training/[kind].tsx`, `app/kitchen/index.tsx`, `app/kitchen/[recipe].tsx`, `app/garage.tsx`, `app/badges.tsx`, `app/locker.tsx`, `app/grownups.tsx`, `app/onboarding.tsx`, `app/dev/gallery.tsx`.
 
 ## Pass-2 systems (art pass, QA, 3D, new games)
