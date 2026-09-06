@@ -48,3 +48,6 @@ yarn-error.*
 /tools/qa/out
 /tools/qa/.tmp
 /tools/qa/out2
+
+# one-off scratch drivers a harness run leaves behind
+*.tmp.mjs
