@@ -92,7 +92,7 @@ export function TrainingPlayScreen({ kind }: { kind: string }) {
 
   return (
     <ScreenFrame mood="day" safeTop={false} safeBottom={false}>
-      <View style={[styles.body, { paddingTop: insets.top + spacing.xs }]}>
+      <View style={styles.body}>
         {beat ? (
           <ActivityChromeProvider value={chromeValue}>
             <MiniGameStage

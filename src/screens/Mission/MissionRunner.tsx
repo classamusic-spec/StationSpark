@@ -34,7 +34,7 @@ import { sfx } from '@/services/audio';
 import { haptics } from '@/services/haptics';
 import { speech } from '@/services/speech';
 import { useGame } from '@/state/store';
-import { Button, Panel, RoundIconButton, ScreenFrame, Text, TopBar } from '@/ui';
+import { ActivityChromeProvider, Button, Panel, RoundIconButton, ScreenFrame, Text, TopBar } from '@/ui';
 import { BackIcon, ChevronRightIcon } from '@/ui/icons';
 import { GlyphIcon, StarRow } from '@/ui/kit';
 import { CelebrationOverlay, DialogueOverlay } from '@/characters';
@@ -158,8 +158,26 @@ export function MissionRunner({ mission }: MissionRunnerProps) {
     return mission.scene;
   }, [beat, mission.scene]);
 
-  const showChrome = state !== 'complete' && state !== 'reward' && state !== 'done';
+  /*
+   * A mini-game draws its own TaskBar with back and progress in it, so the
+   * mission chrome stands down for that beat. Otherwise the child met three
+   * stacked bars — top bar, beat strip, task bar — before seeing the game.
+   */
+  const activityBeat = state === 'minigame';
+  const showChrome = state !== 'complete' && state !== 'reward' && state !== 'done' && !activityBeat;
   const showHud = HUD_STATES.has(state);
+
+  /* What the game's own TaskBar shows: quit on the left, beats as progress dots. */
+  const activityChrome = useMemo(
+    () => ({
+      onBack: () => {
+        setQuitOpen(true);
+        haptics.select();
+      },
+      progress: { done: ctx.beatIndex, total: beats.length },
+    }),
+    [beats.length, ctx.beatIndex],
+  );
   const bodyTop = showChrome ? insets.top + 8 + 56 + (showHud ? 42 : 8) : 0;
 
   const chrome = showChrome ? (
@@ -210,15 +228,17 @@ export function MissionRunner({ mission }: MissionRunnerProps) {
     );
   } else if (state === 'minigame' && beat?.type === 'minigame') {
     body = (
-      <MiniGameStage
-        key={`mg-${ctx.beatIndex}`}
-        beat={beat}
-        ageBand={ageBand}
-        scene={mission.scene}
-        seed={sessionSeed + ctx.beatIndex * 7919}
-        missionContext={{ locationName: mission.title, npcName: mission.npcName }}
-        onComplete={onMiniGameDone}
-      />
+      <ActivityChromeProvider value={activityChrome}>
+        <MiniGameStage
+          key={`mg-${ctx.beatIndex}`}
+          beat={beat}
+          ageBand={ageBand}
+          scene={mission.scene}
+          seed={sessionSeed + ctx.beatIndex * 7919}
+          missionContext={{ locationName: mission.title, npcName: mission.npcName }}
+          onComplete={onMiniGameDone}
+        />
+      </ActivityChromeProvider>
     );
   } else if (state === 'travel' && beat?.type === 'travel') {
     body = <TravelCinematic key={`tr-${ctx.beatIndex}`} from={beat.from} to={beat.to} onDone={() => send({ type: 'NEXT' })} />;

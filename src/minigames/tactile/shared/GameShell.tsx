@@ -1,5 +1,6 @@
 import React, { useCallback, useState } from 'react';
 import { StyleSheet, View, useWindowDimensions, type LayoutChangeEvent } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { TaskBar } from '@/ui';
 import { activity, spacing } from '@/theme';
 import { CaptainHint } from './CaptainHint';
@@ -61,6 +62,7 @@ export function GameShell({
   onDismissHint,
 }: GameShellProps) {
   const { width } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
   const side = width >= activity.sideLayoutMinWidth && !!tray;
 
   const [trayH, setTrayH] = useState(0);
@@ -72,7 +74,7 @@ export function GameShell({
   return (
     <View style={styles.root}>
       {backdrop}
-      <View style={[styles.top, { paddingTop: compact ? spacing.xs : spacing.sm }]} pointerEvents="box-none">
+      <View style={[styles.top, { paddingTop: insets.top + (compact ? spacing.xs : spacing.sm) }]} pointerEvents="box-none">
         <TaskBar
           task={prompt}
           detail={subtitle}

@@ -1,5 +1,6 @@
 import React, { useCallback, useState } from 'react';
 import { StyleSheet, View, useWindowDimensions, type LayoutChangeEvent, type StyleProp, type ViewStyle } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { activity, spacing } from '@/theme';
 import { HintBubble } from './HintBubble';
 import { TaskBar } from './TaskBar';
@@ -62,6 +63,7 @@ export function ActivityFrame({
   playStyle,
 }: ActivityFrameProps) {
   const { width } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
   const side = width >= activity.sideLayoutMinWidth && !!controls;
 
   /* Measure the controls so the hint bubble can sit above them. */
@@ -83,6 +85,8 @@ export function ActivityFrame({
     <View style={styles.root}>
       {backdrop}
 
+      {/* the bar clears the notch itself, so hosts need no top chrome at all */}
+      <View style={{ height: insets.top }} pointerEvents="none" />
       <TaskBar
         task={task}
         detail={detail}
