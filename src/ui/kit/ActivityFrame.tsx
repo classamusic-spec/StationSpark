@@ -110,9 +110,27 @@ export function ActivityFrame({
         </>
       )}
 
+      {/*
+        The hint stands under the play area, never over it. With the controls
+        beneath, the lane stops at their top edge and the bubble lifts itself
+        clear of the tray. With the controls in a rail *beside* the play area
+        there is nothing to lift over — and the rail is full height, so letting
+        the bubble measure against it threw it into the middle of the play area,
+        across the Clock Watch dial. So on a rail layout the lane ends where the
+        play column ends, and the bubble simply sits at its foot.
+      */}
       {hint ? (
-        <View style={[styles.hintLane, { bottom: side ? spacing.md : controlsH }]} pointerEvents="box-none">
-          <HintBubble text={hint.text} es={hint.es} visible={hint.visible} onDismiss={hint.onDismiss} />
+        <View
+          style={[styles.hintLane, side ? styles.hintLaneSide : { bottom: controlsH }]}
+          pointerEvents="box-none"
+        >
+          <HintBubble
+            text={hint.text}
+            es={hint.es}
+            visible={hint.visible}
+            onDismiss={hint.onDismiss}
+            placement={side ? 'bottom' : 'auto'}
+          />
         </View>
       ) : null}
 
@@ -127,6 +145,11 @@ const styles = StyleSheet.create({
   play: { flex: 1, justifyContent: 'flex-end', paddingTop: activity.playGutter },
   rail: { width: activity.sidePanelWidth, justifyContent: 'center' },
   hintLane: { position: 'absolute', left: 0, right: 0, zIndex: 20 },
+  /* stop at the play column's edge: the rail is not the bubble's to cover */
+  hintLaneSide: {
+    right: activity.sidePanelWidth + spacing.sm * 2,
+    bottom: spacing.md,
+  },
 });
 
 /** True when the current window is wide enough for the side-rail activity layout. */

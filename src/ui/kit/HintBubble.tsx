@@ -21,8 +21,12 @@ export interface HintBubbleProps {
    * `auto` (default) sits at the bottom of whatever container it is given and
    * then lifts itself clear of the `<Tray/>` if — and only if — it would
    * actually overlap it. `top` pins it to the top of the play area instead.
+   * `bottom` sits at the bottom and does NOT lift — for the tablet layout,
+   * where the tray is a rail *beside* the play area rather than under it, so
+   * there is nothing to clear. Measuring against a full-height rail put the
+   * bubble in the middle of the play area, across the Clock Watch dial.
    */
-  placement?: 'auto' | 'top';
+  placement?: 'auto' | 'top' | 'bottom';
   /** extra px between the bubble and the edge it is clearing */
   offset?: number;
   /** set false to keep the bubble up until it is tapped */
@@ -74,7 +78,7 @@ export function HintBubble({
 
   const measure = useCallback(
     (_e: LayoutChangeEvent) => {
-      if (placement === 'top' || !Number.isFinite(tray.top)) return;
+      if (placement !== 'auto' || !Number.isFinite(tray.top)) return;
       const node = ref.current;
       if (!node?.measureInWindow) return;
       node.measureInWindow((_x, y, _w, h) => {
@@ -97,7 +101,11 @@ export function HintBubble({
    */
   const blindLift = Number.isFinite(tray.top) ? lift : tray.height;
   const anchor =
-    placement === 'top' ? { top: offset + spacing.sm } : { bottom: offset + blindLift };
+    placement === 'top'
+      ? { top: offset + spacing.sm }
+      : placement === 'bottom'
+        ? { bottom: offset }
+        : { bottom: offset + blindLift };
 
   return (
     <Animated.View
