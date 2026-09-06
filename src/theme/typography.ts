@@ -31,3 +31,34 @@ export const typeScale = {
 } as const satisfies Record<string, TextStyle>;
 
 export type TypeVariant = keyof typeof typeScale;
+
+/**
+ * How far the OS text-size setting may grow each variant.
+ *
+ * Refusing to scale at all is the easy answer and the wrong one: a child (or
+ * the grown-up reading the report over their shoulder) who has turned their
+ * device's text up has asked for something, and this type is already large
+ * enough to absorb some of it. But an uncapped 2× would break every fitted
+ * thing in the app, so the cap goes where the room is.
+ *
+ * Small copy, which is what a low-vision reader actually struggles with, gets
+ * the most headroom. The big display faces are already huge and get least —
+ * growing a 64 px numeral by half would burst the tile it sits in. Anything
+ * measured against artwork can still pass its own multiplier, or opt out with
+ * `allowFontScaling={false}`.
+ */
+export const fontScaleCap = {
+  hero: 1.1,
+  display: 1.1,
+  h1: 1.15,
+  h2: 1.2,
+  h3: 1.25,
+  button: 1.15,
+  buttonSmall: 1.25,
+  body: 1.35,
+  bodyStrong: 1.35,
+  small: 1.45,
+  tiny: 1.5,
+  numeral: 1.1,
+  numeralBig: 1.05,
+} as const satisfies Record<TypeVariant, number>;

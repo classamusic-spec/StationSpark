@@ -1,6 +1,6 @@
 import React from 'react';
 import { Text as RNText, StyleSheet, type TextProps, type TextStyle } from 'react-native';
-import { palette, typeScale, type TypeVariant } from '@/theme';
+import { fontScaleCap, palette, typeScale, type TypeVariant } from '@/theme';
 
 export interface SparkTextProps extends TextProps {
   variant?: TypeVariant;
@@ -10,12 +10,20 @@ export interface SparkTextProps extends TextProps {
   outlined?: boolean;
 }
 
-/** The only Text component used in the app — guarantees kid-scale rounded type. */
+/**
+ * The only Text component used in the app — guarantees kid-scale rounded type.
+ *
+ * It honours the device's text-size setting, capped per variant (see
+ * `fontScaleCap`). It used to refuse it outright, which kept every layout safe
+ * and left a low-vision reader with no recourse at all. Somewhere genuinely
+ * fitted — a numeral inside drawn artwork — can still pass its own
+ * `maxFontSizeMultiplier`, or `allowFontScaling={false}` to opt out.
+ */
 export function Text({ variant = 'body', color = palette.navy, center, outlined, style, ...rest }: SparkTextProps) {
   const base = typeScale[variant] as TextStyle;
   return (
     <RNText
-      allowFontScaling={false}
+      maxFontSizeMultiplier={fontScaleCap[variant]}
       {...rest}
       style={[
         base,
