@@ -348,11 +348,11 @@ export function FirehouseScreen() {
             {/* the crew, standing on the apron at the bay mouths — each on a
                 contact ellipse, because nothing in this world floats */}
             <View style={[styles.crew, { bottom: scene.crewBottom, left: scene.crewInset }]} pointerEvents="none">
-              <ContactShadow width={scene.crew * 0.46} style={[styles.contact, { left: scene.crew * 0.27 }]} />
+              <ContactShadow width={scene.crew * 0.62} height={scene.crew * 0.1} opacity={0.16} style={[styles.contact, { left: scene.crew * 0.19 }]} />
               <Rookie size={scene.crew} avatar={profile.avatar} pose="wave" emotion="happy" />
             </View>
             <View style={[styles.crew, { bottom: scene.crewBottom, right: scene.crewInset }]} pointerEvents="none">
-              <ContactShadow width={scene.crew * 0.44} style={[styles.contact, { left: scene.crew * 0.28 }]} />
+              <ContactShadow width={scene.crew * 0.6} height={scene.crew * 0.1} opacity={0.16} style={[styles.contact, { left: scene.crew * 0.2 }]} />
               {/* Captain Bea waits by the apron for the shift to start */}
               <CaptainBea size={scene.crew} emotion="calm" pose="stand" bobPhase={0.45} />
             </View>
@@ -395,7 +395,7 @@ const styles = StyleSheet.create({
   sign: { alignItems: 'center', justifyContent: 'center' },
   crew: { position: 'absolute', zIndex: 2 },
   /* drawn before the rig, so the ellipse is under the boots, never over them */
-  contact: { position: 'absolute', bottom: 1 },
+  contact: { position: 'absolute', bottom: -2 },
   bubble: { position: 'absolute', alignItems: 'flex-end', zIndex: 3 },
   ctaBlock: { position: 'absolute', left: 0, right: 0, alignItems: 'center', gap: spacing.xs, zIndex: 4 },
   cta: { minWidth: 236, maxWidth: 320, alignSelf: 'center' },

@@ -417,17 +417,25 @@ export function RescueRoute({ challenge, ageBand, onComplete, onEvent, compact }
       const stopped = traceRoute(spec, state.program.slice(0, bumpStep));
       const better = bestNextCommand(spec, stopped.end);
       const wall = stepForward(stopped.end.pos, stopped.end.heading);
-      return `Step ${bumpStep + 1} drives into ${blocker(wall)}. There is no road that way — try “${better ? commandLabel[better] : 'Left'}” instead.`;
+      return `Step ${bumpStep + 1} drives into ${blocker(wall)}. Try “${better ? commandLabel[better] : 'Left'}” there instead.`;
     }
     const first = bestNextCommand(spec, { pos: challenge.start, heading: challenge.startHeading });
-    return `Follow the road to the ${goalName} and stop in the marked bay. Start with “${first ? commandLabel[first] : 'Forward'}”.`;
+    return `Follow the road round to the ${goalName} and stop in the gold bay. Start with “${first ? commandLabel[first] : 'Forward'}”.`;
   }, [bumpStep, challenge.start, challenge.startHeading, goalName, plan.plots, spec, state.program]);
 
-  const suggestedCommand = useMemo(() => {
+  /**
+   * The top of the hint ladder walks the child all the way home, one glowing
+   * button at a time: clear a programme that crashes, then the next right
+   * command, then Go. There is always something lit to press.
+   */
+  const suggestion: 'clear' | 'go' | RouteCommand | null = useMemo(() => {
     if (!hintLadder.highlight || !editing) return null;
-    if (trace.bumpedAt !== null) return null;
-    return bestNextCommand(spec, trace.end);
-  }, [editing, hintLadder.highlight, spec, trace]);
+    if (trace.bumpedAt !== null) return 'clear';
+    if (trace.reached) return 'go';
+    const next = bestNextCommand(spec, trace.end);
+    if (!next) return 'go';
+    return state.program.length >= challenge.maxCommands ? 'clear' : next;
+  }, [challenge.maxCommands, editing, hintLadder.highlight, spec, state.program.length, trace]);
 
   /* ----- the programme tape grows with the child's plan ----- */
   const tapeCols = sideRail ? 5 : 8;
@@ -499,7 +507,7 @@ export function RescueRoute({ challenge, ageBand, onComplete, onEvent, compact }
                 size={cmdSize}
                 accessibilityLabel={commandLabel[c.id]}
                 disabled={busy}
-                glow={suggestedCommand === c.id}
+                glow={suggestion === c.id}
                 onPress={() => addCommand(c.id)}
               >
                 <CommandIcon id={c.id} size={cmdSize * 0.5} />
@@ -514,6 +522,7 @@ export function RescueRoute({ challenge, ageBand, onComplete, onEvent, compact }
               size={cmdSize}
               accessibilityLabel="Go"
               disabled={busy}
+              glow={suggestion === 'go'}
               onPress={run}
             >
               <PlayGlyph size={cmdSize * 0.46} />
@@ -570,7 +579,11 @@ export function RescueRoute({ challenge, ageBand, onComplete, onEvent, compact }
               hitSlop={12}
               disabled={busy || state.program.length === 0}
               onPress={clearProgram}
-              style={[styles.clear, (busy || state.program.length === 0) && styles.disabled]}
+              style={[
+                styles.clear,
+                suggestion === 'clear' && styles.clearGlow,
+                (busy || state.program.length === 0) && styles.disabled,
+              ]}
             >
               <Text variant="tiny" color={roles.ink.secondary}>
                 Start over
@@ -606,7 +619,7 @@ export function RescueRoute({ challenge, ageBand, onComplete, onEvent, compact }
             {state.phase === 'bumped' ? (
               <Animated.View entering={FadeInDown.springify()} style={styles.notice}>
                 <Text variant="tiny" center color={roles.ink.primary}>
-                  {state.bumpedAt === null ? 'So close — the truck needs a few more steps.' : 'No road that way. Fix that step and try again.'}
+                  {state.bumpedAt === null ? 'So close — the truck needs a few more steps.' : 'No road that way. Back to the station!'}
                 </Text>
               </Animated.View>
             ) : null}
@@ -682,7 +695,12 @@ const styles = StyleSheet.create({
   },
   slotActive: { borderColor: palette.safetyYellow, borderWidth: 3 },
   slotBumped: { opacity: 0.55 },
-  clear: { paddingHorizontal: spacing.xs, paddingVertical: spacing.xxs },
+  clear: { paddingHorizontal: spacing.xs, paddingVertical: spacing.xxs, borderRadius: radii.pill },
+  clearGlow: {
+    backgroundColor: palette.safetyYellow,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 6,
+  },
 
   compareRow: { flexDirection: 'row', gap: spacing.md },
   compareCard: { alignItems: 'center', gap: 4 },

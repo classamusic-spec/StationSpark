@@ -357,11 +357,13 @@ const Furniture = memo(function Furniture({ vp, item }: { vp: RoadView; item: St
       );
     }
     case 'bench': {
-      const base = p(0.14);
+      /* a bench runs *along* the road, so its length foreshortens like a wall */
+      const seat = onWall(vp, item.x, item.ahead, 0.65, 2.2, 0.22);
+      const back = onWall(vp, item.x, item.ahead, 1.2, 2.2, 0.6);
       return (
         <G>
-          <Rect x={base.x - 1.1 * base.scale} y={base.y - 0.62 * base.scale} width={2.2 * base.scale} height={0.22 * base.scale} fill={palette.wood} />
-          <Rect x={base.x - 1.1 * base.scale} y={base.y - 1.3 * base.scale} width={2.2 * base.scale} height={0.6 * base.scale} fill={palette.woodDark} />
+          <Rect x={back.cx - back.rx} y={back.cy - back.ry} width={back.rx * 2} height={back.ry * 2} fill={palette.woodDark} />
+          <Rect x={seat.cx - seat.rx} y={seat.cy - seat.ry} width={seat.rx * 2} height={seat.ry * 2} fill={palette.wood} />
         </G>
       );
     }
