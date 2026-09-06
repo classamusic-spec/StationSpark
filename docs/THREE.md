@@ -14,7 +14,9 @@ It stays out of the home screen, the map, every play field, the characters, and 
 | `dragControl.ts` | Drag-to-rotate with inertia (pointer events on web, gesture-handler pan on native). |
 | `Badge3D.tsx` | Extruded shield badge with rim colour + emblem; `flipKey` bump → 720° flip with a sparkle burst. Same colour/icon contract as `<BadgeArt/>`. |
 | `Stage.tsx` / `Stage.native.tsx` | The shared R3F canvas wrapper (transparent background, DPR clamp, reduced-motion aware). |
-| `TruckRunScene3D.tsx` / `TruckRunRoad.tsx` | The Truck Run road: chase camera over a scrolling three-lane road with hazards, ramps, boost pads and answer gates, reusing `TruckModel` with the child's own truck style. Loaded lazily so no route pays for `three` at first paint. |
+| `TruckRunScene3D.tsx` / `TruckRunRoad.tsx` | The Truck Run road: level camera down a scrolling three-lane street with hazards, ramps, boost pads and answer gates, reusing `TruckModel` with the child's own truck style. Loaded lazily so no route pays for `three` at first paint. |
+| `TruckRunTown.tsx` | Spark City beside that road: pavements, the town's own shops and houses, lamps, hydrants, hedges, parked cars, crossings and side streets. Driven by `minigames/tactile/TruckRun/neighbourhood.ts`, the same pure module the 2D fallback reads, so both renderers draw one town. |
+| `truckRunKit.ts` | The geometry kit for both of those: `mergeParts()` folds a pile of coloured primitives into **one** vertex-coloured `BufferGeometry`, so a whole bakery — walls, roof, awning, six windows, a sign — is a single draw. One `InstancedMesh` per building type then draws every bakery in view at once, and a type with nothing on screen sets `count = 0` and costs nothing at all. |
 | `webgl.ts` | The one up-front "is there a GL context?" probe (`WEBGL_AVAILABLE`), consumed by `ThreeBoundary`. |
 | `ThreeBoundary.tsx` | Error boundary **and** GL gate: any GL failure (no WebGL, old device, Jest/SSR) renders the 2D fallback (`TruckFallback` → SVG `<FireTruck/>`, or `<BadgeArt/>`). |
 | `lazy.tsx` | **The doors screens use.** `<LazyTruckScene3D/>` and `<LazyBadge3D/>`: the two entry points behind a `lazy()` chunk, a `ThreeBoundary` and the 2D fallback. Free of `three`. |
@@ -75,6 +77,12 @@ of the tests without a `NODE_ENV` check at each call site.
   identity), light flash slows.
 - **Performance targets**: 60 fps on a 2020 iPad; < 40 draw calls per scene; no shadow maps above
   1024; DPR clamped to 2. Materials are shared per colour; geometries are created once per mount.
+  The Truck Run road is the one scene above that line — it draws the truck (~32 on its own), the
+  props, the gates and a whole street. It is held at a **measured** median 62 / peak 66 calls
+  (headless Chromium, band C, 390×844) by the merge-and-instance rule in `truckRunKit.ts`: merging
+  every solid down to one geometry paid for the entire neighbourhood, which is why the town cost
+  about one call more than the empty road it replaced. Measure with the WebGL draw counters before
+  adding anything to that scene; do not add a second mesh where a merged part would do.
 
 ## Verifying on the web
 

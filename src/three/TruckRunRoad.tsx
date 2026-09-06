@@ -23,11 +23,12 @@
  *     the drive as a neighbourhood cost fewer draw calls than the empty road
  *     used to, not more.
  *
- * Draw calls, worst case: ground, tarmac, two kerbs, two pavements (6),
- * instanced stripes, crossings and side-street mouths (3), the town's buildings
- * and furniture (about 12, and only the kinds actually on screen), up to ~16
- * props and 3 gates at one call each, and the truck's 32 — a little over 70,
- * against ~85 if the town were drawn the naive way. See docs/THREE.md.
+ * Draw calls, counted in headless Chromium over a band-C drive at 390×844:
+ * median 62, peak 66 — against median 61, peak 63 for the empty country road
+ * this replaced. The whole neighbourhood costs about eighteen calls, and
+ * merging the props, the gates and each building down to one geometry apiece
+ * gave back about eighteen, so a street full of shops costs what a verge full
+ * of trees used to. See docs/THREE.md.
  */
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';

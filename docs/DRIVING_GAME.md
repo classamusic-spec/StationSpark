@@ -8,21 +8,26 @@ Renderers: 3D (`src/three/TruckRunScene3D.tsx`, lazy) with a full 2D fallback (`
 
 ---
 
-## 1. Framing: driver training, not a call-out
+## 1. Framing: the drive across Spark City
 
-Two framings were on the table — "responding to a call" and "driver training". **Driver training wins**, and
-the whole game is easier and kinder because of it:
+The road runs **through the town the child already knows** — past Rosa's bakery, the Pizza Piazza, the school
+bell, the clock tower, the market stalls — with pavements, front gardens, lamps, hydrants, parked cars,
+crossings and side streets opening off it. In the Training Yard it is a practice drive round the block; in a
+mission it is the journey to the call, and it follows straight on from the `rescue-route` beat that planned
+it (§7).
 
-- A call-out means somebody is waiting, which makes *going slowly* feel like letting them down. This app has
-  no timers that punish (ART_DIRECTION safety rules) and the truck can be slowed by a pothole at any moment,
-  so the frame has to make slowing down harmless. On the practice road it is: bumping a cone is *the point of
-  the exercise*, not a failure.
-- Safety direction: cones, potholes and puddles only — no crashes, nobody in danger. A training road behind
-  the station is exactly that world. A siren run through traffic is not.
+The frame stays gentle, and that is deliberate:
+
+- **Nothing waits on the child.** There is no timer and no clock on the drive, so slowing down for a pothole
+  costs nothing. That is what makes a hazard harmless: it is a bump in the road, not a lost second.
+- **Safety direction, unchanged**: cones, potholes and puddles only — no crashes, nobody in danger. There are
+  **no pedestrians and no moving traffic anywhere on the road**; the crossings are painted and empty and every
+  car is parked, clear of the kerb, where the truck cannot reach it. The town is scenery: it can never be hit,
+  never block a lane and never change what the sim does.
 - It lives in the Training Yard next to the cone course the yard already draws, so it needs no new place in
   the world and no new screen.
 
-Captain Bea runs the session from the tower; Rookie drives. The truck is the child's own: colour, decal and
+Captain Bea runs the drive from the radio; Rookie drives. The truck is the child's own: colour, decal and
 light bar come from `selectTruck` in the store, so the engine they painted in the Garage is the engine on the
 road, in 3D and in the 2D fallback.
 
@@ -117,19 +122,24 @@ Gate labels are always short enough to read at speed: at most 8 characters (`7`,
 
 ```
 src/learning/types.ts                    + TruckRunChallenge (ADDITIVE) + truckRunLanes
-src/learning/generators/truck-run.ts       seeded generator + laneEscapeRoute() (the road's solver)
+src/learning/generators/truck-run.ts       seeded generator + truckRunFor() + laneEscapeRoute()
 src/learning/validate.ts                 + case 'truck-run'  (labels, layout, clearability)
 src/learning/__tests__/truckRun.test.ts    3 bands × 200 seeds
 src/minigames/tactile/TruckRun/
   run.ts                                   THE SIM — pure, no React, fixed timestep
   projection.ts                            the one camera both renderers (and the labels) use
+  neighbourhood.ts                         THE STREET — pure: what stands beside the road, and where
   __tests__/run.test.ts                    determinism, collisions, gates, no-fail
+  __tests__/neighbourhood.test.ts          the town: nothing on the tarmac, one town in both renderers
   TruckRun.tsx                             the component: gestures, audio, hint ladder, GameShell
   RoadView2D.tsx                           2D renderer (react-native-svg) — fully playable
+  TownView2D.tsx                           Spark City in SVG, layer by layer, for that road
   GateLabels.tsx                           the answers, as real `@/ui` <Text>, over either road
   RoadScene.tsx                            WebGL probe + lazy import + boundary → 3D or 2D
 src/three/TruckRunScene3D.tsx              the 3D entry (one file, both platforms)
 src/three/TruckRunRoad.tsx                 camera, lights, tarmac, props, gates, the truck
+src/three/TruckRunTown.tsx                 Spark City in 3D: instanced buildings and street furniture
+src/three/truckRunKit.ts                   mergeParts(): one solid → one geometry → one draw call
 ```
 
 - **The sim is a plain module** (`run.ts`). Lane position, hazard spawning, collision, gate resolution, speed,
@@ -152,6 +162,13 @@ src/three/TruckRunRoad.tsx                 camera, lights, tarmac, props, gates,
   fit the tarmac (`focal()`), and the camera follows 62 % of the truck's lane change so the engine never
   drives off the edge of a narrow screen. The bump jolt shakes the whole play area — canvas *and* labels —
   never the camera, so the two layers can never drift apart.
+- **The town is a third pure module** (`neighbourhood.ts`). `streetView(distance, depth, options)` says what
+  stands beside the road: the buildings, the furniture, the crossroads, and — once the last gate is open — the
+  arrival. It has no random state at all; every choice is a hash of the block index, so the street is stable
+  frame to frame, identical in both renderers and the same on every device. The run's `scene` picks the corner
+  of town the drive starts in and the building waiting at the end of it, so a mission to the bakery arrives at
+  the bakery. `BUILDINGS` is the single table of how big a bakery is and what colour its awning is; both
+  renderers read it, so the 3D block and the SVG block are one block. See §6.
 - **3D is lazy, probed, and optional.** `@/three` is imported through `React.lazy` behind `ThreeBoundary`,
   like the badge flip in `CelebrationOverlay`, so Jest never loads `three` and the chunk is fetched when a
   child actually starts driving. The boundary alone is not enough, though: three throws while the canvas is
@@ -183,12 +200,70 @@ Never removes the game; calms it.
 | light bar | flashes | steady |
 | jump | full arc | a lower, calmer arc |
 | the truck leaning into a lane change (3D) | on | off |
-| road, trees, hazards scrolling | on — it *is* the game | on |
+| street, hazards, gates scrolling | on — it *is* the game | on |
 
 Nothing is removed: every hazard, gate and boost still behaves identically, and the sim is not told about
-the setting at all, so a run plays exactly the same either way.
+the setting at all, so a run plays exactly the same either way. The neighbourhood has no motion of its own to
+calm — no flashing signs, no traffic, no swaying trees — so it looks the same either way too.
 
-## 6. What the QA harness sees
+## 6. The neighbourhood
+
+The drive is not a road through open country any more. `neighbourhood.ts` lays Spark City along it and both
+renderers draw exactly what it returns.
+
+**The plan.** The street runs in 40-unit blocks. Each block has two 14-unit plots a side with an 8-unit gap
+between them; the gap is a hedged **front garden**, except on every third block, where it is a **crossroads** —
+a side street cutting through the pavement on both sides, with a zebra crossing painted on the main road.
+Pavements 2.4 units wide run the whole length between the kerb and the building line.
+
+**The buildings** are the town's own, in a fixed order down each side, so the street is something a child can
+learn rather than a shuffle: the fire station, houses and cottages, Rosa's bakery, the Pizza Piazza with its
+green roof, the school with its bell cupola, the clock tower with a real dial, the library on its columns, the
+pet shop, the market stall under its striped canopy, and the apartment blocks. Shapes, proportions, tones and
+signage motifs are copied from `src/world/TownMap.tsx` — tan and cream walls, gable and hipped roofs, striped
+awnings, mullioned windows with a cream frame — so a building here reads as the same building on the map. Two
+rows of co-prime length face each other, so the pairing across the street keeps changing while each side stays
+the same street.
+
+**The furniture**: street lamps leaning over the kerb, hydrants on the corners, round blobby trees in the front
+gardens, benches and planters outside the shops, post boxes, and cars and vans parked clear of the kerb.
+
+**The light falls from the left**, exactly as it does on the town map: a wall facing left is the lit one, in
+the 3D scene (the key light sits at `[-8, 11, 5]`) and in the SVG (a left-hand building shows the road its
+shaded wall, a right-hand one its lit wall). Both fade into the same haze at the same distance.
+
+**Nothing here is a game rule.** Every piece of it stands outside the kerb, cannot be hit, cannot block a lane
+and never reaches the sim. There are no people on the road at all: no pedestrians, no crossing traffic, every
+car parked (ART_DIRECTION safety). `neighbourhood.test.ts` proves the clearance for 600 units of road.
+
+**The arrival.** Once the last gate is open the sim publishes `finishAhead`, and the town puts a red banner
+across the road at that distance with the destination's own building beside it — so the drive ends *somewhere*
+rather than just stopping.
+
+### What it costs
+
+Measured with WebGL draw counters in headless Chromium, band C at 390×844: **median 62 calls, peak 66** —
+against **median 61, peak 63** for the empty road it replaced. The town is about eighteen calls; merging every
+solid gave back about eighteen. Two rules bought that:
+
+- **One solid, one geometry.** `truckRunKit.mergeParts()` folds a building's walls, roof, plinth, awning,
+  windows, door and sign into a single vertex-coloured `BufferGeometry` drawn with one shared material. The
+  hazards and the gates went through the same mill, which is where the savings came from: a cone used to be
+  two meshes and a gate three.
+- **One `InstancedMesh` per kind, `count` set per frame.** Every bakery in view draws at once, and a kind with
+  nothing on screen sets `count = 0`, which three skips entirely — so the cost falls as the town thins out
+  instead of being paid up front.
+
+The 2D road pays in SVG nodes instead, and spends them the same way: the street is culled at 72 units, and
+anything past 30 is drawn as **massing only** — walls and roof, no windows, no awning, no sign.
+
+One thing the SVG road has to get right that the 3D one gets for free: a wall running away from the truck is
+seen almost edge-on, so anything painted on it is squeezed horizontally by a factor that depends on how far
+down the road it is. `onWall()` projects both ends of a window and measures between them; `standing()` is its
+counterpart for solids that do not squash, like a column or a belfry. Drawing a window as a centred rectangle
+scaled evenly — the obvious thing — leaves it four times too wide and floating off the front of its own shop.
+
+## 7. What the QA harness sees
 
 `tools/qa/play.mjs` drives games by reading `globalThis.__SS_CHALLENGE__` and clicking accessibility labels.
 `truck-run` is drivable the same way, and publishes one QA testID (like the drag/slot ones the harness
@@ -206,3 +281,30 @@ Verified in headless Chromium against a real `expo export` bundle: all three ban
 2D fallback (WebGL blocked by nulling `getContext`); three deliberate misses on one question raise Captain
 Bea's hint on the second and the gold assist ring on the third, and the run still finishes with every
 question answered.
+
+## 8. Plan the route, then drive it
+
+In the Training Yard the drive stands on its own. In a mission it is the **second half of a pair**: a
+`rescue-route` beat programs the way there, and a `truck-run` beat immediately after makes the journey, before
+the travel cinematic and the arrival. The child says how to get there, then goes.
+
+Four of the twelve missions rotate that way — the four whose story is about *getting there*:
+
+| Mission | Why the pair earns its place | Topic by band (A · B · C) |
+| --- | --- | --- |
+| `clock-tower-cat` | the first call in the game: it teaches the plan-then-drive shape while the mission is still short | count-on · add-sub · elapsed |
+| `pizza-shop-panic` | the crew has already chosen the shorter of two roads to Market Street; the drive is that road | number-word · add-sub · times-divide |
+| `school-fair` | "which road is shorter? Then drive it" was already the instruction — now it is true | count-on · sight-word · elapsed |
+| `train-timetable` | the whole mission is about reading street names and comparing two routes to Platform Way | count-on · add-sub · elapsed |
+
+`bakery-bell` keeps its `rescue-route` and gets no drive: it is already the longest of the early calls, and
+Rosa's bakery is round the corner — a cross-town run would not be true. The other seven missions have neither.
+
+The topic is chosen by the *story*, not by the dice. `truckRunFor(prefer, ctx)` takes a preference list and
+uses the first topic the child's band actually teaches, falling back to the ordinary random pick — so one beat
+reads correctly for a five year old counting on and a ten year old working out elapsed time. The drive is
+generated `inScene(...)` of the mission's location, which is what dresses the street and puts that building at
+the arrival banner.
+
+Each pair adds one beat and about two minutes; every mission stays inside the 10–14 beats the content tests
+allow, and none is longer than the fourteen minutes `festival-exchange` already ran to.
