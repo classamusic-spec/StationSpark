@@ -1,4 +1,4 @@
-import React, { Suspense, lazy, useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import Animated, { FadeIn, FadeInDown, useAnimatedStyle, useSharedValue, withDelay, withSequence, withSpring, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -15,38 +15,16 @@ import { BadgeArt } from '@/ui/kit/BadgeArt';
 import { ConfettiBurst } from '@/ui/kit/ConfettiBurst';
 import { Counter } from '@/ui/kit/Counter';
 import { GlyphIcon } from '@/ui/kit/GlyphIcon';
+/* The three-free door: lazy import, boundary and 2D fallback in one. Importing
+   `@/three` here would put the renderer on the first-paint path of every route
+   that can finish a mission — which is all of them. See docs/THREE.md. */
+import { LazyBadge3D } from '@/three/lazy';
 import { CaptainBea } from './CaptainBea';
 import { Rookie } from './Rookie';
 import type { CelebrationOverlayProps } from './types';
 
 const CREW_HEIGHT = 128;
 const BADGE_SIZE = 104;
-/** Jest never touches `@/three` (see docs/THREE.md), so don't even try there. */
-const USE_BADGE_3D = process.env.NODE_ENV !== 'test';
-
-/**
- * The badge arrives as a real medal.
- *
- * `@/three` is pulled in lazily and behind a boundary: it is the only place in
- * the app that wants a WebGL context, Jest never loads it, and if the import or
- * the GL context fails for any reason the child still gets the SVG badge doing
- * its own flip. Earning a badge can never be the thing that breaks.
- */
-const LazyBadge3D = lazy(async () => {
-  const mod = await import('@/three');
-  return { default: mod.Badge3D };
-});
-
-/** Never let a decoration take the celebration down. */
-class BadgeBoundary extends React.Component<{ fallback: React.ReactNode; children: React.ReactNode }, { failed: boolean }> {
-  state = { failed: false };
-  static getDerivedStateFromError() {
-    return { failed: true };
-  }
-  render() {
-    return this.state.failed ? this.props.fallback : this.props.children;
-  }
-}
 
 /** The 2D badge, flipping on its Y axis — the fallback, and the reduced-motion path. */
 function BadgeFlipSvg({ color, icon }: { color: string; icon: string }) {
@@ -74,21 +52,20 @@ function BadgeFlipSvg({ color, icon }: { color: string; icon: string }) {
   );
 }
 
+/**
+ * The badge arrives as a real medal — but only where a medal is actually
+ * possible. `LazyBadge3D` fetches the renderer on its own chunk, keeps the
+ * flipping SVG on screen while it comes, and keeps it for good if there is no
+ * GL context (a plain device, or Jest). Earning a badge can never be the thing
+ * that breaks.
+ */
 function BadgeFlip({ badge, play }: { badge: NonNullable<CelebrationOverlayProps['badge']>; play: number }) {
   const def = badgeById(badge);
   const svg = <BadgeFlipSvg color={def.color} icon={def.icon} />;
 
   return (
     <View style={styles.badgeBlock}>
-      {USE_BADGE_3D ? (
-        <BadgeBoundary fallback={svg}>
-          <Suspense fallback={svg}>
-            <LazyBadge3D color={def.color} icon={def.icon} size={BADGE_SIZE} flipKey={play} />
-          </Suspense>
-        </BadgeBoundary>
-      ) : (
-        svg
-      )}
+      <LazyBadge3D color={def.color} icon={def.icon} size={BADGE_SIZE} flipKey={play} fallback={svg} />
       <Animated.View entering={FadeInDown.delay(880).springify().damping(14)} style={styles.badgeName}>
         <Text variant="tiny" color={palette.navyMuted} center>
           BADGE EARNED

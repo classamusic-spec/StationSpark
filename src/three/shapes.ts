@@ -8,6 +8,12 @@
  */
 import * as THREE from 'three';
 import type { TruckStyle } from '@/state/store';
+import type { Badge3DIcon } from './badgeIcons';
+
+/* The emblem *names* live in `badgeIcons.ts` so a caller can read them without
+   loading three; re-exported here so the 3D layer's imports stay unchanged. */
+export { badge3DIcons } from './badgeIcons';
+export type { Badge3DIcon } from './badgeIcons';
 
 export type DecalId = Exclude<TruckStyle['decal'], 'none'>;
 
@@ -105,35 +111,6 @@ export function shieldShape(scale = 1): THREE.Shape {
   s.closePath();
   return s;
 }
-
-export type Badge3DIcon =
-  | 'flame'
-  | 'star'
-  | 'chef-hat'
-  | 'ladder'
-  | 'hose'
-  | 'book'
-  | 'map'
-  | 'heart'
-  | 'cat'
-  | 'pizza'
-  | 'clock'
-  | 'numbers';
-
-export const badge3DIcons: readonly Badge3DIcon[] = [
-  'flame',
-  'star',
-  'chef-hat',
-  'ladder',
-  'hose',
-  'book',
-  'map',
-  'heart',
-  'cat',
-  'pizza',
-  'clock',
-  'numbers',
-];
 
 const roundedRect = (x: number, y: number, w: number, h: number, r: number): THREE.Shape => {
   const s = new THREE.Shape();

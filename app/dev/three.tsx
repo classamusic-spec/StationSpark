@@ -4,7 +4,12 @@ import { palette, radii, spacing } from '@/theme';
 import { Button, Panel, ScreenFrame, Text, TopBar } from '@/ui';
 import { badges } from '@/content/badges';
 import type { TruckStyle } from '@/state/store';
-import { Badge3D, TruckScene3D, badge3DIcons, type Badge3DIcon } from '@/three';
+/* Through the three-free doors like every other screen: `app/` is bundled as a
+   single page, so one eager `@/three` here would drag the renderer onto the
+   first paint of the whole app — the dev bench included in every child's
+   download. `badge3DIcons` is just twelve strings and costs nothing. */
+import { badge3DIcons, type Badge3DIcon } from '@/three/badgeIcons';
+import { LazyBadge3D, LazyTruckScene3D } from '@/three/lazy';
 
 const COLORS: TruckStyle['color'][] = ['red', 'yellow', 'blue', 'green'];
 const DECALS: TruckStyle['decal'][] = ['flame', 'star', 'paw', 'lightning', 'none'];
@@ -58,7 +63,7 @@ export default function DevThree() {
             Truck turntable
           </Text>
           <View style={styles.stage} testID="dev-three-truck">
-            <TruckScene3D style={truck} height={280} spinning={spinning} honk={honk} shine={shine} forceFallback={fallback} />
+            <LazyTruckScene3D style={truck} height={280} spinning={spinning} honk={honk} shine={shine} forceFallback={fallback} />
           </View>
           <Text variant="small" center color={palette.navySoft}>
             {truck.color} · {truck.decal} · {truck.lights} lights {fallback ? '· 2D fallback' : ''}
@@ -89,7 +94,7 @@ export default function DevThree() {
             Badge flip
           </Text>
           <View style={styles.badgeStage} testID="dev-three-badge">
-            <Badge3D color={badgeColor} icon={icon} size={132} flipKey={flipKey} forceFallback={fallback} />
+            <LazyBadge3D color={badgeColor} icon={icon} size={132} flipKey={flipKey} forceFallback={fallback} />
           </View>
           <Text variant="small" center color={palette.navySoft}>
             {icon}

@@ -10,7 +10,10 @@ import { haptics } from '@/services/haptics';
 import { useGame } from '@/state/store';
 import { selectTruck } from '@/state/selectors';
 import type { TruckStyle } from '@/state/store';
-import { TruckScene3D } from '@/three';
+/* `@/three/lazy`, never `@/three`: the barrel would put the renderer on every
+   route's first paint (the web build is one page), and this screen is the only
+   one that ever shows the turntable. See docs/THREE.md. */
+import { LazyTruckScene3D } from '@/three/lazy';
 import { CaptainBea } from '@/characters/CaptainBea';
 import { BottomBar, Swatch, useScaledLayout } from '@/screens/shared';
 import { GarageBay } from './GarageBay';
@@ -183,7 +186,7 @@ export function GarageScreen() {
         {/* ── the truck, on a turntable ────────────────────────── */}
         <View style={[styles.stage, layout.wide && styles.stageWide]}>
           <View style={{ width: stageWidth, height: stageHeight }}>
-            <TruckScene3D style={truck} height={stageHeight} honk={honks} shine={shine} testID="garage-truck-3d" />
+            <LazyTruckScene3D style={truck} height={stageHeight} honk={honks} shine={shine} testID="garage-truck-3d" />
 
             {/* Captain Bea stands beside the engine, checking the work */}
             <View style={[styles.abs, styles.bea]} pointerEvents="none">

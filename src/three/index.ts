@@ -1,9 +1,14 @@
 /**
- * Station Spark's 3D layer.
+ * Station Spark's 3D layer — the eager barrel.
  *
- * NOTE: importing anything from here pulls `three` into the bundle. Only import
- * it from a screen that actually shows GL (today: the Garage and the dev
- * route). Nothing under `src/three` is loaded by Jest — see docs/THREE.md.
+ * ⚠️ **Screens must not import this file.** Everything here reaches `three`, so
+ * a single eager import anywhere in `app/` or `src/screens` puts ~600 KB of
+ * renderer on the first paint of every route (the web build is one page).
+ * Import `@/three/lazy` instead: `<LazyTruckScene3D/>` and `<LazyBadge3D/>` are
+ * the same two components behind a `lazy()` chunk, a `ThreeBoundary` and the 2D
+ * fallback. This barrel is for code that is already inside a canvas.
+ *
+ * Nothing under `src/three` is loaded by Jest — see docs/THREE.md.
  *
  * Two entry points, both self-contained (canvas + lights + error boundary +
  * 2D fallback), both honouring `useReducedMotion()`:
