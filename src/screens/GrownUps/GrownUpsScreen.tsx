@@ -96,25 +96,30 @@ function GrownUpsSettings() {
         </Paper>
       </Animated.View>
 
+      {/* Difficulty and language are one decision — "how the games are
+          pitched" — so they are one sheet, not two consecutive ones that made
+          the settings list look twice as long as it is. */}
       <Animated.View entering={enter(2)}>
-        <Paper
-          tab="LANGUAGE"
-          tabColor={palette.purpleSoft}
-          title="Spanish support"
-          subtitle="How much English shows beside Spanish lines: all of it, help on new words only, or Spanish on its own."
-        >
-          <SegmentedPills options={SPANISH_OPTIONS} value={settings.spanishSupport} onChange={(v) => setSettings({ spanishSupport: v })} color={palette.purple} />
-        </Paper>
-      </Animated.View>
-
-      <Animated.View entering={enter(3)}>
-        <Paper tab="LEARNING" tabColor="#FFE9A8" title="Age band" subtitle="Sets the difficulty of every generated challenge.">
+        <Paper tab="LEARNING" tabColor="#FFE9A8" title="How the games are pitched">
+          <Text variant="bodyStrong">Age band</Text>
+          <Text variant="small" color={palette.navySoft}>
+            Sets the difficulty of every generated challenge.
+          </Text>
           <AgeBandCards value={profile.ageBand} onChange={(b) => setProfile({ ageBand: b })} />
+
+          <View style={styles.sectionGap}>
+            <Text variant="bodyStrong">Spanish support</Text>
+            <Text variant="small" color={palette.navySoft}>
+              How much English shows beside Spanish lines: all of it, help on new words only, or Spanish on its own. Spanish is
+              always spoken either way.
+            </Text>
+            <SegmentedPills options={SPANISH_OPTIONS} value={settings.spanishSupport} onChange={(v) => setSettings({ spanishSupport: v })} color={palette.purple} />
+          </View>
         </Paper>
       </Animated.View>
 
       {/* ── progress report ──────────────────────────────────── */}
-      <Animated.View entering={enter(4)}>
+      <Animated.View entering={enter(3)}>
         <ReportCard
           name={profile.name?.trim() || 'Rookie'}
           rankName={rank.name}
@@ -126,7 +131,7 @@ function GrownUpsSettings() {
         />
       </Animated.View>
 
-      <Animated.View entering={enter(5)}>
+      <Animated.View entering={enter(4)}>
         <Paper tab="WORDS" tabColor={palette.pinkSoft} title="Words learned" subtitle="Every word in Station Spark is bilingual.">
           {wordRows.length === 0 ? (
             <Text variant="small" color={palette.navySoft}>
@@ -150,13 +155,24 @@ function GrownUpsSettings() {
       </Animated.View>
 
       {/* ── safety poster ────────────────────────────────────── */}
-      <Animated.View entering={enter(6)}>
+      <Animated.View entering={enter(5)}>
         <SafetyPoster />
       </Animated.View>
 
-      {/* ── reset ────────────────────────────────────────────── */}
-      <Animated.View entering={enter(7)}>
-        <Paper tab="DEVICE" title="Reset progress" subtitle="Clears badges, XP, Sparks, words and the profile on this device.">
+      {/* ── this device: what the app is, and how to wipe it ──── */}
+      <Animated.View entering={enter(6)}>
+        <Paper tab="DEVICE" title="Station Spark 0.1.0">
+          <Text variant="small" color={palette.navySoft}>
+            No ads, no in-app purchases, no accounts. Sparks are earned by playing and only buy decorations for the station.
+            {Platform.OS === 'web' ? ' You are playing in the browser — sound and haptics may be limited.' : ' Also plays in the browser.'}
+          </Text>
+
+          <View style={styles.sectionGap}>
+            <Text variant="bodyStrong">Reset progress</Text>
+            <Text variant="small" color={palette.navySoft}>
+              Clears badges, XP, Sparks, words and the profile on this device.
+            </Text>
+          </View>
           {resetStep === 0 ? (
             <Button label="Reset progress" tone="white" size="md" onPress={() => setResetStep(1)} style={styles.resetBtn} />
           ) : resetStep === 1 ? (
@@ -178,15 +194,6 @@ function GrownUpsSettings() {
               </View>
             </View>
           )}
-        </Paper>
-      </Animated.View>
-
-      <Animated.View entering={enter(8)}>
-        <Paper tab="ABOUT" title="Station Spark 0.1.0">
-          <Text variant="small" color={palette.navySoft}>
-            No ads, no in-app purchases, no accounts. Sparks are earned by playing and only buy decorations for the station.
-            {Platform.OS === 'web' ? ' You are playing in the browser — sound and haptics may be limited.' : ' Also plays in the browser.'}
-          </Text>
         </Paper>
       </Animated.View>
 
@@ -217,6 +224,8 @@ const styles = StyleSheet.create({
   header: { marginTop: 56, gap: 4, alignItems: 'center', marginBottom: spacing.xs },
   wordWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   word: { backgroundColor: palette.panel, borderRadius: radii.tag, paddingHorizontal: 10, paddingVertical: 6 },
+  /** air between two topics that share one sheet */
+  sectionGap: { marginTop: spacing.sm, gap: 4 },
   resetBtn: { alignSelf: 'flex-start' },
   resetRow: { gap: spacing.xs },
   resetButtons: { flexDirection: 'row', gap: spacing.xs, flexWrap: 'wrap' },

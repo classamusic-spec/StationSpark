@@ -45,6 +45,32 @@ const BEATS = [
   },
 ] as const;
 
+/** A beat's words — on a card of their own, or bare on the sheet. */
+function Prose({ card, title, body, es }: { card: boolean; title: string; body: string; es: string }) {
+  const inner = (
+    <>
+      <Text variant="h2" center accessibilityRole="header">
+        {title}
+      </Text>
+      <Text variant="body" color={palette.navySoft} center>
+        {body}
+      </Text>
+      <View style={styles.esRow}>
+        <GlyphIcon id="subject-spanish" size={18} label="en español" ink={palette.purple} />
+        <Text variant="small" color={palette.purple} center>
+          {es}
+        </Text>
+      </View>
+    </>
+  );
+  if (!card) return <View style={styles.prose}>{inner}</View>;
+  return (
+    <Panel tone="white" padding="md" radius="panel" style={styles.card}>
+      {inner}
+    </Panel>
+  );
+}
+
 export function OnboardingScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -114,20 +140,10 @@ export function OnboardingScreen() {
           <BellSteps step={step} total={BEATS.length} />
 
           <Animated.View key={beat.id} entering={FadeIn.duration(220)} exiting={FadeOut.duration(140)} style={styles.beat}>
-            <Panel tone="white" padding="md" radius="panel" style={styles.card}>
-              <Text variant="h2" center>
-                {beat.title}
-              </Text>
-              <Text variant="body" color={palette.navySoft} center>
-                {beat.body}
-              </Text>
-              <View style={styles.esRow}>
-                <GlyphIcon id="subject-spanish" size={18} label="en español" ink={palette.purple} />
-                <Text variant="small" color={palette.purple} center>
-                  {beat.es}
-                </Text>
-              </View>
-            </Panel>
+            {/* On the picker beat the words are a heading on the sheet itself,
+                not a fourth white card above three more. A card only earns its
+                surface when something inside it can be touched. */}
+            <Prose card={step !== 1} title={beat.title} body={beat.body} es={beat.es} />
 
             {step === 1 ? (
               <Animated.View entering={FadeInDown.springify().damping(17)} style={styles.pickers}>
@@ -191,6 +207,7 @@ const styles = StyleSheet.create({
   content: { width: '100%', alignSelf: 'center', flexGrow: 1, justifyContent: 'center', paddingHorizontal: spacing.md, paddingTop: spacing.sm, gap: spacing.sm },
   beat: { gap: spacing.sm },
   card: { gap: 6 },
+  prose: { gap: 6, paddingHorizontal: spacing.xs, paddingTop: spacing.xs },
   esRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 2 },
   pickers: { gap: spacing.sm },
   cta: { marginTop: spacing.xs, alignSelf: 'stretch' },

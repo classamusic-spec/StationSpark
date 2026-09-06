@@ -160,27 +160,33 @@ export function GarageScreen() {
     <ScreenFrame safeBottom={false} backdrop={<GarageBay />} chrome={<TopBar />}>
       <ScrollView
         style={styles.scroll}
-        contentContainerStyle={[styles.content, { maxWidth: layout.contentWidth }]}
+        contentContainerStyle={[styles.content, { maxWidth: layout.wide ? layout.gridWidth : layout.contentWidth }]}
         showsVerticalScrollIndicator={false}
       >
         <Animated.View entering={FadeInDown.springify().damping(17)} style={styles.header}>
           <Panel tone="glass" padding="xs" radius="pill" style={styles.banner}>
-            <Text variant="h2" center>
+            <Text variant="h2" center accessibilityRole="header">
               The Garage
             </Text>
           </Panel>
+          {/* the one instruction for whatever the child is doing right now */}
           <Text variant="small" color={palette.navy} center>
-            {washing ? 'Rub the sponge to make it shine.' : 'Drag the truck to turn it around.'}
+            {washing
+              ? sparkling
+                ? 'Sparkling clean! Great job.'
+                : 'Rub the sponge over the truck to make it shine.'
+              : 'Drag the truck to turn it around.'}
           </Text>
         </Animated.View>
 
+        <View style={layout.wide ? styles.split : undefined}>
         {/* ── the truck, on a turntable ────────────────────────── */}
-        <View style={styles.stage}>
+        <View style={[styles.stage, layout.wide && styles.stageWide]}>
           <View style={{ width: stageWidth, height: stageHeight }}>
             <TruckScene3D style={truck} height={stageHeight} honk={honks} shine={shine} testID="garage-truck-3d" />
 
             {/* Captain Bea stands beside the engine, checking the work */}
-            <View style={[styles.abs, styles.pepper]} pointerEvents="none">
+            <View style={[styles.abs, styles.bea]} pointerEvents="none">
               <CaptainBea size={Math.max(72, stageHeight * 0.34)} emotion="proud" pose="stand" bobPhase={0.6} />
             </View>
 
@@ -196,10 +202,11 @@ export function GarageScreen() {
             ) : null}
           </View>
 
-          {washing ? (
+          {/* a reaction, not the instruction again — that lives in the header */}
+          {sparkling ? (
             <Animated.View entering={FadeIn} style={styles.washHint}>
               <Text variant="small" color={palette.navy} center>
-                {sparkling ? 'Sparkling clean! Great job.' : 'Rub the sponge over the truck to make it shine!'}
+                Sparkling clean!
               </Text>
             </Animated.View>
           ) : null}
@@ -211,7 +218,9 @@ export function GarageScreen() {
         </View>
 
         {/* ── pickers ─────────────────────────────────────────── */}
-        <Panel tone="cream" padding="md" radius="panel" style={styles.card}>
+        {/* On a wide screen these stand beside the truck instead of below it,
+            so the child sees the paint change as they pick it. */}
+        <Panel tone="cream" padding="md" radius="panel" style={[styles.card, layout.wide && styles.rail]}>
           <Text variant="h3">Colour</Text>
           <View style={styles.swatches}>
             {COLORS.map((c) => (
@@ -228,6 +237,7 @@ export function GarageScreen() {
           <Text variant="h3">Horn</Text>
           <PickerRow options={HORNS} value={truck.horn} onChange={(v) => change({ horn: v })} tone={palette.gold} />
         </Panel>
+        </View>
 
         <View style={styles.footerSpace} />
       </ScrollView>
@@ -242,9 +252,13 @@ const styles = StyleSheet.create({
   content: { width: '100%', alignSelf: 'center', paddingHorizontal: spacing.md, paddingBottom: spacing.xl, gap: spacing.md },
   header: { alignItems: 'center', marginTop: 56, gap: 4 },
   banner: { paddingHorizontal: spacing.lg, minWidth: 190 },
+  /** tablet: turntable and pickers side by side, not one long scroll */
+  split: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.md },
   stage: { alignItems: 'center', gap: spacing.sm },
+  stageWide: { flex: 1 },
+  rail: { width: 320, flexShrink: 0 },
   abs: { position: 'absolute' },
-  pepper: { left: 2, bottom: 0 },
+  bea: { left: 2, bottom: 0 },
   sponge: { left: 0, top: 0 },
   washHint: {
     backgroundColor: 'rgba(255,255,255,0.9)',
