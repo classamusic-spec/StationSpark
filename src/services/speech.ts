@@ -28,25 +28,39 @@ export const speech = {
       /* ignore */
     }
   },
-  /** Speak a line as a character. Interrupts whatever was speaking. */
+  /**
+   * Speak a line as a character. Interrupts whatever was speaking.
+   *
+   * `Speech.stop()` is awaited before speaking: on Android the two are racing
+   * calls into the same engine, and starting the new utterance in the same tick
+   * as the stop intermittently cancels the new one instead of the old. When
+   * that swallowed line is the Spanish half of a vocabulary word — chained off
+   * an `onDone` that then never fires — the pair silently stops teaching.
+   */
   say(text: string, opts: { speaker?: CharacterId; lang?: 'en' | 'es'; onDone?: () => void } = {}) {
     if (!enabled || !text) {
       opts.onDone?.();
       return;
     }
     const v = voices[opts.speaker ?? 'bea'];
+    const speak = () => {
+      try {
+        Speech.speak(text, {
+          language: langCode[opts.lang ?? 'en'],
+          pitch: v.pitch,
+          rate: v.rate,
+          onDone: opts.onDone,
+          onStopped: opts.onDone,
+          onError: opts.onDone,
+        });
+      } catch {
+        opts.onDone?.();
+      }
+    };
     try {
-      Speech.stop();
-      Speech.speak(text, {
-        language: langCode[opts.lang ?? 'en'],
-        pitch: v.pitch,
-        rate: v.rate,
-        onDone: opts.onDone,
-        onStopped: opts.onDone,
-        onError: opts.onDone,
-      });
+      void Promise.resolve(Speech.stop()).then(speak, speak);
     } catch {
-      opts.onDone?.();
+      speak();
     }
   },
   /** Say a vocabulary word: English then Spanish (or the reverse). */

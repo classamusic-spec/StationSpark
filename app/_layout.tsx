@@ -10,6 +10,7 @@ import { Nunito_600SemiBold, Nunito_700Bold, Nunito_800ExtraBold } from '@expo-g
 import { palette } from '@/theme';
 import { sfx } from '@/services/audio';
 import { haptics } from '@/services/haptics';
+import { loadSkia } from '@/services/skiaWeb';
 import { speech } from '@/services/speech';
 import { useGame } from '@/state/store';
 import { AnimatedSplash } from '@/screens/Splash/AnimatedSplash';
@@ -24,8 +25,7 @@ function useSkiaWeb() {
     let cancelled = false;
     (async () => {
       try {
-        const { LoadSkiaWeb } = await import('@shopify/react-native-skia/lib/module/web');
-        await LoadSkiaWeb({ locateFile: (file: string) => `/${file}` });
+        await loadSkia();
       } catch (e) {
         console.warn('Skia web failed to load; Skia canvases will not render.', e);
       }
@@ -39,7 +39,7 @@ function useSkiaWeb() {
 }
 
 export default function RootLayout() {
-  const [fontsLoaded] = useFonts({
+  const [fontsLoaded, fontError] = useFonts({
     Fredoka_500Medium,
     Fredoka_600SemiBold,
     Fredoka_700Bold,
@@ -50,7 +50,16 @@ export default function RootLayout() {
   const skiaReady = useSkiaWeb();
   const settings = useGame((s) => s.settings);
   const [splashGone, setSplashGone] = useState(false);
-  const ready = fontsLoaded && skiaReady;
+  /*
+   * A font that fails to load must not trap the child on the splash screen
+   * forever. `useFonts` reports the failure and then never flips `loaded`, so
+   * discarding the error meant one bad download = an app that never starts.
+   * Ugly type is better than no app: carry on with the system face.
+   */
+  useEffect(() => {
+    if (fontError) console.warn('Fonts failed to load; falling back to the system face.', fontError);
+  }, [fontError]);
+  const ready = (fontsLoaded || !!fontError) && skiaReady;
 
   useEffect(() => {
     sfx.setEnabled(settings.sfx);

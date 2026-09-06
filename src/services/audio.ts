@@ -87,14 +87,26 @@ let initialized = false;
 const players = new Map<SfxName, AudioPlayer>();
 const loops = new Map<SfxName, AudioPlayer>();
 
-async function init() {
-  if (initialized) return;
-  initialized = true;
-  try {
-    await setAudioModeAsync({ playsInSilentMode: true, interruptionMode: 'mixWithOthers' });
-  } catch {
-    /* web / tests */
+/**
+ * The audio-mode promise, kept so callers can wait for it.
+ *
+ * This used to set `initialized = true` *before* awaiting `setAudioModeAsync`,
+ * and `play()` never awaited anything — so on an iPhone with the ringer switch
+ * off, the very first sound of a session fired before `playsInSilentMode` had
+ * been applied and was simply swallowed. That is the tap that tells a child the
+ * app is alive, so it is the worst one to lose. Holding the promise lets a
+ * one-shot chain itself behind the mode change without blocking the caller.
+ */
+let ready: Promise<void> | null = null;
+
+function init(): Promise<void> {
+  if (!ready) {
+    initialized = true;
+    ready = setAudioModeAsync({ playsInSilentMode: true, interruptionMode: 'mixWithOthers' })
+      .then(() => undefined)
+      .catch(() => undefined); /* web / tests */
   }
+  return ready;
 }
 
 function getPlayer(name: SfxName): AudioPlayer | null {
@@ -123,17 +135,25 @@ export const sfx = {
   /** Fire-and-forget one-shot. Safe to call from anywhere. */
   play(name: SfxName, opts: { volume?: number; rate?: number } = {}) {
     if (!enabled) return;
-    void init();
-    const p = getPlayer(name);
-    if (!p) return;
-    try {
-      p.volume = masterVolume * (opts.volume ?? 1);
-      if (opts.rate && Platform.OS !== 'web') p.playbackRate = opts.rate;
-      void p.seekTo(0);
-      p.play();
-    } catch {
-      /* ignore */
-    }
+    const start = () => {
+      const p = getPlayer(name);
+      if (!p) return;
+      try {
+        p.volume = masterVolume * (opts.volume ?? 1);
+        if (opts.rate && Platform.OS !== 'web') p.playbackRate = opts.rate;
+        /* `seekTo` is genuinely async on native; rewind *then* play, or a
+           rapid second tap can start the sound before it has rewound. */
+        void Promise.resolve(p.seekTo(0)).then(
+          () => p.play(),
+          () => p.play(),
+        );
+      } catch {
+        /* ignore */
+      }
+    };
+    /* Already set up: play now, on this tick, so a tap feels instant. */
+    if (initialized && ready) void ready.then(start, start);
+    else void init().then(start, start);
   },
   /** Start a looping sound (engine, spray). Idempotent. */
   startLoop(name: SfxName, volume = 0.8) {
