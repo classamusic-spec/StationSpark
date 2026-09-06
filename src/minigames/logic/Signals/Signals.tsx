@@ -10,7 +10,7 @@ import { haptics } from '@/services/haptics';
 import { Button, CheckIcon, ChevronRightIcon, Text, TrayRow } from '@/ui';
 
 import { Stage } from '@/world';
-import { SceneCrew, SlotPlaque } from '@/world/scenes';
+import { SlotPlaque } from '@/world/scenes';
 import { Draggable } from '../shared/Draggable';
 import { GameFrame } from '../shared/GameFrame';
 import { SlotZone } from '../shared/SlotZone';
@@ -207,7 +207,6 @@ export function Signals({ challenge, ageBand, onComplete, onEvent, compact }: Mi
       subtitle={ageBand === 'A' ? undefined : 'Put the steps of the call in order.'}
       compact={compact}
       backdrop={<Stage variant="radio-room" groundHeight={150} />}
-      overlay={<SceneCrew side="right" size={54} mood={state.phase === 'done' ? 'cheer' : state.phase === 'playing' ? 'happy' : 'idle'} />}
       hint={{ text: hintText, visible: hintLadder.showBubble && state.phase === 'ordering', onDismiss: hintLadder.dismiss }}
       tray={
         <View style={styles.trayInner}>

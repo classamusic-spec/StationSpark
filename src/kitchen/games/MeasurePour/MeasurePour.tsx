@@ -26,7 +26,7 @@ import { ActivityFrame } from '@/ui/kit/ActivityFrame';
 import { VocabIcon } from '@/ui/kit/VocabIcon';
 
 import { Stage as SceneStage } from '@/world';
-import { SceneCrew } from '@/world/scenes';
+
 import { Stage, at } from '../../parts/Stage';
 import { CookCTA } from '../../parts/SceneBits';
 import { useRise, useSwing } from '../../parts/motion';
@@ -290,7 +290,7 @@ export function MeasurePour({ challenge, onComplete, onEvent, compact }: MiniGam
         <>
           {/* a kitchen game belongs on a counter, not on a sky gradient */}
           <SceneStage variant="counter" groundHeight={170} />
-          <SceneCrew side="right" size={50} mood={done ? 'cheer' : pouring ? 'happy' : 'idle'} />
+          
         </>
       }
       controls={controls}

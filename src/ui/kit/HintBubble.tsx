@@ -133,11 +133,6 @@ export function HintBubble({
               </Svg>
             </View>
             <Text variant="bodyStrong">{text}</Text>
-            {es ? (
-              <Text variant="small" color={palette.purple}>
-                {es}
-              </Text>
-            ) : null}
           </View>
         </Pressable>
       </View>

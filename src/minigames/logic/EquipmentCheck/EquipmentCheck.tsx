@@ -19,7 +19,7 @@ import { haptics } from '@/services/haptics';
 import { Button, CheckIcon, Chip, EquipmentIcon, ResetIcon, Text, TrayRow, equipmentLabel } from '@/ui';
 
 import { Stage } from '@/world';
-import { SceneCrew } from '@/world/scenes';
+
 import { AskQuestion } from '../shared/AskQuestion';
 import { Draggable } from '../shared/Draggable';
 import { GameFrame } from '../shared/GameFrame';
@@ -266,10 +266,7 @@ export function EquipmentCheck({ challenge, ageBand, onComplete, onEvent, compac
       subtitle={ageBand === 'A' ? undefined : 'Drag the items into the truck.'}
       compact={compact}
       backdrop={
-        <>
-          <Stage variant="yard" groundHeight={150} />
-          <SceneCrew side="left" size={52} mood={state.phase === 'done' ? 'cheer' : 'idle'} />
-        </>
+                  <Stage variant="yard" groundHeight={150} />
       }
       hint={{ text: hintText, visible: hintLadder.showBubble && state.phase === 'packing', onDismiss: hintLadder.dismiss }}
       overlay={

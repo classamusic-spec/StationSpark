@@ -20,7 +20,7 @@ import { speech } from '@/services/speech';
 import { Button, CheckIcon, GlyphIcon, Text, useSideRail } from '@/ui';
 
 import { Stage } from '@/world';
-import { SceneCrew } from '@/world/scenes';
+
 import { Animal } from '@/world/props';
 import { GameFrame } from '../shared/GameFrame';
 import { useGameLayout } from '../shared/layout';
@@ -237,7 +237,6 @@ export function ClockWatch({ challenge, onComplete, onEvent, compact }: MiniGame
       compact={compact}
       onReplay={replay}
       backdrop={<Stage variant="tower" groundHeight={140} />}
-      overlay={<SceneCrew side="left" size={54} mood={state.solved ? 'cheer' : 'idle'} />}
       hint={{ text: hintText, visible: hintLadder.showBubble, onDismiss: hintLadder.dismiss }}
       tray={
         <View style={styles.tray}>

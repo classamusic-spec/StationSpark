@@ -23,7 +23,7 @@ import { haptics } from '@/services/haptics';
 import { Text, useSideRail } from '@/ui';
 
 import { Stage } from '@/world';
-import { SceneCrew } from '@/world/scenes';
+
 import { AskQuestion } from '../shared/AskQuestion';
 import { GameFrame } from '../shared/GameFrame';
 import { useGameLayout } from '../shared/layout';
@@ -457,14 +457,7 @@ export function RescueRoute({ challenge, ageBand, onComplete, onEvent, compact }
       subtitle={goalStreet ? `On ${goalStreet}. Build the steps, then press Go.` : 'Build the steps, then press Go.'}
       compact={compact}
       backdrop={
-        <>
-          <Stage variant="street" groundHeight={140} />
-          <SceneCrew
-            side="right"
-            size={52}
-            mood={state.phase === 'arrived' ? 'cheer' : state.phase === 'running' ? 'happy' : 'idle'}
-          />
-        </>
+                  <Stage variant="street" groundHeight={140} />
       }
       hint={{ text: hintText, visible: hintLadder.showBubble && state.phase !== 'running', onDismiss: hintLadder.dismiss }}
       overlay={

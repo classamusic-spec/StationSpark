@@ -13,7 +13,7 @@ import { AnswerTile, Text, TrayRow, VocabIcon, useSideRail } from '@/ui';
 import type { AnswerState } from '@/ui/kit/AnswerTile';
 
 import { Stage } from '@/world';
-import { SceneCrew } from '@/world/scenes';
+
 import { GameFrame } from '../shared/GameFrame';
 import { useGameLayout } from '../shared/layout';
 import { useHintLadder } from '../shared/useHintLadder';
@@ -217,10 +217,7 @@ export function DispatchDecoder({ challenge, ageBand, onComplete, onEvent, compa
       compact={compact}
       onReplay={replay}
       backdrop={
-        <>
-          <Stage variant="radio-room" groundHeight={158} />
-          <SceneCrew side="left" size={54} mood={state.phase === 'solved' ? 'cheer' : state.phase === 'listening' ? 'think' : 'idle'} />
-        </>
+                  <Stage variant="radio-room" groundHeight={158} />
       }
       hint={{ text: hintText, visible: hintLadder.showBubble, onDismiss: hintLadder.dismiss }}
       tray={

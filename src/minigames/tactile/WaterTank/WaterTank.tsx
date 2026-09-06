@@ -20,7 +20,7 @@ import { speech } from '@/services/speech';
 import { formatFraction, speakFraction, toNumber } from '@/utils/fractions';
 import { FractionBar, PumpLever, TankShell, WaterSurface } from '@/world/props';
 import { Stage } from '@/world';
-import { PUMPER_DECK, PUMPER_VB, PumperTruck, SceneCrew } from '@/world/scenes';
+import { PUMPER_DECK, PUMPER_VB, PumperTruck } from '@/world/scenes';
 
 import { GameShell, clampNum, useClock, useHintLadder, useMeasuredBox, useSpokenPrompt, useStage } from '../shared';
 
@@ -249,7 +249,6 @@ export function WaterTank({ challenge, ageBand, onComplete, onEvent, compact }: 
       hint={hints.bubble}
       onDismissHint={hints.dismiss}
       backdrop={<Stage variant="yard" groundHeight={150} />}
-      overlay={<SceneCrew side="left" size={62} mood={state.phase === 'done' ? 'cheer' : state.phase === 'confirming' ? 'happy' : 'idle'} />}
       hud={
         <View style={styles.hud}>
           <Text variant="h2">{formatFraction(target)}</Text>

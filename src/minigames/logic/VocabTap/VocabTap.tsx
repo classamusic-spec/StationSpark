@@ -12,7 +12,7 @@ import { AnswerTile, Button, SpeakerIcon, Text, TrayRow, VocabIcon } from '@/ui'
 import type { AnswerState } from '@/ui/kit/AnswerTile';
 
 import { Stage } from '@/world';
-import { SceneCrew } from '@/world/scenes';
+
 import { GameFrame } from '../shared/GameFrame';
 import { useGameLayout } from '../shared/layout';
 import { useHintLadder } from '../shared/useHintLadder';
@@ -109,10 +109,7 @@ export function VocabTap({ challenge, ageBand, onComplete, onEvent, compact }: M
       subtitle={ageBand === 'A' ? undefined : 'Listen to Captain Bea, then tap the picture.'}
       compact={compact}
       backdrop={
-        <>
-          <Stage variant="classroom" groundHeight={150} />
-          <SceneCrew side="left" size={58} mood={state.phase === 'solved' ? 'cheer' : 'idle'} />
-        </>
+                  <Stage variant="classroom" groundHeight={150} />
       }
       hint={{ text: hintText, visible: hintLadder.showBubble, onDismiss: hintLadder.dismiss }}
       tray={

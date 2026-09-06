@@ -29,7 +29,7 @@ import { AnswerTile } from '@/ui/kit/AnswerTile';
 import { GrownUpChip } from '@/ui/kit/Chip';
 
 import { Stage as SceneStage } from '@/world';
-import { CrewFigure, SceneCrew } from '@/world/scenes';
+import { CrewFigure } from '@/world/scenes';
 import { toppingLabel, toppings } from '../../food';
 import {
   buildWedges,
@@ -596,15 +596,7 @@ export function PizzaFractions({ challenge, ageBand, onComplete, onEvent, compac
       onReplay={replay}
       progress={{ done: STEP_OF[phase], total: 4 }}
       backdrop={
-        <>
-          <SceneStage variant="counter" groundHeight={200} />
-          <SceneCrew
-            side="left"
-            size={50}
-            npc="gino"
-            mood={phase === 'share' ? 'cheer' : phase === 'cut' ? 'think' : phase === 'roll' ? 'happy' : 'idle'}
-          />
-        </>
+                  <SceneStage variant="counter" groundHeight={200} />
       }
       controls={controls}
       controlsTone="cream"

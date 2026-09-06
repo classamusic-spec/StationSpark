@@ -28,7 +28,7 @@ import { useReducedMotion } from '@/hooks';
 import { useGame } from '@/state/store';
 import { selectTruck } from '@/state/selectors';
 import { Tray } from '@/ui';
-import { SceneCrew } from '@/world/scenes';
+
 import { GameShell, useHintLadder, useMeasuredBox, useSpokenPrompt } from '../shared';
 import { GateLabels } from './GateLabels';
 import { RoadScene } from './RoadScene';
@@ -331,7 +331,6 @@ export function TruckRun({ challenge, ageBand, onComplete, onEvent, compact }: M
   );
 
   const detail = ageBand === 'A' ? 'Swipe or tap left and right to steer.' : 'Steer into the gate with the answer.';
-  const mood = arrived ? 'cheer' : frame.boost > 0.05 ? 'happy' : hints.bubble ? 'think' : 'idle';
   const progress = useMemo(() => ({ done: frame.answered, total: frame.total }), [frame.answered, frame.total]);
 
   return (
@@ -345,7 +344,6 @@ export function TruckRun({ challenge, ageBand, onComplete, onEvent, compact }: M
       onDismissHint={hints.dismiss}
       onStageLayout={onLayout}
       tray={tray}
-      overlay={<SceneCrew side="right" lead="bea" size={64} mood={mood} />}
     >
       {/* the testID below is the QA hook (like the drag/slot testIDs the
           harness already uses): it publishes the live run, so tools/qa can work

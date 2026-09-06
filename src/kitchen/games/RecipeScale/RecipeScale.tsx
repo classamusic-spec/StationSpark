@@ -22,7 +22,7 @@ import { GrownUpChip } from '@/ui/kit/Chip';
 import { VocabIcon } from '@/ui/kit/VocabIcon';
 
 import { Stage as SceneStage } from '@/world';
-import { CrewFigure, SceneCrew } from '@/world/scenes';
+import { CrewFigure } from '@/world/scenes';
 import { RecipeCardFrame } from '../../parts/RecipeCardFrame';
 import { CookCTA, PotArt, WoodenSpoon } from '../../parts/SceneBits';
 import { pluralEn } from '../../spanish';
@@ -231,7 +231,7 @@ export function RecipeScale({ challenge, onComplete, onEvent, compact }: MiniGam
         <>
           {/* the pot stands on a kitchen counter, not in the sky */}
           <SceneStage variant="counter" groundHeight={170} />
-          <SceneCrew side="right" size={52} npc="rosa" mood={cooking ? 'cheer' : allCorrect ? 'happy' : 'idle'} />
+          
         </>
       }
       controls={controls}

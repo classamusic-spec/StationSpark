@@ -19,7 +19,7 @@ import { AnswerTile, Text, TrayRow } from '@/ui';
 import type { AnswerState } from '@/ui/kit/AnswerTile';
 
 import { Stage } from '@/world';
-import { SceneCrew } from '@/world/scenes';
+
 import { GameFrame } from '../shared/GameFrame';
 import { useGameLayout } from '../shared/layout';
 import { useHintLadder } from '../shared/useHintLadder';
@@ -144,10 +144,7 @@ export function SprayPattern({ challenge, ageBand, onComplete, onEvent, compact 
       subtitle={ageBand === 'A' ? undefined : 'Finish the spray pattern.'}
       compact={compact}
       backdrop={
-        <>
-          <Stage variant="yard" groundHeight={150} />
-          <SceneCrew side="right" size={54} mood={state.phase === 'solved' ? 'cheer' : state.phase === 'spraying' ? 'happy' : 'idle'} />
-        </>
+                  <Stage variant="yard" groundHeight={150} />
       }
       hint={{ text: hintText, visible: hintLadder.showBubble, onDismiss: hintLadder.dismiss }}
       tray={

@@ -11,7 +11,7 @@ import { haptics } from '@/services/haptics';
 import { speech } from '@/services/speech';
 import { Rookie } from '@/characters';
 import { Stage } from '@/world';
-import { SceneCrew, WallPanel } from '@/world/scenes';
+import { WallPanel } from '@/world/scenes';
 import { Animal, LadderRails } from '@/world/props';
 import { GameShell, clampNum, minJumps, useHintLadder, useMeasuredBox, useSpokenPrompt, useStage } from '../shared';
 
@@ -243,7 +243,6 @@ export function NumberLadder({ challenge, ageBand, onComplete, onEvent, compact 
       hint={hints.bubble}
       onDismissHint={hints.dismiss}
       backdrop={<Stage variant="street" groundHeight={130} />}
-      overlay={<SceneCrew side="left" size={58} mood={state.phase === 'done' ? 'cheer' : state.phase === 'hopping' ? 'happy' : 'idle'} />}
       footer={
         <View style={styles.mathRow}>
           <Text variant="h3" color={state.pos === target ? palette.leafGreenDark : palette.navy}>

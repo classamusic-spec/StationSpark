@@ -13,7 +13,6 @@ import { speech } from '@/services/speech';
 import { useReducedMotion } from '@/hooks';
 import { formatFraction, toNumber } from '@/utils/fractions';
 import { Stage } from '@/world';
-import { SceneCrew } from '@/world/scenes';
 
 import { BuildingFacade, Flame, FractionBar, HoseRig, Hydrant, facadeLayout, sceneTheme, windowAt } from '@/world/props';
 import {
@@ -406,12 +405,7 @@ export function HoseHero({ challenge, ageBand, onComplete, onEvent, compact, mis
       footer={<CountStrip current={state.outCount} total={total} icon="flame" invert />}
       overlay={
         <>
-        <SceneCrew
-          side="right"
-          size={64}
-         
-          mood={state.phase === 'done' ? 'cheer' : state.phase === 'flameOut' ? 'happy' : 'idle'}
-        />
+        
         <AskQuestion
           visible={state.phase === 'asking'}
           question={askText}

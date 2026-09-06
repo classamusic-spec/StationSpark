@@ -90,11 +90,6 @@ export function AskQuestion({
         <Text variant="h2" center>
           {prompt}
         </Text>
-        {promptEs ? (
-          <Text variant="small" color={palette.purple} center style={styles.es}>
-            {promptEs}
-          </Text>
-        ) : null}
         {content ? <View style={styles.content}>{content}</View> : null}
         <View style={styles.options}>
           {options.map((option, i) => {

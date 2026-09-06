@@ -12,7 +12,7 @@ import { speech } from '@/services/speech';
 import { EquipmentIcon, Text, TrayRow, equipmentLabel, useSideRail } from '@/ui';
 
 import { Stage } from '@/world';
-import { SceneCrew } from '@/world/scenes';
+
 import { Draggable } from '../shared/Draggable';
 import { GameFrame } from '../shared/GameFrame';
 import { SlotZone } from '../shared/SlotZone';
@@ -180,10 +180,7 @@ export function GearSort({ challenge, ageBand, onComplete, onEvent, compact }: M
       onReplay={replay}
       progress={{ done, total: challenge.items.length }}
       backdrop={
-        <>
-          <Stage variant="store-room" groundHeight={150} />
-          <SceneCrew side="right" size={54} mood={state.phase === 'done' ? 'cheer' : done > 0 ? 'happy' : 'idle'} />
-        </>
+                  <Stage variant="store-room" groundHeight={150} />
       }
       hint={{ text: hintText, visible: hintLadder.showBubble, onDismiss: hintLadder.dismiss }}
       tray={

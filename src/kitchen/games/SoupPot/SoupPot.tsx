@@ -22,7 +22,7 @@ import { speech } from '@/services/speech';
 import { ActivityFrame, AnswerTile, Button, CheckIcon, Text, TrayRow, VocabIcon } from '@/ui';
 
 import { Stage as SceneStage } from '@/world';
-import { SceneCrew } from '@/world/scenes';
+
 import { Stage, at } from '../../parts/Stage';
 import { countPhraseEn, countPhraseEs, orderPhraseEn, orderPhraseEs } from '../../spanish';
 import { answerOptions, potDrop, potState, potTotal } from '../../shareMath';
@@ -215,8 +215,6 @@ export function SoupPot({ challenge, ageBand, onComplete, onEvent, compact }: Mi
     return out.slice(0, FLOAT.length);
   }, [added, steps]);
 
-  const mood = phase === 'simmering' ? 'cheer' : state.total > 0 ? 'happy' : 'idle';
-
   return (
     <ActivityFrame
       task="Fill the pot in order."
@@ -227,7 +225,7 @@ export function SoupPot({ challenge, ageBand, onComplete, onEvent, compact }: Mi
       backdrop={<SceneStage variant="pantry" groundHeight={150} />}
       overlay={
         <>
-          <SceneCrew side="right" size={52} mood={mood} />
+          
           {phase === 'asking' ? (
             <Animated.View entering={FadeIn} style={styles.askLayer} pointerEvents="box-none">
               <Animated.View entering={ZoomIn.springify().damping(13)} style={[styles.askCard, shadows.card]}>

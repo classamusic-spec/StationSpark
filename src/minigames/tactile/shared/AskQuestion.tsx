@@ -114,11 +114,6 @@ function AskQuestionCard({ question, es, options, correct, ageBand, countGlyph =
           <CharacterPortrait id="bea" emotion="think" size={compact ? 52 : 64} />
           <View style={styles.headText}>
             <Text variant={compact ? 'h3' : 'h2'}>{question}</Text>
-            {es ? (
-              <Text variant="small" color={palette.purple}>
-                {es}
-              </Text>
-            ) : null}
           </View>
         </View>
         <View style={styles.row}>

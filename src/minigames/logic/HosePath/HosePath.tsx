@@ -11,7 +11,7 @@ import { haptics } from '@/services/haptics';
 import { Button, EquipmentIcon, ResetIcon, Text, TrayRow } from '@/ui';
 
 import { Stage } from '@/world';
-import { SceneCrew } from '@/world/scenes';
+
 import { Draggable } from '../shared/Draggable';
 import { GameFrame } from '../shared/GameFrame';
 import { SlotZone } from '../shared/SlotZone';
@@ -251,10 +251,7 @@ export function HosePath({ challenge, ageBand, onComplete, onEvent, compact }: M
       subtitle={ageBand === 'A' ? undefined : 'Drag pieces in, tap to turn them.'}
       compact={compact}
       backdrop={
-        <>
-          <Stage variant="yard" groundHeight={150} />
-          <SceneCrew side="left" size={54} mood={state.phase === 'done' ? 'cheer' : state.phase === 'flowing' ? 'happy' : 'idle'} />
-        </>
+                  <Stage variant="yard" groundHeight={150} />
       }
       hint={{ text: hintText, visible: hintLadder.showBubble && state.phase === 'building', onDismiss: hintLadder.dismiss }}
       tray={

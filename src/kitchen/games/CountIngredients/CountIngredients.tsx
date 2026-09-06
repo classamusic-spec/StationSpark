@@ -26,7 +26,7 @@ import { GrownUpChip } from '@/ui/kit/Chip';
 import { VocabIcon } from '@/ui/kit/VocabIcon';
 
 import { Stage as SceneStage } from '@/world';
-import { SceneCrew } from '@/world/scenes';
+
 import { Stage, at } from '../../parts/Stage';
 import { RecipeCardFrame } from '../../parts/RecipeCardFrame';
 import { CookCTA } from '../../parts/SceneBits';
@@ -339,7 +339,7 @@ export function CountIngredients({ challenge, onComplete, onEvent, compact }: Mi
         <>
           {/* a pantry, not a sky: shelves, jars, sacks and crates behind the play */}
           <SceneStage variant="pantry" groundHeight={160} />
-          <SceneCrew side="right" size={50} npc="rosa" mood={blended ? 'cheer' : taken.length > 0 ? 'happy' : 'idle'} />
+          
         </>
       }
       controls={controls}

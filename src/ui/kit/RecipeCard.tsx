@@ -57,11 +57,6 @@ export function RecipeCard({ title, titleEs, blurb, subjects, art, meta, resting
       <View style={styles.body}>
         {art ? <View style={styles.art}>{art}</View> : null}
         <View style={styles.text}>
-          {titleEs ? (
-            <Text variant="small" color={palette.purple}>
-              {titleEs}
-            </Text>
-          ) : null}
           {blurb ? (
             <Text variant="body" color={roles.ink.secondary} numberOfLines={2}>
               {blurb}

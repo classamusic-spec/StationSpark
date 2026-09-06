@@ -12,7 +12,7 @@ import { haptics } from '@/services/haptics';
 import { speech } from '@/services/speech';
 
 import { Stage } from '@/world';
-import { SceneCrew } from '@/world/scenes';
+
 import { BarrierPiece, Campfire, Cone, RingPanel, ringSlots } from '@/world/props';
 import {
   DragToken,
@@ -222,7 +222,6 @@ export function BuildBarrier({ challenge, ageBand, onComplete, onEvent, compact 
       hint={hints.bubble}
       onDismissHint={hints.dismiss}
       backdrop={<Stage variant="park" groundHeight={150} />}
-      overlay={<SceneCrew side="right" size={58} mood={state.phase === 'done' ? 'cheer' : state.placed.length > 0 ? 'happy' : 'idle'} />}
       footer={
         <View style={styles.mathRow}>
           <Text variant="h3" color={filled === target ? palette.leafGreenDark : palette.navy}>

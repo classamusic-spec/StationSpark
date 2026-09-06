@@ -10,7 +10,7 @@ import { speech } from '@/services/speech';
 import { Button, CheckIcon, Chip, SpeakerIcon, Text, VocabIcon } from '@/ui';
 
 import { Stage } from '@/world';
-import { SceneCrew } from '@/world/scenes';
+
 import { GameFrame } from '../shared/GameFrame';
 import { useGameLayout } from '../shared/layout';
 import { useHintLadder } from '../shared/useHintLadder';
@@ -129,10 +129,7 @@ export function ListenCount({ challenge, ageBand, onComplete, onEvent, compact }
       subtitle={ageBand === 'A' ? undefined : 'Captain Bea speaks Spanish. Fill the crate!'}
       compact={compact}
       backdrop={
-        <>
-          <Stage variant="store-room" groundHeight={158} />
-          <SceneCrew side="right" size={54} mood={state.phase === 'solved' ? 'cheer' : state.taken.length > 0 ? 'happy' : 'idle'} />
-        </>
+                  <Stage variant="store-room" groundHeight={158} />
       }
       hint={{ text: hintText, visible: hintLadder.showBubble, onDismiss: hintLadder.dismiss }}
       tray={

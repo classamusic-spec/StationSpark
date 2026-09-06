@@ -10,7 +10,7 @@ import { haptics } from '@/services/haptics';
 import { speech } from '@/services/speech';
 import { CaptainBea, Rookie } from '@/characters';
 import { Stage } from '@/world';
-import { SceneCrew } from '@/world/scenes';
+
 import { Animal, LadderPiece, UnitWall, animalName } from '@/world/props';
 import {
   DragToken,
@@ -274,7 +274,6 @@ export function LadderBuilder({ challenge, ageBand, onComplete, onEvent, compact
       hint={hints.bubble}
       onDismissHint={hints.dismiss}
       backdrop={<Stage variant="park" groundHeight={150} />}
-      overlay={<SceneCrew side="right" size={58} mood={state.phase === 'done' ? 'cheer' : state.phase === 'climbing' ? 'happy' : 'idle'} />}
       footer={
         <View style={styles.mathRow}>
           <Text variant="h3" color={total === target ? palette.leafGreenDark : palette.navy}>
