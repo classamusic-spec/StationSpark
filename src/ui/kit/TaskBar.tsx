@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { palette, radii, roles, spacing } from '@/theme';
 import { useShowTranslation } from '@/hooks';
+import { speech } from '@/services/speech';
 import { useActivityChrome } from './activityChrome';
 import { BackIcon, SpeakerIcon } from '../icons';
 import { RoundIconButton } from '../RoundIconButton';
@@ -21,8 +22,13 @@ export interface TaskBarProps {
   detail?: string;
   /** leaving the activity */
   onBack?: () => void;
-  /** hear the task again; omit when the activity has nothing to say */
-  onReplay?: () => void;
+  /**
+   * Hear the task again. Omit it and the bar reads the task itself — a game
+   * should not have to opt in to being understood. Pass one only to say
+   * something the bar cannot see (a number to count out, a word to sound out),
+   * or `null` to remove the button where the activity really is silent.
+   */
+  onReplay?: (() => void) | null;
   /** how far through — drawn as a quiet dot row, not a second scoreboard */
   progress?: { done: number; total: number };
   /** shrink for short screens */
@@ -47,9 +53,24 @@ export function TaskBar({ task, es, detail, onBack, onReplay, progress, compact,
   /* The host supplies back / replay / progress so there is only ever one bar. */
   const chrome = useActivityChrome();
   const back = onBack ?? chrome.onBack;
-  const replay = onReplay ?? chrome.onReplay;
   const steps = progress ?? chrome.progress;
   const translated = showEs && es && es !== task ? es : undefined;
+
+  /**
+   * Reading the task back is the default, not a feature a game opts into.
+   * Only 7 of the 25 activities ever passed a handler, which left a child who
+   * missed the spoken line — or who cannot read it — with no way to get it
+   * back in the other 18.
+   */
+  const sayTask = useCallback(() => {
+    /* `speech.say` interrupts, so the Spanish waits its turn rather than
+       cutting the English off mid-word. */
+    speech.say(task, {
+      speaker: 'bea',
+      onDone: translated ? () => setTimeout(() => speech.say(translated, { speaker: 'bea', lang: 'es' }), 250) : undefined,
+    });
+  }, [task, translated]);
+  const replay = onReplay === null ? undefined : (onReplay ?? chrome.onReplay ?? sayTask);
 
   return (
     <Animated.View

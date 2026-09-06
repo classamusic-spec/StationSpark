@@ -13,7 +13,8 @@ export interface ActivityFrameProps {
   /** one quiet line of scaffolding under the task, in the same surface */
   detail?: string;
   onBack?: () => void;
-  onReplay?: () => void;
+  /** omit to let the bar read the task itself; `null` for a silent activity */
+  onReplay?: (() => void) | null;
   progress?: { done: number; total: number };
   /** scenery behind everything; never interactive, never shadowed */
   backdrop?: React.ReactNode;

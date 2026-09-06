@@ -12,8 +12,8 @@ export interface GameFrameProps {
   compact?: boolean;
   /** back out of the activity; the host passes this so there is only one bar */
   onBack?: () => void;
-  /** hear the task again */
-  onReplay?: () => void;
+  /** hear something the bar cannot see; omit and it reads the task itself */
+  onReplay?: (() => void) | null;
   progress?: { done: number; total: number };
   /** scene dressing drawn behind everything (a `<Stage variant=… />`) */
   backdrop?: React.ReactNode;
