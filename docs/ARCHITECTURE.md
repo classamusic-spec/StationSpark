@@ -126,6 +126,12 @@ Routes: `app/index.tsx` (Firehouse), `app/dispatch.tsx`, `app/mission/[id].tsx`,
   huddle. Always pointerEvents none.
 - **`src/characters/art/`** — GENERATED from `SVG ART/` by `tools/art/build-characters.mjs`. Never hand-edit:
   change the SVG and run `npm run art:build`, then `npm run art:verify` to prove the render is unchanged.
+- **`src/world/TownMap.tsx`** — Spark City is laid out on a plan, not by eye. `ROADS` fixes the lanes,
+  `PLOTS` says which block each building stands in (with its measured bounding box, so an awning can
+  never poke across a road), and `plotTransform` scales and translates the drawing into place without
+  touching a path. Every row keeps a strip of grass for its labels, so a pin never lands on tarmac, and
+  nothing but a bridge or the boat may cross `RIVER_KEEP_OUT`. Move a building by editing its plot,
+  never by nudging coordinates inside the drawing.
 - **`src/world/fx/`** — drawn particle FX (water droplets, steam, sparkles, dust, confetti), reduced-motion aware.
 - **`src/ui/kit/GlyphIcon.tsx`** — the drawn glyph set that replaced emoji (counters, subject pills, beats,
   training tiles, sparks, check). Emoji are banned from the world layer (see docs/ART_CRITIQUE.md rules).

@@ -16,7 +16,7 @@ const framing = {
   person: { scale: 1.92, aspect: 120 / 165, cx: 0.5, cy: 0.364 },
   /* The two leads are the authored art: a square box with the head — hat and
    * all — sitting in its top third. */
-  lead: { scale: 1.96, aspect: 1, cx: 0.5, cy: 0.265 },
+  lead: { scale: 1.84, aspect: 1, cx: 0.5, cy: 0.3 },
 } as const;
 
 const backdrops: Record<string, string> = {

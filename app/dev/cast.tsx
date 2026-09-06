@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
-import { CaptainBea, Rookie } from '@/characters';
+import { CaptainBea, CharacterPortrait, Rookie } from '@/characters';
 import type { CharacterPose } from '@/characters';
 import type { Emotion } from '@/content/types';
 import { palette, radii, spacing } from '@/theme';
@@ -69,6 +69,22 @@ export default function CastRoute() {
           <View key={`b${s}`} style={styles.sizeSlot}>
             <CaptainBea size={s} pose="stand" bobPhase={s / 260} />
             <Text variant="tiny" center>{`${s} px`}</Text>
+          </View>
+        ))}
+      </View>
+
+      <Text variant="h3">Portraits (dialogue and hint chrome)</Text>
+      <View style={styles.row}>
+        {([56, 72, 96] as const).map((s2) => (
+          <View key={s2} style={styles.sizeSlot}>
+            <CharacterPortrait id="bea" emotion="think" size={s2} />
+            <Text variant="tiny" center>{`bea ${s2}`}</Text>
+          </View>
+        ))}
+        {([56, 72, 96] as const).map((s2) => (
+          <View key={`r${s2}`} style={styles.sizeSlot}>
+            <CharacterPortrait id="rookie" emotion="happy" size={s2} />
+            <Text variant="tiny" center>{`rookie ${s2}`}</Text>
           </View>
         ))}
       </View>
