@@ -7,7 +7,7 @@ import { StyleSheet, View } from 'react-native';
 import { hit, palette, spacing } from '@/theme';
 import type { Avatar } from '@/state/store';
 import { Text } from '@/ui';
-import { hairTones, helmetTones, skinTones } from '@/characters/rig/palettes';
+import { hairSwatch, helmetSwatch, skinSwatch } from '@/characters/art/tones';
 import { GlossSwatch } from './GlossSwatch';
 
 const SKINS: Avatar['skin'][] = ['peach', 'tan', 'brown', 'deep'];
@@ -34,17 +34,17 @@ export function AvatarPickers({ avatar, onChange, compact }: { avatar: Avatar; o
     <View style={styles.pickers}>
       <PickerRow title="Skin">
         {SKINS.map((s) => (
-          <GlossSwatch key={s} size={size} color={skinTones[s].base} label={`Skin: ${SKIN_LABEL[s]}`} active={avatar.skin === s} onPress={() => onChange({ skin: s })} />
+          <GlossSwatch key={s} size={size} color={skinSwatch(s)} label={`Skin: ${SKIN_LABEL[s]}`} active={avatar.skin === s} onPress={() => onChange({ skin: s })} />
         ))}
       </PickerRow>
       <PickerRow title="Hair">
         {HAIRS.map((h) => (
-          <GlossSwatch key={h} size={size} color={hairTones[h].base} label={`Hair: ${HAIR_LABEL[h]}`} active={avatar.hair === h} onPress={() => onChange({ hair: h })} />
+          <GlossSwatch key={h} size={size} color={hairSwatch(h)} label={`Hair: ${HAIR_LABEL[h]}`} active={avatar.hair === h} onPress={() => onChange({ hair: h })} />
         ))}
       </PickerRow>
       <PickerRow title="Helmet">
         {HELMETS.map((h) => (
-          <GlossSwatch key={h} size={size} color={helmetTones[h].base} label={`Helmet: ${h}`} active={avatar.helmet === h} onPress={() => onChange({ helmet: h })} />
+          <GlossSwatch key={h} size={size} color={helmetSwatch(h)} label={`Helmet: ${h}`} active={avatar.helmet === h} onPress={() => onChange({ helmet: h })} />
         ))}
       </PickerRow>
     </View>

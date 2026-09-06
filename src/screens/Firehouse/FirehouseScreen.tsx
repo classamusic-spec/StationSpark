@@ -169,6 +169,12 @@ export function FirehouseScreen() {
   }, [station]);
 
   /**
+   * The crew stands on the apron, above the button rather than behind it: at
+   * ground level the "Start Shift" pill cut both characters off at the knee.
+   */
+  const crewLift = 86;
+
+  /**
    * Wide enough that the longest greeting never truncates (rule #10) but
    * narrow enough to stop short of Captain Bea, who stands on the right.
    */
@@ -265,15 +271,15 @@ export function FirehouseScreen() {
               </Animated.View>
 
               {/* crew — standing on the ground in front of the apron */}
-              <View style={[styles.crewLeft, { bottom: 12 }]} pointerEvents="none">
+              <View style={[styles.crewLeft, { bottom: crewLift }]} pointerEvents="none">
                 <Rookie size={crew.rookie} avatar={profile.avatar} pose="wave" emotion="happy" />
                 {/* the greeting reads out of Rookie's shoulder, so it never
                     sits over the room tiles */}
-                <View style={[styles.bubble, { left: crew.rookie * 0.38, bottom: crew.rookie * 0.66, width: bubbleW }]}>
+                <View style={[styles.bubble, { left: crew.rookie * 0.38, bottom: crew.rookie * 0.5, width: bubbleW }]}>
                   <GreetingBubble lines={greetings} maxWidth={bubbleW} />
                 </View>
               </View>
-              <View style={[styles.crewRight, { bottom: 10 }]} pointerEvents="none">
+              <View style={[styles.crewRight, { bottom: crewLift - 2 }]} pointerEvents="none">
                 {/* Captain Bea waits by the apron for the shift to start */}
                 <CaptainBea size={crew.bea} emotion="calm" pose="stand" bobPhase={0.45} />
               </View>
@@ -308,13 +314,11 @@ const styles = StyleSheet.create({
   stationWrap: { position: 'absolute', bottom: CREW_ZONE - APRON_OVERLAP, alignSelf: 'center' },
   abs: { position: 'absolute' },
   sign: { alignItems: 'center', justifyContent: 'center' },
-  crewLeft: { position: 'absolute', left: -8, alignItems: 'flex-start' },
+  crewLeft: { position: 'absolute', left: -10, alignItems: 'flex-start', zIndex: 2 },
   bubble: { position: 'absolute' },
-  crewRight: { position: 'absolute', right: -12, flexDirection: 'row', alignItems: 'flex-end', gap: 0 },
-  beacon: { marginBottom: 74, marginRight: -16 },
-  beaconGlow: { position: 'absolute', left: '5%', bottom: -10, alignItems: 'center' },
+  crewRight: { position: 'absolute', right: -10, flexDirection: 'row', alignItems: 'flex-end', gap: 0, zIndex: 2 },
   ctaWrap: { position: 'absolute', bottom: -4, left: 0, right: 0, alignItems: 'center', paddingHorizontal: spacing.lg },
-  cta: { minWidth: 220, maxWidth: 300, alignSelf: 'center' },
+  cta: { minWidth: 200, maxWidth: 252, alignSelf: 'center' },
   grownUps: {
     flexDirection: 'row',
     alignItems: 'center',

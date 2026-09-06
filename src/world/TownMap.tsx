@@ -7,7 +7,7 @@ import { useIdleBob, useLoop, usePulse } from '@/hooks';
 import type { LocationId } from '@/content/types';
 
 /** Design box for Spark City. Pins and the truck are placed in these units. */
-export const MAP_VB = { w: 360, h: 620 } as const;
+export const MAP_VB = { w: 360, h: 600 } as const;
 
 export interface MapPlace {
   id: LocationId;
@@ -20,26 +20,98 @@ export interface MapPlace {
   y: number;
 }
 
+/* ------------------------------------------------------------------ *
+ * The town plan.
+ *
+ * Spark City is laid out on a grid, not scattered: roads run in fixed
+ * lanes, buildings stand inside the blocks between them, and each block
+ * keeps a strip of grass along its foot for the place's label. Nothing but
+ * a bridge or the boat may cross the river.
+ *
+ * Every number below is in MAP_VB units. Change the grid here, not inside
+ * the drawings — each building is placed by `PLOTS`, which scales and
+ * translates its art into a block without touching a single path.
+ * ------------------------------------------------------------------ */
+
+/** Road centre lines and widths. */
+const ROADS = {
+  h1: { y: 180, w: 22 },
+  h2: { y: 322, w: 22 },
+  h3: { y: 464, w: 22 },
+  /** the one avenue running the length of the town */
+  v1: { x: 124, w: 20, y0: 52, y1: 580 },
+} as const;
+
+/**
+ * The water's left edge, sampled off `RIVER_D`, is never further left than
+ * x ≈ 269. Buildings stop at 262 so there is always a green bank.
+ */
+const RIVER_KEEP_OUT = 262;
+
 /** Every stop in Spark City, in reading order down the map. */
 export const MAP_PLACES: readonly MapPlace[] = [
-  { id: 'station', name: 'Fire Station', nameEs: 'Estación', color: palette.engineRed, x: 64, y: 126 },
-  { id: 'school', name: 'School', nameEs: 'Escuela', color: palette.orange, x: 168, y: 124 },
-  { id: 'clock-tower', name: 'Clock Tower', nameEs: 'Reloj', color: palette.safetyYellow, x: 258, y: 132 },
-  { id: 'bakery', name: 'Bakery', nameEs: 'Panadería', color: palette.pink, x: 62, y: 272 },
-  { id: 'library', name: 'Library', nameEs: 'Biblioteca', color: palette.purple, x: 174, y: 274 },
-  { id: 'park', name: 'Park', nameEs: 'Parque', color: palette.leafGreen, x: 266, y: 268 },
-  { id: 'pet-shop', name: 'Pet Shop', nameEs: 'Mascotas', color: palette.waterCyan, x: 56, y: 410 },
-  { id: 'pizza', name: 'Pizza Piazza', nameEs: 'Pizzería', color: palette.engineRedLight, x: 156, y: 410 },
-  { id: 'apartments', name: 'Homes', nameEs: 'Casas', color: '#3E8FE0', x: 257, y: 410 },
-  { id: 'market', name: 'Market', nameEs: 'Mercado', color: palette.grassDark, x: 58, y: 534 },
-  { id: 'construction', name: 'Construction Site', nameEs: 'Obra', color: palette.woodDark, x: 165, y: 558 },
+  { id: 'station', name: 'Fire Station', nameEs: 'Estación', color: palette.engineRed, x: 45, y: 137 },
+  { id: 'school', name: 'School', nameEs: 'Escuela', color: palette.orange, x: 175, y: 137 },
+  { id: 'clock-tower', name: 'Clock Tower', nameEs: 'Reloj', color: palette.safetyYellow, x: 241, y: 137 },
+  { id: 'bakery', name: 'Bakery', nameEs: 'Panadería', color: palette.pink, x: 48, y: 279 },
+  { id: 'library', name: 'Library', nameEs: 'Biblioteca', color: palette.purple, x: 174, y: 279 },
+  { id: 'park', name: 'Park', nameEs: 'Parque', color: palette.leafGreen, x: 240, y: 279 },
+  { id: 'pet-shop', name: 'Pet Shop', nameEs: 'Mascotas', color: palette.waterCyan, x: 50, y: 421 },
+  { id: 'pizza', name: 'Pizza Piazza', nameEs: 'Pizzería', color: palette.engineRedLight, x: 176, y: 421 },
+  { id: 'apartments', name: 'Homes', nameEs: 'Casas', color: '#3E8FE0', x: 240, y: 421 },
+  { id: 'market', name: 'Market', nameEs: 'Mercado', color: palette.grassDark, x: 52, y: 550 },
+  { id: 'construction', name: 'Construction Site', nameEs: 'Obra', color: palette.woodDark, x: 176, y: 550 },
 ] as const;
 
-/** Where the fire truck parks outside the station, in MAP_VB units. */
-export const TRUCK_PARK = { x: 44, y: 164 } as const;
+/**
+ * Where each drawing lands. `box` is the art's own bounding box in the
+ * coordinates it was drawn in; `at` is the top-left corner of the block it
+ * should occupy, and `s` how much to shrink it to fit. The drawings
+ * themselves are untouched.
+ */
+interface Plot {
+  box: readonly [number, number, number, number];
+  at: readonly [number, number];
+  s: number;
+}
 
-/** The wooden board at the bottom of the map — the screen letters it. */
-export const MAP_SIGN = { x: 246, y: 554, w: 86, h: 32 } as const;
+/*
+ * Boxes are measured off the drawings themselves, not estimated: a building
+ * whose real box is wider than assumed pokes an awning across a road, which is
+ * exactly the bug this table exists to prevent.
+ *
+ * The top 58 units are sky and hills — the screen's back button and title
+ * banner float there, so no building may stand in that band.
+ *
+ * Columns:  left 10…95   ·  avenue 114…134  ·  right 138…216  ·  bank 218…262
+ * Rows, each with the strip of grass its labels sit in:
+ *   row 1  buildings  60…134   labels 137…167   road at 180
+ *   row 2  buildings 202…276   labels 279…309   road at 322
+ *   row 3  buildings 344…418   labels 421…451   road at 464
+ *   row 4  buildings 486…556   labels 559…589
+ */
+const PLOTS = {
+  station: { box: [6, 16, 124, 142.2], at: [10, 60], s: 0.586 },
+  school: { box: [116, 18, 236, 139], at: [138, 60], s: 0.61 },
+  clockTower: { box: [226, 26, 282, 140.4], at: [224, 60], s: 0.6 },
+  bakery: { box: [8, 178, 117, 283.6], at: [10, 202], s: 0.7 },
+  library: { box: [124, 190, 224, 284.4], at: [138, 202], s: 0.72 },
+  petShop: { box: [8, 332, 112, 419.8], at: [10, 344], s: 0.78 },
+  pizza: { box: [104, 330, 208, 420.4], at: [138, 344], s: 0.75 },
+  homes: { box: [212.5, 336, 308, 404], at: [218, 372], s: 0.46 },
+  market: { box: [10, 484, 116, 546.4], at: [10, 492], s: 0.76 },
+  construction: { box: [112, 470, 247, 576], at: [138, 486], s: 0.58 },
+  lighthouse: { box: [320, 326, 356, 397.4], at: [310, 350], s: 0.8 },
+} as const satisfies Record<string, Plot>;
+
+/** `translate(...) scale(...)` that drops a drawing onto its plot. */
+function plotTransform(p: Plot): string {
+  const [x0, y0] = p.box;
+  return `translate(${(p.at[0] - p.s * x0).toFixed(2)} ${(p.at[1] - p.s * y0).toFixed(2)}) scale(${p.s})`;
+}
+
+/** Where the fire truck parks, on the avenue outside the station. */
+export const TRUCK_PARK = { x: 46, y: 180 } as const;
 
 const RIVER_D =
   'M 330 -10 C 322 60 300 96 308 150 C 316 204 288 232 296 292 C 304 352 278 384 286 444 C 294 504 318 546 314 630';
@@ -80,10 +152,16 @@ function win(x: number, y: number, w: number, h: number, bars = true) {
 function awning(x: number, y: number, w: number, h: number, a: string, b: string) {
   const n = Math.max(3, Math.round(w / 9));
   const step = w / n;
-  const scallop = Array.from({ length: n }, (_, i) => `q ${step / 2} 3 ${step} 0`).join(' ');
+  /*
+   * The scalloped valance runs back along the bottom edge, right to left. It
+   * used to advance rightwards, which drew a second awning's worth of orange
+   * off the side of every stall — invisible while the map was crowded, and
+   * very visible once the buildings were spaced apart.
+   */
+  const scallop = Array.from({ length: n }, () => `q ${-step / 2} 3 ${-step} 0`).join(' ');
   return (
     <G>
-      <Path d={`M ${x} ${y} h ${w} l -2 ${h} ${scallop} l -2 ${-h} z`} fill={a} />
+      <Path d={`M ${x} ${y} h ${w} l -2 ${h} ${scallop} l 2 ${-h} z`} fill={a} />
       {Array.from({ length: n }, (_, i) =>
         i % 2 === 1 ? <Rect key={i} x={x + 1 + i * step} y={y} width={step} height={h} fill={b} /> : null,
       )}
@@ -132,6 +210,33 @@ function Road({ d, width = 22 }: { d: string; width?: number }) {
 }
 
 /** A layered tree: dark back mass, lit front mass, one highlight, a trunk. */
+/**
+ * The only way a road may touch the water. Sits on the road's centre line at
+ * the river's crossing point, so a bridge can never drift off the water.
+ */
+function Bridge({ y, cx, red = false }: { y: number; cx: number; red?: boolean }) {
+  const w = 58;
+  const x = cx - w / 2;
+  if (red) {
+    return (
+      <G>
+        <Path d={`M ${x + 2} ${y + 4} Q ${cx} ${y - 28} ${x + w - 2} ${y + 4}`} stroke={palette.engineRedDark} strokeWidth={11} fill="none" strokeLinecap="round" />
+        <Path d={`M ${x + 2} ${y + 2} Q ${cx} ${y - 30} ${x + w - 2} ${y + 2}`} stroke={palette.engineRed} strokeWidth={7} fill="none" strokeLinecap="round" />
+        <Rect x={x} y={y - 5} width={w} height={10} rx={4} fill={palette.engineRedDark} />
+        <Rect x={x} y={y - 5} width={w} height={3.4} rx={1.7} fill={HI} />
+      </G>
+    );
+  }
+  return (
+    <G>
+      <Rect x={x} y={y - 15} width={w} height={30} rx={7} fill="#DCE1EE" />
+      <Rect x={x} y={y - 15} width={w} height={6} rx={3} fill="#C2C9DC" />
+      <Rect x={x} y={y - 9} width={w} height={3} rx={1.5} fill={HI} />
+      <Path d={`M ${x + 12} ${y + 15} Q ${cx} ${y - 7} ${x + w - 12} ${y + 15} Z`} fill={palette.waterCyanDark} opacity={0.45} />
+    </G>
+  );
+}
+
 function Trees({ pts }: { pts: readonly [number, number, number][] }) {
   return (
     <G>
@@ -354,40 +459,42 @@ function Library() {
 }
 
 /** 6 · Park — a bowl of grass, the fountain basin, a bench and a bin. */
+/**
+ * 6 · Riverside Park — a green strip on the bank between the avenue and the
+ * water. It stops at `RIVER_KEEP_OUT`, so the lawn never floats on the river;
+ * the only thing on the water here is the boat drifting past.
+ */
 function Park() {
+  const x0 = 216;
+  const x1 = RIVER_KEEP_OUT;
+  const w = x1 - x0;
   return (
     <G>
-      <Ellipse cx={266} cy={236} rx={46} ry={40} fill="#93D671" />
-      <Ellipse cx={266} cy={232} rx={40} ry={33} fill={palette.grass} />
-      <Path d="M 226 250 q 40 -18 80 0" stroke="#E4D3AE" strokeWidth={7} fill="none" strokeLinecap="round" />
-      {/* fountain basin (the jet lives in MapLife) */}
-      <Ellipse cx={266} cy={246} rx={23} ry={13} fill="#B9C3D9" />
-      <Ellipse cx={266} cy={244} rx={20} ry={11} fill={palette.waterCyanLight} />
-      <Ellipse cx={266} cy={243} rx={15} ry={7} fill={palette.waterCyan} />
-      <Rect x={263} y={226} width={6} height={18} rx={3} fill="#CBD3E4" />
-      <Ellipse cx={266} cy={226} rx={9} ry={4} fill="#DDE3EF" />
-      <Ellipse cx={266} cy={225} rx={6} ry={2.4} fill={HI} />
-      {/* bench */}
+      <Rect x={x0} y={198} width={w} height={80} rx={15} fill="#93D671" />
+      <Rect x={x0 + 3} y={201} width={w - 6} height={74} rx={12} fill={palette.grass} />
+      {/* fountain: basin only — the jet is animated in MapLife */}
+      <Ellipse cx={239} cy={228} rx={15} ry={8} fill="#B9C3D9" />
+      <Ellipse cx={239} cy={226} rx={12} ry={6} fill={palette.waterCyanLight} />
+      <Ellipse cx={239} cy={225} rx={9} ry={4.5} fill={palette.waterCyan} />
+      <Rect x={236.5} y={214} width={5} height={12} rx={2.5} fill="#CBD3E4" />
+      <Ellipse cx={239} cy={214} rx={6.5} ry={3} fill="#DDE3EF" />
+      {/* a bench facing the water */}
       <G>
-        {ground(238, 262, 13)}
-        <Rect x={227} y={250} width={22} height={4} rx={2} fill={palette.wood} />
-        <Rect x={227} y={244} width={22} height={3.4} rx={1.7} fill={palette.wood} />
-        <Rect x={227} y={250} width={22} height={1.4} rx={0.7} fill={HI} />
-        <Rect x={229} y={254} width={2.6} height={6} rx={1.3} fill={palette.woodDark} />
-        <Rect x={244} y={254} width={2.6} height={6} rx={1.3} fill={palette.woodDark} />
+        <Rect x={224} y={252} width={22} height={3.6} rx={1.8} fill={palette.wood} />
+        <Rect x={224} y={246} width={22} height={3} rx={1.5} fill={palette.woodDark} />
+        <Rect x={226} y={255} width={2.6} height={6} rx={1.3} fill={palette.woodDark} />
+        <Rect x={242} y={255} width={2.6} height={6} rx={1.3} fill={palette.woodDark} />
       </G>
-      {/* litter bin */}
+      {/* a flower bed on the bank */}
       <G>
-        {ground(296, 258, 6)}
-        <Path d="M 292 256 l 1.4 -12 h 7.2 l 1.4 12 z" fill="#5DBB63" />
-        <Rect x={291} y={242} width={11} height={3} rx={1.5} fill="#3B8E3F" />
-        <Rect x={292.4} y={244} width={3} height={11} fill={HI} />
+        <Ellipse cx={254} cy={266} rx={6} ry={4} fill="#7FC45F" />
+        <Circle cx={252} cy={265} r={1.8} fill={palette.pink} />
+        <Circle cx={256} cy={267} r={1.8} fill={palette.safetyYellow} />
       </G>
     </G>
   );
 }
 
-/** 7 · Pet Shop — cyan roof, paw plate, a kennel and a big shop window. */
 function PetShop() {
   return (
     <G>
@@ -659,10 +766,10 @@ const MapArt = memo(function MapArt({ width, height }: { width: number; height: 
       {/* ground */}
       <Rect x={0} y={0} width={MAP_VB.w} height={MAP_VB.h} fill="url(#mapGrass)" />
       {/* soft meadow patches */}
-      <Ellipse cx={70} cy={330} rx={70} ry={40} fill="#B4E693" opacity={0.5} />
-      <Ellipse cx={280} cy={520} rx={80} ry={46} fill="#B4E693" opacity={0.45} />
-      {/* construction sand lot */}
-      <Ellipse cx={166} cy={520} rx={86} ry={56} fill="#E9CE9A" />
+      <Ellipse cx={58} cy={392} rx={54} ry={30} fill="#B4E693" opacity={0.5} />
+      <Ellipse cx={242} cy={430} rx={42} ry={30} fill="#B4E693" opacity={0.45} />
+      {/* the construction site's sand lot, inside its block */}
+      <Ellipse cx={180} cy={520} rx={40} ry={34} fill="#E9CE9A" />
       {/* distant hills behind the top haze */}
       <Path d="M -10 62 q 46 -34 96 -6 q 40 -30 92 -2 q 44 -26 96 0 q 40 -22 96 4 L 370 0 L -10 0 Z" fill="#8FCF87" opacity={0.55} />
 
@@ -671,76 +778,78 @@ const MapArt = memo(function MapArt({ width, height }: { width: number; height: 
       <Path d={RIVER_D} stroke="url(#mapRiver)" strokeWidth={23} fill="none" strokeLinecap="round" />
       <Path d={RIVER_D} stroke="#FFFFFF" strokeWidth={3} strokeDasharray="14 30" fill="none" opacity={0.35} strokeLinecap="round" />
 
-      {/* ── roads ─────────────────────────────────────────────────── */}
-      <Road d="M -10 150 L 370 150" />
-      <Road d="M -10 318 L 250 318" />
-      <Road d="M -10 444 L 370 444" />
-      <Road d="M 86 30 L 86 560" />
-      <Road d="M 214 60 L 214 560" width={18} />
-      <Road d="M 214 240 L 300 240" width={16} />
+      {/* ── roads: fixed lanes, and every building lives between them ── */}
+      <Road d={`M -10 ${ROADS.h1.y} L 370 ${ROADS.h1.y}`} width={ROADS.h1.w} />
+      <Road d={`M -10 ${ROADS.h2.y} L 370 ${ROADS.h2.y}`} width={ROADS.h2.w} />
+      <Road d={`M -10 ${ROADS.h3.y} L 370 ${ROADS.h3.y}`} width={ROADS.h3.w} />
+      <Road d={`M ${ROADS.v1.x} ${ROADS.v1.y0} L ${ROADS.v1.x} ${ROADS.v1.y1}`} width={ROADS.v1.w} />
 
-      {/* ── bridges ───────────────────────────────────────────────── */}
-      <G>
-        <Rect x={280} y={136} width={54} height={28} rx={7} fill="#DCE1EE" />
-        <Path d="M 292 164 Q 307 142 322 164 Z" fill={palette.waterCyanDark} opacity={0.6} />
-        <Rect x={280} y={134} width={54} height={6} rx={3} fill="#C2C9DC" />
-        <Rect x={280} y={140} width={54} height={3} rx={1.5} fill={HI} />
-      </G>
-      <G>
-        <Path d="M 258 448 Q 286 418 314 448" stroke={palette.engineRedDark} strokeWidth={11} fill="none" strokeLinecap="round" />
-        <Path d="M 258 446 Q 286 416 314 446" stroke={palette.engineRed} strokeWidth={7} fill="none" strokeLinecap="round" />
-        <Rect x={256} y={444} width={60} height={9} rx={4} fill={palette.engineRedDark} />
-        <Rect x={256} y={444} width={60} height={3.4} rx={1.7} fill={HI} />
-        <Path d="M 268 444 L 268 432 M 286 444 L 286 425 M 304 444 L 304 432" stroke={palette.engineRed} strokeWidth={4} strokeLinecap="round" />
-      </G>
+      {/* ── bridges: the only places a road may touch the water ───────── */}
+      <Bridge y={ROADS.h1.y} cx={307} />
+      <Bridge y={ROADS.h2.y} cx={296} />
+      <Bridge y={ROADS.h3.y} cx={286} red />
 
-      {/* ── the eleven places, each drawn as itself ────────────────── */}
-      <FireStation />
-      <School />
-      <ClockTower />
-      <Bakery />
-      <Library />
+      {/* ── the eleven places, each drawn as itself and dropped on its plot ── */}
+      <G transform={plotTransform(PLOTS.station)}>
+        <FireStation />
+      </G>
+      <G transform={plotTransform(PLOTS.school)}>
+        <School />
+      </G>
+      <G transform={plotTransform(PLOTS.clockTower)}>
+        <ClockTower />
+      </G>
+      <G transform={plotTransform(PLOTS.bakery)}>
+        <Bakery />
+      </G>
+      <G transform={plotTransform(PLOTS.library)}>
+        <Library />
+      </G>
       <Park />
-      <PetShop />
-      <Pizza />
-      <Homes />
-      <Market />
-      <Construction />
-      <Lighthouse />
+      <G transform={plotTransform(PLOTS.petShop)}>
+        <PetShop />
+      </G>
+      <G transform={plotTransform(PLOTS.pizza)}>
+        <Pizza />
+      </G>
+      <G transform={plotTransform(PLOTS.market)}>
+        <Market />
+      </G>
+      <G transform={plotTransform(PLOTS.homes)}>
+        <Homes />
+      </G>
+      <G transform={plotTransform(PLOTS.construction)}>
+        <Construction />
+      </G>
+      <G transform={plotTransform(PLOTS.lighthouse)}>
+        <Lighthouse />
+      </G>
 
-      {/* ── greenery ──────────────────────────────────────────────── */}
+      {/* ── greenery: in the verges and the park, never on the tarmac ── */}
       <Trees
         pts={[
-          [124, 168, 22],
-          [24, 176, 20],
-          [232, 168, 22],
-          [116, 292, 20],
-          [232, 300, 22],
-          [12, 300, 18],
-          [104, 424, 20],
-          [200, 428, 22],
-          [312, 216, 20],
-          [332, 292, 18],
-          [28, 452, 18],
-          [258, 484, 22],
-          [300, 560, 20],
-          [40, 574, 20],
-          [128, 604, 18],
+          [104, 104, 14],
+          [104, 158, 13],
+          [24, 158, 14],
+          [204, 156, 14],
+          [104, 246, 13],
+          [24, 300, 14],
+          [204, 298, 14],
+          [104, 362, 13],
+          [24, 442, 14],
+          [204, 440, 14],
+          [248, 348, 15],
+          [104, 490, 13],
+          [248, 452, 14],
+          [24, 574, 14],
+          [248, 540, 15],
         ]}
       />
 
-      {/* ── SPARK CITY wooden sign ────────────────────────────────── */}
-      <G>
-        <Rect x={252} y={584} width={7} height={26} rx={3} fill={palette.woodDark} />
-        <Rect x={318} y={584} width={7} height={26} rx={3} fill={palette.woodDark} />
-        <Rect x={240} y={548} width={98} height={44} rx={7} fill={palette.wood} />
-        <Rect x={240} y={548} width={98} height={7} rx={3.5} fill={HI} />
-        <Rect x={246} y={554} width={86} height={32} rx={5} fill="#A8703A" />
-      </G>
 
       {/* haze at both edges so the board never reads as a rectangle on the sky */}
       <Rect x={0} y={0} width={MAP_VB.w} height={74} fill="url(#mapHazeTop)" />
-      <Rect x={0} y={MAP_VB.h - 60} width={MAP_VB.w} height={60} fill="url(#mapHazeBottom)" />
+      <Rect x={0} y={MAP_VB.h - 40} width={MAP_VB.w} height={40} fill="url(#mapHazeBottom)" />
     </Svg>
   );
 });
@@ -769,7 +878,7 @@ function LoopingCar({ u }: { u: number }) {
   const t = useLoop(17000);
   const style = useAnimatedStyle(() => ({ transform: [{ translateX: (-40 + t.value * 440) * u }] }));
   return (
-    <Animated.View style={[styles.layer, { left: 0, top: 306 * u }, style]} pointerEvents="none">
+    <Animated.View style={[styles.layer, { left: 0, top: 312 * u }, style]} pointerEvents="none">
       <Svg width={34 * u} height={20 * u} viewBox="0 0 34 20">
         <Ellipse cx={17} cy={17.5} rx={14} ry={2.6} fill={palette.navy} opacity={0.12} />
         <Rect x={2} y={5} width={30} height={11} rx={5} fill="#3E8FE0" />
@@ -815,7 +924,7 @@ function Fountain({ u }: { u: number }) {
   const jet = useAnimatedStyle(() => ({ transform: [{ scaleY: 0.72 + p.value * 0.5 }], opacity: 0.75 + p.value * 0.25 }));
   const ripple = useAnimatedStyle(() => ({ transform: [{ scale: 0.7 + p.value * 0.5 }], opacity: 0.5 - p.value * 0.35 }));
   return (
-    <View style={[styles.layer, { left: 250 * u, top: 200 * u }]} pointerEvents="none">
+    <View style={[styles.layer, { left: 223 * u, top: 198 * u }]} pointerEvents="none">
       <Animated.View style={[styles.jet, jet]}>
         <Svg width={32 * u} height={30 * u} viewBox="0 0 32 30">
           <Path d="M16 30 q -7 -12 0 -22 q 7 10 0 22 z" fill={palette.waterCyanLight} />
@@ -824,7 +933,7 @@ function Fountain({ u }: { u: number }) {
           <Circle cx={23} cy={15} r={1.8} fill={palette.waterCyanLight} />
         </Svg>
       </Animated.View>
-      <Animated.View style={[styles.ripple, { left: 2 * u, top: 40 * u }, ripple]}>
+      <Animated.View style={[styles.ripple, { left: 1 * u, top: 24 * u }, ripple]}>
         <Svg width={30 * u} height={16 * u} viewBox="0 0 30 16">
           <Ellipse cx={15} cy={8} rx={14} ry={7} fill="none" stroke={palette.white} strokeWidth={2} />
         </Svg>
@@ -846,7 +955,7 @@ function Boat({ u }: { u: number }) {
     opacity: t.value > 0.94 ? (1 - t.value) / 0.06 : t.value < 0.06 ? t.value / 0.06 : 1,
   }));
   return (
-    <Animated.View style={[styles.layer, { left: 292 * u, top: 190 * u }, style]} pointerEvents="none">
+    <Animated.View style={[styles.layer, { left: 291 * u, top: 196 * u }, style]} pointerEvents="none">
       <Svg width={30 * u} height={30 * u} viewBox="0 0 30 30">
         <Ellipse cx={15} cy={26} rx={13} ry={3} fill={palette.waterCyanDark} opacity={0.35} />
         <Path d="M3 20 h24 l -4 6 h -16 z" fill={palette.engineRed} />
@@ -862,7 +971,7 @@ function Boat({ u }: { u: number }) {
 /** Puffs from the bakery chimney. */
 function ChimneySmoke({ u }: { u: number }) {
   return (
-    <View style={[styles.layer, { left: 88 * u, top: 150 * u }]} pointerEvents="none">
+    <View style={[styles.layer, { left: 72 * u, top: 204 * u }]} pointerEvents="none">
       <Puff u={u} periodMs={5200} delay={0} size={12} />
       <Puff u={u} periodMs={6100} delay={0.34} size={9} />
       <Puff u={u} periodMs={5600} delay={0.68} size={7} />
@@ -897,10 +1006,10 @@ function StationFlag({ u }: { u: number }) {
   }));
   return (
     <Animated.View
-      style={[styles.layer, { left: 109 * u, top: 17 * u, transformOrigin: 'left top' }, style]}
+      style={[styles.layer, { left: 69 * u, top: 60 * u, transformOrigin: 'left top' }, style]}
       pointerEvents="none"
     >
-      <Svg width={30 * u} height={18 * u} viewBox="0 0 30 18">
+      <Svg width={24 * u} height={15 * u} viewBox="0 0 30 18">
         <Path d="M0 0 h 26 q -5 5 0 10 q -6 5 -12 2 q -8 -3 -14 1 z" fill={palette.engineRed} />
         <Path d="M0 0 h 9 q -2 5 0 10 q -4 2 -9 1 z" fill="rgba(255,255,255,0.32)" />
       </Svg>

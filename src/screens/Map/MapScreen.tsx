@@ -3,7 +3,7 @@ import { StyleSheet, View, type LayoutChangeEvent } from 'react-native';
 import Animated, { FadeInDown, useAnimatedStyle, useSharedValue, withSequence, withSpring, withTiming } from 'react-native-reanimated';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { useRouter, type Href } from 'expo-router';
-import { palette, shadows, spacing, springs } from '@/theme';
+import { radii, shadows, spacing, springs } from '@/theme';
 import { Button, ChevronRightIcon, Panel, ScreenFrame, Text, TopBar } from '@/ui';
 import { sfx } from '@/services/audio';
 import { haptics } from '@/services/haptics';
@@ -12,7 +12,7 @@ import type { Stars } from '@/minigames/types';
 import { missions } from '@/content/missions';
 import { useGame } from '@/state/store';
 import { selectTruck } from '@/state/selectors';
-import { Birds, FireTruck, MAP_PLACES, MAP_SIGN, MAP_VB, TRUCK_PARK, TownMap } from '@/world';
+import { Birds, FireTruck, MAP_PLACES, MAP_VB, TRUCK_PARK, TownMap } from '@/world';
 import { BottomBar, PinLabel, StarCounter, useScaledLayout } from '@/screens/shared';
 import { LocationSheet, type SheetMission } from './LocationSheet';
 
@@ -21,36 +21,68 @@ const MAX_ZOOM = 2.6;
 
 type PlaceState = 'open' | 'locked' | 'soon';
 
+/** Height the "Choose a Mission" button reserves at the foot of the board. */
+const CTA_ROOM = 118;
+
 /**
  * Pin label placement. Labels are wider than the buildings they mark, so on a
  * phone three neighbours in one row would collide. We estimate each pill's
  * width from its name, clamp it inside the map, and drop every second pin in a
  * row a little lower so the pills stagger instead of stacking.
  */
-export function layoutPins(mapW: number, unit: number): { place: (typeof MAP_PLACES)[number]; left: number; top: number; compact: boolean }[] {
+export interface PinBox {
+  place: (typeof MAP_PLACES)[number];
+  left: number;
+  top: number;
+  compact: boolean;
+  /** locked places get the small chip, not a name pill */
+  variant: 'pill' | 'marker';
+}
+
+const MARKER_PX = 40;
+
+/**
+ * Places the labels in each block's grass strip.
+ *
+ * Two rules do the work. Only a place you can actually visit gets a name
+ * pill — everything else is a small chip on its own building, which is what
+ * stops eleven white pills covering the town. And a pill is nudged along its
+ * row rather than allowed to sit on a neighbour or run off the board, because
+ * the strip it sits in is grass on purpose: no label ever lands on tarmac.
+ */
+export function layoutPins(mapW: number, unit: number, isOpen: (id: LocationId) => boolean): PinBox[] {
   const compact = mapW < 560;
   const charW = compact ? 8.4 : 10.2;
   const chrome = compact ? 52 : 62;
-  const rowGap = compact ? 38 : 44;
-  // group into rows by y, then number each row's pins left → right so the
-  // leftmost pin (e.g. Fire Station, above the parked truck) is never dropped.
-  const byY = [...MAP_PLACES].sort((a, b) => a.y - b.y);
-  const rows: (typeof MAP_PLACES)[number][][] = [];
-  let lastY = -999;
-  for (const p of byY) {
-    if (Math.abs(p.y - lastY) > 30 || rows.length === 0) rows.push([]);
-    rows[rows.length - 1]?.push(p);
-    lastY = p.y;
+  const width = (place: (typeof MAP_PLACES)[number]) =>
+    isOpen(place.id) ? Math.min(compact ? 170 : 200, chrome + place.name.length * charW) : MARKER_PX;
+
+  /* group by label band — every place in a band shares one strip of grass */
+  const rows = new Map<number, (typeof MAP_PLACES)[number][]>();
+  for (const place of MAP_PLACES) {
+    const band = Math.round(place.y / 40);
+    const row = rows.get(band) ?? [];
+    row.push(place);
+    rows.set(band, row);
   }
-  const posInRow = new Map<string, number>();
-  for (const row of rows) {
-    row.sort((a, b) => a.x - b.x).forEach((p, i) => posInRow.set(p.id, i));
+
+  const boxes = new Map<string, { left: number; top: number }>();
+  for (const row of rows.values()) {
+    const sorted = [...row].sort((a, b) => a.x - b.x);
+    let cursor = 4;
+    for (const place of sorted) {
+      const w = width(place);
+      /* centred on the place, then pushed right of whatever came before it */
+      const wanted = place.x * unit - w / 2;
+      const left = Math.min(Math.max(wanted, cursor), Math.max(4, mapW - w - 4));
+      boxes.set(place.id, { left, top: place.y * unit });
+      cursor = left + w + 6;
+    }
   }
+
   return MAP_PLACES.map((place) => {
-    const est = Math.min(compact ? 170 : 200, chrome + place.name.length * charW);
-    const left = Math.min(Math.max(place.x * unit - est / 2, 4), Math.max(4, mapW - est - 4));
-    const stagger = (posInRow.get(place.id) ?? 0) % 2 === 1 ? rowGap : 0;
-    return { place, left, top: place.y * unit + stagger, compact };
+    const box = boxes.get(place.id) ?? { left: 4, top: place.y * unit };
+    return { place, left: box.left, top: box.top, compact, variant: isOpen(place.id) ? 'pill' : 'marker' };
   });
 }
 
@@ -64,11 +96,19 @@ export function MapScreen() {
   const [openPlace, setOpenPlace] = useState<LocationId | null>(null);
   const pending = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
-  const mapW = viewport.w > 0 ? viewport.w : layout.contentWidth;
+  /*
+   * The board is fitted to the room *left over* by the CTA, not to the width
+   * alone. Sizing by width put the last row of the town under the button, so
+   * the Market, the Homes and the town sign were only ever reachable by
+   * panning (art re-score item 10: nothing under the CTA).
+   */
+  const mapW = useMemo(() => {
+    const w = viewport.w > 0 ? viewport.w : layout.contentWidth;
+    const room = viewport.h > 0 ? viewport.h - CTA_ROOM : 0;
+    return room > 0 ? Math.min(w, (room * MAP_VB.w) / MAP_VB.h) : w;
+  }, [layout.contentWidth, viewport.h, viewport.w]);
   const mapH = (MAP_VB.h / MAP_VB.w) * mapW;
   const unit = mapW / MAP_VB.w;
-  const pinLayout = useMemo(() => layoutPins(mapW, unit), [mapW, unit]);
-
   const scale = useSharedValue(1);
   const savedScale = useSharedValue(1);
   const tx = useSharedValue(0);
@@ -167,6 +207,8 @@ export function MapScreen() {
     [byPlace, played],
   );
 
+  const pinLayout = useMemo(() => layoutPins(mapW, unit, (id) => stateFor(id) === 'open'), [mapW, stateFor, unit]);
+
   const sheetMissions = useMemo((): SheetMission[] => {
     if (!openPlace) return [];
     const done = new Set(Object.keys(played));
@@ -221,7 +263,7 @@ export function MapScreen() {
             title and the CTA float over it instead of boxing it in. */}
         <Animated.View entering={FadeInDown.springify().damping(17)} style={styles.header} pointerEvents="box-none">
           <Panel tone="cream" padding="xs" radius="pill" style={styles.banner}>
-            <Text variant="h2" center>
+            <Text variant="h3" center numberOfLines={1}>
               Spark City
             </Text>
           </Panel>
@@ -233,35 +275,13 @@ export function MapScreen() {
               <Animated.View style={[styles.mapWrap, { width: mapW, height: mapH }, mapStyle]}>
                 <TownMap width={mapW} />
 
-                {/* the wooden board */}
-                <View
-                  style={[
-                    styles.abs,
-                    styles.sign,
-                    { left: MAP_SIGN.x * unit, top: MAP_SIGN.y * unit, width: MAP_SIGN.w * unit, height: MAP_SIGN.h * unit },
-                  ]}
-                  pointerEvents="none"
-                >
-                  <Text
-                    variant="tiny"
-                    color={palette.white}
-                    center
-                    style={{
-                      fontSize: Math.max(9, MAP_SIGN.h * unit * 0.28),
-                      lineHeight: Math.max(11, MAP_SIGN.h * unit * 0.34),
-                    }}
-                  >
-                    {'SPARK\nCITY'}
-                  </Text>
-                </View>
-
                 {/* the engine, parked outside the station */}
                 <Animated.View style={[styles.abs, { left: TRUCK_PARK.x * unit - truckWidth / 2, top: TRUCK_PARK.y * unit }, truckStyle]} pointerEvents="none">
                   <FireTruck truck={truck} width={truckWidth} />
                 </Animated.View>
 
                 {/* pins — laid out so neighbouring labels never overlap or leave the map */}
-                {pinLayout.map(({ place, left, top, compact }, i) => {
+                {pinLayout.map(({ place, left, top, compact, variant }, i) => {
                   const state = stateFor(place.id);
                   return (
                     <View key={place.id} style={[styles.abs, { left, top }]}>
@@ -271,6 +291,7 @@ export function MapScreen() {
                         locked={state !== 'open'}
                         index={i}
                         compact={compact}
+                        variant={variant}
                         onPress={() => openPin(place.id, state)}
                       />
                     </View>
@@ -281,16 +302,18 @@ export function MapScreen() {
           ) : null}
         </View>
 
-        <View style={[styles.ctaWrap, { maxWidth: layout.contentWidth }]} pointerEvents="box-none">
-          <Button
-            label="Choose a Mission"
-            size="xl"
-            tone="red"
-            block
-            iconRight={<ChevronRightIcon size={28} />}
-            onPress={() => router.push('/dispatch')}
-            style={shadows.glowGold}
-          />
+        <View style={styles.ctaWrap} pointerEvents="box-none">
+          <View style={[styles.cta, { maxWidth: layout.contentWidth }]}>
+            <Button
+              label="Choose a Mission"
+              size="xl"
+              tone="red"
+              block
+              iconRight={<ChevronRightIcon size={28} />}
+              onPress={() => router.push('/dispatch')}
+              style={shadows.glowGold}
+            />
+          </View>
         </View>
       </View>
 
@@ -312,28 +335,32 @@ export function MapScreen() {
 
 const styles = StyleSheet.create({
   body: { flex: 1, width: '100%' },
+  /*
+   * The title rides in the chrome row between the back button and the star
+   * counter, not below it. Sitting lower put it over the first row of the
+   * town, which is the one row a child always needs to see.
+   */
   header: {
     position: 'absolute',
-    left: 0,
-    right: 0,
-    top: 56,
+    left: 78,
+    right: 78,
+    top: 18,
     zIndex: 6,
     alignItems: 'center',
-    paddingHorizontal: spacing.md,
   },
-  banner: { paddingHorizontal: spacing.lg, minWidth: 190 },
-  viewport: { flex: 1, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
-  mapWrap: {},
+  banner: { paddingHorizontal: spacing.md },
+  viewport: { flex: 1, overflow: 'hidden', alignItems: 'center', justifyContent: 'center', paddingBottom: CTA_ROOM },
+  mapWrap: { borderRadius: radii.panel, overflow: 'hidden' },
   abs: { position: 'absolute' },
-  sign: { alignItems: 'center', justifyContent: 'center' },
   ctaWrap: {
     position: 'absolute',
     left: 0,
     right: 0,
     bottom: 0,
     zIndex: 6,
-    alignSelf: 'center',
+    alignItems: 'center',
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.sm,
   },
+  cta: { width: '100%' },
 });

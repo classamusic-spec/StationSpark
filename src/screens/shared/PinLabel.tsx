@@ -38,6 +38,12 @@ export interface PinLabelProps {
   index?: number;
   /** shrink the pill on dense maps */
   compact?: boolean;
+  /**
+   * `marker` drops the name and draws just the pin. Locked places use it: a
+   * map of eleven name pills is unreadable, and the sheet names the place
+   * when it is tapped anyway.
+   */
+  variant?: 'pill' | 'marker';
 }
 
 /**
@@ -45,7 +51,7 @@ export interface PinLabelProps {
  * name, chevron. Pops in on a stagger and squashes on press. A locked place
  * gets a warm cream "coming soon" pill with a small lock, not a grey one.
  */
-export function PinLabel({ name, color, onPress, locked, index = 0, compact }: PinLabelProps) {
+export function PinLabel({ name, color, onPress, locked, index = 0, compact, variant = 'pill' }: PinLabelProps) {
   const scale = useSharedValue(1);
   const style = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
 
@@ -66,16 +72,35 @@ export function PinLabel({ name, color, onPress, locked, index = 0, compact }: P
             haptics.tap();
             onPress();
           }}
-          style={[styles.pill, shadows.card, compact && styles.compact, locked && styles.locked]}
-          hitSlop={10}
+          style={[
+            styles.pill,
+            shadows.card,
+            compact && styles.compact,
+            locked && styles.locked,
+            variant === 'marker' && styles.marker,
+          ]}
+          hitSlop={14}
         >
-          <Pin color={color} size={compact ? 22 : 26} locked={locked} />
-          <Text variant={compact ? 'small' : 'bodyStrong'} color={locked ? palette.navyMuted : palette.navy} numberOfLines={1} style={styles.name}>
-            {name}
-          </Text>
-          <View style={styles.chev}>
-            {locked ? <LockIcon size={16} color={palette.tanDark} /> : <ChevronRightIcon size={17} color={palette.navySoft} />}
-          </View>
+          <Pin color={color} size={variant === 'marker' ? 24 : compact ? 22 : 26} locked={locked} />
+          {variant === 'pill' ? (
+            <>
+              <Text
+                variant={compact ? 'small' : 'bodyStrong'}
+                color={locked ? palette.navyMuted : palette.navy}
+                numberOfLines={1}
+                style={styles.name}
+              >
+                {name}
+              </Text>
+              <View style={styles.chev}>
+                {locked ? <LockIcon size={16} color={palette.tanDark} /> : <ChevronRightIcon size={17} color={palette.navySoft} />}
+              </View>
+            </>
+          ) : locked ? (
+            <View style={styles.markerLock}>
+              <LockIcon size={12} color={palette.tanDark} />
+            </View>
+          ) : null}
         </Pressable>
       </Animated.View>
     </Animated.View>
@@ -95,6 +120,9 @@ const styles = StyleSheet.create({
     maxWidth: 190,
   },
   compact: { height: 34, paddingRight: 8 },
+  /* A tap target is still 56 px: the chip is 40 and hitSlop adds 14 a side. */
+  marker: { width: 40, height: 40, paddingLeft: 0, paddingRight: 0, borderRadius: 20, justifyContent: 'center', gap: 0 },
+  markerLock: { position: 'absolute', right: 1, bottom: 1, backgroundColor: palette.cream, borderRadius: 8, padding: 1 },
   locked: { backgroundColor: palette.cream },
   name: { includeFontPadding: false, flexShrink: 1 },
   chev: { width: 18, alignItems: 'center' },

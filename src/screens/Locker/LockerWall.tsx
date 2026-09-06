@@ -12,7 +12,8 @@ import { StyleSheet, useWindowDimensions, View } from 'react-native';
 import Svg, { Circle, Ellipse, G, Path, Rect, Text as SvgText } from 'react-native-svg';
 import { fontFamily, palette } from '@/theme';
 import type { Avatar } from '@/state/store';
-import { helmetTones } from '@/characters/rig/palettes';
+import { helmetSwatch } from '@/characters/art/tones';
+import { tones } from '@/characters/rig/palettes';
 import { HIGHLIGHT, SHADE, SHADOW_FILL, SHADOW_OPACITY, shadowRy } from '@/world/tone';
 
 const DOOR_W = 92;
@@ -86,7 +87,7 @@ function ClosedLocker({ x, top, h }: { x: number; top: number; h: number }) {
 function OpenLocker({ x, top, h, helmet, name }: { x: number; top: number; h: number; helmet: Avatar['helmet']; name: string }) {
   const bw = DOOR_W - 8;
   const cx = x + 4 + bw / 2;
-  const tone = helmetTones[helmet] ?? helmetTones.red;
+  const tone = tones(helmetSwatch(helmet));
   const shelfY = top + 52;
   const hookY = top + 78;
   const floor = top + h;
