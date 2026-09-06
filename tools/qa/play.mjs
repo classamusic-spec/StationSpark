@@ -789,6 +789,23 @@ const drivers = {
     await tapLabel(page, 'Blend it!', { after: 700 });
   },
 
+  /**
+   * A pot is a SEQUENCE, so the driver has to respect the recipe order: all of
+   * step 0 goes in before any of step 1. Tapping the right food in the wrong
+   * order is a "not yet", not a mistake, but it would stall the run.
+   */
+  async 'soup-pot'(page, c) {
+    for (const step of c.steps) {
+      for (let i = 0; i < step.count; i += 1) {
+        await tap(page, byLabel(page, `${step.item.en} — ${step.item.es}`), { after: 220 });
+      }
+    }
+    await sleep(700);
+    /* band C then asks how many pieces went in altogether */
+    if (c.askTotal !== undefined) await answerAsk(page, c.askTotal);
+    await sleep(900);
+  },
+
   async 'divide-share'(page, c) {
     const each = Math.max(1, c.each || Math.floor(c.total / c.among));
     await answerAsk(page, each);
@@ -907,6 +924,7 @@ const KINDS = [
   'count-ingredients',
   'divide-share',
   'recipe-scale',
+  'soup-pot',
 ];
 
 const results = [];
@@ -1177,6 +1195,9 @@ const stories = !skipMission && (!onlyKinds || forceStories);
 if (stories) {
   for (const [id, badge] of MISSIONS) await runMission(id, badge);
   await runRecipe('quesadillas');
+  /* the caldo is the one recipe that runs a sequence beat (soup-pot) and a
+     clock beat inside the kitchen chrome, so it is worth a second run */
+  await runRecipe('veggie-caldo');
 }
 if (!skipShift && (!onlyKinds || forceStories)) await runShift();
 
