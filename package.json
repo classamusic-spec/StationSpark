@@ -31,6 +31,7 @@
     "babel-preset-expo": "~57.0.0",
     "canvaskit-wasm": "^0.41.0",
     "expo": "~57.0.20",
+    "expo-asset": "~57.0.16",
     "expo-audio": "~57.0.4",
     "expo-constants": "~57.0.17",
     "expo-font": "~57.0.3",
@@ -70,6 +71,14 @@
     "playwright-core": "^1.63.0",
     "prettier": "^3.9.6",
     "react-test-renderer": "^19.2.3",
+    "test-renderer": "^1.2.0",
     "typescript": "~6.0.3"
+  },
+  "expo": {
+    "install": {
+      "exclude": [
+        "@types/jest"
+      ]
+    }
   }
 }

@@ -13,6 +13,7 @@ expo-env.d.ts
 .kotlin/
 *.orig.*
 *.jks
+*.keystore
 *.p8
 *.p12
 *.key
@@ -36,9 +37,17 @@ yarn-error.*
 # typescript
 *.tsbuildinfo
 
-# generated native folders
+# Generated native projects — this app uses Continuous Native Generation.
+# `npx expo prebuild` rebuilds ./ios and ./android from app.json every time, so
+# they are build output, not source. See docs/NATIVE.md. Nothing under them may
+# be hand-edited: write a config plugin instead, or the edit is silently lost.
 /ios
 /android
+
+# Native build caches, in case a build is ever run from the repo root
+/.gradle/
+/.cxx/
+/local.properties
 
 # reports / scratch
 /coverage
