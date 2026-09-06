@@ -17,10 +17,13 @@ import { palette } from '@/theme';
 import type { TruckStyle } from '@/state/store';
 import { lampColors, truckTones } from '@/three/palette3d';
 import type { RunFrame, VisibleItem } from './run';
-import { CAMERA, ROAD_HALF, horizonY, project, type Viewport } from './projection';
+import { CAMERA, ROAD_HALF, horizonY, project, roadView, type RoadView } from './projection';
 
 /** How high above the tarmac the gate banner hangs, in road units. */
 export const GATE_BANNER_Y = 2.9;
+export const GATE_BANNER_BOTTOM = 1.55;
+/** Board width in road units — the 3D gate uses the same number. */
+export const GATE_BOARD_W = 2.35;
 const GATE_POST_X = 1.25;
 const STRIPE_LENGTH = 3;
 const STRIPE_GAP = 5;
@@ -156,7 +159,7 @@ const TruckBack = memo(function TruckBack({ truck, flash }: { truck: TruckStyle;
 /* The road                                                             */
 /* ------------------------------------------------------------------ */
 
-function laneStripes(vp: Viewport, distance: number, depth: number): React.ReactElement[] {
+function laneStripes(vp: RoadView, distance: number, depth: number): React.ReactElement[] {
   const out: React.ReactElement[] = [];
   const period = STRIPE_LENGTH + STRIPE_GAP;
   const first = Math.ceil(distance / period) * period;
@@ -182,14 +185,28 @@ function laneStripes(vp: Viewport, distance: number, depth: number): React.React
   return out;
 }
 
-function Gate({ vp, item, assist }: { vp: Viewport; item: VisibleItem; assist: boolean }) {
+/** A soft ridge of hills sitting on the horizon line. */
+function hillPath(w: number, hy: number, h: number, shift = 0): string {
+  const p = (f: number) => w * ((f + shift) % 1.0001);
+  return [
+    `M0 ${hy}`,
+    `L0 ${hy - h * 0.5}`,
+    `Q${p(0.13)} ${hy - h * 1.5} ${p(0.27)} ${hy - h * 0.6}`,
+    `Q${p(0.41)} ${hy - h * 1.75} ${p(0.56)} ${hy - h * 0.55}`,
+    `Q${p(0.71)} ${hy - h * 1.55} ${p(0.86)} ${hy - h * 0.7}`,
+    `Q${p(0.94)} ${hy - h * 1.15} ${w} ${hy - h * 0.45}`,
+    `L${w} ${hy} Z`,
+  ].join(' ');
+}
+
+function Gate({ vp, item, assist }: { vp: RoadView; item: VisibleItem; assist: boolean }) {
   const base = project(vp, item.lane, item.ahead);
   const top = project(vp, item.lane, item.ahead, GATE_BANNER_Y);
   const postW = 0.18 * base.scale;
   const left = base.x - GATE_POST_X * base.scale;
   const right = base.x + GATE_POST_X * base.scale;
-  const boardH = (GATE_BANNER_Y - 1.55) * base.scale;
-  const boardW = 2.35 * base.scale;
+  const boardH = (GATE_BANNER_Y - GATE_BANNER_BOTTOM) * base.scale;
+  const boardW = GATE_BOARD_W * base.scale;
   return (
     <G>
       <Rect x={left - postW / 2} y={top.y} width={postW} height={base.y - top.y} rx={postW / 2} fill={palette.slate} />
@@ -232,12 +249,15 @@ export interface RoadView2DProps {
  * through the type scale), placed with the very same projection.
  */
 export const RoadView2D = memo(function RoadView2D({ frame, truck, width, height, reduced }: RoadView2DProps) {
-  const vp: Viewport = { w: width, h: height };
+  const vp = roadView({ w: width, h: height }, frame.lane);
   const hy = horizonY(vp);
   const near = project(vp, 1, -CAMERA.back + 1.2);
   const nearHalf = ROAD_HALF * near.scale;
+  const nearMid = near.x;
   /* far enough away that the edges have all but met at the vanishing point */
-  const farHalf = ROAD_HALF * project(vp, 1, 400).scale;
+  const far = project(vp, 1, 400);
+  const farHalf = ROAD_HALF * far.scale;
+  const farMid = far.x;
   const flash = !reduced && Math.floor(frame.distance / 2.2) % 2 === 0;
   const truckAt = project(vp, frame.lane, 0, frame.jump * (reduced ? 0.5 : 1.4));
 
@@ -255,21 +275,26 @@ export const RoadView2D = memo(function RoadView2D({ frame, truck, width, height
           </LinearGradient>
         </Defs>
 
+        {/* hills on the skyline: the perimeter is dressed so the middle can be
+            empty road (the composition rule every Stage variant follows) */}
+        <Path d={hillPath(width, hy, Math.max(16, height * 0.05))} fill={palette.grassDark} opacity={0.45} />
+        <Path d={hillPath(width, hy, Math.max(11, height * 0.032), 0.37)} fill={palette.leafGreen} opacity={0.35} />
+
         {/* the yard, running away to the horizon */}
         <Rect x={0} y={hy} width={width} height={height - hy} fill="url(#truckRunGround)" />
         <Rect x={0} y={hy - height * 0.06} width={width} height={height * 0.09} fill="url(#truckRunHaze)" />
 
         {/* tarmac */}
         <Path
-          d={`M${vp.w / 2 - nearHalf} ${near.y} L${vp.w / 2 + nearHalf} ${near.y} L${vp.w / 2 + farHalf} ${hy} L${vp.w / 2 - farHalf} ${hy} Z`}
+          d={`M${nearMid - nearHalf} ${near.y} L${nearMid + nearHalf} ${near.y} L${farMid + farHalf} ${hy} L${farMid - farHalf} ${hy} Z`}
           fill={tarmac.face}
         />
         {/* kerbs: a pale strip down each edge of the tarmac */}
         {[-1, 1].map((side) => {
-          const nx = vp.w / 2 + side * nearHalf;
-          const fx = vp.w / 2 + side * farHalf;
+          const nx = nearMid + side * nearHalf;
+          const fx = farMid + side * farHalf;
           const nw = 0.34 * near.scale;
-          const fw = 0.34 * project(vp, 1, 400).scale;
+          const fw = 0.34 * far.scale;
           return (
             <Path
               key={`kerb${side}`}
@@ -327,8 +352,21 @@ export const RoadView2D = memo(function RoadView2D({ frame, truck, width, height
   );
 });
 
-/** Where a gate label belongs on screen, for the shared text overlay. */
-export function gateLabelSpot(vp: Viewport, lane: number, ahead: number): { x: number; y: number; size: number } {
-  const p = project(vp, lane, ahead, (GATE_BANNER_Y + 1.55) / 2);
-  return { x: p.x, y: p.y, size: Math.max(11, Math.min(34, 0.95 * p.scale)) };
+/**
+ * Where a gate label belongs on screen, and how big it can be.
+ *
+ * The banner is 2.35 road units wide whatever the distance, so a long label
+ * ("30 min", "ladder") has to be set smaller than a short one or it would spill
+ * off its own board. This is the one place that decides that, so the 3D road
+ * and the 2D road letter their gates identically.
+ */
+export function gateLabelSpot(
+  vp: RoadView,
+  lane: number,
+  ahead: number,
+  label: string,
+): { x: number; y: number; size: number } {
+  const p = project(vp, lane, ahead, (GATE_BANNER_Y + GATE_BANNER_BOTTOM) / 2);
+  const fitsWidth = (GATE_BOARD_W * 0.86 * p.scale) / Math.max(1.6, label.length * 0.62);
+  return { x: p.x, y: p.y, size: Math.max(9, Math.min(30, 0.95 * p.scale, fitsWidth)) };
 }

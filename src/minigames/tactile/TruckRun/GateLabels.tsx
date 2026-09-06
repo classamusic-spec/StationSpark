@@ -16,6 +16,7 @@ import { palette, roles } from '@/theme';
 import { Text } from '@/ui';
 import { VIEW_DEPTH, type RunFrame } from './run';
 import { gateLabelSpot } from './RoadView2D';
+import { roadView } from './projection';
 
 const LABEL_BOX = 140;
 
@@ -28,11 +29,12 @@ export interface GateLabelsProps {
 export const GateLabels = memo(function GateLabels({ frame, width, height }: GateLabelsProps) {
   const gates = frame.items.filter((item) => item.kind === 'gate');
   if (gates.length === 0) return null;
+  const view = roadView({ w: width, h: height }, frame.lane);
 
   return (
     <View style={StyleSheet.absoluteFill} pointerEvents="none">
       {gates.map((gate) => {
-        const spot = gateLabelSpot({ w: width, h: height }, gate.lane, gate.ahead);
+        const spot = gateLabelSpot(view, gate.lane, gate.ahead, gate.label ?? '');
         /* fades up over the last third of the approach, so it never pops in */
         const opacity = Math.max(0, Math.min(1, (VIEW_DEPTH - gate.ahead) / (VIEW_DEPTH * 0.4)));
         const helped = frame.assistLane === gate.lane;

@@ -347,8 +347,14 @@ export function TruckRun({ challenge, ageBand, onComplete, onEvent, compact }: M
       tray={tray}
       overlay={<SceneCrew side="right" lead="bea" size={64} mood={mood} />}
     >
+      {/* the testID below is the QA hook (like the drag/slot testIDs the
+          harness already uses): it publishes the live run, so tools/qa can work
+          out which gate to drive through. */}
       {ready ? (
-        <Animated.View style={[StyleSheet.absoluteFill, shakeStyle]} testID={`truck-run:${frame.answered}/${frame.total}`}>
+        <Animated.View
+          style={[StyleSheet.absoluteFill, shakeStyle]}
+          testID={`truck-run:q${frame.questionIndex}:a${frame.attempt}:lane${frame.target}:${frame.answered}/${frame.total}`}
+        >
           <RoadScene
             sample={sample}
             frame={frame}

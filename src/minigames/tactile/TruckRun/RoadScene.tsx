@@ -13,14 +13,34 @@
  * Both roads are fed by the same sim, so the swap costs nothing but paint.
  */
 import React, { Suspense, lazy } from 'react';
-import type { StyleProp, ViewStyle } from 'react-native';
+import { Platform, type StyleProp, type ViewStyle } from 'react-native';
 import type { TruckStyle } from '@/state/store';
 import { ThreeBoundary } from '@/three/ThreeBoundary';
 import type { RunFrame } from './run';
 import { RoadView2D } from './RoadView2D';
 
-/** Jest has no canvas and must never pull `three` in. */
-const GL_AVAILABLE = process.env.NODE_ENV !== 'test';
+/**
+ * Can this browser actually give us a 3D context?
+ *
+ * `ThreeBoundary` is the safety net for a context that dies *later*, but it
+ * cannot catch this case: three's renderer throws while the canvas is being set
+ * up, outside React's render phase, and the boundary never trips — the child is
+ * left looking at an empty canvas with the road missing. So we ask the question
+ * up front, once, before the canvas is ever mounted. On native `expo-gl`
+ * provides the context and there is nothing to probe.
+ */
+function probeWebGL(): boolean {
+  if (process.env.NODE_ENV === 'test') return false; // Jest must never load `three`
+  if (Platform.OS !== 'web') return true;
+  try {
+    const canvas = document.createElement('canvas');
+    return Boolean(canvas.getContext('webgl2') ?? canvas.getContext('webgl'));
+  } catch {
+    return false;
+  }
+}
+
+const GL_AVAILABLE = probeWebGL();
 
 const LazyRoad3D = lazy(async () => {
   const mod = await import('@/three/TruckRunScene3D');

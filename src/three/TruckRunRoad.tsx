@@ -29,7 +29,7 @@ import { useFrame, useThree } from '@react-three/fiber';
 import { palette } from '@/theme';
 import type { TruckStyle } from '@/state/store';
 import type { RunFrame, VisibleItem } from '@/minigames/tactile/TruckRun/run';
-import { CAMERA, LANE_WIDTH, ROAD_HALF, laneX } from '@/minigames/tactile/TruckRun/projection';
+import { CAMERA, LANE_WIDTH, ROAD_HALF, cameraX, fovFor, laneX } from '@/minigames/tactile/TruckRun/projection';
 import { TruckModel } from './TruckModel';
 
 /** How far the tarmac is modelled — well past the fog, so it never runs out. */
@@ -100,6 +100,7 @@ function buildAssets(): RoadAssets {
       post: new THREE.CylinderGeometry(0.11, 0.11, GATE_BANNER_Y, 8),
       board: new THREE.BoxGeometry(2.35, GATE_BANNER_Y - GATE_BANNER_BOTTOM, 0.14),
       trunk: new THREE.CylinderGeometry(0.22, 0.28, 1.6, 6),
+      hill: new THREE.ConeGeometry(26, 11, 7),
       leaves: new THREE.ConeGeometry(1.35, 2.9, 7),
     },
     mat: {
@@ -130,6 +131,7 @@ function buildAssets(): RoadAssets {
         emissiveIntensity: 0.45,
       }),
       trunk: flat(palette.wood),
+      hill: flat(palette.grassDark),
       leaves: flat(palette.leafGreen),
     },
   };
@@ -208,16 +210,25 @@ export function TruckRunRoad({ sample, truck, reduced = false }: TruckRunRoadPro
     [assets],
   );
 
-  const { camera } = useThree();
+  const camera = useThree((s) => s.camera);
+  const size = useThree((s) => s.size);
+
+  /**
+   * The camera is the projection in `projection.ts`, expressed in three: level,
+   * on the road, with the field of view that makes the tarmac fit this canvas.
+   * Any drift here and the gate labels would sit off their banners.
+   */
   useLayoutEffect(() => {
     camera.position.set(0, CAMERA.height, 0);
     camera.rotation.set(0, 0, 0);
     camera.up.set(0, 1, 0);
     camera.near = CAMERA.near;
     camera.far = CAMERA.far;
-    if (camera instanceof THREE.PerspectiveCamera) camera.fov = CAMERA.fov;
+    if (camera instanceof THREE.PerspectiveCamera) {
+      camera.fov = fovFor({ w: size.width, h: size.height });
+    }
     camera.updateProjectionMatrix();
-  }, [camera]);
+  }, [camera, size.height, size.width]);
 
   const truckRef = useRef<THREE.Group>(null);
   const stripes = useRef<THREE.InstancedMesh>(null);
@@ -234,8 +245,9 @@ export function TruckRunRoad({ sample, truck, reduced = false }: TruckRunRoadPro
   useFrame(() => {
     const frame = sample();
 
-    /* the camera is fixed: own it every frame so nothing else can move it */
-    camera.position.set(0, CAMERA.height, 0);
+    /* own the camera every frame so nothing else can move it — it follows the
+       truck sideways just enough to keep it off the edge of a phone screen */
+    camera.position.set(cameraX(frame.lane), CAMERA.height, 0);
     camera.rotation.set(0, 0, 0);
 
     /* what is on the road */
@@ -346,6 +358,17 @@ export function TruckRunRoad({ sample, truck, reduced = false }: TruckRunRoadPro
           scale={[0.4, 1, ROAD_LENGTH]}
         />
       ))}
+
+      {/* the skyline: far enough out that the fog turns them into haze */}
+      {[-1, 1].map((side) => (
+        <mesh
+          key={`hill${side}`}
+          geometry={assets.geo.hill}
+          material={assets.mat.hill}
+          position={[side * 30, 0, -(CAMERA.back + 62)]}
+        />
+      ))}
+      <mesh geometry={assets.geo.hill} material={assets.mat.hill} position={[2, -1.5, -(CAMERA.back + 78)]} scale={[1.4, 0.9, 1]} />
 
       <instancedMesh ref={stripes} args={[assets.geo.stripe, assets.mat.stripe, STRIPE_COUNT]} frustumCulled={false} />
       <instancedMesh ref={trunks} args={[assets.geo.trunk, assets.mat.trunk, TREE_COUNT]} frustumCulled={false} />

@@ -214,8 +214,11 @@ export function visibleItems(run: RunState, challenge: TruckRunChallenge, depth 
       const obstacle = segment.obstacles[i];
       if (!obstacle) continue;
       const ahead = start + obstacle.at - run.distance;
-      /* a knocked cone stays visible for a beat as it slides past the camera */
-      if (ahead < -6 || ahead > depth) continue;
+      /* Props are dropped as soon as they are past the truck. They are still in
+         front of the camera for another 13 units, and a cone rendered that
+         close fills half the screen — noise, right where the child is trying to
+         read the road ahead. */
+      if (ahead < -1.5 || ahead > depth) continue;
       const id = `${k}:${i}`;
       out.push({
         id,

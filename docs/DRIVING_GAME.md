@@ -52,13 +52,13 @@ has been answered, then a short victory straight, then the arrival.
 
 | Prop | What it does | Feedback |
 | --- | --- | --- |
-| `pothole` | speed drops to 45 %, recovers over ~1 s | camera jolt, `bump`, `haptics.thud()` |
-| `cone` | same slow — you knocked a cone over | `clank`, jolt, cone tips over |
+| `pothole` | speed drops to 45 %, recovers over ~1 s | the play area jolts, `bump`, `haptics.thud()` |
+| `cone` | same slow — you knocked a cone over | `clank`, jolt, the cone tips as it passes |
 | `hose` | a coil of hose left across a lane; same slow | `bump`, jolt |
 | `puddle` | same slow, plus a splash | `splash`, jolt |
 | `car` | a parked van; you squeeze past and slow | `bump`, jolt |
-| `ramp` | **jump**: ~0.95 s airborne, sailing over everything in the next row | `whoosh` up, `drop` on landing, dust puff, `haptics.tap()` |
-| `boost` | speed × 1.55 for 1.7 s | `boost` + `siren`, light bar flares, speed lines |
+| `ramp` | **jump**: an arc 1.15 rows long, so it always clears the next row whatever the band's speed | `whoosh` up, `drop` on landing, the shadow shrinks away below, `haptics.tap()` |
+| `boost` | speed × 1.55 for 1.7 s | `boost` + `siren`, the speedometer turns cyan, speed lines |
 
 Every hazard does exactly the same thing — a slow and a jolt. They differ in look and sound, never in
 consequence, so a child never has to learn a hazard *table* to be safe.
@@ -100,7 +100,8 @@ band lives in the generated content and not in the component.
 | hazard rows per segment | 4 | 5 | 6 |
 | lanes blocked per row | 1 | 1–2 | 1–2 |
 | ramps + boosts | ~45 % of rows | ~35 % | ~28 % |
-| gate approach (clear road before the gates) | 2.4 × row gap | 2.0 × | 1.8 × |
+| props on the road | cones, puddles, potholes | + spilled hose | + a parked van |
+| gate approach (clear road before the gates) | 2.0 × row gap | 1.8 × | 1.6 × |
 | questions | 4 | 5 | 6 |
 | bump budget before coaching | 7 | 6 | 5 |
 | questions are… | number recognition (`number-word`), counting on (`count-on`) | + and − within 20 (`add-sub`), sight words (`sight-word`) | × and ÷ (`times-divide`), elapsed time (`elapsed`), Spanish word → meaning (`spanish`) |
@@ -121,12 +122,14 @@ src/learning/validate.ts                 + case 'truck-run'  (labels, layout, cl
 src/learning/__tests__/truckRun.test.ts    3 bands × 200 seeds
 src/minigames/tactile/TruckRun/
   run.ts                                   THE SIM — pure, no React, fixed timestep
+  projection.ts                            the one camera both renderers (and the labels) use
   __tests__/run.test.ts                    determinism, collisions, gates, no-fail
   TruckRun.tsx                             the component: gestures, audio, hint ladder, GameShell
   RoadView2D.tsx                           2D renderer (react-native-svg) — fully playable
-  Scene3D.tsx                              lazy + boundary around the 3D renderer
-src/three/TruckRunScene3D.tsx              the 3D road; reuses TruckModel with the child's TruckStyle
-src/three/TruckRunSceneContent.tsx         camera, lights, road, props, chase rig
+  GateLabels.tsx                           the answers, as real `@/ui` <Text>, over either road
+  RoadScene.tsx                            WebGL probe + lazy import + boundary → 3D or 2D
+src/three/TruckRunScene3D.tsx              the 3D entry (one file, both platforms)
+src/three/TruckRunRoad.tsx                 camera, lights, tarmac, props, gates, the truck
 ```
 
 - **The sim is a plain module** (`run.ts`). Lane position, hazard spawning, collision, gate resolution, speed,
@@ -137,11 +140,24 @@ src/three/TruckRunSceneContent.tsx         camera, lights, road, props, chase ri
   teleport the truck through a gate) and feeds whole ticks into the sim.
 - **One sim, two renderers.** `visibleItems(state, challenge)` is a pure function returning what is on screen
   and how far ahead it is; the 3D scene and the 2D fallback both draw exactly that list. Neither renderer can
-  change the game.
-- **3D is lazy and optional.** `@/three` is imported through `React.lazy` behind an error boundary, exactly
-  like the badge flip in `CelebrationOverlay`: Jest never loads `three`, no route pays for it at first paint,
-  and if WebGL is missing, blocked or broken the child gets the 2D road instead and can finish the run. Jest
-  and the QA WebGL-less path both take the 2D road.
+  change the game. Props are dropped 1.5 units past the truck: they are still in front of the camera for
+  another 13 units, and a cone drawn that close fills half the screen exactly where the child is reading.
+- **One camera, in plain arithmetic** (`projection.ts`). The gate labels are the one thing a child must
+  actually *read*, so they are real `@/ui` `<Text>` in Fredoka, floating over whichever road is drawing —
+  not painted into the SVG, not baked into a GL texture. That only works if the label knows where the banner
+  is, so the camera is the simplest one that can exist: level, on the road's centre line, no pitch, no roll.
+  Screen position is then a plain pinhole projection any layer can compute, and the 3D scene takes its focal
+  length, field of view and lateral position from the very same functions. Two consequences worth knowing:
+  a phone play area is far taller than it is wide, so the focal length is capped by the *width* that has to
+  fit the tarmac (`focal()`), and the camera follows 62 % of the truck's lane change so the engine never
+  drives off the edge of a narrow screen. The bump jolt shakes the whole play area — canvas *and* labels —
+  never the camera, so the two layers can never drift apart.
+- **3D is lazy, probed, and optional.** `@/three` is imported through `React.lazy` behind `ThreeBoundary`,
+  like the badge flip in `CelebrationOverlay`, so Jest never loads `three` and the chunk is fetched when a
+  child actually starts driving. The boundary alone is not enough, though: three throws while the canvas is
+  being *set up*, outside React's render phase, and the boundary never trips — the first WebGL-less run drew
+  an empty canvas with the labels floating on a blank sky. So `RoadScene` asks the question up front, once
+  (`probeWebGL()`), and mounts the 2D road instead. The boundary stays as the net for a context lost later.
 
 ## 5. Controls and accessibility
 
@@ -162,16 +178,31 @@ Never removes the game; calms it.
 
 | | normal | `reduceMotion` |
 | --- | --- | --- |
-| camera jolt on a bump | shake + dip | one soft 120 ms dip, no shake |
-| scenery drift / speed lines | on | off |
-| dust, splash, sparkle particles | on | off (the gate still bursts, without confetti) |
-| light bar | flashes | steady glow |
-| jump | full arc | shorter, lower arc |
-| road | scrolls (it *is* the game) | scrolls |
+| jolt on a bump | the play area shakes sideways and dips | a single soft dip, no shake |
+| speed lines while boosting (2D road) | on | off |
+| light bar | flashes | steady |
+| jump | full arc | a lower, calmer arc |
+| the truck leaning into a lane change (3D) | on | off |
+| road, trees, hazards scrolling | on — it *is* the game | on |
+
+Nothing is removed: every hazard, gate and boost still behaves identically, and the sim is not told about
+the setting at all, so a run plays exactly the same either way.
 
 ## 6. What the QA harness sees
 
 `tools/qa/play.mjs` drives games by reading `globalThis.__SS_CHALLENGE__` and clicking accessibility labels.
-`truck-run` is drivable the same way: read the challenge, work out the answer lane with
-`options[(lane + attempt) % 3]`, and press "Steer left"/"Steer right" the right number of times. The harness's
-`KINDS` list is hard-coded, so adding the driver there is a one-line change in a file this game does not own.
+`truck-run` is drivable the same way, and publishes one QA testID (like the drag/slot ones the harness
+already uses) carrying the live run:
+
+```
+truck-run:q<questionIndex>:a<attempt>:lane<targetLane>:<answered>/<total>
+```
+
+A driver reads the challenge, finds `options.indexOf(answer)`, undoes the miss rotation
+(`lane = (index − attempt + 3) % 3`) and presses "Steer left" / "Steer right" until `lane` matches. The
+harness's `KINDS` list is hard-coded, so adding the driver there is a change in a file this game does not own.
+
+Verified in headless Chromium against a real `expo export` bundle: all three bands finish in 3D and in the
+2D fallback (WebGL blocked by nulling `getContext`); three deliberate misses on one question raise Captain
+Bea's hint on the second and the gold assist ring on the third, and the run still finishes with every
+question answered.

@@ -29,8 +29,13 @@ export interface TruckRunScene3DProps {
   testID?: string;
 }
 
-/** Level, on the road's centre line: `projection.ts` assumes exactly this. */
-const TRUCK_RUN_CAMERA = { position: [0, CAMERA.height, 0] as [number, number, number], fov: CAMERA.fov };
+/**
+ * Level, on the road's centre line: `projection.ts` assumes exactly this. The
+ * field of view is only a starting value — `TruckRunRoad` sets the real one
+ * from the canvas size, because on a tall phone the road, not the height, is
+ * what has to fit.
+ */
+const TRUCK_RUN_CAMERA = { position: [0, CAMERA.height, 0] as [number, number, number], fov: CAMERA.maxFov };
 
 export const TruckRunScene3D = memo(function TruckRunScene3D({
   sample,
