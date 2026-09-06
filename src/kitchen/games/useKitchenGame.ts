@@ -129,10 +129,18 @@ export function useCaptainHint(session: Session): CaptainHint {
     timer.current = setTimeout(() => setState((s) => ({ ...s, visible: false })), 4200);
   }, []);
 
+  /*
+   * ONE BUBBLE, ONE VOICE.
+   *
+   * These used to raise `session.say` as well. The host answers a `say` event by
+   * drawing its own speech bubble *and* speaking the line — so every hint came
+   * out twice: two overlapping cards over the tray and Captain Bea talking over
+   * herself. The activity's own `HintBubble` is the bubble now, and `show`
+   * below is the voice.
+   */
   const nudge = useCallback(
     (text: string, es?: string) => {
       session.incorrect(text);
-      session.say('bea', text, es);
       sfx.play('wrong-soft');
       haptics.nudge();
       show(text, es, true);
@@ -140,13 +148,7 @@ export function useCaptainHint(session: Session): CaptainHint {
     [session, show],
   );
 
-  const cheer = useCallback(
-    (text: string, es?: string) => {
-      session.say('bea', text, es);
-      show(text, es, false);
-    },
-    [session, show],
-  );
+  const cheer = useCallback((text: string, es?: string) => show(text, es, false), [show]);
 
   const askedForHelp = useCallback(() => {
     session.hint();

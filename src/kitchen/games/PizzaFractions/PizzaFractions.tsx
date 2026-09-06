@@ -580,7 +580,7 @@ export function PizzaFractions({ challenge, ageBand, onComplete, onEvent, compac
       ) : phase === 'cut' ? (
         <View style={styles.sliceCounter}>
           <Text variant="bodyStrong" color={roles.ink.secondary}>
-            {madeCuts} of {angles.length} cuts · {sliceCount} slices
+            {madeCuts} of {angles.length} cuts · {sliceCount} slice{sliceCount === 1 ? '' : 's'}
           </Text>
         </View>
       ) : null}
@@ -610,7 +610,10 @@ export function PizzaFractions({ challenge, ageBand, onComplete, onEvent, compac
       hint={{ text: assist.text, es: assist.es, visible: assist.visible, onDismiss: assist.dismiss }}
     >
       <View style={styles.body}>
-        {phase === 'top' ? (
+        {/* The recipe stays up through the rolling too: the child can see what
+            they are building towards while the base is still a lump, and the
+            top of the board is not a blank wall. */}
+        {phase === 'roll' || phase === 'top' ? (
           <View style={styles.pieRow}>
             {challenge.toppings.map((t, i) => (
               <React.Fragment key={t.topping}>
@@ -654,7 +657,7 @@ export function PizzaFractions({ challenge, ageBand, onComplete, onEvent, compac
           </View>
         ) : phase === 'cut' ? (
           <View style={styles.pieRow}>
-            <EquationStrip text={`${sliceCount} / ${challenge.cutInto} slices`} />
+            <EquationStrip text={`${sliceCount} of ${challenge.cutInto} slices`} />
           </View>
         ) : null}
 

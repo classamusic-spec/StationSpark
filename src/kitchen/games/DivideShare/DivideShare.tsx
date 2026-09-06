@@ -19,6 +19,7 @@ import { VocabIcon } from '@/ui/kit/VocabIcon';
 import { Stage as SceneStage } from '@/world';
 import { CrewFigure, SceneCrew } from '@/world/scenes';
 import { Stage, at } from '../../parts/Stage';
+import { useSwing } from '../../parts/motion';
 import { PlateArt } from '../../parts/FoodBits';
 import { ChefKnife, EquationStrip } from '../../parts/SceneBits';
 import { pluralEn } from '../../spanish';
@@ -393,19 +394,23 @@ function TraySurface({
   showHint: boolean;
 }) {
   const report = useCallback((stroke: Stroke) => onStroke(stroke, s), [onStroke, s]);
-  const stroke = useStrokeGesture({ onStroke: report });
+  const stroke = useStrokeGesture({ onStroke: report, tapSlop: 14 * (s || 1) });
   const w = TRAY.w * s;
   const h = TRAY.h * s;
-  const knifeW = 96 * s;
+  const knifeW = 132 * s;
+  /* the knife slides gently along the tray until a hand takes it */
+  const idle = useSwing(1, 2300);
 
-  const knifeStyle = useAnimatedStyle(() => ({
-    opacity: 0.4 + stroke.active.value * 0.6,
-    transform: [
-      { translateX: (stroke.active.value ? stroke.x.value : w * 0.5) - knifeW / 2 },
-      { translateY: (stroke.active.value ? stroke.y.value : h * 0.5) - 22 * s },
-      { rotate: `${-8 - stroke.active.value * 10}deg` },
-    ],
-  }));
+  const knifeStyle = useAnimatedStyle(() => {
+    const t = stroke.active.value;
+    const held = 1 - t;
+    const x = (w * 0.5 + idle.value * w * 0.2) * held + stroke.x.value * t;
+    const y = h * 0.5 * held + stroke.y.value * t;
+    return {
+      opacity: 0.85 + t * 0.15,
+      transform: [{ translateX: x - knifeW / 2 }, { translateY: y - 26 * s }, { rotate: `${(-6 - t * 8).toFixed(2)}deg` }],
+    };
+  });
 
   return (
     <GestureDetector gesture={stroke.gesture}>

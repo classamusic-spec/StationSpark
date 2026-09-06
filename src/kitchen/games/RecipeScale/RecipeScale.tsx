@@ -41,8 +41,8 @@ const CREW = [
 
 /** half turns of the spoon that cook the pot */
 const STIRS_TO_COOK = 6;
-const POT_W = 240;
-const POT_H = 200;
+const POT_W = 290;
+const POT_H = 250;
 
 type Phase = 'set' | 'stir' | 'done';
 
@@ -68,7 +68,7 @@ export function RecipeScale({ challenge, onComplete, onEvent, compact }: MiniGam
 
   const task =
     phase === 'set'
-      ? `${challenge.eating} are eating — fix the amounts`
+      ? `Make it feed ${challenge.eating}`
       : phase === 'stir'
         ? 'Stir the pot'
         : 'Dinner is ready!';
@@ -239,21 +239,23 @@ export function RecipeScale({ challenge, onComplete, onEvent, compact }: MiniGam
       hint={{ text: assist.text, es: assist.es, visible: assist.visible, onDismiss: assist.dismiss }}
     >
       <View style={styles.body}>
+        {/* The crew stays on screen while the pot cooks: you are stirring *for*
+            somebody, and the band above the pot had nothing else to say. */}
+        <View style={styles.ratio}>
+          <CrewRow label={`Serves ${challenge.serves}`} count={challenge.serves} size={figureSize} />
+          <Text variant="h2" color={palette.engineRed}>
+            →
+          </Text>
+          <CrewRow
+            label={`${challenge.eating} eating`}
+            count={challenge.eating}
+            extraFrom={challenge.serves}
+            size={figureSize}
+          />
+        </View>
+
         {phase === 'set' ? (
           <>
-            <View style={styles.ratio}>
-              <CrewRow label={`Serves ${challenge.serves}`} count={challenge.serves} size={figureSize} />
-              <Text variant="h2" color={palette.engineRed}>
-                →
-              </Text>
-              <CrewRow
-                label={`${challenge.eating} eating`}
-                count={challenge.eating}
-                extraFrom={challenge.serves}
-                size={figureSize}
-              />
-            </View>
-
             <View style={styles.cardWrap}>
               <RecipeCardFrame
                 title={`Serves ${challenge.serves} → ${challenge.eating}`}

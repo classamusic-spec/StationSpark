@@ -40,9 +40,13 @@ const SPAN = INNER.h * 0.8;
 const JUG = { x: 246, y: 26, w: 118, h: 150 };
 /** how often the flow is topped up while the jug is tipped */
 const FLOW_TICK_MS = 120;
-/** chunks per second, from a barely-tipped jug to a fully upended one */
-const FLOW_SLOW = 1.5;
-const FLOW_FAST = 4.4;
+/**
+ * Measures per second, from a barely-tipped jug to a fully upended one. Slow
+ * enough that a child aiming for the ¾ line can stop on it: a full tilt still
+ * takes about a second to fill a whole cup, and letting go stops it dead.
+ */
+const FLOW_SLOW = 1.2;
+const FLOW_FAST = 2.6;
 /** the jug rests here the moment it is picked up, before any tilting */
 const TILT_REST = -22;
 const TILT_MAX = -68;
@@ -344,6 +348,20 @@ export function MeasurePour({ challenge, onComplete, onEvent, compact }: MiniGam
               </Animated.View>
             </View>
 
+            {/* The stream falls into the cup, not into the gap beside it: it
+                used to be pinned to the jug and hidden behind the readout card,
+                so nothing connected the tipping jug to the rising liquid. It
+                thickens with the tilt and stops the moment the hand lets go. */}
+            <Animated.View
+              style={[at(s, INNER.x + INNER.w / 2 - 11, CUP.y + 2, 22, 140), styles.stream, streamStyle]}
+              pointerEvents="none"
+            >
+              <View style={[styles.streamBody, { backgroundColor: look.fill, borderRadius: 11 * s }]} />
+              <View
+                style={[styles.droplet, { backgroundColor: look.foam, width: 14 * s, height: 14 * s, borderRadius: 7 * s }]}
+              />
+            </Animated.View>
+
             {/* ticks + target flag */}
             <View style={at(s, CUP.x, CUP.y, CUP.w + 90, CUP.h)} pointerEvents="none">
               {ticks.map((t) => {
@@ -403,10 +421,6 @@ export function MeasurePour({ challenge, onComplete, onEvent, compact }: MiniGam
                   </View>
                 </Animated.View>
               </GestureDetector>
-              <Animated.View style={[at(s, 2, JUG.h - 8, 20, 130), styles.stream, streamStyle]} pointerEvents="none">
-                <View style={[styles.streamBody, { backgroundColor: look.fill, borderRadius: 10 * s }]} />
-                <View style={[styles.droplet, { backgroundColor: look.foam, width: 12 * s, height: 12 * s, borderRadius: 6 * s }]} />
-              </Animated.View>
             </View>
 
             <View style={at(s, 240, 214, 132)} pointerEvents="none">
