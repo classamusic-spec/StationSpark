@@ -18,7 +18,9 @@
     "qa:icons": "node tools/qa/icons.mjs dist",
     "qa:play": "node tools/qa/play.mjs dist",
     "art:build": "node tools/art/build-characters.mjs",
-    "art:verify": "node tools/art/verify-characters.mjs"
+    "art:verify": "node tools/art/verify-characters.mjs",
+    "art:build:truck": "node tools/art/build-truck.mjs",
+    "art:verify:truck": "node tools/art/verify-truck.mjs"
   },
   "dependencies": {
     "@expo-google-fonts/fredoka": "^0.4.1",

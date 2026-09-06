@@ -5,15 +5,31 @@ import Svg, { Circle, Defs, Ellipse, G, Mask, Path, Rect } from 'react-native-sv
 import { palette } from '@/theme';
 import { useLoop, usePulse } from '@/hooks';
 import type { TruckStyle } from '@/state/store';
+import {
+  TRUCK_ART_VB,
+  TRUCK_DECAL,
+  truckBeaconBase,
+  truckBeaconDome,
+  truckBody,
+  truckDecalDisc,
+  truckDecalFlame,
+  truckDecalRing,
+  truckWheels,
+  type TruckShape,
+} from './art/fireTruckArt';
 
-/** Design box for the side-view truck. All geometry below is in these units. */
-export const TRUCK_VB = { w: 220, h: 112 } as const;
+/**
+ * Design box for the side-view truck — the authored drawing's own box.
+ * Callers size by width and the height follows this ratio.
+ */
+export const TRUCK_VB = { w: TRUCK_ART_VB.w, h: TRUCK_ART_VB.h } as const;
 
-const bodyColors: Record<TruckStyle['color'], { face: string; shade: string; light: string }> = {
-  red: { face: palette.engineRed, shade: palette.engineRedDark, light: palette.engineRedLight },
-  yellow: { face: palette.safetyYellow, shade: palette.goldDark, light: '#FFE07A' },
-  blue: { face: '#3E8FE0', shade: '#25649F', light: '#7FC0F5' },
-  green: { face: palette.leafGreen, shade: palette.leafGreenDark, light: '#8CD98F' },
+/** Where the paint goes. `face` is the panel, `shade` the lower body, `deep` the darkest edge. */
+const bodyColors: Record<TruckStyle['color'], { face: string; shade: string; deep: string; light: string }> = {
+  red: { face: '#EA2C2F', shade: '#BF1C21', deep: '#D60E2A', light: palette.engineRedLight },
+  yellow: { face: palette.safetyYellow, shade: '#D89A12', deep: palette.goldDark, light: '#FFE07A' },
+  blue: { face: '#3E8FE0', shade: '#25649F', deep: '#1E5288', light: '#7FC0F5' },
+  green: { face: palette.leafGreen, shade: palette.leafGreenDark, light: '#8CD98F', deep: '#2F6B33' },
 };
 
 const lampColors: Record<TruckStyle['lights'], readonly [string, string, string, string, string]> = {
@@ -24,40 +40,65 @@ const lampColors: Record<TruckStyle['lights'], readonly [string, string, string,
 
 const LAMP_STOPS = [0, 0.25, 0.5, 0.75, 1];
 
-function DecalArt({ decal, cx, cy }: { decal: TruckStyle['decal']; cx: number; cy: number }) {
-  if (decal === 'none') return null;
-  if (decal === 'flame') {
-    return (
-      <G>
-        <Path
-          d={`M ${cx} ${cy - 11} c 7 6 9 11 0 18 c -9 -7 -7 -12 0 -18 z`}
-          fill={palette.engineRed}
-        />
-        <Path d={`M ${cx} ${cy - 2} c 3.4 3 4 5.4 0 8.6 c -4 -3.2 -3.4 -5.6 0 -8.6 z`} fill={palette.safetyYellow} />
-      </G>
-    );
+/**
+ * Draw one authored shape. A circle stays a `<Circle/>` and an ellipse stays an
+ * `<Ellipse/>`: rewriting either as arcs moves its antialiased edge, and the
+ * whole point of the pipeline is that what ships is what was drawn.
+ */
+function Shape({ s, fill }: { s: TruckShape; fill?: string }) {
+  const paint = fill ?? s.fill;
+  const stroke = s.stroke
+    ? { stroke: s.stroke, strokeWidth: s.strokeWidth, strokeLinecap: s.strokeLinecap as 'round' | undefined }
+    : null;
+  if (s.circle) return <Circle cx={s.circle.cx} cy={s.circle.cy} r={s.circle.r} fill={paint} {...stroke} />;
+  if (s.ellipse) {
+    return <Ellipse cx={s.ellipse.cx} cy={s.ellipse.cy} rx={s.ellipse.rx} ry={s.ellipse.ry} fill={paint} {...stroke} />;
   }
+  return <Path d={s.d} fill={paint ?? 'none'} {...stroke} />;
+}
+
+const Shapes = ({ list, tint }: { list: readonly TruckShape[]; tint?: (s: TruckShape) => string | undefined }) => (
+  <>
+    {list.map((s, i) => (
+      <Shape key={i} s={s} fill={tint?.(s)} />
+    ))}
+  </>
+);
+
+/** The decals the child did not author — drawn to sit inside the authored roundel. */
+function DecalGlyph({ decal }: { decal: TruckStyle['decal'] }) {
+  const { cx, cy } = TRUCK_DECAL;
+  if (decal === 'flame') return <Shapes list={truckDecalFlame} />;
   if (decal === 'star') {
-    const r = 11;
+    const r = 8;
     const pts = Array.from({ length: 10 }, (_, i) => {
       const rr = i % 2 === 0 ? r : r * 0.45;
       const a = (Math.PI / 5) * i - Math.PI / 2;
       return `${cx + Math.cos(a) * rr} ${cy + Math.sin(a) * rr}`;
     });
-    return <Path d={`M ${pts.join(' L ')} Z`} fill={palette.safetyYellow} stroke={palette.goldDark} strokeWidth={1.2} strokeLinejoin="round" />;
+    return <Path d={`M ${pts.join(' L ')} Z`} fill={palette.safetyYellow} stroke={palette.goldDark} strokeWidth={0.9} strokeLinejoin="round" />;
   }
   if (decal === 'paw') {
     return (
       <G fill={palette.navy}>
-        <Ellipse cx={cx} cy={cy + 4} rx={7.5} ry={6} />
-        <Circle cx={cx - 7} cy={cy - 4} r={3.1} />
-        <Circle cx={cx - 2.4} cy={cy - 7.4} r={3.1} />
-        <Circle cx={cx + 2.6} cy={cy - 7.4} r={3.1} />
-        <Circle cx={cx + 7.2} cy={cy - 4} r={3.1} />
+        <Ellipse cx={cx} cy={cy + 3} rx={5.4} ry={4.3} />
+        <Circle cx={cx - 5} cy={cy - 2.9} r={2.2} />
+        <Circle cx={cx - 1.7} cy={cy - 5.3} r={2.2} />
+        <Circle cx={cx + 1.9} cy={cy - 5.3} r={2.2} />
+        <Circle cx={cx + 5.2} cy={cy - 2.9} r={2.2} />
       </G>
     );
   }
-  return <Path d={`M ${cx + 3} ${cy - 12} L ${cx - 8} ${cy + 1} L ${cx - 1} ${cy + 1} L ${cx - 4} ${cy + 12} L ${cx + 8} ${cy - 2} L ${cx + 1} ${cy - 2} Z`} fill={palette.safetyYellow} stroke={palette.goldDark} strokeWidth={1} strokeLinejoin="round" />;
+  /* lightning */
+  return (
+    <Path
+      d={`M ${cx + 2.1} ${cy - 8.6} L ${cx - 5.7} ${cy + 0.7} L ${cx - 0.7} ${cy + 0.7} L ${cx - 2.9} ${cy + 8.6} L ${cx + 5.7} ${cy - 1.4} L ${cx + 0.7} ${cy - 1.4} Z`}
+      fill={palette.safetyYellow}
+      stroke={palette.goldDark}
+      strokeWidth={0.8}
+      strokeLinejoin="round"
+    />
+  );
 }
 
 interface BodyProps {
@@ -69,9 +110,16 @@ interface BodyProps {
   grime: boolean;
 }
 
-/** Static truck body. Memoized: the wheels and light bar animate outside the SVG. */
+/** Static truck body. Memoized: the wheels and beacon animate outside the SVG. */
 const TruckBody = memo(function TruckBody({ w, h, color, decal, cleanSpots, grime }: BodyProps) {
   const c = bodyColors[color];
+  /* Only the panels the child painted change; the gold stripe, the chrome
+     ladder, the glass and the bumper keep the colours the artist chose. */
+  const paint = useMemo(
+    () => (s: TruckShape) => (s.paint ? c[s.paint] : undefined),
+    [c],
+  );
+
   return (
     <Svg width={w} height={h} viewBox={`0 0 ${TRUCK_VB.w} ${TRUCK_VB.h}`} pointerEvents="none">
       <Defs>
@@ -83,103 +131,95 @@ const TruckBody = memo(function TruckBody({ w, h, color, decal, cleanSpots, grim
         </Mask>
       </Defs>
 
-      {/* soft ground shadow */}
-      <Ellipse cx={110} cy={105} rx={96} ry={7} fill={palette.navy} opacity={0.14} />
+      {/* the engine sits on the ground, not above it */}
+      <Ellipse cx={TRUCK_VB.w / 2} cy={78.4} rx={70} ry={4.4} fill={palette.navy} opacity={0.13} />
 
-      {/* ladder along the roof */}
-      <Rect x={18} y={28} width={116} height={10} rx={5} fill={palette.slate} />
-      {[28, 44, 60, 76, 92, 108].map((x) => (
-        <Rect key={x} x={x} y={29.5} width={4} height={7} rx={2} fill={palette.slateLight} />
-      ))}
+      <Shapes list={truckBody} tint={paint} />
+      <Shapes list={truckBeaconBase} />
 
-      {/* rear body */}
-      <Rect x={6} y={40} width={134} height={48} rx={9} fill={c.face} />
-      <Rect x={6} y={40} width={134} height={13} rx={7} fill={c.light} opacity={0.5} />
-      {/* equipment lockers */}
-      <Rect x={16} y={48} width={38} height={22} rx={4} fill={c.shade} opacity={0.55} />
-      <Rect x={94} y={48} width={36} height={22} rx={4} fill={c.shade} opacity={0.55} />
-
-      {/* cab */}
-      <Path d="M 138 88 L 138 30 Q 138 22 147 22 L 190 22 Q 198 22 202 30 L 212 52 Q 214 56 214 62 L 214 88 Z" fill={c.face} />
-      <Path d="M 176 30 L 196 30 Q 200 30 202 34 L 209 50 Q 210 53 206 53 L 176 53 Q 173 53 173 50 L 173 33 Q 173 30 176 30 Z" fill={palette.waterCyanLight} />
-      <Path d="M 178 32 L 192 32 L 183 51 L 176 51 Z" fill="#FFFFFF" opacity={0.45} />
-      <Rect x={144} y={30} width={24} height={23} rx={5} fill={palette.waterCyanLight} />
-      <Rect x={146} y={32} width={9} height={19} rx={4} fill="#FFFFFF" opacity={0.45} />
-      <Rect x={140} y={56} width={8} height={4} rx={2} fill={palette.charcoal} opacity={0.5} />
-
-      {/* gold reflective stripe */}
-      <Rect x={6} y={64} width={208} height={9} rx={3} fill={palette.safetyYellow} />
-      <Rect x={6} y={64} width={208} height={3} rx={2} fill="#FFFFFF" opacity={0.4} />
-
-      {/* lower skirt + bumper */}
-      <Rect x={6} y={78} width={208} height={11} rx={4} fill={c.shade} />
-      <Rect x={202} y={74} width={16} height={15} rx={5} fill={palette.slateLight} />
-      <Circle cx={210} cy={62} r={5} fill={palette.safetyYellow} />
-
-      {/* light bar base (lamps are animated views layered on top) */}
-      <Rect x={148} y={11} width={56} height={12} rx={5} fill={palette.charcoal} />
-
-      {/* decal badge */}
+      {/* the door badge: the authored ring and disc, then whichever glyph the
+          child chose. `none` takes the badge off the door altogether. */}
       {decal !== 'none' ? (
-        <G>
-          <Circle cx={62} cy={56} r={17} fill="#FFFFFF" opacity={0.94} />
-          <Circle cx={62} cy={56} r={17} fill="none" stroke={c.shade} strokeWidth={2} />
-          <DecalArt decal={decal} cx={62} cy={56} />
-        </G>
+        <>
+          {/* authored order: the cream disc, then the ring drawn over its edge */}
+          <Shapes list={truckDecalDisc} />
+          <Shapes list={truckDecalRing} tint={paint} />
+          <DecalGlyph decal={decal} />
+        </>
       ) : null}
-
-      {/* wheel wells */}
-      <Circle cx={54} cy={88} r={19} fill={palette.charcoalDark} opacity={0.28} />
-      <Circle cx={168} cy={88} r={19} fill={palette.charcoalDark} opacity={0.28} />
 
       {/* washable grime, erased where the sponge has been */}
       {grime ? (
         <G mask="url(#truckGrime)" opacity={0.55}>
-          <Rect x={6} y={24} width={208} height={64} rx={10} fill="#8A7A5E" opacity={0.5} />
-          <Circle cx={40} cy={52} r={11} fill="#6F6047" opacity={0.5} />
-          <Circle cx={104} cy={72} r={9} fill="#6F6047" opacity={0.45} />
-          <Circle cx={160} cy={44} r={10} fill="#6F6047" opacity={0.4} />
-          <Circle cx={196} cy={70} r={8} fill="#6F6047" opacity={0.45} />
+          <Rect x={3} y={8} width={153} height={62} rx={8} fill="#8A7A5E" opacity={0.5} />
+          <Circle cx={28} cy={34} r={8} fill="#6F6047" opacity={0.5} />
+          <Circle cx={74} cy={52} r={7} fill="#6F6047" opacity={0.45} />
+          <Circle cx={116} cy={28} r={7} fill="#6F6047" opacity={0.4} />
+          <Circle cx={142} cy={52} r={6} fill="#6F6047" opacity={0.45} />
         </G>
       ) : null}
     </Svg>
   );
 });
 
-const Wheel = memo(function Wheel({ size }: { size: number }) {
+/** One authored wheel, drawn in its own box so it can be spun by a transform. */
+const Wheel = memo(function Wheel({ index, size }: { index: number; size: number }) {
+  const wheel = truckWheels[index];
+  if (!wheel) return null;
+  const { cx, cy, r } = wheel;
   return (
-    <Svg width={size} height={size} viewBox="0 0 40 40" pointerEvents="none">
-      <Circle cx={20} cy={20} r={19} fill={palette.charcoalDark} />
-      <Circle cx={20} cy={20} r={11} fill={palette.slateLight} />
-      <Circle cx={20} cy={20} r={4} fill={palette.slate} />
-      {[0, 60, 120, 180, 240, 300].map((deg) => {
-        const a = (deg * Math.PI) / 180;
-        return <Circle key={deg} cx={20 + Math.cos(a) * 7} cy={20 + Math.sin(a) * 7} r={1.9} fill={palette.slate} />;
-      })}
+    <Svg width={size} height={size} viewBox={`${cx - r} ${cy - r} ${r * 2} ${r * 2}`} pointerEvents="none">
+      <Shapes list={wheel.shapes} />
     </Svg>
   );
 });
 
-function SpinningWheel({ px, cx, cy, r, driving }: { px: (n: number) => number; cx: number; cy: number; r: number; driving: boolean }) {
+function SpinningWheel({ px, index, driving }: { px: (n: number) => number; index: number; driving: boolean }) {
   const t = useLoop(760);
   const style = useAnimatedStyle(() => ({ transform: [{ rotate: `${driving ? t.value * 360 : 0}deg` }] }));
-  const size = px(r * 2);
+  const wheel = truckWheels[index];
+  if (!wheel) return null;
+  const size = px(wheel.r * 2);
   return (
-    <Animated.View style={[styles.abs, { left: px(cx - r), top: px(cy - r), width: size, height: size }, style]} pointerEvents="none">
-      <Wheel size={size} />
+    <Animated.View
+      style={[styles.abs, { left: px(wheel.cx - wheel.r), top: px(wheel.cy - wheel.r), width: size, height: size }, style]}
+      pointerEvents="none"
+    >
+      <Wheel index={index} size={size} />
     </Animated.View>
   );
 }
 
-function Lamp({ left, top, w, h, phase, lights, on }: { left: number; top: number; w: number; h: number; phase: number; lights: TruckStyle['lights']; on: boolean }) {
+/**
+ * The beacon dome, flashing in the child's chosen colours.
+ *
+ * The authored dome is drawn underneath and the flash is a tinted copy laid over
+ * it, so the shape is always the artist's — only the colour pulses.
+ */
+function Beacon({ px, lights, on }: { px: (n: number) => number; lights: TruckStyle['lights']; on: boolean }) {
   const pulse = usePulse(620, 0.5);
   const colors = lampColors[lights];
   const style = useAnimatedStyle(() => {
-    const p = (pulse.value + phase) % 1;
-    const bg = interpolateColor(p, LAMP_STOPS, colors as unknown as string[]);
-    return { backgroundColor: bg, opacity: on ? 0.55 + Math.abs(p - 0.5) * 0.9 : 0.35 };
+    const p = pulse.value % 1;
+    return {
+      backgroundColor: interpolateColor(p, LAMP_STOPS, colors as unknown as string[]),
+      opacity: on ? 0.5 + Math.abs(p - 0.5) * 0.8 : 0.28,
+    };
   });
-  return <Animated.View style={[styles.abs, { left, top, width: w, height: h, borderRadius: h / 2 }, style]} pointerEvents="none" />;
+  return (
+    <>
+      <View style={[styles.abs, { left: 0, top: 0, width: px(TRUCK_VB.w), height: px(TRUCK_VB.h) }]} pointerEvents="none">
+        <Svg width={px(TRUCK_VB.w)} height={px(TRUCK_VB.h)} viewBox={`0 0 ${TRUCK_VB.w} ${TRUCK_VB.h}`} pointerEvents="none">
+          <Shapes list={truckBeaconDome} />
+        </Svg>
+      </View>
+      {/* the colour wash, clipped to the dome's own box */}
+      <Animated.View
+        style={[styles.abs, { left: px(113), top: px(1.2), width: px(13.9), height: px(6.5), borderRadius: px(3.3) }, style]}
+        pointerEvents="none"
+      />
+    </>
+  );
 }
 
 export interface FireTruckProps {
@@ -199,9 +239,13 @@ export interface FireTruckProps {
 }
 
 /**
- * Side-view fire engine, dressed from the child's `TruckStyle`. The body is a
- * memoized SVG; the wheels and light bar are RN transforms layered over it so
- * they stay smooth on every platform (animated SVG props are unreliable on web).
+ * Side-view fire engine — the authored drawing from `SVG ART/FIRE_TRUCK.svg`,
+ * dressed from the child's `TruckStyle`.
+ *
+ * The body is a memoized SVG of the authored paths; the wheels and the beacon
+ * are RN transforms layered over it, because animated SVG props are unreliable
+ * on web. Only the panels the child painted are re-tinted — the gold stripe,
+ * the chrome ladder, the glass and the bumper stay the colours they were drawn.
  */
 export function FireTruck({ truck, width = 220, driving = false, lightsOn = true, grime = false, cleanSpots, style }: FireTruckProps) {
   const scale = width / TRUCK_VB.w;
@@ -212,10 +256,9 @@ export function FireTruck({ truck, width = 220, driving = false, lightsOn = true
   return (
     <View style={[{ width, height }, style]} pointerEvents="none">
       <TruckBody w={width} h={height} color={truck.color} decal={truck.decal} cleanSpots={spots} grime={grime} />
-      <Lamp left={px(152)} top={px(13)} w={px(23)} h={px(8)} phase={0} lights={truck.lights} on={lightsOn} />
-      <Lamp left={px(178)} top={px(13)} w={px(23)} h={px(8)} phase={0.5} lights={truck.lights} on={lightsOn} />
-      <SpinningWheel px={px} cx={54} cy={88} r={17} driving={driving} />
-      <SpinningWheel px={px} cx={168} cy={88} r={17} driving={driving} />
+      <Beacon px={px} lights={truck.lights} on={lightsOn} />
+      <SpinningWheel px={px} index={0} driving={driving} />
+      <SpinningWheel px={px} index={1} driving={driving} />
     </View>
   );
 }

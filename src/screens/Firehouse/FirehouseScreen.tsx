@@ -169,16 +169,28 @@ export function FirehouseScreen() {
     if (W < 40 || H < 40) return null;
     const ratio = FACADE_VB.w / FACADE_VB.h;
 
-    /* the road band: the CTA lives on it, so it is never thinner than that */
-    const wanted = Math.round(clamp(H * 0.23, CTA_BLOCK + CTA_AIR + insets.bottom, 260 + insets.bottom));
+    /*
+     * A landscape window is short, and the façade is portrait (360 x 548), so
+     * it is the HEIGHT that decides how big the station can be — widening the
+     * cap alone does nothing. On a wide, short window every pixel of sky and
+     * tarmac we do not need is therefore given back to the building: the road
+     * keeps only the band the CTA actually stands on, and the strip of sky
+     * above the roof shrinks to a hairline. On a phone, where height is
+     * plentiful and the building already runs nearly edge to edge, the calmer
+     * original spacing is kept.
+     */
+    const landscape = W > H;
+    const topAir = landscape ? 10 : TOP_MIN;
+    const roadFloor = CTA_BLOCK + (landscape ? 16 : CTA_AIR) + insets.bottom;
+    const wanted = Math.round(clamp(H * (landscape ? 0.19 : 0.23), roadFloor, 260 + insets.bottom));
     const sideGap = Math.round(clamp(W * 0.028, 8, 44));
     /* ≥ 260 keeps the six doors above the 56 px tap target on a small phone */
-    const width = clamp(Math.min(W - sideGap * 2, (H - wanted - TOP_MIN) * ratio, 760), 260, 760);
+    const width = clamp(Math.min(W - sideGap * 2, (H - wanted - topAir) * ratio, 900), 260, 900);
     const station = facadeLayout(width);
     const left = (W - width) / 2;
     /* on a short window the road gives way before the roof does */
     const road = Math.round(
-      Math.max(CTA_BLOCK + 30 + insets.bottom, Math.min(wanted, H - TOP_MIN - KERB - station.height)),
+      Math.max(roadFloor, Math.min(wanted, H - topAir - KERB - station.height)),
     );
 
     /* the footpath is exactly as deep as the apron, so they read as one plane */
