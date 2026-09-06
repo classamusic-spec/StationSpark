@@ -6,16 +6,20 @@
  * intro, including the "ask a grown-up at home" line.
  */
 import type { BadgeId, DialogueLine, RecipeDef, RecipeId } from './types';
-import type { Challenge, GeneratorContext } from '@/learning/types';
+import type { AgeBand, Challenge, GeneratorContext, VocabWord } from '@/learning/types';
 import {
   generateClockWatch,
   generateCountIngredients,
   generateDivideShare,
+  generateMarketMoney,
   generateMeasurePour,
   generatePizzaFractions,
   generateRecipeScale,
+  generateSoupPot,
+  generateWordBuilder,
 } from '@/learning/generators';
 import { wordById } from '@/learning/vocabulary';
+import { foodWords } from '@/kitchen/food';
 
 const bea = (text: string, es?: string): DialogueLine => ({
   speaker: 'bea',
@@ -61,6 +65,63 @@ const countThese = (needs: { id: string; count: number }[], extras: string[], sp
     spokenEs,
   });
 
+/** Band-picked shopping list, straight from the kitchen's own food bank. */
+const countByBand = (
+  lists: Record<AgeBand, { item: VocabWord; count: number }[]>,
+  extras: VocabWord[],
+) =>
+  (ctx: GeneratorContext): Challenge => ({
+    ...generateCountIngredients(ctx),
+    needs: lists[ctx.ageBand],
+    extras,
+    spokenEs: true,
+  });
+
+/**
+ * Spell the label that goes on the jar or the jug.
+ *
+ * `tiles` always holds every letter still to place, so the word can always be
+ * finished — the same promise `generateWordBuilder` makes.
+ */
+const SPARE_LETTERS = 'ABCDEFGHIJLMNOPQRSTUVYZ'.split('');
+
+const spell = (word: VocabWord, lang: 'en' | 'es', prefilled: number, distractors: number) =>
+  (ctx: GeneratorContext): Challenge => {
+    const letters = word[lang].toUpperCase().split('');
+    const spare = SPARE_LETTERS.filter((l) => !letters.includes(l));
+    return {
+      ...generateWordBuilder(ctx),
+      word,
+      lang,
+      letters,
+      prefilled,
+      tiles: ctx.rng.shuffle([...letters.slice(prefilled), ...ctx.rng.shuffle(spare).slice(0, distractors)]),
+    };
+  };
+
+/** What goes in the pot, in the order it goes in. */
+const potOf = (
+  orders: Record<AgeBand, { item: VocabWord; count: number }[]>,
+  extras: VocabWord[],
+) =>
+  (ctx: GeneratorContext): Challenge => {
+    const steps = orders[ctx.ageBand];
+    return {
+      ...generateSoupPot(ctx),
+      steps,
+      extras,
+      spokenEs: true,
+      /* only the oldest crew adds the pot up at the end */
+      ...(ctx.ageBand === 'C' ? { askTotal: steps.reduce((sum, s) => sum + s.count, 0) } : {}),
+    };
+  };
+
+/**
+ * The recipe book, in shelf order — which is also the ladder: `recipeCardState`
+ * opens the next card along as each one is cooked. The three newest dishes are
+ * interleaved rather than stacked on the end, so a child meets the pot, the
+ * label and the market stall on the way through instead of after everything.
+ */
 export const recipes: RecipeDef[] = [
   {
     id: 'pancakes',
@@ -199,6 +260,60 @@ export const recipes: RecipeDef[] = [
     ],
   },
   {
+    id: 'veggie-caldo',
+    name: 'Veggie Caldo',
+    nameEs: 'Caldo de verduras',
+    blurb: 'Water, then the vegetables in order, then the long slow simmer.',
+    subjects: ['cooking', 'math', 'logic', 'spanish'],
+    grownUp: true,
+    xp: 30,
+    intro: [
+      bea('Rainy day! Rainy days are for caldo.'),
+      bea('Caldo means broth. A whole pot of it.'),
+      grownUpLine('hot pot'),
+    ],
+    steps: [
+      {
+        game: 'measure-pour',
+        challenge: measureByBand('water', 'cup'),
+        intro: [radio('Water goes in first. Stop at the line.')],
+      },
+      {
+        /* The order IS the lesson: cebolla, zanahoria, papa — never the other way round. */
+        game: 'soup-pot',
+        challenge: potOf(
+          {
+            A: [
+              { item: foodWords.onion, count: 1 },
+              { item: foodWords.carrot, count: 2 },
+              { item: foodWords.potato, count: 2 },
+            ],
+            B: [
+              { item: foodWords.onion, count: 2 },
+              { item: foodWords.carrot, count: 3 },
+              { item: foodWords.potato, count: 2 },
+              { item: foodWords.tomato, count: 2 },
+            ],
+            C: [
+              { item: foodWords.onion, count: 2 },
+              { item: foodWords.carrot, count: 3 },
+              { item: foodWords.potato, count: 3 },
+              { item: foodWords.tomato, count: 2 },
+              { item: foodWords.lemon, count: 1 },
+            ],
+          },
+          [foodWords.strawberry, foodWords.banana, foodWords.corn],
+        ),
+        intro: [radio('Cebolla, zanahoria, papa. Read the card twice!', 'Cebolla, zanahoria, papa.')],
+      },
+      {
+        game: 'clock-watch',
+        challenge: (ctx) => ({ ...generateClockWatch(ctx), event: 'the caldo has simmered long enough' }),
+        intro: [bea('Now it simmers. Move the clock to dinner time.')],
+      },
+    ],
+  },
+  {
     id: 'soup',
     name: 'Big Pot Soup',
     nameEs: 'Sopa de olla',
@@ -266,6 +381,60 @@ export const recipes: RecipeDef[] = [
         game: 'count-ingredients',
         challenge: countThese([{ id: 'egg', count: 2 }, { id: 'olive', count: 4 }], ['apple', 'strawberry', 'mushroom'], true),
         intro: [{ speaker: 'npc', npcName: 'Rosa', text: 'Two eggs, four olives. ¡Gracias!', es: 'Dos huevos, cuatro aceitunas. ¡Gracias!', emotion: 'excited' }],
+      },
+    ],
+  },
+  {
+    id: 'agua-fresca',
+    name: 'Watermelon Agua Fresca',
+    nameEs: 'Agua de sandía',
+    blurb: 'Fruit, water and one word to spell on the label of the jug.',
+    subjects: ['cooking', 'reading', 'spanish', 'math'],
+    grownUp: true,
+    xp: 25,
+    intro: [
+      bea('Agua fresca! Cold, pink, and gone by noon.'),
+      grownUpLine('knife'),
+    ],
+    steps: [
+      {
+        game: 'count-ingredients',
+        challenge: countByBand(
+          {
+            A: [
+              { item: foodWords.watermelon, count: 3 },
+              { item: foodWords.lemon, count: 2 },
+            ],
+            B: [
+              { item: foodWords.watermelon, count: 4 },
+              { item: foodWords.lemon, count: 2 },
+              { item: foodWords.strawberry, count: 3 },
+            ],
+            C: [
+              { item: foodWords.watermelon, count: 5 },
+              { item: foodWords.lemon, count: 3 },
+              { item: foodWords.strawberry, count: 4 },
+            ],
+          },
+          [foodWords.tomato, foodWords.olive, foodWords.mushroom],
+        ),
+        intro: [radio('Sandía y limón. Count them onto the board!', 'Sandía y limón.')],
+      },
+      {
+        game: 'measure-pour',
+        challenge: measureByBand('water', 'cup'),
+        intro: [bea('Water to the line. That fills the jug.')],
+      },
+      {
+        /* Reading and spelling — the one thing no other recipe asks for. */
+        game: 'word-builder',
+        challenge: (ctx) =>
+          ctx.ageBand === 'A'
+            ? spell(wordById('water'), 'es', 1, 0)(ctx)
+            : ctx.ageBand === 'B'
+              ? spell(foodWords.lemon, 'en', 0, 1)(ctx)
+              : spell(foodWords.strawberry, 'es', 0, 2)(ctx),
+        intro: [bea('Now the label. Spell it, letter by letter.')],
       },
     ],
   },
@@ -356,6 +525,73 @@ export const recipes: RecipeDef[] = [
           ...(ctx.ageBand === 'A' ? { total: 8, among: 2, each: 4 } : { total: 12, among: 4, each: 3 }),
         }),
         intro: [radio('Same number of berries in every bowl!')],
+      },
+    ],
+  },
+  {
+    id: 'esquites',
+    name: "Carmen's Corn Cups",
+    nameEs: 'Esquites de la abuela Carmen',
+    blurb: 'Buy the corn, count the limes, and share the cups out fairly.',
+    subjects: ['cooking', 'math', 'spanish', 'teamwork'],
+    grownUp: true,
+    xp: 30,
+    intro: [
+      bea('Esquites! Carmen sells them by the cup.'),
+      grownUpLine('hot pan'),
+    ],
+    steps: [
+      {
+        /* Money arrives in the kitchen: the shopping happens before the cooking. */
+        game: 'market-money',
+        challenge: (ctx) => ({ ...generateMarketMoney(ctx), item: foodWords.corn }),
+        intro: [
+          {
+            speaker: 'npc',
+            npcName: 'Abuela Carmen',
+            text: 'Corn for the cups! Pay me exactly, please.',
+            es: 'Elotes para los esquites. ¡Paga justo, por favor!',
+            emotion: 'happy',
+          },
+        ],
+      },
+      {
+        game: 'count-ingredients',
+        challenge: countByBand(
+          {
+            A: [
+              { item: foodWords.corn, count: 3 },
+              { item: foodWords.lemon, count: 2 },
+            ],
+            B: [
+              { item: foodWords.corn, count: 4 },
+              { item: foodWords.lemon, count: 2 },
+              { item: foodWords.onion, count: 2 },
+            ],
+            C: [
+              { item: foodWords.corn, count: 5 },
+              { item: foodWords.lemon, count: 3 },
+              { item: foodWords.onion, count: 2 },
+            ],
+          },
+          [foodWords.apple, foodWords.banana, foodWords.strawberry],
+        ),
+        intro: [radio('Elotes, limones, cebolla. Count them out!', 'Elotes, limones y cebolla.')],
+      },
+      {
+        game: 'measure-pour',
+        challenge: (ctx) =>
+          ctx.ageBand === 'A' ? measure('butter', 1, 2, 'spoon')(ctx) : measure('butter', 1, 4, 'spoon')(ctx),
+        intro: [bea('A spoon of butter. Watch the little line.')],
+      },
+      {
+        game: 'divide-share',
+        challenge: (ctx) => ({
+          ...generateDivideShare(ctx),
+          item: foodWords.corn,
+          ...(ctx.ageBand === 'A' ? { total: 8, among: 2, each: 4 } : { total: 12, among: 4, each: 3 }),
+        }),
+        intro: [radio('Fill the cups. Everyone gets the same!')],
       },
     ],
   },
@@ -471,7 +707,7 @@ export function recipeById(id: RecipeId): RecipeDef | undefined {
 
 /**
  * Badges for having cooked `count` different recipes.
- * Three recipes → Recipe Rescuer. Five → Kitchen Pro. All ten → Chef de Station.
+ * Three recipes → Recipe Rescuer. Five → Kitchen Pro. The whole book → Chef de Station.
  */
 export function badgesForRecipes(count: number): BadgeId[] {
   const out: BadgeId[] = [];

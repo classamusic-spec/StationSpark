@@ -45,7 +45,7 @@ src/
     tactile/…            Skia games         (HoseHero, WaterTank, LadderBuilder, NumberLadder, RescuePets, BuildBarrier)
     logic/…              drag/tap games     (EquipmentCheck, GearSort, DispatchDecoder, RescueRoute, HydrantMatch,
                                              SprayPattern, ClockWatch, HosePath, Signals, VocabTap, ListenCount)
-  kitchen/               KitchenScreen, KitchenRunner, recipes, games/ (PizzaFractions, MeasurePour, CountIngredients, DivideShare, RecipeScale)
+  kitchen/               KitchenScreen, KitchenRunner, recipes, games/ (PizzaFractions, MeasurePour, CountIngredients, DivideShare, RecipeScale, SoupPot)
   learning/
     types.ts             AgeBand, SkillTag, Challenge union (22 kinds), GeneratorContext   ← CONTRACT
     generators/          one file per kind: `export const generateHoseHero: ChallengeGenerator<'hose-hero'>`
@@ -175,9 +175,9 @@ Routes: `app/index.tsx` (Firehouse), `app/dispatch.tsx`, `app/mission/[id].tsx`,
   training tiles, sparks, check). Emoji are banned from the world layer (see docs/ART_CRITIQUE.md rules).
 - **`src/three/`** — Three.js via react-three-fiber for the Garage truck turntable and the badge flip, with
   2D fallbacks. See docs/THREE.md.
-- **New challenge kinds** — `market-money`, `shape-builder`, `word-builder` (25 mini-games total), with
-  generators, validators and 150-seed tests like the rest.
+- **New challenge kinds** — `market-money`, `shape-builder`, `word-builder` and the kitchen's
+  `soup-pot` (26 mini-games total), with generators, validators and 150-seed tests like the rest.
 - **QA tools** — `tools/qa/shoot.mjs` (screenshots), `tools/qa/shoot-gl.mjs` (WebGL screenshots),
   `tools/qa/icons.mjs` (icon set), `tools/qa/play.mjs` (drives every mini-game, a full mission and the shift
   flow in headless Chromium; `npm run qa:play` after `npm run export:web`).
-- **Content** — 12 missions, 10 recipes, 191 vocabulary words; see docs/CURRICULUM.md.
+- **Content** — 12 missions, 13 recipes, 191 vocabulary words; see docs/CURRICULUM.md.

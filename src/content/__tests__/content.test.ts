@@ -40,6 +40,7 @@ const ALL_UPGRADE_IDS: StationUpgradeId[] = [
 const ALL_RECIPE_IDS = [
   'bread', 'pancakes', 'pizza', 'smoothie', 'soup', 'tacos',
   'quesadillas', 'fruit-salad', 'lemonade', 'garden-salsa',
+  'veggie-caldo', 'agua-fresca', 'esquites',
 ];
 
 const BADGE_ICONS = new Set([
@@ -281,7 +282,7 @@ describe('station upgrades', () => {
 /* ------------------------------------------------------------------ */
 
 describe('recipes', () => {
-  it('ships all ten recipe ids', () => {
+  it('ships every recipe id in the book', () => {
     expect(recipes.map((r) => r.id).sort()).toEqual([...ALL_RECIPE_IDS].sort());
     expect(new Set(recipes.map((r) => r.id)).size).toBe(recipes.length);
     expect(recipeById('tacos')?.name).toBe('Station Tacos');
@@ -417,7 +418,82 @@ describe('recipes', () => {
     expect(counted.needs).toHaveLength(2);
   });
 
-  it('hands out Recipe Rescuer at three, Kitchen Pro at five and Chef de Station at ten', () => {
+  /* ---- the dishes that reach a new skill ---- */
+
+  it('cooks the caldo in an order that never changes: water, pot, simmer', () => {
+    const recipe = recipeById('veggie-caldo');
+    expect(recipe?.steps.map((s) => s.game)).toEqual(['measure-pour', 'soup-pot', 'clock-watch']);
+    for (const band of BANDS) {
+      const pot = recipe?.steps[1]?.challenge({ ageBand: band, rng: createRng(11) });
+      if (pot?.kind !== 'soup-pot') throw new Error('expected soup-pot');
+      // the onions always soften before the potatoes go in
+      expect(pot.steps.map((s) => s.item.id)).toEqual(
+        band === 'A'
+          ? ['onion', 'carrot', 'potato']
+          : band === 'B'
+            ? ['onion', 'carrot', 'potato', 'tomato']
+            : ['onion', 'carrot', 'potato', 'tomato', 'lemon'],
+      );
+      expect(pot.spokenEs).toBe(true);
+      // and nothing on the counter is also in the soup
+      const inPot = new Set(pot.steps.map((s) => s.item.id));
+      expect(pot.extras.some((e) => inPot.has(e.id))).toBe(false);
+    }
+  });
+
+  it('only asks the oldest crew to add the whole pot up', () => {
+    const step = recipeById('veggie-caldo')?.steps.find((s) => s.game === 'soup-pot');
+    const young = step?.challenge({ ageBand: 'A', rng: createRng(12) });
+    const older = step?.challenge({ ageBand: 'C', rng: createRng(12) });
+    if (young?.kind !== 'soup-pot' || older?.kind !== 'soup-pot') throw new Error('expected soup-pot');
+    expect(young.askTotal).toBeUndefined();
+    expect(older.askTotal).toBe(older.steps.reduce((sum, s) => sum + s.count, 0));
+  });
+
+  it('spells the agua fresca label in a word the child just met', () => {
+    const recipe = recipeById('agua-fresca');
+    expect(recipe?.steps.map((s) => s.game)).toEqual(['count-ingredients', 'measure-pour', 'word-builder']);
+    const expected: Record<AgeBand, { id: string; lang: 'en' | 'es'; letters: string }> = {
+      A: { id: 'water', lang: 'es', letters: 'AGUA' },
+      B: { id: 'lemon', lang: 'en', letters: 'LEMON' },
+      C: { id: 'strawberry', lang: 'es', letters: 'FRESA' },
+    };
+    for (const band of BANDS) {
+      const spelled = recipe?.steps[2]?.challenge({ ageBand: band, rng: createRng(13) });
+      if (spelled?.kind !== 'word-builder') throw new Error('expected word-builder');
+      const want = expected[band];
+      expect(spelled.word.id).toBe(want.id);
+      expect(spelled.lang).toBe(want.lang);
+      expect(spelled.letters.join('')).toBe(want.letters);
+      // every letter still to place is in the tray — the label can always be finished
+      for (const letter of spelled.letters.slice(spelled.prefilled)) {
+        expect(spelled.tiles).toContain(letter);
+      }
+    }
+  });
+
+  it('sends the esquites crew shopping before they cook', () => {
+    const recipe = recipeById('esquites');
+    expect(recipe?.steps.map((s) => s.game)).toEqual([
+      'market-money',
+      'count-ingredients',
+      'measure-pour',
+      'divide-share',
+    ]);
+    const bought = recipe?.steps[0]?.challenge({ ageBand: 'B', rng: createRng(14) });
+    const counted = recipe?.steps[1]?.challenge({ ageBand: 'C', rng: createRng(14) });
+    const shared = recipe?.steps[3]?.challenge({ ageBand: 'A', rng: createRng(14) });
+    if (bought?.kind !== 'market-money' || counted?.kind !== 'count-ingredients' || shared?.kind !== 'divide-share') {
+      throw new Error('unexpected kinds');
+    }
+    // "elote", not "maíz": the kitchen counts cobs
+    expect(bought.item.es).toBe('elote');
+    expect(counted.needs.map((n) => n.item.id)).toEqual(['corn', 'lemon', 'onion']);
+    expect(counted.spokenEs).toBe(true);
+    expect([shared.total, shared.among, shared.each]).toEqual([8, 2, 4]);
+  });
+
+  it('hands out Recipe Rescuer at three, Kitchen Pro at five and Chef de Station at every dish', () => {
     expect(badgesForRecipes(0)).toEqual([]);
     expect(badgesForRecipes(2)).toEqual([]);
     expect(badgesForRecipes(3)).toEqual(['recipe-rescuer']);

@@ -50,7 +50,11 @@ export type RecipeId =
   | 'quesadillas'
   | 'fruit-salad'
   | 'lemonade'
-  | 'garden-salsa';
+  | 'garden-salsa'
+  /* ---- dishes that teach a skill the kitchen was missing ---- */
+  | 'veggie-caldo'
+  | 'agua-fresca'
+  | 'esquites';
 
 export type MissionBeat =
   | { type: 'dialogue'; lines: DialogueLine[]; backdrop?: SceneId }

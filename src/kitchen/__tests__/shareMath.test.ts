@@ -7,12 +7,26 @@ import {
   isScaleLineCorrect,
   nextPlate,
   pantryList,
+  potDrop,
+  potState,
+  potTotal,
   scaleExplanation,
   scaleRatioText,
   scaledAmount,
   shareState,
 } from '../shareMath';
-import { countPhraseEn, countPhraseEs, esArticleOne, esNumber, needsPhraseEs, pluralEn, pluralEs } from '../spanish';
+import {
+  countPhraseEn,
+  countPhraseEs,
+  esArticleOne,
+  esNumber,
+  needsPhraseEs,
+  orderPhraseEn,
+  orderPhraseEs,
+  orderWord,
+  pluralEn,
+  pluralEs,
+} from '../spanish';
 import { recipeCardState, recipeStars } from '../progress';
 import { recipes } from '@/content/recipes';
 import type { RecipeDef } from '@/content/types';
@@ -122,6 +136,41 @@ describe('counting ingredients', () => {
   });
 });
 
+describe('the soup pot', () => {
+  const steps = [
+    { item: foodWords.onion, count: 1 },
+    { item: foodWords.carrot, count: 2 },
+    { item: foodWords.potato, count: 2 },
+  ];
+
+  it('waits at the first unfinished step', () => {
+    expect(potState(steps, [0, 0, 0])).toMatchObject({ step: 0, inStep: 0, left: 1, total: 0, done: false });
+    expect(potState(steps, [1, 1, 0])).toMatchObject({ step: 1, inStep: 1, left: 1, total: 2 });
+    expect(potState(steps, [1, 2, 2])).toMatchObject({ step: -1, total: 5, done: true });
+  });
+
+  it('counts the whole pot', () => {
+    expect(potTotal(steps)).toBe(5);
+  });
+
+  it('takes the next ingredient, holds the later one back, and refuses a stranger', () => {
+    expect(potDrop(steps, [0, 0, 0], 'onion')).toEqual({ verdict: 'add', step: 0 });
+    // the potatoes are in the soup, but they are not next: "not yet", never "wrong"
+    expect(potDrop(steps, [0, 0, 0], 'potato')).toEqual({ verdict: 'wait', step: 2 });
+    expect(potDrop(steps, [0, 0, 0], 'strawberry')).toEqual({ verdict: 'not-in', step: -1 });
+  });
+
+  it('keeps taking the same ingredient until that step is full', () => {
+    expect(potDrop(steps, [1, 0, 0], 'carrot').verdict).toBe('add');
+    expect(potDrop(steps, [1, 1, 0], 'carrot').verdict).toBe('add');
+    expect(potDrop(steps, [1, 2, 0], 'carrot').verdict).toBe('wait');
+  });
+
+  it('never over-counts a step that was somehow filled twice', () => {
+    expect(potState(steps, [9, 9, 9]).total).toBe(5);
+  });
+});
+
 describe('spanish helpers', () => {
   it('counts in Spanish', () => {
     expect(esNumber(0)).toBe('cero');
@@ -146,6 +195,26 @@ describe('spanish helpers', () => {
     expect(pluralEn('taco', 3)).toBe('tacos');
     expect(pluralEn('strawberry', 2)).toBe('strawberries');
     expect(pluralEn('dish', 2)).toBe('dishes');
+  });
+
+  it('says tomatoes and potatoes, and leaves the mass nouns alone', () => {
+    expect(pluralEn('tomato', 3)).toBe('tomatoes');
+    expect(pluralEn('potato', 2)).toBe('potatoes');
+    expect(pluralEn('rice', 2)).toBe('rice');
+    expect(pluralEn('corn cob', 2)).toBe('corn cobs');
+  });
+
+  it('reads the pot card as an order, in both languages', () => {
+    const pot = [
+      { item: foodWords.onion, count: 1 },
+      { item: foodWords.carrot, count: 2 },
+      { item: foodWords.potato, count: 2 },
+    ];
+    expect(orderWord(0, 3, 'es')).toBe('primero');
+    expect(orderWord(1, 3, 'es')).toBe('luego');
+    expect(orderWord(2, 3, 'es')).toBe('al final');
+    expect(orderPhraseEs(pot)).toBe('primero una cebolla, luego dos zanahorias, al final dos papas');
+    expect(orderPhraseEn(pot)).toBe('first 1 onion, then 2 carrots, last 2 potatoes');
   });
 
   it('uses un / una before a single item', () => {

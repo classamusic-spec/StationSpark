@@ -49,6 +49,9 @@ const stepLabel = (kind: string): string =>
     'divide-share': 'Share',
     'recipe-scale': 'Scale',
     'clock-watch': 'Timer',
+    'soup-pot': 'Pot',
+    'market-money': 'Buy',
+    'word-builder': 'Label',
   })[kind] ?? kind.replace(/-/g, ' ');
 
 /**

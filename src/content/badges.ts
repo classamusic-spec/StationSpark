@@ -296,7 +296,7 @@ const played = (progress: BadgeProgressLike, kinds: readonly string[]): number =
 export const TOTAL_MISSIONS = 12;
 
 /** Every recipe in the kitchen book; chef-de-station needs all of them. */
-export const TOTAL_RECIPES = 10;
+export const TOTAL_RECIPES = 13;
 
 /**
  * Every skill badge the child has earned right now. Pure — call it after

@@ -9,6 +9,7 @@ import { MeasurePour } from './MeasurePour/MeasurePour';
 import { CountIngredients } from './CountIngredients/CountIngredients';
 import { DivideShare } from './DivideShare/DivideShare';
 import { RecipeScale } from './RecipeScale/RecipeScale';
+import { SoupPot } from './SoupPot/SoupPot';
 
 export const kitchenGames: Registry = {
   'pizza-fractions': {
@@ -74,6 +75,19 @@ export const kitchenGames: Registry = {
       yard: 'kitchen',
       seconds: 120,
       icon: 'soup',
+    },
+  },
+  'soup-pot': {
+    component: SoupPot,
+    meta: {
+      kind: 'soup-pot',
+      title: 'Soup Pot',
+      titleEs: 'La Olla',
+      blurb: 'First the onions, then the potatoes — put the caldo together in order.',
+      subjects: ['logic', 'math', 'spanish', 'cooking'],
+      yard: 'kitchen',
+      seconds: 130,
+      icon: 'carrot',
     },
   },
 };

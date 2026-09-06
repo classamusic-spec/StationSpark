@@ -82,9 +82,37 @@ export function pluralEs(word: string): string {
   return `${word}es`;
 }
 
+/**
+ * English plurals the -s rule gets wrong. "Three tomatos" was on the shopping
+ * list of every pizza we ever cooked; the mass nouns were worse ("two rice").
+ * Tacos and pizzas keep the plain -s, which is why this is a list and not a
+ * rule about the letter o.
+ */
+const pluralEnOverride: Record<string, string> = {
+  tomato: 'tomatoes',
+  potato: 'potatoes',
+  corn: 'corn',
+  rice: 'rice',
+  salt: 'salt',
+  honey: 'honey',
+  cilantro: 'cilantro',
+  lettuce: 'lettuce',
+  water: 'water',
+  milk: 'milk',
+  flour: 'flour',
+  butter: 'butter',
+  sugar: 'sugar',
+  cheese: 'cheese',
+  juice: 'juice',
+  bread: 'loaves of bread',
+  soup: 'bowls of soup',
+};
+
 /** English plural, kept just as simple. */
 export function pluralEn(word: string, n: number): string {
   if (n === 1) return word;
+  const override = pluralEnOverride[word.trim().toLowerCase()];
+  if (override) return override;
   if (/(s|x|ch|sh)$/i.test(word)) return `${word}es`;
   if (/[^aeiou]y$/i.test(word)) return `${word.slice(0, -1)}ies`;
   return `${word}s`;
@@ -108,4 +136,29 @@ export function needsPhraseEs(needs: readonly { item: VocabWord; count: number }
 
 export function needsPhraseEn(needs: readonly { item: VocabWord; count: number }[]): string {
   return needs.map((n) => countPhraseEn(n.count, n.item)).join(', ');
+}
+
+/* ------------------------------------------------------------------ */
+/* Order words — for the pot, where the sequence IS the lesson          */
+/* ------------------------------------------------------------------ */
+
+const orderEs = { first: 'primero', middle: 'luego', last: 'al final' } as const;
+const orderEn = { first: 'first', middle: 'then', last: 'last' } as const;
+
+/** Which connector a step gets: the first one, the last one, or one in between. */
+export function orderWord(index: number, total: number, lang: 'en' | 'es'): string {
+  const words = lang === 'es' ? orderEs : orderEn;
+  if (index <= 0) return words.first;
+  if (index >= total - 1) return words.last;
+  return words.middle;
+}
+
+/** "primero dos cebollas, luego tres papas, al final un limón" — Bea reading the pot card. */
+export function orderPhraseEs(steps: readonly { item: VocabWord; count: number }[]): string {
+  return steps.map((s, i) => `${orderWord(i, steps.length, 'es')} ${countPhraseEs(s.count, s.item)}`).join(', ');
+}
+
+/** "first 2 onions, then 3 potatoes, last 1 lemon" */
+export function orderPhraseEn(steps: readonly { item: VocabWord; count: number }[]): string {
+  return steps.map((s, i) => `${orderWord(i, steps.length, 'en')} ${countPhraseEn(s.count, s.item)}`).join(', ');
 }

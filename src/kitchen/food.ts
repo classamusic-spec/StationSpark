@@ -40,7 +40,12 @@ export const foodWords = {
   onion: food('onion', 'onion', 'cebolla', 'onion'),
   carrot: food('carrot', 'carrot', 'zanahoria', 'carrot'),
   potato: food('potato', 'potato', 'papa', 'potato'),
-  corn: food('corn', 'corn', 'maíz', 'corn'),
+  /**
+   * The kitchen counts cobs, not grains: "tres elotes", never "tres maíces".
+   * The id stays `corn` because that is the drawn icon and the id every game
+   * looks the picture up by; `maíz` (the grain) still lives in the word bank.
+   */
+  corn: food('corn', 'corn cob', 'elote', 'corn'),
   rice: food('rice', 'rice', 'arroz', 'rice'),
   lemon: food('lemon', 'lemon', 'limón', 'lemon'),
   grape: food('grape', 'grape', 'uva', 'grape'),

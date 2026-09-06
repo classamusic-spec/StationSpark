@@ -136,6 +136,69 @@ export function checkCounts(
 }
 
 /* ------------------------------------------------------------------ */
+/* The soup pot — a sequence, not a set                                 */
+/* ------------------------------------------------------------------ */
+
+export interface PotState {
+  /** the step the pot is waiting for, or -1 when the soup is complete */
+  step: number;
+  /** how many of that step's ingredient are already in */
+  inStep: number;
+  /** how many are still needed for that step */
+  left: number;
+  /** every piece in the pot so far, across all steps */
+  total: number;
+  done: boolean;
+}
+
+/**
+ * Where the pot is up to. `added[i]` is how many of step i went in; the pot is
+ * strictly in order, so the first unfinished step is the live one.
+ */
+export function potState(
+  steps: readonly { count: number }[],
+  added: readonly number[],
+): PotState {
+  let total = 0;
+  let step = -1;
+  let inStep = 0;
+  let left = 0;
+  steps.forEach((s, i) => {
+    const have = Math.max(0, added[i] ?? 0);
+    total += Math.min(have, s.count);
+    if (step === -1 && have < s.count) {
+      step = i;
+      inStep = have;
+      left = s.count - have;
+    }
+  });
+  return { step, inStep, left, total, done: step === -1 };
+}
+
+/** How many pieces the whole pot takes — the answer to "how many went in?". */
+export const potTotal = (steps: readonly { count: number }[]): number =>
+  steps.reduce((sum, s) => sum + s.count, 0);
+
+/**
+ * What happens when the child drops `itemId` in the pot right now.
+ *  - `add`     it is the next thing the recipe asks for
+ *  - `wait`    it IS in the soup, but not yet ("the potatoes come after the onions")
+ *  - `not-in`  it belongs to another dish
+ */
+export function potDrop(
+  steps: readonly { item: { id: string }; count: number }[],
+  added: readonly number[],
+  itemId: string,
+): { verdict: 'add' | 'wait' | 'not-in'; step: number } {
+  const state = potState(steps, added);
+  if (state.done) return { verdict: 'wait', step: -1 };
+  const wanted = steps[state.step];
+  if (wanted && wanted.item.id === itemId) return { verdict: 'add', step: state.step };
+  const later = steps.findIndex((s) => s.item.id === itemId);
+  return { verdict: later >= 0 ? 'wait' : 'not-in', step: later };
+}
+
+/* ------------------------------------------------------------------ */
 /* The Count Ingredients shelf                                          */
 /* ------------------------------------------------------------------ */
 

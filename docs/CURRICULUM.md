@@ -37,9 +37,9 @@ recap screen and the Grown-Ups screen both read from it.
 
 | Skill | Subject | Games that exercise it |
 | --- | --- | --- |
-| counting | math | hose-hero, equipment-check, rescue-pets, listen-count, count-ingredients, market-money |
+| counting | math | hose-hero, equipment-check, rescue-pets, listen-count, count-ingredients, market-money, soup-pot |
 | number-recognition | math | number-ladder, dispatch-decoder, hydrant-match |
-| addition | math | ladder-builder, number-ladder, build-barrier, market-money |
+| addition | math | ladder-builder, number-ladder, build-barrier, market-money, soup-pot (band C adds the pot up) |
 | subtraction | math | hose-hero, equipment-check, rescue-pets, number-ladder, market-money |
 | multiplication | math | hydrant-match, recipe-scale |
 | division | math | divide-share, pizza-fractions |
@@ -54,13 +54,13 @@ recap screen and the Grown-Ups screen both read from it.
 | patterns | logic | spray-pattern |
 | sorting | logic | gear-sort |
 | spatial | logic | hose-path, rescue-route, shape-builder |
-| sequencing | logic | signals, rescue-route |
+| sequencing | logic | signals, rescue-route, **soup-pot** |
 | reading-words | reading | dispatch-decoder, word-builder |
 | reading-sentences | reading | dispatch-decoder |
 | reading-directions | reading | rescue-route |
 | spelling | reading | word-builder |
 | vocabulary-en | english | vocab-tap, word-builder |
-| vocabulary-es | spanish | vocab-tap, count-ingredients, word-builder |
+| vocabulary-es | spanish | vocab-tap, count-ingredients, word-builder, soup-pot |
 | listening-es | spanish | listen-count |
 | teamwork | teamwork | every mission (the crew beats and the recap) |
 
@@ -163,7 +163,7 @@ generated beats add more on top.
 
 ## 5. The kitchen
 
-Ten recipes. Every one that touches heat or a knife carries `grownUp: true` and opens with
+Thirteen recipes. Every one that touches heat or a knife carries `grownUp: true` and opens with
 Captain Bea's line — *"The crew handles the … At home, ask a grown-up!"* The child never uses the
 knife or the oven.
 
@@ -179,10 +179,29 @@ knife or the oven.
 | **`fruit-salad`** | count-ingredients → measure-pour → divide-share | A counts 2 fruits, B/C count 3; A shares 8 ÷ 2 | fresas, uvas, naranjas |
 | **`lemonade`** | count-ingredients → measure-pour → measure-pour → recipe-scale (C) | the ratio: 1 cup water to ¼ spoon honey; C scales 4 → 6 | limones, fresas |
 | **`garden-salsa`** | count-ingredients → measure-pour → measure-pour (B/C) | A counts 2 ingredients, B 3, C 3 with bigger numbers | tomate, cebolla, cilantro, limón |
+| **`veggie-caldo`** | measure-pour → **soup-pot** → clock-watch | the pot is 3 / 4 / 5 ingredients long; C adds it up | caldo, cebolla, zanahoria, papa, tomate, limón |
+| **`agua-fresca`** | count-ingredients → measure-pour → word-builder | A spells *agua*, B *lemon*, C *fresa* | sandía, limón, fresa, agua |
+| **`esquites`** | market-money → count-ingredients → measure-pour → divide-share | A shares 8 ÷ 2, B/C 12 ÷ 4 | elote, limón, cebolla, mantequilla |
 
 Cooked from missions: `bread` (bakery-bell), `pizza` (pizza-shop-panic), `smoothie` (park-picnic),
 `tacos` (community-cleanup), `garden-salsa` (market-morning), `quesadillas` (festival-exchange).
-The other four are free-play in the Kitchen.
+The rest are free-play in the Kitchen.
+
+### The three dishes that fill a gap
+
+The first ten recipes leaned on the same five kitchen games (plus the pancake clock), so the room
+could measure, count, share and scale — and little else. These three each reach further:
+
+| Dish | Reaches | How |
+| --- | --- | --- |
+| **Veggie Caldo** | **sequencing**, elapsed time, addition | the pot is an *order*, not a set (`soup-pot`); the simmer is a real `clock-watch` beat, so "twenty minutes later" is something the child sets |
+| **Watermelon Agua Fresca** | **spelling & reading-words** | the jug needs a label, so the recipe ends in `word-builder` — the only recipe that asks a child to write |
+| **Carmen's Corn Cups** | **money**, addition | the shopping happens before the cooking: `market-money` at Carmen's stall, then count, season and share |
+
+`soup-pot` is the one new game kind. `count-ingredients` checks a *bowl* — the right things in any
+order, judged at the end. A pot is a sequence: the onions soften before the potatoes go in, two of
+them before you move on, and putting the lime in first is "not yet", never "wrong". Band C is asked
+how many pieces went in altogether, which is the kitchen's first piece of plain addition.
 
 ---
 
@@ -200,6 +219,12 @@ The other four are free-play in the Kitchen.
 | actions, directions & feelings | 38 | + norte/sur/este/oeste, alto, cerca, lejos, espera, cuidado, feliz, triste, orgulloso, valiente |
 | people & community helpers | 20 | + enfermera, policía, cartero, granjero, cocinero, veterinaria, maquinista, científica |
 | animals | 18 | + pájaro, pez, caballo, vaca, oveja, cerdo, ratón, rana, loro, lagartija |
+
+**The kitchen's own bank.** `src/kitchen/food.ts` holds the words the room *cooks* with, and it now
+covers the pot and the stall too: cebolla, zanahoria, papa, elote, arroz, limón, uva, sandía,
+cilantro, sal, miel, jugo, tortilla. One entry deliberately disagrees with the main bank — the
+kitchen counts **elotes** (cobs), never *maíces* (grains), because "tres maíces" is not something a
+cook says. The id stays `corn`, so the drawn icon and the word bank still line up.
 
 **The scaffolding ladder.** `vocab-tap.support` and `listen-count.support` step down by band:
 `full` (both languages, 3 pictures) → `some` (English fades, 4 pictures) → `min` (Spanish only,
@@ -229,7 +254,7 @@ Mission badges are one per call. Skill badges are the visible version of the pra
 | `time-keeper` → `time-traveler` | 3 → 5 clock games | clock-watch |
 | `word-watcher` | 20 words | any words |
 | `spanish-speaker` → `bilingual-buddy` | 10 → 30 Spanish words | every word in the bank is bilingual |
-| `recipe-rescuer` → `kitchen-pro` → `chef-de-station` | 3 → 5 → all 10 recipes | the kitchen book |
+| `recipe-rescuer` → `kitchen-pro` → `chef-de-station` | 3 → 5 → all 13 recipes | the kitchen book |
 | `team-player` | 3 different shift days | coming back |
 | `community-helper` | all 12 missions | the whole town |
 
