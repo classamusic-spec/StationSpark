@@ -1,8 +1,9 @@
 import React, { useEffect } from 'react';
 import { Pressable, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
-import { hit, palette, radii, shadows } from '@/theme';
+import { hit, palette, radii, roles, shadows } from '@/theme';
 import { useFeedbackAnim } from '@/hooks/useFeedback';
+import { CheckIcon, ResetIcon } from '../icons';
 import { Text } from '../Text';
 
 export type AnswerState = 'idle' | 'correct' | 'wrong' | 'disabled' | 'highlight';
@@ -38,8 +39,21 @@ export function AnswerTile({
   }, [state, pop, wobble]);
 
   const dims = size === 'lg' ? { minWidth: 120, minHeight: 100 } : size === 'sm' ? { minWidth: hit.min, minHeight: hit.min } : { minWidth: 92, minHeight: hit.big };
+  /*
+   * A miss is warm, never grey and never red: grey read as "this button is
+   * dead" and red is brand energy in this app. It also never signals by colour
+   * alone — `mark` below puts a shape on the tile so the state survives colour
+   * blindness and a screen reader.
+   */
   const rim =
-    state === 'correct' ? palette.leafGreen : state === 'highlight' ? palette.safetyYellow : state === 'wrong' ? palette.slateLight : 'transparent';
+    state === 'correct'
+      ? roles.state.successEdge
+      : state === 'highlight'
+        ? roles.state.focusRing
+        : state === 'wrong'
+          ? roles.state.retryEdge
+          : 'transparent';
+  const mark = state === 'correct' ? 'correct' : state === 'wrong' ? 'retry' : null;
 
   return (
     // Outer view owns the layout (entering) animation, inner view owns the
@@ -49,6 +63,8 @@ export function AnswerTile({
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={accessibilityLabel ?? label}
+          accessibilityState={{ disabled: state === 'disabled', selected: state === 'correct' }}
+          accessibilityHint={state === 'wrong' ? 'Not that one — try again' : undefined}
           disabled={state === 'disabled' || state === 'correct'}
           onPressIn={() => press(true)}
           onPressOut={() => press(false)}
@@ -63,6 +79,7 @@ export function AnswerTile({
               state === 'disabled' && styles.disabled,
               state === 'highlight' && shadows.glowGold,
               state === 'correct' && styles.correct,
+              state === 'wrong' && styles.wrong,
             ]}
           >
             {label ? (
@@ -71,6 +88,15 @@ export function AnswerTile({
               </Text>
             ) : null}
             {children}
+            {mark ? (
+              <View style={[styles.mark, mark === 'correct' ? styles.markCorrect : styles.markRetry]} pointerEvents="none">
+                {mark === 'correct' ? (
+                  <CheckIcon size={16} color={palette.white} />
+                ) : (
+                  <ResetIcon size={16} color={palette.white} />
+                )}
+              </View>
+            ) : null}
           </View>
         </Pressable>
       </Animated.View>
@@ -88,6 +114,22 @@ const styles = StyleSheet.create({
     paddingHorizontal: 18,
     paddingVertical: 12,
   },
-  disabled: { opacity: 0.45 },
-  correct: { backgroundColor: palette.mint },
+  /* A disabled tile stays legible: it recedes by fill, not by fading the words. */
+  disabled: { backgroundColor: roles.state.disabledFill, borderColor: roles.state.disabledEdge },
+  correct: { backgroundColor: roles.state.successFill },
+  wrong: { backgroundColor: roles.state.retryFill },
+  mark: {
+    position: 'absolute',
+    top: -8,
+    right: -8,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: palette.white,
+  },
+  markCorrect: { backgroundColor: roles.state.successEdge },
+  markRetry: { backgroundColor: roles.state.retryEdge },
 });
