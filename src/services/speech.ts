@@ -8,10 +8,8 @@ import type { CharacterId } from '@/content/types';
 let enabled = true;
 
 const voices: Record<CharacterId, { pitch: number; rate: number }> = {
-  beacon: { pitch: 1.35, rate: 1.05 },
   bea: { pitch: 1.0, rate: 0.95 },
   rookie: { pitch: 1.25, rate: 1.0 },
-  pepper: { pitch: 1.5, rate: 1.1 },
   npc: { pitch: 1.05, rate: 0.95 },
 };
 
@@ -36,7 +34,7 @@ export const speech = {
       opts.onDone?.();
       return;
     }
-    const v = voices[opts.speaker ?? 'beacon'];
+    const v = voices[opts.speaker ?? 'bea'];
     try {
       Speech.stop();
       Speech.speak(text, {
@@ -54,10 +52,11 @@ export const speech = {
   /** Say a vocabulary word: English then Spanish (or the reverse). */
   sayWord(word: { en: string; es: string }, first: 'en' | 'es' = 'en') {
     const second = first === 'en' ? 'es' : 'en';
+    /* Captain Bea reads both languages — she is the station's Spanish voice. */
     speech.say(word[first], {
-      speaker: 'beacon',
+      speaker: 'bea',
       lang: first,
-      onDone: () => setTimeout(() => speech.say(word[second], { speaker: 'beacon', lang: second }), 250),
+      onDone: () => setTimeout(() => speech.say(word[second], { speaker: 'bea', lang: second }), 250),
     });
   },
 };

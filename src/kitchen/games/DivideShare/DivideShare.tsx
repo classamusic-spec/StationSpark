@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { GestureDetector } from 'react-native-gesture-handler';
 import Animated, { ZoomIn, useAnimatedStyle, useSharedValue, withDelay, withSequence, withSpring } from 'react-native-reanimated';
 import type { CharacterId } from '@/content/types';
+import type { NpcVariant } from '@/characters/Npc';
 import type { MiniGameProps } from '@/minigames/types';
 import { useMiniGameSession } from '@/minigames/useMiniGameSession';
 import { palette, radii, shadows, spacing, springs } from '@/theme';
@@ -25,7 +26,7 @@ import { PlateArt } from '../../parts/FoodBits';
 import { EquationStrip } from '../../parts/SceneBits';
 import { pluralEn } from '../../spanish';
 import { answerOptions, equationText, nextPlate, shareState } from '../../shareMath';
-import { kitchenFeel, nearestTarget, useBeaconHint, useDragSource } from '../useKitchenGame';
+import { kitchenFeel, nearestTarget, useCaptainHint, useDragSource } from '../useKitchenGame';
 
 /**
  * BLOCKING DEFECT FIX (art critique): the answer tiles were drawn at y 150 and
@@ -43,21 +44,24 @@ const ITEM = 42;
 
 interface CrewSeat {
   id: CharacterId;
+  npc?: NpcVariant;
   name: string;
 }
 
+/* Four eaters, and four is load-bearing: the challenge divides by the number
+ * of seats. Change this list and you change the arithmetic. */
 const CREW: CrewSeat[] = [
   { id: 'rookie', name: 'You' },
   { id: 'bea', name: 'Bea' },
-  { id: 'beacon', name: 'Beacon' },
-  { id: 'pepper', name: 'Pepper' },
+  { id: 'npc', npc: 'rosa', name: 'Rosa' },
+  { id: 'npc', npc: 'gino', name: 'Gino' },
 ];
 
 const FALLBACK_CREW: CrewSeat = { id: 'rookie', name: 'You' };
 
 export function DivideShare({ challenge, ageBand, onComplete, onEvent, compact }: MiniGameProps<'divide-share'>) {
   const session = useMiniGameSession('divide-share', onComplete, onEvent);
-  const beacon = useBeaconHint(session);
+  const assist = useCaptainHint(session);
 
   const among = Math.max(1, challenge.among);
   const each = Math.max(1, challenge.each || Math.floor(challenge.total / among));
@@ -105,7 +109,7 @@ export function DivideShare({ challenge, ageBand, onComplete, onEvent, compact }
       if (phase !== 'deal' || left <= 0) return;
       if ((plates[plateIndex] ?? 0) >= each) {
         wobblePlate(plateIndex);
-        beacon.nudge(`That plate has enough — everybody gets ${each}.`);
+        assist.nudge(`That plate has enough — everybody gets ${each}.`);
         return;
       }
       const next = [...plates];
@@ -115,7 +119,7 @@ export function DivideShare({ challenge, ageBand, onComplete, onEvent, compact }
       session.correct('share');
       if (shareState(next, each).done) setTimeout(eatUp, 420);
     },
-    [beacon, each, eatUp, left, phase, plates, session, wobblePlate],
+    [assist, each, eatUp, left, phase, plates, session, wobblePlate],
   );
 
   const answer = useCallback(
@@ -123,25 +127,25 @@ export function DivideShare({ challenge, ageBand, onComplete, onEvent, compact }
       if (value === each) {
         kitchenFeel.good();
         session.correct('division');
-        beacon.cheer(`${each} each — now deal them out!`);
+        assist.cheer(`${each} each — now deal them out!`);
         setTimeout(() => setPhase('deal'), 640);
       } else {
         setWrong((w) => (w.includes(value) ? w : [...w, value]));
-        beacon.nudge(`Try sharing them out one at a time and count one plate.`);
+        assist.nudge(`Try sharing them out one at a time and count one plate.`);
       }
     },
-    [beacon, each, session],
+    [assist, each, session],
   );
 
   const showMe = useCallback(() => {
-    beacon.askedForHelp();
+    assist.askedForHelp();
     if (phase === 'ask') {
       setPhase('deal');
       return;
     }
     const idx = nextPlate(plates, each);
     if (idx >= 0) give(idx);
-  }, [beacon, each, give, phase, plates]);
+  }, [assist, each, give, phase, plates]);
 
   const trayItems = Array.from({ length: left }, (_, i) => i);
   const perRow = Math.min(8, Math.max(1, trayItems.length));
@@ -152,7 +156,7 @@ export function DivideShare({ challenge, ageBand, onComplete, onEvent, compact }
       {/* an indoor game is played in a kitchen, never against a blue sky */}
       <SceneStage variant="counter" groundHeight={150} />
       {among < 3 ? (
-        <SceneCrew side="right" size={54} showPepper mood={phase === 'eating' ? 'cheer' : phase === 'deal' ? 'happy' : 'idle'} />
+        <SceneCrew side="right" size={54} mood={phase === 'eating' ? 'cheer' : phase === 'deal' ? 'happy' : 'idle'} />
       ) : null}
       <PromptBanner
         title={`${challenge.total} ${itemName} for ${among} firefighters`}
@@ -181,7 +185,7 @@ export function DivideShare({ challenge, ageBand, onComplete, onEvent, compact }
                     label={String(value)}
                     index={i}
                     size="lg"
-                    state={wrong.includes(value) ? 'wrong' : beacon.highlight && value === each ? 'highlight' : 'idle'}
+                    state={wrong.includes(value) ? 'wrong' : assist.highlight && value === each ? 'highlight' : 'idle'}
                     onPress={() => answer(value)}
                   />
                 ))}
@@ -208,7 +212,7 @@ export function DivideShare({ challenge, ageBand, onComplete, onEvent, compact }
                   onDrop={(dx, dy) => {
                     const p = { x: x + ITEM / 2 + dx, y: y + ITEM / 2 + dy };
                     const hit = nearestTarget(p, platePoints, 78);
-                    if (hit < 0) beacon.cheer('Drop it right onto a plate!');
+                    if (hit < 0) assist.cheer('Drop it right onto a plate!');
                     else give(hit);
                   }}
                 />
@@ -226,7 +230,7 @@ export function DivideShare({ challenge, ageBand, onComplete, onEvent, compact }
                 each={each}
                 crew={CREW[i % CREW.length] ?? FALLBACK_CREW}
                 item={challenge.item}
-                glow={(beacon.highlight || ageBand === 'A') && phase === 'deal' && nextPlate(plates, each) === i}
+                glow={(assist.highlight || ageBand === 'A') && phase === 'deal' && nextPlate(plates, each) === i}
                 bump={bump[i] ?? 0}
                 eating={phase === 'eating'}
                 delay={i * 140}
@@ -239,7 +243,7 @@ export function DivideShare({ challenge, ageBand, onComplete, onEvent, compact }
 
       <Tray tone="cream">
         <View style={styles.trayRow}>
-          {beacon.offerHelp && phase !== 'eating' ? (
+          {assist.offerHelp && phase !== 'eating' ? (
             <Button label="Show me" tone="yellow" size="sm" onPress={showMe} sound="tap-soft" />
           ) : null}
           <Text variant="bodyStrong" color={palette.navySoft}>
@@ -248,7 +252,7 @@ export function DivideShare({ challenge, ageBand, onComplete, onEvent, compact }
         </View>
       </Tray>
 
-      <HintBubble text={beacon.text} es={beacon.es} visible={beacon.visible} onDismiss={beacon.dismiss} />
+      <HintBubble text={assist.text} es={assist.es} visible={assist.visible} onDismiss={assist.dismiss} />
     </View>
   );
 }
@@ -343,10 +347,10 @@ function PlateSpot({
     <Animated.View style={[at(s, x, y, width, PLATE_H), fb.style]}>
       <Animated.View style={[styles.plateCol, hopStyle]}>
         {/* critique #23 — the whole rig stands behind the plate, not a head.
-            The slot has a fixed height so Beacon (who is shorter than the
+            The slot has a fixed height so a shorter character (a seated neighbour, say) does not
             humans) does not pull his whole plate card out of the row. */}
         <View style={[styles.figureSlot, { height: 100 * s }]}>
-          <CrewFigure id={crew.id} size={96 * s} emotion={eating ? 'excited' : 'happy'} jumping={eating} bobPhase={delay / 900} />
+          <CrewFigure id={crew.id} npc={crew.npc} size={96 * s} emotion={eating ? 'excited' : 'happy'} jumping={eating} bobPhase={delay / 900} />
         </View>
         <Text variant="tiny" center numberOfLines={1} color={palette.navySoft} style={{ fontSize: 12 * s, lineHeight: 15 * s }}>
           {crew.name}

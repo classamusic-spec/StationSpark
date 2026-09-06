@@ -33,7 +33,7 @@ export function useMiniGameSession(
   /**
    * Every mini-game speaks. When one is torn down (the child quits, the mission
    * moves to the next beat, "Play again" reseeds the stage) the voice has to go
-   * with it — otherwise Beacon keeps talking over the next screen.
+   * with it — otherwise Captain Bea keeps talking over the next screen.
    */
   useEffect(() => () => speech.stop(), []);
 

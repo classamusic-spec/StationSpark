@@ -7,7 +7,7 @@ import {
   generateHydrantMatch,
   generateRescueRoute,
 } from '@/learning/generators';
-import { bea, beacon, inScene, npc, pepper } from './parts';
+import { bea, radio, inScene, npc } from './parts';
 
 const LEE = 'Ms. Lee';
 
@@ -37,15 +37,14 @@ export const schoolFair: MissionDef = {
       backdrop: 'station-yard',
       lines: [
         bea("School fair opens at four. We're helping.", 'happy'),
-        beacon('Beep! Ms. Lee sent a long message.'),
-        pepper('Woof!'),
+        radio('Ms. Lee sent a long message. Read it with me.'),
       ],
     },
     {
       type: 'minigame',
       game: 'dispatch-decoder',
       challenge: (ctx) => dispatchDecoderFor('sentence', inScene(ctx, 'school')),
-      intro: [beacon('Read it with me. What does she need?')],
+      intro: [radio('Read it with me. What does she need?')],
       outro: [bea('Read it right the first time. Good.', 'proud')],
     },
     {
@@ -53,7 +52,7 @@ export const schoolFair: MissionDef = {
       game: 'clock-watch',
       challenge: (ctx) => ({ ...generateClockWatch(ctx), event: 'the school fair opens' }),
       intro: [bea('Set the clock. When does the fair open?')],
-      outro: [beacon("Time locked in. Let's not be late!")],
+      outro: [radio("Time locked in. Let's not be late!")],
     },
     {
       type: 'minigame',
@@ -63,7 +62,7 @@ export const schoolFair: MissionDef = {
         const shortLen = Math.max(2, route.maxCommands - 2);
         return { ...route, compareRoutes: { a: shortLen + 3, b: shortLen, shorter: 'b' as const } };
       },
-      intro: [beacon('Two roads. Which is shorter? Then drive it.')],
+      intro: [radio('Two roads. Which is shorter? Then drive it.')],
       outro: [bea('Nice. That saved us minutes.')],
     },
     { type: 'travel', from: 'station', to: 'school' },
@@ -73,7 +72,7 @@ export const schoolFair: MissionDef = {
       location: 'school',
       lines: [
         npc(LEE, '¡Bienvenidos! The water booth needs a hose line.', '¡Bienvenidos! El puesto de agua necesita manguera.', 'happy'),
-        beacon('Bienvenidos means welcome!', 'Bienvenidos.'),
+        radio('Bienvenidos means welcome!', 'Bienvenidos.'),
         bea('Hydrant first. Then the line.'),
       ],
     },
@@ -82,14 +81,14 @@ export const schoolFair: MissionDef = {
       game: 'hydrant-match',
       challenge: (ctx) => generateHydrantMatch(ctx),
       intro: [npc(LEE, 'Which hydrant matches the tag?', '¿Cuál hidrante coincide con la etiqueta?', 'think')],
-      outro: [beacon('Matched! Water is on.')],
+      outro: [radio('Matched! Water is on.')],
     },
     {
       type: 'minigame',
       game: 'hose-path',
       challenge: (ctx) => generateHosePath(inScene(ctx, 'school')),
       intro: [bea('Lay the line. Corner by corner.')],
-      outro: [pepper('Woof woof!')],
+      outro: [],
     },
     {
       type: 'minigame',
@@ -102,13 +101,13 @@ export const schoolFair: MissionDef = {
       type: 'scene',
       scene: 'rescue-complete',
       location: 'school',
-      lines: [beacon('Booth running. Flame out. Fair ready!'), pepper()],
+      lines: [radio('Booth running. Flame out. Fair ready!')],
     },
     {
       type: 'dialogue',
       lines: [
         npc(LEE, "Four o'clock exactly. ¡Gracias, equipo!", 'Las cuatro en punto. ¡Gracias, equipo!', 'proud'),
-        beacon('Gracias means thank you!', 'Gracias.'),
+        radio('Gracias means thank you!', 'Gracias.'),
         bea('On time, and on the same team.', 'happy'),
       ],
     },

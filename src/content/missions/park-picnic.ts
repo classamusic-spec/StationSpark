@@ -7,7 +7,7 @@ import {
   generateSprayPattern,
   generateVocabTap,
 } from '@/learning/generators';
-import { bea, beacon, inScene, npc, pepper } from './parts';
+import { bea, radio, inScene, npc } from './parts';
 
 const OKAFOR = 'Mr. Okafor';
 
@@ -37,8 +37,7 @@ export const parkPicnic: MissionDef = {
       backdrop: 'station-yard',
       lines: [
         bea('Picnic day! Mr. Okafor needs extra hands.', 'happy'),
-        beacon('Beep! Sprinkler stuck. Puddle growing.'),
-        pepper(),
+        radio('Sprinkler stuck, puddle growing. Park Lane.'),
       ],
     },
     {
@@ -46,7 +45,7 @@ export const parkPicnic: MissionDef = {
       game: 'signals',
       challenge: (ctx) => generateSignals(ctx),
       intro: [bea('First things first. Put the steps in order.')],
-      outro: [beacon('Order locked in. Roll out!')],
+      outro: [radio('Order locked in. Roll out!')],
     },
     { type: 'travel', from: 'station', to: 'park' },
     {
@@ -55,7 +54,7 @@ export const parkPicnic: MissionDef = {
       location: 'park',
       lines: [
         npc(OKAFOR, '¡Buenos días! The wind mixed up everything.', '¡Buenos días! El viento revolvió todo.', 'worried'),
-        beacon('Buenos días means good morning!', 'Buenos días.'),
+        radio('Buenos días means good morning!', 'Buenos días.'),
         bea('Sort it out, crew. Puddle last.'),
       ],
     },
@@ -70,8 +69,8 @@ export const parkPicnic: MissionDef = {
       type: 'minigame',
       game: 'spray-pattern',
       challenge: (ctx) => generateSprayPattern(ctx),
-      intro: [beacon('The picnic flags follow a pattern. What comes next?')],
-      outro: [pepper('Woof!')],
+      intro: [radio('The picnic flags follow a pattern. What comes next?')],
+      outro: [],
     },
     {
       type: 'minigame',
@@ -79,7 +78,7 @@ export const parkPicnic: MissionDef = {
       bands: ['B', 'C'],
       challenge: (ctx) => generateListenCount(ctx),
       intro: [npc(OKAFOR, 'Listen closely. How many do we need?', 'Escucha bien. ¿Cuántos necesitamos?', 'calm')],
-      outro: [beacon('Counted in Spanish. ¡Muy bien!', '¡Muy bien!')],
+      outro: [radio('Counted in Spanish. ¡Muy bien!', '¡Muy bien!')],
     },
     {
       type: 'minigame',
@@ -87,7 +86,7 @@ export const parkPicnic: MissionDef = {
       bands: ['A'],
       challenge: (ctx) => generateVocabTap(ctx),
       intro: [npc(OKAFOR, 'Tap the picture I say. ¿Listos?', 'Toca el dibujo que digo. ¿Listos?', 'happy')],
-      outro: [beacon('New words in your locker!')],
+      outro: [radio('New words in your locker!')],
     },
     {
       type: 'minigame',
@@ -100,7 +99,7 @@ export const parkPicnic: MissionDef = {
       type: 'scene',
       scene: 'rescue-complete',
       location: 'park',
-      lines: [beacon('Puddle stopped. Picnic saved!'), pepper('Woof woof!')],
+      lines: [radio('Puddle stopped. Picnic saved!')],
     },
     {
       type: 'kitchen',
@@ -114,7 +113,7 @@ export const parkPicnic: MissionDef = {
       type: 'dialogue',
       lines: [
         npc(OKAFOR, 'The picnic is saved. ¡Gracias, equipo!', 'El picnic está salvado. ¡Gracias, equipo!', 'excited'),
-        beacon('Equipo means team. That is us!', 'Equipo.'),
+        radio('Equipo means team. That is us!', 'Equipo.'),
         bea('Best kind of call: everybody fed.', 'happy'),
       ],
     },

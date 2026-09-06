@@ -10,7 +10,7 @@ import {
   generateVocabTap,
 } from '@/learning/generators';
 import { wordById } from '@/learning/vocabulary';
-import { bea, beacon, inScene, npc, pepper } from './parts';
+import { bea, radio, inScene, npc } from './parts';
 
 const ANA = 'Ana';
 const LUIS = 'Luis';
@@ -65,8 +65,7 @@ export const petShopParade: MissionDef = {
       backdrop: 'station-yard',
       lines: [
         bea('Parade day! The twins need extra hands.', 'happy'),
-        beacon('Beep! One gate open. Six pets loose.'),
-        pepper('Woof! Woof!'),
+        radio('One gate open, six pets loose. Pet Shop Row.'),
       ],
     },
     {
@@ -88,14 +87,14 @@ export const petShopParade: MissionDef = {
         decoys: ['axe', 'extinguisher'] as EquipmentId[],
       }),
       intro: [bea('Leashes and bowls. Count them out loud.')],
-      outro: [beacon('Every leash accounted for. Beep!')],
+      outro: [radio('Every leash accounted for. Well counted.')],
     },
     {
       type: 'minigame',
       game: 'gear-sort',
       challenge: () => gearSortWithBins(paradeBins, paradeItems),
       intro: [bea('Three pens. Puppies, bunnies, turtles.')],
-      outro: [beacon('Sorted! Nobody eats the wrong lunch.')],
+      outro: [radio('Sorted! Nobody eats the wrong lunch.')],
     },
     { type: 'travel', from: 'station', to: 'pet-shop' },
     {
@@ -104,7 +103,7 @@ export const petShopParade: MissionDef = {
       location: 'pet-shop',
       lines: [
         npc(ANA, '¡Rápido! The puppies think this is a game.', '¡Rápido! Los perritos creen que es un juego.', 'worried'),
-        beacon('Rápido means quick!', 'Rápido.'),
+        radio('Rápido means quick!', 'Rápido.'),
         bea('Slow hands, quick eyes. Go.'),
       ],
     },
@@ -124,7 +123,7 @@ export const petShopParade: MissionDef = {
       game: 'listen-count',
       challenge: (ctx) => generateListenCount(ctx),
       intro: [npc(ANA, 'Listen: how many for the front row?', 'Escucha: ¿cuántos van adelante?', 'happy')],
-      outro: [beacon('Counted in Spanish. ¡Muy bien!', '¡Muy bien!')],
+      outro: [radio('Counted in Spanish. ¡Muy bien!', '¡Muy bien!')],
     },
     {
       type: 'minigame',
@@ -136,8 +135,8 @@ export const petShopParade: MissionDef = {
         const pool = [wordById('bunny'), wordById('turtle'), wordById('duck')];
         return { ...base, word, options: ctx.rng.shuffle([word, ...pool.slice(0, 2)]) };
       },
-      intro: [beacon('Tap the animal I say. Ready?')],
-      outro: [pepper('Woof!')],
+      intro: [radio('Tap the animal I say. Ready?')],
+      outro: [],
     },
     {
       type: 'minigame',
@@ -160,7 +159,7 @@ export const petShopParade: MissionDef = {
         spokenEs: true,
       }),
       intro: [npc(LUIS, 'Snack baskets now. ¡En español, por favor!', 'Ahora las canastas. ¡En español, por favor!', 'happy')],
-      outro: [beacon('Zanahorias and manzanas, counted!', 'Zanahorias y manzanas.')],
+      outro: [radio('Zanahorias and manzanas, counted!', 'Zanahorias y manzanas.')],
     },
     {
       type: 'minigame',
@@ -173,14 +172,14 @@ export const petShopParade: MissionDef = {
       type: 'scene',
       scene: 'rescue-complete',
       location: 'pet-shop',
-      lines: [beacon('Six pets, one line, zero escapes!'), pepper('Woof woof!')],
+      lines: [radio('Six pets, one line, zero escapes!')],
     },
     {
       type: 'dialogue',
       lines: [
-        npc(LUIS, '¡Gracias, bomberos! Pepper can lead the parade.', '¡Gracias, bomberos! Pepper puede ir al frente.', 'proud'),
-        beacon('Gracias means thank you. Pepper is thrilled!', 'Gracias.'),
-        bea('March slowly. Pepper gets excited.', 'happy'),
+        npc(LUIS, '¡Gracias, bomberos! Mango the parrot leads the parade.', '¡Gracias, bomberos! Mango el loro va al frente.', 'proud'),
+        radio('Gracias means thank you. Every tail is wagging!', 'Gracias.'),
+        bea('March slowly. Mango gets excited.', 'happy'),
       ],
     },
     { type: 'recap' },

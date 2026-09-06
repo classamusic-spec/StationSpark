@@ -11,7 +11,7 @@ import {
   hoseHeroWithFlames,
 } from '@/learning/generators';
 import { wordById } from '@/learning/vocabulary';
-import { bea, beacon, inScene, npc, pepper } from './parts';
+import { bea, radio, inScene, npc } from './parts';
 
 const SOFIA = 'Capitana Sofía';
 const ROSA = 'Rosa';
@@ -28,7 +28,7 @@ const grill: Record<'A' | 'B' | 'C', { flames: number; grid: { rows: number; col
  *
  * Capitana Sofía's crew from Estación Cinco is visiting for the neighbourhood
  * festival. The whole call runs Spanish-first: the radio speaks Spanish and
- * Beacon translates. The exchange is about food, language and neighbours —
+ * Captain Bea translates. The exchange is about food, language and neighbours —
  * two stations doing the same job in two languages.
  */
 export const festivalExchange: MissionDef = {
@@ -54,8 +54,7 @@ export const festivalExchange: MissionDef = {
       backdrop: 'station-yard',
       lines: [
         bea('Visitors! A crew from Mexico lands today.', 'excited'),
-        beacon('Beep beep! The radio is in Spanish now.', 'El radio habla español.'),
-        pepper('Woof! Woof!'),
+        radio('The radio is in Spanish now. I will help.', 'El radio habla español.'),
       ],
     },
     {
@@ -63,12 +62,12 @@ export const festivalExchange: MissionDef = {
       game: 'dispatch-decoder',
       challenge: (ctx) => ({
         ...dispatchDecoderFor('address', ctx),
-        message: 'Beacon translating: help at festival stall 15. Repeat: 15.',
+        message: 'Help needed at festival stall 15. Repeat: fifteen.',
         messageEs: '¡Ayuda en el puesto 15 del festival! Repito: quince.',
         correct: '15',
         options: ctx.rng.shuffle(['15', '51', '5']),
       }),
-      intro: [beacon('Spanish first! Quince. Which number is that?', 'Quince.')],
+      intro: [radio('Spanish first! Quince. Which number is that?', 'Quince.')],
       outro: [bea('Fifteen. You listened in two languages.', 'proud')],
     },
     {
@@ -76,7 +75,7 @@ export const festivalExchange: MissionDef = {
       game: 'water-tank',
       challenge: (ctx) => generateWaterTank(ctx),
       intro: [bea('Tank first. Then meet our new friends.')],
-      outro: [beacon('Tank full! In Spanish: ¡tanque lleno!', '¡Tanque lleno!')],
+      outro: [radio('Tank full! In Spanish: ¡tanque lleno!', '¡Tanque lleno!')],
     },
     { type: 'travel', from: 'station', to: 'festival' },
     {
@@ -85,7 +84,7 @@ export const festivalExchange: MissionDef = {
       location: 'festival',
       lines: [
         npc(SOFIA, '¡Hola, Estación Spark! Somos la Estación Cinco.', '¡Hola, Estación Spark! Somos la Estación Cinco.', 'excited'),
-        beacon('She says: hello, we are Station Five!'),
+        radio('She says: hello, we are Station Five!'),
         npc(ROSA, 'I brought bread for everyone. ¡Para todos!', 'Traje pan para todos. ¡Para todos!', 'happy'),
       ],
     },
@@ -94,7 +93,7 @@ export const festivalExchange: MissionDef = {
       game: 'listen-count',
       challenge: (ctx) => generateListenCount(ctx),
       intro: [npc(SOFIA, 'Escuchen bien. ¿Cuántos necesitamos?', 'Escuchen bien. ¿Cuántos necesitamos?', 'calm')],
-      outro: [beacon('You counted in Spanish. ¡Muy bien!', '¡Muy bien!')],
+      outro: [radio('You counted in Spanish. ¡Muy bien!', '¡Muy bien!')],
     },
     {
       type: 'minigame',
@@ -111,7 +110,7 @@ export const festivalExchange: MissionDef = {
         };
       },
       intro: [npc(SOFIA, 'Toca el dibujo que digo. ¿Listos?', 'Toca el dibujo que digo. ¿Listos?', 'happy')],
-      outro: [beacon('New Spanish words in your locker!')],
+      outro: [radio('New Spanish words in your locker!')],
     },
     {
       type: 'minigame',
@@ -136,7 +135,7 @@ export const festivalExchange: MissionDef = {
         decoys: ['axe', 'extinguisher'] as EquipmentId[],
       }),
       intro: [npc(ROSA, 'Count the buckets with me, please.', 'Cuenten las cubetas conmigo, por favor.', 'happy')],
-      outro: [beacon('All counted. The stall is safe!')],
+      outro: [radio('All counted. The stall is safe!')],
     },
     {
       type: 'minigame',
@@ -159,13 +158,13 @@ export const festivalExchange: MissionDef = {
         spokenEs: true,
       }),
       intro: [npc(SOFIA, 'Now the stall list. ¡Todo en español!', 'Ahora la lista del puesto. ¡Todo en español!', 'happy')],
-      outro: [beacon('Tortillas y queso. Counted perfectly!', 'Tortillas y queso.')],
+      outro: [radio('Tortillas y queso. Counted perfectly!', 'Tortillas y queso.')],
     },
     {
       type: 'scene',
       scene: 'rescue-complete',
       location: 'festival',
-      lines: [beacon('Grill calm. Festival saved. ¡Listo!', '¡Listo!'), pepper('Woof woof!')],
+      lines: [radio('Grill calm. Festival saved. ¡Listo!', '¡Listo!')],
     },
     {
       type: 'kitchen',
@@ -179,7 +178,7 @@ export const festivalExchange: MissionDef = {
       type: 'dialogue',
       lines: [
         npc(SOFIA, '¡Gracias, amigos! Come visit our station next.', '¡Gracias, amigos! Ahora vengan a nuestra estación.', 'proud'),
-        beacon('New pin on the world map. Where next?', 'Un pin nuevo en el mapa del mundo.'),
+        radio('New pin on the world map. Where next?', 'Un pin nuevo en el mapa del mundo.'),
         bea('A world map for the dispatch room. Yes!', 'happy'),
       ],
     },

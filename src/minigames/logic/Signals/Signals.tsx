@@ -15,7 +15,7 @@ import { Draggable } from '../shared/Draggable';
 import { GameFrame } from '../shared/GameFrame';
 import { SlotZone } from '../shared/SlotZone';
 import { useGameLayout } from '../shared/layout';
-import { useBeaconLine } from '../shared/speak';
+import { useCaptainLine } from '../shared/speak';
 import { useHintLadder } from '../shared/useHintLadder';
 import { SignalGlyph, signalName } from '../shared/art/Glyphs';
 
@@ -102,7 +102,7 @@ export function Signals({ challenge, ageBand, onComplete, onEvent, compact }: Mi
     };
   }, []);
 
-  useBeaconLine('Put the call steps in order. What happens first?', session.say);
+  useCaptainLine('Put the call steps in order. What happens first?', session.say);
 
   const placedCards = useMemo(() => new Set(state.slots.filter((s): s is number => s !== null)), [state.slots]);
   const trayCards = shuffled.map((id, index) => ({ id, index })).filter((c) => !placedCards.has(c.index));

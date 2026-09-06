@@ -160,7 +160,7 @@ export function MiniGameStage({ beat, ageBand, scene, seed, missionContext, comp
         haptics.success();
         break;
       case 'incorrect':
-        // never harsh: soft boop + a nudge, and Beacon offers to help
+        // never harsh: soft boop + a nudge, and Captain Bea offers to help
         sfx.play('wrong-soft');
         haptics.nudge();
         break;
@@ -184,7 +184,7 @@ export function MiniGameStage({ beat, ageBand, scene, seed, missionContext, comp
   const fallback = (
     <UnderConstructionCard
       title="This station is being built"
-      note="Beacon is still wiring up this game. Tap to continue the mission — you keep your stars!"
+      note="We are still building this game. Tap to continue the mission — you keep your stars!"
       onContinue={() => finish(skipResult(beat))}
     />
   );
@@ -215,7 +215,7 @@ const styles = StyleSheet.create({
   /*
    * Consistency rule 10 — one bubble motif, one anchoring. The say bubble sits
    * where every game keeps its answer tiles, so it clears the measured `<Tray/>`
-   * exactly like Beacon's hint does (see `@/ui/kit/playArea`). It is decorative
+   * exactly like the hint does (see `@/ui/kit/playArea`). It is decorative
    * and auto-hides, so it is inert all the way down and never takes a touch.
    */
   say: { position: 'absolute', left: spacing.md, right: spacing.md, zIndex: 45 },

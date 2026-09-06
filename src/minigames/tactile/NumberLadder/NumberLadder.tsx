@@ -107,7 +107,7 @@ export function NumberLadder({ challenge, ageBand, onComplete, onEvent, compact 
   /* ---- prompt ---- */
   const prompt = ageBand === 'A' ? `Climb to ${target}!` : `Start at ${start} — climb to ${target}`;
   const subtitle = compact ? undefined : ageBand === 'C' ? 'Fewest jumps earns a star bonus.' : 'Tap a jump button to hop.';
-  useSpokenPrompt(`Climb to ${target}`, { speaker: 'beacon' });
+  useSpokenPrompt(`Climb to ${target}`, { speaker: 'bea' });
 
   /* ---- geometry ---- */
   const geo = useMemo(() => {
@@ -147,8 +147,8 @@ export function NumberLadder({ challenge, ageBand, onComplete, onEvent, compact 
       session.progress(1, 1);
       const shortest = best !== null && moves <= best;
       const line = shortest && ageBand === 'C' ? `${target}! And that was the shortest path!` : `${target}! You made it!`;
-      session.say('beacon', line);
-      speech.say(line, { speaker: 'beacon' });
+      session.say('bea', line);
+      speech.say(line, { speaker: 'bea' });
       timers.current.push(
         setTimeout(() => {
           sfx.play(shortest ? 'fanfare' : 'success');
@@ -203,7 +203,7 @@ export function NumberLadder({ challenge, ageBand, onComplete, onEvent, compact 
               return;
             }
             dispatch({ type: 'land', pos: to });
-            speech.say(String(to), { speaker: 'beacon' });
+            speech.say(String(to), { speaker: 'bea' });
             if (to === target) win(state.moves + 1);
           },
           steps * HOP_MS + 60,
@@ -243,7 +243,7 @@ export function NumberLadder({ challenge, ageBand, onComplete, onEvent, compact 
       hint={hints.bubble}
       onDismissHint={hints.dismiss}
       backdrop={<Stage variant="street" groundHeight={130} />}
-      overlay={<SceneCrew side="left" size={58} showPepper mood={state.phase === 'done' ? 'cheer' : state.phase === 'hopping' ? 'happy' : 'idle'} />}
+      overlay={<SceneCrew side="left" size={58} mood={state.phase === 'done' ? 'cheer' : state.phase === 'hopping' ? 'happy' : 'idle'} />}
       footer={
         <View style={styles.mathRow}>
           <Text variant="h3" color={state.pos === target ? palette.leafGreenDark : palette.navy}>

@@ -11,12 +11,12 @@ export interface HintText {
 export interface HintLadder {
   /** how many soft misses so far */
   misses: number;
-  /** 0 = fine · 1 = Beacon is helping · 2 = auto-assist (highlight the answer) */
+  /** 0 = fine · 1 = Captain Bea is helping · 2 = auto-assist (highlight the answer) */
   level: 0 | 1 | 2;
   /** true once we should just show the child the answer */
   assist: boolean;
   bubble: HintText | null;
-  /** record a miss; from the 2nd one on, Beacon's bubble appears */
+  /** record a miss; from the 2nd one on, the hint bubble appears */
   miss: (hint?: HintText) => void;
   /** show a hint without counting a mistake (idle nudges) */
   nudge: (hint: HintText, opts?: { assist?: boolean }) => void;
@@ -28,7 +28,7 @@ export interface HintLadder {
  * The "never dead-end" rule, in one hook.
  *
  *   1st miss  → gentle wobble only (the game does that)
- *   2nd miss  → Beacon's hint bubble, spoken aloud
+ *   2nd miss  → the hint bubble, spoken aloud
  *   3rd miss  → auto-assist: the game highlights / snaps the answer
  *
  * `onHint` should be the session's `hint()` so the star maths stays honest.
@@ -51,7 +51,7 @@ export function useHintLadder(onHint?: () => void): HintLadder {
     (hint: HintText) => {
       setBubble(hint);
       sfx.play('robot-beep', { volume: 0.6 });
-      speech.say(hint.text, { speaker: 'beacon' });
+      speech.say(hint.text, { speaker: 'bea' });
       if (!counted.current) {
         counted.current = true;
         onHint?.();

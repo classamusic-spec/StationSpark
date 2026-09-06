@@ -47,7 +47,7 @@ import { answerOptions, equationText, nextPlate, shareState } from '../../shareM
 import { Stage, at } from '../../parts/Stage';
 import { BowlCell, PieIndicator, PlateArt, ToppingRegion } from '../../parts/FoodBits';
 import { CheckerCloth, CookCTA, EquationStrip, PizzaCutter, WoodPeel } from '../../parts/SceneBits';
-import { kitchenFeel, nearestTarget, useBeaconHint, useDragSource } from '../useKitchenGame';
+import { kitchenFeel, nearestTarget, useCaptainHint, useDragSource } from '../useKitchenGame';
 
 /* ---- the 390 × 430 design box the scene is painted in ---- */
 const D = { w: 390, h: 430 };
@@ -55,13 +55,20 @@ const PC: Pt = { x: 150, y: 198 };
 const R_CRUST = 122;
 const R_SAUCE = 107;
 const RACK = { x: 284, y: 6, w: 100, h: 418 };
-const CREW = ['rookie', 'bea', 'beacon', 'pepper'] as const;
+/* Who shows up to eat. Two leads and two neighbours — four, because the
+ * fraction being shared is a fraction of four. */
+const CREW = [
+  { id: 'rookie' },
+  { id: 'bea' },
+  { id: 'npc', npc: 'rosa' },
+  { id: 'npc', npc: 'gino' },
+] as const;
 
 type Phase = 'top' | 'cut' | 'ask' | 'share';
 
 export function PizzaFractions({ challenge, ageBand, onComplete, onEvent, compact }: MiniGameProps<'pizza-fractions'>) {
   const session = useMiniGameSession('pizza-fractions', onComplete, onEvent);
-  const beacon = useBeaconHint(session);
+  const assist = useCaptainHint(session);
 
   const count = useMemo(() => regionCount(challenge.toppings), [challenge.toppings]);
   const wedges = useMemo(() => buildWedges(count), [count]);
@@ -140,13 +147,13 @@ export function PizzaFractions({ challenge, ageBand, onComplete, onEvent, compac
           sfx.play('pop');
           haptics.tap();
         } else {
-          beacon.nudge(`That slice already has ${toppingLabel(held).toLowerCase()} — try an empty one.`);
+          assist.nudge(`That slice already has ${toppingLabel(held).toLowerCase()} — try an empty one.`);
         }
         return;
       }
       if (!canPlace(plan, assigned, topping)) {
         const want = challenge.toppings.find((t) => t.topping === topping);
-        beacon.nudge(
+        assist.nudge(
           `That's more than ${want ? formatFraction(want.fraction) : 'the recipe'} ${toppingLabel(topping).toLowerCase()}!`,
         );
         return;
@@ -158,10 +165,10 @@ export function PizzaFractions({ challenge, ageBand, onComplete, onEvent, compac
       session.correct(topping);
       if (planStatus(plan, next).complete) {
         kitchenFeel.good();
-        beacon.cheer('Looks delicious! Now we cut it.', '¡Qué rico!');
+        assist.cheer('Looks delicious! Now we cut it.', '¡Qué rico!');
       }
     },
-    [assigned, beacon, challenge.toppings, plan, session],
+    [assigned, assist, challenge.toppings, plan, session],
   );
 
   /**
@@ -188,16 +195,16 @@ export function PizzaFractions({ challenge, ageBand, onComplete, onEvent, compac
         return;
       }
       if (!selected) {
-        beacon.cheer('Pick an ingredient bowl first!');
+        assist.cheer('Pick an ingredient bowl first!');
         return;
       }
       placeTopping(region, selected);
     },
-    [assigned, beacon, count, placeTopping, selected],
+    [assigned, assist, count, placeTopping, selected],
   );
 
   const helpTopping = useCallback(() => {
-    beacon.askedForHelp();
+    assist.askedForHelp();
     const needed = status.perTopping.find((p) => p.have < p.need);
     const region = assigned.findIndex((a) => a === null);
     if (!needed || region < 0) return;
@@ -206,7 +213,7 @@ export function PizzaFractions({ challenge, ageBand, onComplete, onEvent, compac
     setAssigned(next);
     setSelected(needed.topping);
     kitchenFeel.drop('sizzle');
-  }, [assigned, beacon, status.perTopping]);
+  }, [assigned, assist, status.perTopping]);
 
   /* ------------------------------------------------------------------ */
   /* Phase 2 — cutting                                                    */
@@ -220,7 +227,7 @@ export function PizzaFractions({ challenge, ageBand, onComplete, onEvent, compac
     const total = challenge.cutInto;
     speech.say(
       `${Array.from({ length: total }, (_, i) => i + 1).join(', ')} slices!`,
-      { speaker: 'beacon' },
+      { speaker: 'bea' },
     );
     let i = 0;
     if (counting.current) clearInterval(counting.current);
@@ -250,7 +257,7 @@ export function PizzaFractions({ challenge, ageBand, onComplete, onEvent, compac
       if (made >= next.length) {
         setTimeout(startCounting, 380);
       } else {
-        speech.say(`${slices} slices`, { speaker: 'beacon' });
+        speech.say(`${slices} slices`, { speaker: 'bea' });
       }
     },
     [challenge.cutInto, cuts, session, startCounting],
@@ -262,23 +269,23 @@ export function PizzaFractions({ challenge, ageBand, onComplete, onEvent, compac
       if (Math.hypot(x1 - x0, y1 - y0) < 14) return;
       const idx = matchCutLine({ x: x0, y: y0 }, { x: x1, y: y1 }, PC, R_SAUCE, angles);
       if (idx === null) {
-        beacon.nudge('Roll the cutter all the way across a dotted line.');
+        assist.nudge('Roll the cutter all the way across a dotted line.');
         return;
       }
       if (cuts[idx]) {
-        beacon.nudge('That one is cut already — try another dotted line.');
+        assist.nudge('That one is cut already — try another dotted line.');
         return;
       }
       applyCut(idx);
     },
-    [angles, applyCut, beacon, cuts],
+    [angles, applyCut, assist, cuts],
   );
 
   const helpCut = useCallback(() => {
-    beacon.askedForHelp();
+    assist.askedForHelp();
     const idx = cuts.findIndex((c) => !c);
     if (idx >= 0) applyCut(idx);
-  }, [applyCut, beacon, cuts]);
+  }, [applyCut, assist, cuts]);
 
   /* ------------------------------------------------------------------ */
   /* Phase 3 — sharing                                                    */
@@ -294,7 +301,7 @@ export function PizzaFractions({ challenge, ageBand, onComplete, onEvent, compac
     (plateIndex: number, sliceIndex?: number) => {
       if (slicesLeft <= 0) return;
       if ((plates[plateIndex] ?? 0) >= each) {
-        beacon.nudge(`That plate already has ${each}. Everybody gets the same!`);
+        assist.nudge(`That plate already has ${each}. Everybody gets the same!`);
         return;
       }
       const token = sliceIndex ?? Array.from({ length: challenge.cutInto }, (_, i) => i).find((i) => !usedSlices.includes(i));
@@ -308,18 +315,18 @@ export function PizzaFractions({ challenge, ageBand, onComplete, onEvent, compac
       const done = shareState(next, each).done;
       if (done) {
         kitchenFeel.finish();
-        beacon.cheer(`${each} slices each — fair and square!`);
+        assist.cheer(`${each} slices each — fair and square!`);
         setTimeout(() => session.complete(), 900);
       }
     },
-    [beacon, challenge.cutInto, each, plates, session, slicesLeft, usedSlices],
+    [assist, challenge.cutInto, each, plates, session, slicesLeft, usedSlices],
   );
 
   const helpShare = useCallback(() => {
-    beacon.askedForHelp();
+    assist.askedForHelp();
     const idx = nextPlate(plates, each);
     if (idx >= 0) giveSlice(idx);
-  }, [beacon, each, giveSlice, plates]);
+  }, [assist, each, giveSlice, plates]);
 
   const answerDivision = useCallback(
     (value: number) => {
@@ -330,10 +337,10 @@ export function PizzaFractions({ challenge, ageBand, onComplete, onEvent, compac
         setTimeout(() => setPhase('share'), 620);
       } else {
         setWrongAnswers((w) => (w.includes(value) ? w : [...w, value]));
-        beacon.nudge(`Not quite — put ${challenge.cutInto} slices onto ${among} plates and count one plate.`);
+        assist.nudge(`Not quite — put ${challenge.cutInto} slices onto ${among} plates and count one plate.`);
       }
     },
-    [among, beacon, challenge.cutInto, each, session],
+    [among, assist, challenge.cutInto, each, session],
   );
 
   /* ------------------------------------------------------------------ */
@@ -355,7 +362,7 @@ export function PizzaFractions({ challenge, ageBand, onComplete, onEvent, compac
     <View style={styles.root}>
       {/* the whole kitchen game used to be played against a blue sky */}
       <SceneStage variant="counter" groundHeight={200} />
-      <SceneCrew side="left" size={50} showPepper npc="gino" mood={phase === 'share' ? 'cheer' : phase === 'cut' ? 'think' : 'idle'} />
+      <SceneCrew side="left" size={50} npc="gino" mood={phase === 'share' ? 'cheer' : phase === 'cut' ? 'think' : 'idle'} />
       <PromptBanner
         title={prompt}
         subtitle={
@@ -431,9 +438,9 @@ export function PizzaFractions({ challenge, ageBand, onComplete, onEvent, compac
                 total={challenge.cutInto}
                 used={usedSlices}
                 platePoints={platePoints}
-                highlight={beacon.highlight || ageBand === 'A'}
+                highlight={assist.highlight || ageBand === 'A'}
                 onGive={giveSlice}
-                onMiss={() => beacon.nudge('Drop the slice right onto a plate.')}
+                onMiss={() => assist.nudge('Drop the slice right onto a plate.')}
               />
             ) : phase === 'ask' ? (
               <View style={[at(s, 20, 60, 350), styles.answerWrap]}>
@@ -443,7 +450,7 @@ export function PizzaFractions({ challenge, ageBand, onComplete, onEvent, compac
                     label={String(value)}
                     index={i}
                     size="lg"
-                    state={wrongAnswers.includes(value) ? 'wrong' : beacon.highlight && value === each ? 'highlight' : 'idle'}
+                    state={wrongAnswers.includes(value) ? 'wrong' : assist.highlight && value === each ? 'highlight' : 'idle'}
                     onPress={() => answerDivision(value)}
                   />
                 ))}
@@ -464,9 +471,9 @@ export function PizzaFractions({ challenge, ageBand, onComplete, onEvent, compac
                     phase={phase}
                     countUpTo={countUpTo}
                     highlightRegion={
-                      phase === 'top' && beacon.highlight ? assigned.findIndex((a) => a === null) : -1
+                      phase === 'top' && assist.highlight ? assigned.findIndex((a) => a === null) : -1
                     }
-                    highlightCut={phase === 'cut' && beacon.highlight ? cuts.findIndex((c) => !c) : -1}
+                    highlightCut={phase === 'cut' && assist.highlight ? cuts.findIndex((c) => !c) : -1}
                   />
                 </View>
 
@@ -488,7 +495,7 @@ export function PizzaFractions({ challenge, ageBand, onComplete, onEvent, compac
                   const p = { x: home.x + dx, y: home.y + dy };
                   const region = regionAtPoint(p, PC, R_SAUCE, count);
                   if (region === null) {
-                    beacon.cheer('Drop it right on the pizza!');
+                    assist.cheer('Drop it right on the pizza!');
                     return;
                   }
                   placeTopping(region, topping);
@@ -508,7 +515,7 @@ export function PizzaFractions({ challenge, ageBand, onComplete, onEvent, compac
       <Tray tone="cream">
         <View style={styles.trayRow}>
           {phase === 'cut' ? <GrownUpChip /> : null}
-          {beacon.offerHelp && helpAction ? (
+          {assist.offerHelp && helpAction ? (
             <Button label="Show me" tone="yellow" size="sm" onPress={helpAction} sound="tap-soft" />
           ) : null}
         </View>
@@ -536,7 +543,7 @@ export function PizzaFractions({ challenge, ageBand, onComplete, onEvent, compac
         ) : null}
       </Tray>
 
-      <HintBubble text={beacon.text} es={beacon.es} visible={beacon.visible} onDismiss={beacon.dismiss} />
+      <HintBubble text={assist.text} es={assist.es} visible={assist.visible} onDismiss={assist.dismiss} />
     </View>
   );
 }
@@ -891,7 +898,7 @@ function ShareScene({
           <View key={`plate${i}`} style={at(s, p.x - 46, p.y - 104, 92, 164)}>
             <View style={styles.plateCol}>
               {/* critique #23 — the full rig stands at the plate */}
-              <CrewFigure id={CREW[i % CREW.length] ?? 'rookie'} size={92 * s} bobPhase={i * 0.5} />
+              <CrewFigure {...(CREW[i % CREW.length] ?? CREW[0])} size={92 * s} bobPhase={i * 0.5} />
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel={`Plate ${i + 1}, ${n} slices`}

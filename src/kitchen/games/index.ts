@@ -43,7 +43,7 @@ export const kitchenGames: Registry = {
       kind: 'count-ingredients',
       title: 'Count Ingredients',
       titleEs: 'Cuenta los Ingredientes',
-      blurb: 'Beacon reads the list in Spanish — grab exactly what it asks for.',
+      blurb: 'Captain Bea reads the list in Spanish — grab exactly what she asks for.',
       subjects: ['math', 'spanish', 'cooking'],
       yard: 'kitchen',
       seconds: 110,

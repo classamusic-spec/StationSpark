@@ -23,7 +23,7 @@ import { SceneCrew } from '@/world/scenes';
 import { Animal } from '@/world/props';
 import { GameFrame } from '../shared/GameFrame';
 import { useGameLayout } from '../shared/layout';
-import { useBeaconLine } from '../shared/speak';
+import { useCaptainLine } from '../shared/speak';
 import { useHintLadder } from '../shared/useHintLadder';
 import { ClockFace } from '../shared/art/Props';
 
@@ -78,7 +78,7 @@ export function ClockWatch({ challenge, ageBand, onComplete, onEvent, compact }:
   const wobble = useSharedValue(0);
   const lastSnapped = useSharedValue((startTotal % 60 + 60) % 60);
 
-  useBeaconLine(`${challenge.event.replace(/\.$/, '')}. Move the long hand to show ${clockLabel(targetTotal)}.`, session.say);
+  useCaptainLine(`${challenge.event.replace(/\.$/, '')}. Move the long hand to show ${clockLabel(targetTotal)}.`, session.say);
 
   const applyDelta = useCallback(
     (nextDelta: number) => {

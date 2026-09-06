@@ -24,8 +24,9 @@ const bea = (text: string, es?: string): DialogueLine => ({
   ...(es ? { es } : {}),
 });
 
-const beacon = (text: string, es?: string): DialogueLine => ({
-  speaker: 'beacon',
+/** Captain Bea calling through from the doorway, Spanish read out loud. */
+const radio = (text: string, es?: string): DialogueLine => ({
+  speaker: 'bea',
   text,
   emotion: 'excited',
   ...(es ? { es } : {}),
@@ -77,7 +78,7 @@ export const recipes: RecipeDef[] = [
       {
         game: 'measure-pour',
         challenge: measureByBand('flour', 'cup'),
-        intro: [beacon('Pour the flour to the line. Steady!')],
+        intro: [radio('Pour the flour to the line. Steady!')],
       },
       {
         game: 'count-ingredients',
@@ -87,7 +88,7 @@ export const recipes: RecipeDef[] = [
       {
         game: 'clock-watch',
         challenge: (ctx) => ({ ...generateClockWatch(ctx), event: 'the pancakes are ready to flip' }),
-        intro: [beacon('Beep! Set the clock for flipping time.')],
+        intro: [radio('Set the clock for flipping time.')],
       },
     ],
   },
@@ -107,7 +108,7 @@ export const recipes: RecipeDef[] = [
       {
         game: 'count-ingredients',
         challenge: countThese([{ id: 'mushroom', count: 4 }, { id: 'pepper', count: 3 }], ['olive', 'strawberry', 'banana']),
-        intro: [beacon('Toppings first. Count them onto the board.')],
+        intro: [radio('Toppings first. Count them onto the board.')],
       },
       {
         game: 'pizza-fractions',
@@ -157,7 +158,7 @@ export const recipes: RecipeDef[] = [
       {
         game: 'count-ingredients',
         challenge: countThese([{ id: 'tomato', count: 4 }, { id: 'pepper', count: 2 }, { id: 'olive', count: 3 }], ['apple', 'banana', 'mushroom'], true),
-        intro: [beacon('Beacon translating: tomate, pimiento, aceituna.', 'Tomate, pimiento, aceituna.')],
+        intro: [radio('Listen: tomate, pimiento, aceituna.', 'Tomate, pimiento, aceituna.')],
       },
       {
         game: 'divide-share',
@@ -188,7 +189,7 @@ export const recipes: RecipeDef[] = [
       {
         game: 'count-ingredients',
         challenge: countThese([{ id: 'strawberry', count: 3 }, { id: 'banana', count: 2 }], ['apple', 'tomato', 'olive'], true),
-        intro: [beacon('Tres fresas, dos plátanos. Count them in!', 'Tres fresas y dos plátanos.')],
+        intro: [radio('Tres fresas, dos plátanos. Count them in!', 'Tres fresas y dos plátanos.')],
       },
       {
         game: 'measure-pour',
@@ -213,7 +214,7 @@ export const recipes: RecipeDef[] = [
       {
         game: 'count-ingredients',
         challenge: countThese([{ id: 'tomato', count: 5 }, { id: 'mushroom', count: 4 }], ['strawberry', 'banana', 'apple']),
-        intro: [beacon('Chop-ready veggies, please. Count them out.')],
+        intro: [radio('Chop-ready veggies, please. Count them out.')],
       },
       {
         game: 'measure-pour',
@@ -259,7 +260,7 @@ export const recipes: RecipeDef[] = [
       {
         game: 'measure-pour',
         challenge: measure('water', 1, 2, 'cup'),
-        intro: [beacon('Half a cup of water. Watch the line.')],
+        intro: [radio('Half a cup of water. Watch the line.')],
       },
       {
         game: 'count-ingredients',
@@ -284,7 +285,7 @@ export const recipes: RecipeDef[] = [
       {
         game: 'count-ingredients',
         challenge: countThese([{ id: 'tortilla', count: 6 }, { id: 'cheese', count: 4 }, { id: 'pepper', count: 2 }], ['tomato', 'olive', 'mushroom'], true),
-        intro: [beacon('Seis tortillas, cuatro quesos. Count them out!', 'Seis tortillas y cuatro quesos.')],
+        intro: [radio('Seis tortillas, cuatro quesos. Count them out!', 'Seis tortillas y cuatro quesos.')],
       },
       {
         game: 'divide-share',
@@ -308,7 +309,7 @@ export const recipes: RecipeDef[] = [
             { item: wordById('onion'), amount: 2, scaled: 3 },
           ],
         }),
-        intro: [beacon('Two more friends arrived! Grow the recipe.')],
+        intro: [radio('Two more friends arrived! Grow the recipe.')],
       },
     ],
   },
@@ -340,7 +341,7 @@ export const recipes: RecipeDef[] = [
           extras: [wordById('tomato'), wordById('olive'), wordById('mushroom')],
           spokenEs: true,
         }),
-        intro: [beacon('Fresas, uvas, naranjas. Read the card twice!', 'Fresas, uvas y naranjas.')],
+        intro: [radio('Fresas, uvas, naranjas. Read the card twice!', 'Fresas, uvas y naranjas.')],
       },
       {
         game: 'measure-pour',
@@ -354,7 +355,7 @@ export const recipes: RecipeDef[] = [
           item: wordById('strawberry'),
           ...(ctx.ageBand === 'A' ? { total: 8, among: 2, each: 4 } : { total: 12, among: 4, each: 3 }),
         }),
-        intro: [beacon('Same number of berries in every bowl!')],
+        intro: [radio('Same number of berries in every bowl!')],
       },
     ],
   },
@@ -374,7 +375,7 @@ export const recipes: RecipeDef[] = [
       {
         game: 'count-ingredients',
         challenge: countThese([{ id: 'lemon', count: 4 }, { id: 'strawberry', count: 2 }], ['apple', 'banana', 'olive'], true),
-        intro: [beacon('Cuatro limones, dos fresas. Count them in!', 'Cuatro limones y dos fresas.')],
+        intro: [radio('Cuatro limones, dos fresas. Count them in!', 'Cuatro limones y dos fresas.')],
       },
       {
         game: 'measure-pour',
@@ -384,7 +385,7 @@ export const recipes: RecipeDef[] = [
       {
         game: 'measure-pour',
         challenge: measure('honey', 1, 4, 'spoon'),
-        intro: [beacon('One quarter of honey for every cup. That is the ratio!')],
+        intro: [radio('One quarter of honey for every cup. That is the ratio!')],
       },
       {
         game: 'recipe-scale',
@@ -450,7 +451,7 @@ export const recipes: RecipeDef[] = [
       {
         game: 'measure-pour',
         challenge: measure('lemon', 1, 4, 'cup'),
-        intro: [beacon('A quarter cup of limón. Limón means lemon!', 'Limón.')],
+        intro: [radio('A quarter cup of limón. Limón means lemon!', 'Limón.')],
       },
       {
         game: 'measure-pour',

@@ -1,48 +1,57 @@
 import React from 'react';
 import type { StyleProp, ViewStyle } from 'react-native';
 import type { Emotion } from '@/content/types';
-import { palette } from '@/theme';
-import { Person, type PersonPose } from './rig/Person';
+import { CharacterRig } from './art/CharacterRig';
+import { captainRig } from './art/rigs';
+import { useCharacter, type CharacterPose } from './machine/useCharacter';
 
 export interface CaptainBeaProps {
   /** total height in px */
   size?: number;
   emotion?: Emotion;
-  pose?: PersonPose;
+  pose?: CharacterPose;
   animate?: boolean;
+  /** true while one of her lines is being read out */
+  speaking?: boolean;
+  /** offsets her idle clock so a line-up never breathes in lockstep (0–1) */
   bobPhase?: number;
+  /** one flat <Svg>, no motion — for tiny thumbnails and crowds */
+  flat?: boolean;
   style?: StyleProp<ViewStyle>;
   testID?: string;
 }
 
 /**
- * Captain Bea — the warm station leader. Navy uniform with gold buttons, white
- * captain's cap with a gold badge, brown skin and a kind, steady smile.
- * She gives short instructions and never hurries anyone.
+ * Captain Bea — the warm station leader, drawn from `SVG ART/CAPTAIN.svg`.
+ *
+ * Navy dress uniform with gold cuff stripes and a chest shield, a white-crown
+ * cap with a gold star badge. She gives short instructions and never hurries
+ * anyone. Her jacket is authored as a single shape, so her arms do not swing
+ * from the shoulder; she gestures with her hands and her cap instead.
  */
-export function CaptainBea({ size = 178, emotion = 'calm', pose = 'stand', animate = true, bobPhase = 0.9, style, testID }: CaptainBeaProps) {
+export function CaptainBea({
+  size = 178,
+  emotion = 'calm',
+  pose = 'stand',
+  animate = true,
+  speaking = false,
+  bobPhase = 0.35,
+  flat = false,
+  style,
+  testID,
+}: CaptainBeaProps) {
+  const { act, mood } = useCharacter({ pose, emotion, speaking, animate });
   return (
-    <Person
-      testID={testID}
-      style={style}
+    <CharacterRig
+      spec={captainRig}
       size={size}
-      emotion={emotion}
-      pose={pose}
+      act={act}
+      mood={mood}
       animate={animate}
       bobPhase={bobPhase}
-      skin="brown"
-      hair="dark"
-      hairStyle="bun"
-      headwear="captain-cap"
-      outfit={{
-        top: '#25316A',
-        collar: '#1A2350',
-        pants: '#1E2857',
-        shoes: '#151C3E',
-        buttons: palette.safetyYellow,
-        emblem: 'star',
-      }}
-      accessories={{ nose: true }}
+      flat={flat}
+      style={style}
+      testID={testID}
     />
   );
 }

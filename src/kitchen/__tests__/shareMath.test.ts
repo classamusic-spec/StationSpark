@@ -82,7 +82,7 @@ describe('recipe scaling', () => {
     expect(isScaleLineCorrect(2, 3)).toBe(false);
   });
 
-  it('explains one line the way Beacon would', () => {
+  it('explains one line the way Captain Bea would', () => {
     expect(scaleExplanation('cups', 2, 4, 6, 3)).toBe('4 people need 2 cups, so 6 need 1 more — 3 in total.');
     expect(scaleExplanation('cups', 4, 4, 2, 2)).toBe('4 people need 4 cups, so 2 need 2 fewer — 2 in total.');
     expect(scaleExplanation('cups', 2, 4, 4, 2)).toBe('4 people need 2 cups, so 4 need the same — 2.');
@@ -154,7 +154,7 @@ describe('spanish helpers', () => {
     expect(esArticleOne('pan')).toBe('un');
   });
 
-  it('reads the shopping list the way Beacon says it', () => {
+  it('reads the shopping list the way Captain Bea says it', () => {
     expect(countPhraseEs(3, foodWords.strawberry)).toBe('tres fresas');
     expect(countPhraseEs(1, foodWords.banana)).toBe('un plátano');
     expect(countPhraseEs(1, foodWords.strawberry)).toBe('una fresa');

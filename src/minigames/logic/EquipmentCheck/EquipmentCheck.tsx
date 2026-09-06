@@ -25,7 +25,7 @@ import { Draggable } from '../shared/Draggable';
 import { GameFrame } from '../shared/GameFrame';
 import { SlotZone } from '../shared/SlotZone';
 import { useGameLayout } from '../shared/layout';
-import { useBeaconLine } from '../shared/speak';
+import { useCaptainLine } from '../shared/speak';
 import { useHintLadder } from '../shared/useHintLadder';
 import { TruckSide, truckBayRect } from '../shared/art/Props';
 
@@ -140,7 +140,7 @@ export function EquipmentCheck({ challenge, ageBand, onComplete, onEvent, compac
     [challenge.items, state.packed],
   );
 
-  useBeaconLine(state.phase === 'packing' ? 'Pack the right equipment. Drag each item into the truck!' : null, session.say, {
+  useCaptainLine(state.phase === 'packing' ? 'Pack the right equipment. Drag each item into the truck!' : null, session.say, {
     key: state.phase,
   });
 
@@ -268,7 +268,7 @@ export function EquipmentCheck({ challenge, ageBand, onComplete, onEvent, compac
       backdrop={
         <>
           <Stage variant="yard" groundHeight={150} />
-          <SceneCrew side="left" size={52} showPepper mood={state.phase === 'done' ? 'cheer' : 'idle'} />
+          <SceneCrew side="left" size={52} mood={state.phase === 'done' ? 'cheer' : 'idle'} />
         </>
       }
       hint={{ text: hintText, visible: hintLadder.showBubble && state.phase === 'packing', onDismiss: hintLadder.dismiss }}

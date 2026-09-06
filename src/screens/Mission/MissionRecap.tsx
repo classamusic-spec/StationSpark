@@ -1,7 +1,7 @@
 /**
  * RECAP — "You used:" — the quiet, proud beat between the last game and the
  * celebration. Subject pills and the actual skills the child practised stagger
- * in while Beacon sums the mission up.
+ * in while Captain Bea sums the mission up.
  *
  * Nothing here is a score. It is a list of things they can now do.
  */
@@ -91,7 +91,7 @@ export function MissionRecap({ mission, results, onNext }: MissionRecapProps) {
 
   useEffect(() => {
     sfx.play('sparkle');
-    const t = setTimeout(() => speech.say(line, { speaker: 'beacon' }), 420);
+    const t = setTimeout(() => speech.say(line, { speaker: 'bea' }), 420);
     return () => {
       clearTimeout(t);
       speech.stop();
@@ -143,10 +143,10 @@ export function MissionRecap({ mission, results, onNext }: MissionRecapProps) {
         </Animated.View>
 
         <Animated.View entering={FadeInUp.delay(420).springify().damping(15)} style={styles.beaconRow}>
-          <CharacterPortrait id="beacon" emotion="proud" size={72} />
+          <CharacterPortrait id="bea" emotion="proud" size={72} />
           <View style={[styles.bubble, shadows.card]}>
             <Text variant="tiny" color={palette.navyMuted}>
-              Beacon
+              Captain Bea
             </Text>
             <Text variant="bodyStrong">{line}</Text>
           </View>

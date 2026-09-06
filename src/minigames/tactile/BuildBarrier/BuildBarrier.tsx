@@ -95,7 +95,7 @@ export function BuildBarrier({ challenge, ageBand, onComplete, onEvent, compact 
   /* ---- prompt ---- */
   const prompt = ageBand === 'A' ? `Fence the fire with ${target}!` : `Build a ${target}-unit safety ring`;
   const subtitle = compact || ageBand === 'A' ? undefined : 'Drag barriers into the dashed outline.';
-  useSpokenPrompt(`Build a safety ring of ${target}`, { speaker: 'beacon' });
+  useSpokenPrompt(`Build a safety ring of ${target}`, { speaker: 'bea' });
 
   /* ---- geometry ---- */
   const geo = useMemo(() => {
@@ -139,8 +139,8 @@ export function BuildBarrier({ challenge, ageBand, onComplete, onEvent, compact 
     session.correct(equationText(placedValues));
     session.progress(target, target);
     const line = `${placedValues.join(' plus ')} equals ${target}. The ring is closed!`;
-    session.say('beacon', line);
-    speech.say(line, { speaker: 'beacon' });
+    session.say('bea', line);
+    speech.say(line, { speaker: 'bea' });
     timers.current.push(
       setTimeout(() => {
         sfx.play('success');
@@ -178,7 +178,7 @@ export function BuildBarrier({ challenge, ageBand, onComplete, onEvent, compact 
       sfx.play('drop');
       haptics.drop();
       const next = [...placedValues, value];
-      if (ageBand !== 'C') speech.say(String(sumOf(next)), { speaker: 'beacon' });
+      if (ageBand !== 'C') speech.say(String(sumOf(next)), { speaker: 'bea' });
       if (sumOf(next) === target) timers.current.push(setTimeout(finish, 420));
     },
     [ageBand, filled, finish, hints, pieces, placedValues, session, shake, state.phase, state.placed, suggestion, target],
@@ -222,7 +222,7 @@ export function BuildBarrier({ challenge, ageBand, onComplete, onEvent, compact 
       hint={hints.bubble}
       onDismissHint={hints.dismiss}
       backdrop={<Stage variant="park" groundHeight={150} />}
-      overlay={<SceneCrew side="right" size={58} showPepper mood={state.phase === 'done' ? 'cheer' : state.placed.length > 0 ? 'happy' : 'idle'} />}
+      overlay={<SceneCrew side="right" size={58} mood={state.phase === 'done' ? 'cheer' : state.placed.length > 0 ? 'happy' : 'idle'} />}
       footer={
         <View style={styles.mathRow}>
           <Text variant="h3" color={filled === target ? palette.leafGreenDark : palette.navy}>

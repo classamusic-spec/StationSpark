@@ -29,9 +29,16 @@ import { RecipeCardFrame } from '../../parts/RecipeCardFrame';
 import { CookCTA, PotArt } from '../../parts/SceneBits';
 import { pluralEn } from '../../spanish';
 import { scaleExplanation, scaleRatioText } from '../../shareMath';
-import { kitchenFeel, useBeaconHint } from '../useKitchenGame';
+import { kitchenFeel, useCaptainHint } from '../useKitchenGame';
 
-const CREW = ['rookie', 'bea', 'beacon', 'pepper'] as const;
+/* Who shows up to eat. Two leads and two neighbours — four, because the
+ * fraction being shared is a fraction of four. */
+const CREW = [
+  { id: 'rookie' },
+  { id: 'bea' },
+  { id: 'npc', npc: 'rosa' },
+  { id: 'npc', npc: 'gino' },
+] as const;
 
 export function RecipeScale({
   challenge,
@@ -40,7 +47,7 @@ export function RecipeScale({
   compact,
 }: MiniGameProps<'recipe-scale'>) {
   const session = useMiniGameSession('recipe-scale', onComplete, onEvent);
-  const beacon = useBeaconHint(session);
+  const assist = useCaptainHint(session);
 
   const [values, setValues] = useState<number[]>(() => challenge.lines.map((l) => l.amount));
   const [bumps, setBumps] = useState<number[]>(() => challenge.lines.map(() => 0));
@@ -85,7 +92,7 @@ export function RecipeScale({
     if (cooking) return;
     if (allCorrect) {
       session.correct('scaled');
-      beacon.cheer('Perfect amounts for everybody!');
+      assist.cheer('Perfect amounts for everybody!');
       setTimeout(finish, 420);
       return;
     }
@@ -95,7 +102,7 @@ export function RecipeScale({
       b.map((v, i) => ((values[i] ?? 0) !== (challenge.lines[i]?.scaled ?? 0) ? v + 1 : v)),
     );
     if (line) {
-      beacon.nudge(
+      assist.nudge(
         scaleExplanation(
           pluralEn(line.item.en, line.amount),
           line.amount,
@@ -108,7 +115,7 @@ export function RecipeScale({
     }
   }, [
     allCorrect,
-    beacon,
+    assist,
     challenge.eating,
     challenge.lines,
     challenge.serves,
@@ -119,14 +126,14 @@ export function RecipeScale({
   ]);
 
   const showMe = useCallback(() => {
-    beacon.askedForHelp();
+    assist.askedForHelp();
     const idx = challenge.lines.findIndex((l, i) => (values[i] ?? 0) !== l.scaled);
     const line = challenge.lines[idx];
     if (!line) return;
     setValues((v) => v.map((n, i) => (i === idx ? line.scaled : n)));
     sfx.play('pop');
     haptics.drop();
-  }, [beacon, challenge.lines, values]);
+  }, [assist, challenge.lines, values]);
 
   return (
     <View style={styles.root}>
@@ -176,12 +183,12 @@ export function RecipeScale({
 
       <View style={styles.potRow}>
         <PotArt size={140} bubbling={cooking} />
-        <SceneCrew side="right" size={52} showPepper npc="rosa" mood={cooking ? 'cheer' : allCorrect ? 'happy' : 'idle'} />
+        <SceneCrew side="right" size={52} npc="rosa" mood={cooking ? 'cheer' : allCorrect ? 'happy' : 'idle'} />
       </View>
 
       <Tray tone="cream">
         <View style={styles.trayRow}>
-          {beacon.offerHelp && !cooking ? (
+          {assist.offerHelp && !cooking ? (
             <Button label="Show me" tone="yellow" size="sm" onPress={showMe} sound="tap-soft" />
           ) : null}
         </View>
@@ -194,10 +201,10 @@ export function RecipeScale({
       </Tray>
 
       <HintBubble
-        text={beacon.text}
-        es={beacon.es}
-        visible={beacon.visible}
-        onDismiss={beacon.dismiss}
+        text={assist.text}
+        es={assist.es}
+        visible={assist.visible}
+        onDismiss={assist.dismiss}
       />
     </View>
   );
@@ -224,7 +231,7 @@ function CrewRow({
             style={extraFrom !== undefined && i >= extraFrom ? styles.crewExtra : undefined}
           >
             {/* critique #23 — full rigs, not heads in circles */}
-            <CrewFigure id={CREW[i % CREW.length] ?? 'rookie'} size={40} bobPhase={i * 0.4} />
+            <CrewFigure {...(CREW[i % CREW.length] ?? CREW[0])} size={40} bobPhase={i * 0.4} />
           </Animated.View>
         ))}
       </View>

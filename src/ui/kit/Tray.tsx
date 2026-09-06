@@ -15,7 +15,7 @@ import { setTrayAnchor } from './playArea';
  * Bottom tray that holds draggable items / answer tiles / action buttons.
  * White with big rounded top corners; safe-area aware.
  *
- * It reports its measured height so Beacon's hint bubble can float *above* the
+ * It reports its measured height so the hint bubble can float *above* the
  * tray instead of on top of the answer tiles (see `playArea.ts`).
  */
 export function Tray({

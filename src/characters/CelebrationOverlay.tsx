@@ -1,4 +1,4 @@
-import React, { Suspense, lazy, useEffect, useRef, useState } from 'react';
+import React, { Suspense, lazy, useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import Animated, { FadeIn, FadeInDown, useAnimatedStyle, useSharedValue, withDelay, withSequence, withSpring, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -15,8 +15,7 @@ import { BadgeArt } from '@/ui/kit/BadgeArt';
 import { ConfettiBurst } from '@/ui/kit/ConfettiBurst';
 import { Counter } from '@/ui/kit/Counter';
 import { GlyphIcon } from '@/ui/kit/GlyphIcon';
-import { Beacon, type BeaconHandle } from './Beacon';
-import { Pepper } from './Pepper';
+import { CaptainBea } from './CaptainBea';
 import { Rookie } from './Rookie';
 import type { CelebrationOverlayProps } from './types';
 
@@ -121,7 +120,6 @@ export function CelebrationOverlay({
 }: CelebrationOverlayProps) {
   const insets = useSafeAreaInsets();
   const reduced = useReducedMotion();
-  const beacon = useRef<BeaconHandle>(null);
   const [play, setPlay] = useState(0);
   const titleScale = useSharedValue(0.4);
 
@@ -132,7 +130,6 @@ export function CelebrationOverlay({
     sfx.play('fanfare');
     haptics.celebrate();
     const confettiTimer = setTimeout(() => sfx.play('confetti'), 340);
-    const spinTimer = setTimeout(() => beacon.current?.spin(), 500);
 
     titleScale.value = 0.4;
     titleScale.value = reduced
@@ -142,7 +139,6 @@ export function CelebrationOverlay({
     return () => {
       cancelAnimationFrame(burstFrame);
       clearTimeout(confettiTimer);
-      clearTimeout(spinTimer);
     };
   }, [reduced, titleScale, visible]);
 
@@ -230,8 +226,7 @@ export function CelebrationOverlay({
       {/* the crew, cheering along the bottom */}
       <View pointerEvents="none" style={[styles.crew, { bottom: insets.bottom }]}>
         <Rookie size={CREW_HEIGHT} pose="cheer" emotion="excited" jumping bobPhase={0} />
-        <Beacon ref={beacon} size={CREW_HEIGHT * 0.86} emotion="excited" bobPhase={1.1} />
-        <Pepper size={CREW_HEIGHT * 0.78} emotion="excited" wag jumping bobPhase={2.2} />
+        <CaptainBea size={CREW_HEIGHT * 0.94} pose="cheer" emotion="proud" bobPhase={0.45} />
       </View>
     </Animated.View>
   );

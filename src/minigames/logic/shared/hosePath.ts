@@ -130,7 +130,7 @@ export function placementFor(a: Heading, b: Heading): PlacedPiece | null {
 
 /**
  * The piece each interior cell of `path` needs, keyed by "row,col".
- * Powers Beacon's "put a corner here" hint.
+ * Powers the "put a corner here" hint.
  */
 export function solutionPlacements(path: readonly GridPos[]): Map<string, PlacedPiece> {
   const out = new Map<string, PlacedPiece>();

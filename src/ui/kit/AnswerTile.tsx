@@ -10,7 +10,7 @@ export type AnswerState = 'idle' | 'correct' | 'wrong' | 'disabled' | 'highlight
 /**
  * Big tappable multiple-choice tile ("18", "Maple St", a word, an icon).
  * Feedback is built in: set state='correct' → pop, state='wrong' → wobble.
- * `highlight` = Beacon's auto-hint glow (gold rim) after repeated misses.
+ * `highlight` = the auto-hint glow (gold rim) after repeated misses.
  */
 export function AnswerTile({
   label,

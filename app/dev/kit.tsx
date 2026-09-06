@@ -47,14 +47,12 @@ import {
   type ButtonTone,
 } from '@/ui';
 import {
-  Beacon,
   CaptainBea,
   CelebrationOverlay,
   CharacterPortrait,
   DialogueOverlay,
   GameCrew,
   Npc,
-  Pepper,
   Rookie,
   allEmotions,
   npcNames,
@@ -111,13 +109,13 @@ const SIZES: ButtonSize[] = ['sm', 'md', 'lg', 'xl'];
 const SUBJECTS: SubjectId[] = Object.keys(subjectColors) as SubjectId[];
 const SKINS: SkinTone[] = ['peach', 'tan', 'brown', 'deep'];
 const HELMETS: HelmetTone[] = ['red', 'yellow', 'blue', 'pink'];
-const PORTRAIT_IDS: CharacterId[] = ['rookie', 'beacon', 'bea', 'pepper', 'npc'];
+const PORTRAIT_IDS: CharacterId[] = ['rookie', 'bea', 'npc'];
 
 const DEMO_LINES: DialogueLine[] = [
   { speaker: 'bea', text: 'Rookie! The bakery bell is stuck and Rosa needs a hand.', emotion: 'calm' },
-  { speaker: 'beacon', text: 'I counted six loaves in the window!', es: '¡Conté seis panes en la ventana!', emotion: 'excited' },
+  { speaker: 'bea', text: 'I counted six loaves in the window!', es: '¡Conté seis panes en la ventana!', emotion: 'excited' },
   { speaker: 'npc', npcName: 'Rosa', text: 'Thank you for coming so fast!', es: '¡Gracias por venir tan rápido!', emotion: 'happy' },
-  { speaker: 'pepper', text: 'Woof! (Pepper found the ladder.)', emotion: 'excited' },
+  { speaker: 'rookie', text: 'Found the ladder! It was behind the crates.', emotion: 'excited' },
 ];
 
 /**
@@ -201,35 +199,13 @@ export default function KitGallery() {
           </View>
         </Section>
 
-        <Section title="Beacon" subtitle="hover · visor face · scanning sweep">
-          <View style={styles.row}>
-            {allEmotions.map((e, i) => (
-              <Cell key={e} label={e} width={96}>
-                <Beacon size={130} emotion={e} bobPhase={i * 0.4} />
-              </Cell>
-            ))}
-            <Cell label="scanning" width={96}>
-              <Beacon size={130} emotion="think" scanning />
-            </Cell>
-            <Cell label="spinning" width={96}>
-              <Beacon size={130} emotion="excited" spinning />
-            </Cell>
-          </View>
-        </Section>
-
-        <Section title="Pepper" subtitle="tail wag · happy jump">
+        <Section title="Captain Bea" subtitle="every mood — see /dev/cast for poses">
           <View style={styles.row}>
             {allEmotions.map((e, i) => (
               <Cell key={e} label={e} width={116}>
-                <Pepper size={116} emotion={e} bobPhase={i * 0.4} />
+                <CaptainBea size={130} emotion={e} bobPhase={i * 0.3} />
               </Cell>
             ))}
-            <Cell label="wag" width={116}>
-              <Pepper size={116} emotion="happy" wag />
-            </Cell>
-            <Cell label="jumping" width={116}>
-              <Pepper size={116} emotion="excited" wag jumping />
-            </Cell>
           </View>
         </Section>
 
@@ -272,7 +248,7 @@ export default function KitGallery() {
           <View style={styles.row}>
             {CREW_MOODS.map((m) => (
               <View key={m} style={styles.crewCell}>
-                <GameCrew mood={m} showPepper npc={m === 'cheer' ? 'rosa' : undefined} size={72} style={styles.crewPos} />
+                <GameCrew mood={m} npc={m === 'cheer' ? 'rosa' : undefined} size={72} style={styles.crewPos} />
                 <Label>{m}</Label>
               </View>
             ))}
@@ -544,7 +520,7 @@ export default function KitGallery() {
             <AnswerTile label="7" state="disabled" index={4} />
           </View>
           <RadioCard es="¡Hola! Necesito ayuda." en="Hello! I need help." from="Rosa" />
-          <RadioCard es="El agua está aquí." en="The water is here." support="min" from="Beacon" />
+          <RadioCard es="El agua está aquí." en="The water is here." support="min" from="Captain Bea" />
         </Section>
 
         <Section title="Effects &amp; overlays" subtitle="tap to fire">

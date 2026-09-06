@@ -26,7 +26,7 @@ export interface RadioCardProps {
    * min  → Spanish only, English behind a tap-to-reveal chip
    */
   support?: SpanishSupport;
-  /** speaker label ("Beacon", "Rosa") shown on the radio body */
+  /** speaker label ("Captain Bea", "Rosa") shown on the radio body */
   from?: string;
   /** override what the speaker button does */
   onSpeak?: () => void;
@@ -50,7 +50,7 @@ export function RadioCard({ es, en, support = 'full', from, onSpeak, compact = f
     haptics.tap();
     if (onSpeak) return onSpeak();
     if (en) speech.sayWord({ en, es }, 'es');
-    else speech.say(es, { speaker: 'beacon', lang: 'es' });
+    else speech.say(es, { speaker: 'bea', lang: 'es' });
   }, [en, es, onSpeak]);
 
   const showEnglish = en && (support === 'full' || support === 'some' || revealed);

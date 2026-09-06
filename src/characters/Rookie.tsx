@@ -1,12 +1,11 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import type { StyleProp, ViewStyle } from 'react-native';
-import Animated, { cancelAnimation, useAnimatedStyle, useSharedValue, withRepeat, withSequence, withSpring, withTiming } from 'react-native-reanimated';
 import type { Emotion } from '@/content/types';
-import { palette, springs, timings } from '@/theme';
-import { useReducedMotion } from '@/hooks';
-import { Person, type PersonPose } from './rig/Person';
+import { CharacterRig } from './art/CharacterRig';
+import { rookieRig } from './art/rigs';
+import { rookieTones, type AvatarChoice } from './art/tones';
+import { useCharacter, type CharacterPose } from './machine/useCharacter';
 import type { HairTone, HelmetTone, SkinTone } from './rig/palettes';
-import { helmetTones } from './rig/palettes';
 
 /** Matches `Avatar` in @/state/store — kept structural so characters never import state. */
 export interface RookieAvatar {
@@ -19,67 +18,62 @@ export interface RookieProps {
   /** total height in px */
   size?: number;
   emotion?: Emotion;
-  pose?: PersonPose;
-  /** idle bob / blink / wave (default true) */
+  pose?: CharacterPose;
+  /** idle bob / blink / gestures (default true) */
   animate?: boolean;
+  /** true while one of their lines is being read out */
+  speaking?: boolean;
   avatar?: RookieAvatar;
   /** loop a happy jump (celebrations) */
   jumping?: boolean;
   bobPhase?: number;
+  /** one flat <Svg>, no motion — for tiny thumbnails and crowds */
+  flat?: boolean;
   style?: StyleProp<ViewStyle>;
   testID?: string;
 }
 
 /**
- * Rookie — the child firefighter the player *is*.
- * Red helmet with a gold flame shield, navy turnout jacket with two yellow
- * reflective stripes, red collar and a little flame badge on the chest.
+ * Rookie — the child firefighter the player *is*, drawn from
+ * `SVG ART/FIREFIGHTER.svg`.
+ *
+ * Red helmet with a gold flame shield, navy turnout coat with cream-edged
+ * yellow reflective bands and a little flame badge on the chest. Both sleeves
+ * are authored as their own shapes sharing the coat's shoulder vertex, so the
+ * arms really swing — a wave never opens a gap at the joint.
  */
-export function Rookie({ size = 170, emotion = 'happy', pose = 'wave', animate = true, avatar, jumping = false, bobPhase = 0, style, testID }: RookieProps) {
-  const reduced = useReducedMotion();
-  const jump = useSharedValue(0);
-
-  useEffect(() => {
-    if (!jumping || reduced || !animate) {
-      cancelAnimation(jump);
-      jump.value = withTiming(0, timings.fast);
-      return;
-    }
-    jump.value = withRepeat(withSequence(withSpring(-1, springs.bounce), withSpring(0, springs.pop), withTiming(0, { duration: 240 })), -1, false);
-    return () => cancelAnimation(jump);
-  }, [animate, jump, jumping, reduced]);
-
-  const jumpStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: jump.value * size * 0.09 }, { scaleY: 1 + jump.value * -0.03 }],
-  }));
-
+export function Rookie({
+  size = 170,
+  emotion = 'happy',
+  pose = 'wave',
+  animate = true,
+  speaking = false,
+  avatar,
+  jumping = false,
+  bobPhase = 0,
+  flat = false,
+  style,
+  testID,
+}: RookieProps) {
+  const { act, mood } = useCharacter({
+    pose: jumping ? 'cheer' : pose,
+    emotion,
+    speaking,
+    holdCheer: jumping,
+    animate,
+  });
   return (
-    <Animated.View testID={testID} style={[jumpStyle, style]}>
-      <Person
-        size={size}
-        emotion={emotion}
-        pose={pose}
-        animate={animate}
-        bobPhase={bobPhase}
-        skin={avatar?.skin ?? 'peach'}
-        hair={avatar?.hair ?? 'dark'}
-        hairStyle={avatar?.hair === 'black-curly' ? 'curly' : 'fringe'}
-        headwear="fire-helmet"
-        headwearColor={helmetTones[avatar?.helmet ?? 'red'].base}
-        outfit={{
-          /*
-           * Three separated values, darkest at the ground: jacket → trousers →
-           * boots. Without the step the whole rig reads as one navy blob at
-           * thumbnail size (art critique item #22).
-           */
-          top: '#26315F',
-          collar: palette.engineRed,
-          pants: '#414E8C',
-          shoes: '#171E3E',
-          stripes: palette.safetyYellow,
-          emblem: 'flame',
-        }}
-      />
-    </Animated.View>
+    <CharacterRig
+      spec={rookieRig}
+      size={size}
+      act={act}
+      mood={mood}
+      animate={animate}
+      tones={rookieTones(avatar as AvatarChoice | undefined)}
+      bobPhase={bobPhase}
+      flat={flat}
+      style={style}
+      testID={testID}
+    />
   );
 }

@@ -15,7 +15,7 @@ import { Draggable } from '../shared/Draggable';
 import { GameFrame } from '../shared/GameFrame';
 import { SlotZone } from '../shared/SlotZone';
 import { useGameLayout } from '../shared/layout';
-import { useBeaconLine } from '../shared/speak';
+import { useCaptainLine } from '../shared/speak';
 import { useHintLadder } from '../shared/useHintLadder';
 import { WaterBurst } from '../shared/art/Glyphs';
 import { TruckSide } from '../shared/art/Props';
@@ -64,7 +64,7 @@ export function HydrantMatch({ challenge, ageBand, onComplete, onEvent, compact 
 
   const equation = useMemo(() => parseEquation(challenge.label), [challenge.label]);
   const call = `Connect to hydrant ${spoken(challenge.label)}`;
-  useBeaconLine(call, session.say);
+  useCaptainLine(call, session.say);
 
   const onDrop = useCallback(
     (slotId: string | null) => {
@@ -116,7 +116,7 @@ export function HydrantMatch({ challenge, ageBand, onComplete, onEvent, compact 
       subtitle={ageBand === 'A' ? undefined : 'Drag the hose to the matching hydrant.'}
       compact={compact}
       backdrop={<Stage variant="street" groundHeight={168} />}
-      overlay={<SceneCrew side="right" size={54} showPepper mood={state.phase === 'connected' ? 'cheer' : 'idle'} />}
+      overlay={<SceneCrew side="right" size={54} mood={state.phase === 'connected' ? 'cheer' : 'idle'} />}
       hint={{ text: hintText, visible: hintLadder.showBubble, onDismiss: hintLadder.dismiss }}
       tray={
         <View style={styles.tray}>
@@ -142,7 +142,7 @@ export function HydrantMatch({ challenge, ageBand, onComplete, onEvent, compact 
               icon={<SpeakerIcon size={20} color={palette.white} />}
               onPress={() => {
                 sfx.play('radio');
-                speech.say(call, { speaker: 'beacon' });
+                speech.say(call, { speaker: 'bea' });
               }}
             />
             {(ageBand === 'C' || hintLadder.level > 0) && equation ? (

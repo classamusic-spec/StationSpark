@@ -139,7 +139,7 @@ export function combosForTarget(pieces: readonly number[], target: number, limit
 export const fits = (placed: readonly number[], next: number, target: number): boolean => sumOf(placed) + next <= target;
 
 /**
- * The shortest piece that can still be added without overshooting — Beacon's
+ * The shortest piece that can still be added without overshooting — Captain Bea's
  * "try a shorter one" suggestion. Returns null when nothing fits.
  */
 export function bestNextPiece(available: readonly number[], placed: readonly number[], target: number): number | null {

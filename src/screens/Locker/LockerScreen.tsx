@@ -1,7 +1,7 @@
 /**
  * LOCKER — the child's own corner of the station.
  *
- * The room (lockers, the open locker with their gear, the bench with Pepper
+ * The room (lockers, the open locker with their gear, the bench
  * on it) stays put while the gear sheet scrolls underneath, so Rookie is
  * always in view and every swatch tap shows up on the kid straight away.
  */
@@ -14,7 +14,7 @@ import { palette, radii, shadows, spacing, stagger } from '@/theme';
 import { Button, Panel, ScreenFrame, Text, TopBar } from '@/ui';
 import { useGame } from '@/state/store';
 import { Rookie } from '@/characters/Rookie';
-import { Pepper } from '@/characters/Pepper';
+import { CaptainBea } from '@/characters/CaptainBea';
 import { BottomBar, useScaledLayout } from '@/screens/shared';
 import { LockerWall, lockerRoomLayout } from './LockerWall';
 import { AgeBandCards } from './parts/AgeBandCards';
@@ -66,13 +66,13 @@ export function LockerScreen() {
         />
       }
     >
-      {/* the room stage: Rookie in front of the open locker, Pepper on the bench */}
+      {/* the room stage: Rookie in front of the open locker, Captain Bea approving */}
       <View style={[styles.stage, { height: stageH - insets.top }]} pointerEvents="none">
         <View style={[styles.actor, { left: room.rookieX - (rookieSize * ROOKIE_ASPECT) / 2, bottom: 4 }]}>
           <Rookie size={rookieSize} avatar={profile.avatar} pose="wave" emotion="proud" />
         </View>
         <View style={[styles.actor, { left: room.benchX - (pepperSize * PEPPER_ASPECT) / 2 + 4, bottom: stageH - room.benchTop - 3 }]}>
-          <Pepper size={pepperSize} emotion="happy" wag />
+          <CaptainBea size={pepperSize * 1.25} emotion="proud" pose="stand" bobPhase={0.7} />
         </View>
       </View>
 

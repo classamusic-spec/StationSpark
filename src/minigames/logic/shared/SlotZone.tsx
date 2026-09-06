@@ -9,7 +9,7 @@ export interface SlotZoneProps {
   /** only draggables of this group may land here */
   group?: string;
   enabled?: boolean;
-  /** gold hint glow (Beacon's auto-highlight after repeated misses) */
+  /** gold hint glow (the auto-highlight after repeated misses) */
   highlight?: boolean;
   /** grow + tint while a token hovers over it */
   reactive?: boolean;

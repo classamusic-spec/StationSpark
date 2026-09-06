@@ -85,7 +85,7 @@ function GrownUpsSettings() {
       <Animated.View entering={enter(1)}>
         <Paper tab="SETTINGS" title="Sound & motion">
           <Toggle label="Sound effects" hint="Taps, chimes and the station bell" value={settings.sfx} onChange={(v) => setSettings({ sfx: v })} />
-          <Toggle label="Character voices" hint="Captain Bea, Beacon and the neighbours speak" value={settings.voice} onChange={(v) => setSettings({ voice: v })} />
+          <Toggle label="Character voices" hint="Captain Bea, Rookie and the neighbours speak" value={settings.voice} onChange={(v) => setSettings({ voice: v })} />
           <Toggle
             label="Haptics"
             hint={Platform.OS === 'web' ? 'Not available in the browser' : 'A little buzz on every tap'}

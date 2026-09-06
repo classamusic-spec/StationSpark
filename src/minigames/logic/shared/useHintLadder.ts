@@ -3,9 +3,9 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 export type HintLevel = 0 | 1 | 2;
 
 export interface HintLadder {
-  /** 0 = nothing, 1 = Beacon bubble, 2 = bubble + auto-highlight the answer */
+  /** 0 = nothing, 1 = hint bubble, 2 = bubble + auto-highlight the answer */
   level: HintLevel;
-  /** the Beacon bubble is on screen right now */
+  /** the hint bubble is on screen right now */
   showBubble: boolean;
   /** the answer should be visually given away (AnswerTile state 'highlight') */
   highlight: boolean;
@@ -17,7 +17,7 @@ export interface HintLadder {
 }
 
 /**
- * NEVER DEAD-END. After 2 misses Beacon explains; after 3 the answer is
+ * NEVER DEAD-END. After 2 misses Captain Bea explains; after 3 the answer is
  * highlighted so the child can always move on. `onHintShown` fires once per
  * level so the session records the hint exactly once.
  */

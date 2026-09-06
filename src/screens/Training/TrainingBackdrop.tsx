@@ -5,7 +5,7 @@
  * chalk lanes. On the left the practice tower with its slide and a waving
  * flag; on the right the climbing net and the hose-target board; the water
  * barrel and a slalom of cones on the grass; bunting strung across the sky;
- * Pepper keeping an eye on the barrel. One ground plane with a soft lip, a
+ * Captain Bea keeping an eye on the drills. One ground plane with a soft lip, a
  * navy contact ellipse under everything that stands, no outlines, no emoji.
  */
 import React, { memo } from 'react';
@@ -14,7 +14,7 @@ import Animated, { useAnimatedStyle } from 'react-native-reanimated';
 import Svg, { Circle, Ellipse, G, Path, Rect } from 'react-native-svg';
 import { palette } from '@/theme';
 import { usePulse } from '@/hooks';
-import { Pepper } from '@/characters/Pepper';
+import { CaptainBea } from '@/characters/CaptainBea';
 import { Birds, Clouds, Flag, SkyHaze, TownSkyline } from '@/world';
 import { HIGHLIGHT, SHADE, SHADOW_FILL, SHADOW_OPACITY, shadowRy } from '@/world/tone';
 
@@ -253,9 +253,9 @@ export function TrainingBackdrop() {
       <View style={[styles.abs, { left: L.tower.x + 29, top: L.tower.peakY - flagH + 4 }]}>
         <Flag width={flagW} poleHeight={26} />
       </View>
-      {/* Pepper, minding the yard */}
+      {/* Captain Bea, minding the yard */}
       <View style={[styles.abs, { left: L.pepper.x, top: L.gy - 62 }]}>
-        <Pepper size={66} emotion="happy" wag bobPhase={1.7} />
+        <CaptainBea size={84} emotion="calm" pose="stand" bobPhase={0.8} />
       </View>
     </View>
   );

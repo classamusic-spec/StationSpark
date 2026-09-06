@@ -11,7 +11,7 @@ import { useGame } from '@/state/store';
 import { selectTruck } from '@/state/selectors';
 import type { TruckStyle } from '@/state/store';
 import { TruckScene3D } from '@/three';
-import { Pepper, type PepperHandle } from '@/characters/Pepper';
+import { CaptainBea } from '@/characters/CaptainBea';
 import { BottomBar, Swatch, useScaledLayout } from '@/screens/shared';
 import { GarageBay } from './GarageBay';
 import { PickerRow } from './PickerRow';
@@ -70,7 +70,6 @@ export function GarageScreen() {
   const [shine, setShine] = useState(0);
   const [honks, setHonks] = useState(0);
   const lastDab = useRef<{ x: number; y: number } | null>(null);
-  const pepper = useRef<PepperHandle>(null);
 
   const spongeX = useSharedValue(0);
   const spongeY = useSharedValue(0);
@@ -85,7 +84,6 @@ export function GarageScreen() {
       sfx.play('horn', { rate: hornRate[style ?? truck.horn] });
       haptics.thud();
       setHonks((n) => n + 1);
-      pepper.current?.jump();
     },
     [truck.horn],
   );
@@ -181,9 +179,9 @@ export function GarageScreen() {
           <View style={{ width: stageWidth, height: stageHeight }}>
             <TruckScene3D style={truck} height={stageHeight} honk={honks} shine={shine} testID="garage-truck-3d" />
 
-            {/* Pepper stands beside the engine, watching the work */}
+            {/* Captain Bea stands beside the engine, checking the work */}
             <View style={[styles.abs, styles.pepper]} pointerEvents="none">
-              <Pepper ref={pepper} size={Math.max(56, stageHeight * 0.28)} emotion="happy" wag />
+              <CaptainBea size={Math.max(72, stageHeight * 0.34)} emotion="proud" pose="stand" bobPhase={0.6} />
             </View>
 
             {/* the sponge takes the stage while the child is washing */}

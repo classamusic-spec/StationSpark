@@ -6,7 +6,7 @@
  *
  *  - Use `useMiniGameSession()` to track attempts/hints/time and build the result.
  *  - Report `onEvent('correct'|'incorrect'|'hint')` for audio/haptics/character reactions.
- *  - Never use red to mean "wrong". Wrong = gentle wobble + soft sound + Beacon hint.
+ *  - Never use red to mean "wrong". Wrong = gentle wobble + soft sound + a hint from Captain Bea.
  *  - Layout: the game owns the full area it is given (usually the screen body
  *    under a `MissionHeader`). It should look great on phones and tablets.
  */
@@ -33,7 +33,7 @@ export type MiniGameEvent =
   | { type: 'incorrect'; detail?: string }
   | { type: 'hint' }
   | { type: 'progress'; current: number; total: number }
-  | { type: 'say'; speaker: 'beacon' | 'bea' | 'rookie' | 'pepper' | 'npc'; text: string; es?: string };
+  | { type: 'say'; speaker: 'bea' | 'rookie' | 'npc'; text: string; es?: string };
 
 export interface MiniGameProps<K extends ChallengeKind = ChallengeKind> {
   challenge: ChallengeOf<K>;

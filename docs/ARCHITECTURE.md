@@ -34,7 +34,9 @@ src/
   theme/                 tokens: palette, subjectColors, shadows, gradients, typeScale, spacing, radii, springs, timings, idle
   ui/                    shared primitives: Text, Button, Panel, SubjectPill, TopBar, ScreenFrame, SkyBackground, Logo, icons
                          + (kit) DispatchSlip, RecipeCard, RadioCard, ProgressBar, StarRow, Counter, Modal, Confetti, HintBubble…
-  characters/            SVG rigs + idle animation: Rookie, Beacon, Pepper, CaptainBea, Npc; DialogueOverlay, CelebrationOverlay
+  characters/            the cast. art/ = authored SVG art split into rig parts (generated); machine/ = the
+                         XState behaviour machine; Rookie, CaptainBea, Npc, GameCrew, DialogueOverlay,
+                         CelebrationOverlay. See docs/CHARACTERS.md.
   world/                 Sky layers, Clouds, Hills, Firehouse cutaway, Town map, Buildings, Truck, Hydrant, Flames…
   minigames/
     types.ts             MiniGameProps / MiniGameResult / MiniGameMeta   ← CONTRACT
@@ -69,7 +71,7 @@ Import alias: `@/` → `src/`. Never use relative `../../` across top-level fold
 ## The three contracts (read these files before writing code)
 
 1. **`src/learning/types.ts`** — every mini-game consumes exactly one `Challenge` variant. Generators are pure `(ctx: GeneratorContext) => Challenge`, seeded via `ctx.rng`, and vary by `ctx.ageBand` (`A` 5–6, `B` 7–8, `C` 9–10). If a game genuinely needs an extra field, ADD it (optional) — never rename or remove.
-2. **`src/minigames/types.ts`** — `MiniGameProps<K>`: `{ challenge, ageBand, onComplete(result), onEvent?, compact?, missionContext? }`. Use `useMiniGameSession(kind, onComplete, onEvent)` and call `correct()/incorrect()/hint()/progress()/say()/learnedWord()/complete()`. A child can ALWAYS finish (after 2 mistakes, show a Beacon hint that makes the answer obvious; after 3, auto-highlight the answer).
+2. **`src/minigames/types.ts`** — `MiniGameProps<K>`: `{ challenge, ageBand, onComplete(result), onEvent?, compact?, missionContext? }`. Use `useMiniGameSession(kind, onComplete, onEvent)` and call `correct()/incorrect()/hint()/progress()/say()/learnedWord()/complete()`. A child can ALWAYS finish (after 2 mistakes, show a hint from Captain Bea that makes the answer obvious; after 3, auto-highlight the answer).
 3. **`src/content/types.ts`** — a mission is a list of beats. `MissionRunner` renders `missionMachine` (src/machines/missionMachine.ts) — dialogue beats use `DialogueOverlay`, minigame beats use the registry, travel beats play the map cinematic, `recap` shows the subjects used, then `complete → reward` shows stars/badge/sparks and calls `useGame.getState().completeMission(...)`.
 
 Registering a mini-game: add `{ component, meta }` under your group's index (`tactile/index.ts`, `logic/index.ts`, or `kitchen/games/index.ts`). `meta.yard` decides whether it appears in the Training Yard or the Kitchen.
@@ -91,7 +93,7 @@ Pair sound + haptic on every physical action (drop = `sfx.play('drop')` + `hapti
 
 - **All text through `<Text variant=…>`** (src/ui/Text). Never `react-native`'s Text directly. Kid scale: body ≥ 18, buttons ≥ 19.
 - **Tap targets ≥ 56 px** (`hit.min`), draggables ≥ 64.
-- **Red is never "wrong".** Wrong = gentle wobble (`withSequence` ±6px), `sfx.play('wrong-soft')`, `haptics.nudge()`, Beacon hint. Right = pop/scale, `correct` chime, sparkle, character reaction.
+- **Red is never "wrong".** Wrong = gentle wobble (`withSequence` ±6px), `sfx.play('wrong-soft')`, `haptics.nudge()`, a hint from Captain Bea. Right = pop/scale, `correct` chime, sparkle, character reaction.
 - **Everything idles.** Characters bob/blink; props have a subtle life (flag waves, bell sways, clouds drift). Use `springs`/`timings`/`idle` from `@/theme` — no ad-hoc durations.
 - **Entrances stagger** (`stagger.tile` / `stagger.card`) using Reanimated `entering={FadeInDown.delay(i*60).springify()}`.
 - **Respect `settings.reduceMotion`** for decorative loops (use `useReducedMotion()` from `@/hooks`).
@@ -119,8 +121,11 @@ Routes: `app/index.tsx` (Firehouse), `app/dispatch.tsx`, `app/mission/[id].tsx`,
   silhouette → near ground with a soft lip). Variants: street, yard, park, counter, radio-room, classroom,
   pantry, stall, store-room, tower, sky. `ContactShadow` is the navy ellipse every grounded object gets.
   `src/world/scenes/` holds reusable scene props (PumperTruck, WallPanel, SlotPlaque, CrewFigure).
-- **`src/characters/GameCrew.tsx`** — the resident crew (Beacon, optional Pepper, optional NPC) placed in
-  every game above the Tray; `mood` drives reactions (`idle | happy | think | cheer`). Always pointerEvents none.
+- **`src/characters/GameCrew.tsx`** — the resident lead (`lead="rookie" | "bea"`, optional NPC) placed in
+  every game above the Tray; `mood` drives reactions (`idle | happy | think | cheer`). One figure, never a
+  huddle. Always pointerEvents none.
+- **`src/characters/art/`** — GENERATED from `SVG ART/` by `tools/art/build-characters.mjs`. Never hand-edit:
+  change the SVG and run `npm run art:build`, then `npm run art:verify` to prove the render is unchanged.
 - **`src/world/fx/`** — drawn particle FX (water droplets, steam, sparkles, dust, confetti), reduced-motion aware.
 - **`src/ui/kit/GlyphIcon.tsx`** — the drawn glyph set that replaced emoji (counters, subject pills, beats,
   training tiles, sparks, check). Emoji are banned from the world layer (see docs/ART_CRITIQUE.md rules).

@@ -16,7 +16,7 @@ import { Draggable } from '../shared/Draggable';
 import { GameFrame } from '../shared/GameFrame';
 import { SlotZone } from '../shared/SlotZone';
 import { useGameLayout } from '../shared/layout';
-import { useBeaconLine } from '../shared/speak';
+import { useCaptainLine } from '../shared/speak';
 import { useHintLadder } from '../shared/useHintLadder';
 import { cellIndex, solutionPlacements, traceWater, type PlacedPiece, type Rotation } from '../shared/hosePath';
 import { FlameGlyph, PipeGlyph } from '../shared/art/Glyphs';
@@ -26,7 +26,7 @@ interface State {
   phase: 'building' | 'flowing' | 'done';
   placed: Record<string, PlacedPiece & { from: number }>;
   misses: number;
-  /** idle escalations — they raise Beacon's ladder without scoring a mistake */
+  /** idle escalations — they raise the hint ladder without scoring a mistake */
   nudges: number;
   flow: number;
 }
@@ -106,7 +106,7 @@ export function HosePath({ challenge, ageBand, onComplete, onEvent, compact }: M
   const trayPieces = challenge.pieces.map((piece, i) => ({ piece, index: i, used: usedFrom.has(i) }));
   const remaining = trayPieces.filter((p) => !p.used);
 
-  useBeaconLine('Build the hose line from the hydrant to the flame. Tap a piece to turn it!', session.say);
+  useCaptainLine('Build the hose line from the hydrant to the flame. Tap a piece to turn it!', session.say);
 
   /* solution (for hints) */
   const solution = useMemo(() => {
@@ -180,7 +180,7 @@ export function HosePath({ challenge, ageBand, onComplete, onEvent, compact }: M
   /**
    * NEVER DEAD-END. Nothing in this game is "wrong" — a piece in the wrong cell
    * is just a piece in the wrong cell — so the miss counter barely moves and
-   * Beacon's ladder used to sit at level 0 forever. Escalate on idle instead:
+   * the hint ladder used to sit at level 0 forever. Escalate on idle instead:
    * ~14 s with no change shows the bubble, ~28 s highlights the cell to fix.
    */
   useEffect(() => {
@@ -253,7 +253,7 @@ export function HosePath({ challenge, ageBand, onComplete, onEvent, compact }: M
       backdrop={
         <>
           <Stage variant="yard" groundHeight={150} />
-          <SceneCrew side="left" size={54} showPepper mood={state.phase === 'done' ? 'cheer' : state.phase === 'flowing' ? 'happy' : 'idle'} />
+          <SceneCrew side="left" size={54} mood={state.phase === 'done' ? 'cheer' : state.phase === 'flowing' ? 'happy' : 'idle'} />
         </>
       }
       hint={{ text: hintText, visible: hintLadder.showBubble && state.phase === 'building', onDismiss: hintLadder.dismiss }}

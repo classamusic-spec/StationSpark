@@ -18,7 +18,7 @@ const templates: { es: (p: Phrase) => string; en: (p: Phrase) => string }[] = [
 ];
 
 /**
- * LISTEN & COUNT — Beacon says a number in Spanish, the child puts out that many.
+ * LISTEN & COUNT — Captain Bea says a number in Spanish, the child puts out that many.
  * The Spanish agrees properly: "una manguera", "tres mangueras", "un casco".
  */
 export const generateListenCount: ChallengeGenerator<'listen-count'> = (ctx) => {

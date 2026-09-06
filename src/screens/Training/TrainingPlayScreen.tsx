@@ -112,7 +112,7 @@ export function TrainingPlayScreen({ kind }: { kind: string }) {
         ) : (
           <UnderConstructionCard
             title="That station is being built"
-            note="Beacon could not find this practice station. Let's head back to the yard!"
+            note="Captain Bea could not find this practice station. Let's head back to the yard!"
             ctaLabel="Back to the yard ›"
             onContinue={backToYard}
           />

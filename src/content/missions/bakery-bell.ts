@@ -7,7 +7,7 @@ import {
   generateVocabTap,
   generateWaterTank,
 } from '@/learning/generators';
-import { bea, beacon, inScene, npc, pepper } from './parts';
+import { bea, radio, inScene, npc } from './parts';
 
 const ROSA = 'Rosa';
 
@@ -38,15 +38,14 @@ export const bakeryBell: MissionDef = {
       backdrop: 'station-yard',
       lines: [
         bea("Rosa's bell is ringing. She needs us.", 'excited'),
-        beacon('Beep! Bell Avenue. Bread emergency!'),
-        pepper('Woof! Woof!'),
+        radio('Bell Avenue, and it is the bakery. Go!'),
       ],
     },
     {
       type: 'minigame',
       game: 'dispatch-decoder',
       challenge: (ctx) => dispatchDecoderFor('location', inScene(ctx, 'bakery')),
-      intro: [beacon('Which building is calling? Tap it quick.')],
+      intro: [radio('Which building is calling? Tap it quick.')],
       outro: [bea("The bakery. Let's roll.")],
     },
     {
@@ -54,14 +53,14 @@ export const bakeryBell: MissionDef = {
       game: 'equipment-check',
       challenge: (ctx) => generateEquipmentCheck(ctx),
       intro: [bea('Hoses, bucket, helmet. Check the list.')],
-      outro: [beacon('All packed. Zero forgotten!')],
+      outro: [radio('All packed. Zero forgotten!')],
     },
     {
       type: 'minigame',
       game: 'rescue-route',
       challenge: (ctx) => generateRescueRoute(inScene(ctx, 'bakery')),
-      intro: [beacon('Bell Avenue is closed. Find another way.')],
-      outro: [pepper('Woof!')],
+      intro: [radio('Bell Avenue is closed. Find another way.')],
+      outro: [],
     },
     { type: 'travel', from: 'station', to: 'bakery' },
     {
@@ -70,7 +69,7 @@ export const bakeryBell: MissionDef = {
       location: 'bakery',
       lines: [
         npc(ROSA, '¡Ay! The oven is hot and the bread is waiting.', '¡Ay! El horno está caliente y el pan espera.', 'worried'),
-        beacon('El horno means the oven!', 'El horno.'),
+        radio('El horno means the oven!', 'El horno.'),
         bea('Water first. Then bread.'),
       ],
     },
@@ -79,7 +78,7 @@ export const bakeryBell: MissionDef = {
       game: 'water-tank',
       challenge: (ctx) => generateWaterTank(ctx),
       intro: [bea('Fill the tank up to the line.')],
-      outro: [beacon('Tank ready. Water on!')],
+      outro: [radio('Tank ready. Water on!')],
     },
     {
       type: 'minigame',
@@ -93,13 +92,13 @@ export const bakeryBell: MissionDef = {
       game: 'vocab-tap',
       challenge: (ctx) => generateVocabTap(ctx),
       intro: [npc(ROSA, 'Now, helpers — say the words with me.', 'Ahora, ayudantes: digan las palabras conmigo.', 'happy')],
-      outro: [beacon('New words saved to your locker!')],
+      outro: [radio('New words saved to your locker!')],
     },
     {
       type: 'scene',
       scene: 'rescue-complete',
       location: 'bakery',
-      lines: [beacon('Flames out. Bread rescued!'), pepper()],
+      lines: [radio('Flames out. Bread rescued!')],
     },
     {
       type: 'kitchen',
@@ -113,7 +112,7 @@ export const bakeryBell: MissionDef = {
       type: 'dialogue',
       lines: [
         npc(ROSA, 'Bread for the whole station. ¡Gracias!', 'Pan para todo el cuartel. ¡Gracias!', 'proud'),
-        beacon('Gracias means thank you!', 'Gracias.'),
+        radio('Gracias means thank you!', 'Gracias.'),
         bea('Warm bread beats a warm oven. Roll out!', 'happy'),
       ],
     },

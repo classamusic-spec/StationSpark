@@ -55,12 +55,12 @@ export function VocabTap({ challenge, ageBand, onComplete, onEvent, compact }: M
 
   const speakWord = useCallback(() => {
     sfx.play('robot-beep');
-    if (support === 'min') speech.say(word[promptLang], { speaker: 'beacon', lang: promptLang });
+    if (support === 'min') speech.say(word[promptLang], { speaker: 'bea', lang: promptLang });
     else speech.sayWord({ en: word.en, es: word.es }, promptLang);
   }, [promptLang, support, word]);
 
   useEffect(() => {
-    session.say('beacon', word[promptLang], promptLang === 'es' ? word.en : word.es);
+    session.say('bea', word[promptLang], promptLang === 'es' ? word.en : word.es);
     const t = setTimeout(speakWord, 350);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -79,7 +79,7 @@ export function VocabTap({ challenge, ageBand, onComplete, onEvent, compact }: M
         session.learnedWord(word.es);
         sfx.play('correct');
         haptics.success();
-        setTimeout(() => speech.say(word[other], { speaker: 'beacon', lang: other }), 500);
+        setTimeout(() => speech.say(word[other], { speaker: 'bea', lang: other }), 500);
         if (!done.current) {
           done.current = true;
           setTimeout(() => session.complete(), 1600);
@@ -106,7 +106,7 @@ export function VocabTap({ challenge, ageBand, onComplete, onEvent, compact }: M
   return (
     <GameFrame
       title={promptLang === 'es' ? '¿Cuál es?' : 'Which one is it?'}
-      subtitle={ageBand === 'A' ? undefined : 'Listen to Beacon, then tap the picture.'}
+      subtitle={ageBand === 'A' ? undefined : 'Listen to Captain Bea, then tap the picture.'}
       compact={compact}
       backdrop={
         <>

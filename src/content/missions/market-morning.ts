@@ -9,7 +9,7 @@ import {
   generateVocabTap,
 } from '@/learning/generators';
 import { wordById } from '@/learning/vocabulary';
-import { bea, beacon, inScene, npc, pepper } from './parts';
+import { bea, radio, inScene, npc } from './parts';
 
 const CARMEN = 'Abuela Carmen';
 
@@ -42,15 +42,14 @@ export const marketMorning: MissionDef = {
       backdrop: 'station-yard',
       lines: [
         bea('Market call, crew. Sunrise shift!', 'excited'),
-        beacon('Beep! A fountain that forgot how to stop.'),
-        pepper(),
+        radio('A fountain that forgot how to stop. Market Square.'),
       ],
     },
     {
       type: 'minigame',
       game: 'dispatch-decoder',
       challenge: (ctx) => dispatchDecoderFor('location', inScene(ctx, 'market')),
-      intro: [beacon('Which building is calling? Tap it quick.')],
+      intro: [radio('Which building is calling? Tap it quick.')],
       outro: [bea("The market. Boots on, let's roll.")],
     },
     { type: 'travel', from: 'station', to: 'market' },
@@ -60,7 +59,7 @@ export const marketMorning: MissionDef = {
       location: 'market',
       lines: [
         npc(CARMEN, '¡Buenos días, bomberos! My tomatoes are swimming.', '¡Buenos días, bomberos! Mis tomates están nadando.', 'worried'),
-        beacon('Los tomates means the tomatoes!', 'Los tomates.'),
+        radio('Los tomates means the tomatoes!', 'Los tomates.'),
         bea('Valve first. Then the crates.'),
       ],
     },
@@ -69,7 +68,7 @@ export const marketMorning: MissionDef = {
       game: 'hydrant-match',
       challenge: (ctx) => generateHydrantMatch(ctx),
       intro: [bea('Every valve has a tag. Find the match.')],
-      outro: [beacon('Click! Fountain off. Puddle stopped.')],
+      outro: [radio('Click! Fountain off. Puddle stopped.')],
     },
     {
       type: 'minigame',
@@ -97,7 +96,7 @@ export const marketMorning: MissionDef = {
         spokenEs: true,
       }),
       intro: [npc(CARMEN, 'Rescue my crates. Count them in Spanish!', 'Rescaten mis cajas. ¡Cuéntenlas en español!', 'happy')],
-      outro: [beacon('Tomates, cebollas, limones. All saved!', 'Tomates, cebollas y limones.')],
+      outro: [radio('Tomates, cebollas, limones. All saved!', 'Tomates, cebollas y limones.')],
     },
     {
       type: 'minigame',
@@ -117,7 +116,7 @@ export const marketMorning: MissionDef = {
       type: 'minigame',
       game: 'market-money',
       challenge: (ctx) => ({ ...generateMarketMoney(ctx), item: wordById('tomato') }),
-      intro: [beacon('A customer! Count out the right coins.')],
+      intro: [radio('A customer! Count out the right coins.')],
       outro: [npc(CARMEN, '¡Exacto! You count like a market person.', '¡Exacto! Cuentan como gente del mercado.', 'excited')],
     },
     {
@@ -130,8 +129,8 @@ export const marketMorning: MissionDef = {
         const pool = [wordById('apple'), wordById('bread'), wordById('cheese')];
         return { ...base, word, options: ctx.rng.shuffle([word, ...pool.slice(0, 2)]) };
       },
-      intro: [beacon('Tap the food I say. In Spanish!')],
-      outro: [pepper('Woof!')],
+      intro: [radio('Tap the food I say. In Spanish!')],
+      outro: [],
     },
     {
       type: 'minigame',
@@ -139,13 +138,13 @@ export const marketMorning: MissionDef = {
       bands: ['B', 'C'],
       challenge: (ctx) => generateListenCount(ctx),
       intro: [npc(CARMEN, 'Listen well. ¿Cuántos necesito?', 'Escuchen bien. ¿Cuántos necesito?', 'happy')],
-      outro: [beacon('Heard every number. ¡Excelente!', '¡Excelente!')],
+      outro: [radio('Heard every number. ¡Excelente!', '¡Excelente!')],
     },
     {
       type: 'scene',
       scene: 'rescue-complete',
       location: 'market',
-      lines: [beacon('Valve closed. Crates dry. Market open!'), pepper('Woof woof!')],
+      lines: [radio('Valve closed. Crates dry. Market open!')],
     },
     {
       type: 'kitchen',
@@ -159,7 +158,7 @@ export const marketMorning: MissionDef = {
       type: 'dialogue',
       lines: [
         npc(CARMEN, 'Tomate, cebolla, cilantro, limón. ¡Gracias!', 'Tomate, cebolla, cilantro, limón. ¡Gracias!', 'proud'),
-        beacon('Four words, one salsa. Gracias means thank you!', 'Gracias.'),
+        radio('Four words, one salsa. Gracias means thank you!', 'Gracias.'),
         bea('Best breakfast of the whole week.', 'happy'),
       ],
     },

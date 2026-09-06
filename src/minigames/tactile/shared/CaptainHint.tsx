@@ -15,7 +15,7 @@ import { useReducedMotion } from '@/hooks';
 import type { HintText } from './useHintLadder';
 
 /** Beacon's bubble, wired to the hint ladder. Tap it to dismiss. */
-export function BeaconHint({ hint, onDismiss }: { hint: HintText | null; onDismiss: () => void }) {
+export function CaptainHint({ hint, onDismiss }: { hint: HintText | null; onDismiss: () => void }) {
   return <HintBubble visible={hint !== null} text={hint?.text ?? ''} es={hint?.es} onDismiss={onDismiss} />;
 }
 

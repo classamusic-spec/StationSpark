@@ -115,10 +115,10 @@ export function HintBubble({
           accessibilityLabel={`Hint: ${text}. Tap to close.`}
         >
           <View style={styles.portrait}>
-            <CharacterPortrait id="beacon" emotion="think" size={56} />
+            <CharacterPortrait id="bea" emotion="think" size={56} />
           </View>
           <View style={[styles.bubble, shadows.card]}>
-            {/* the tail, pointing back at Beacon — the one hint motif, everywhere */}
+            {/* the tail, pointing back at whoever is speaking — the one hint motif, everywhere */}
             <View style={styles.tail} pointerEvents="none">
               <Svg width={14} height={18} viewBox="0 0 14 18">
                 <Path d="M 14 3 L 0 10 L 13 18 Z" fill={palette.white} />

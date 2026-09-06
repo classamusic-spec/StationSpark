@@ -15,7 +15,7 @@ import { RadioCard } from '@/ui/kit/RadioCard';
 import { CharacterPortrait } from './CharacterPortrait';
 import type { DialogueOverlayProps } from './types';
 
-const names: Record<string, string> = { rookie: 'You', beacon: 'Beacon', bea: 'Captain Bea', pepper: 'Pepper' };
+const names: Record<string, string> = { rookie: 'You', bea: 'Captain Bea' };
 
 /** Reading pace for a 5–10 year old following along. */
 const CHARS_PER_SECOND = 28;

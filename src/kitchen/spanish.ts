@@ -90,7 +90,7 @@ export function pluralEn(word: string, n: number): string {
   return `${word}s`;
 }
 
-/** "tres fresas" — what Beacon reads off the recipe card. */
+/** "tres fresas" — what Captain Bea reads off the recipe card. */
 export function countPhraseEs(n: number, word: VocabWord): string {
   if (n === 1) return `${esArticleOne(word.es)} ${word.es}`;
   return `${esNumber(n)} ${pluralEs(word.es)}`;

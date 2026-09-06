@@ -107,12 +107,12 @@ export function TrainingYardScreen() {
         {stations.length === 0 ? (
           <Animated.View entering={FadeInDown.delay(120).springify()}>
             <Panel tone="white" radius="panel" style={styles.empty}>
-              <CharacterPortrait id="pepper" emotion="happy" size={96} />
+              <CharacterPortrait id="rookie" emotion="happy" size={96} />
               <Text variant="h1" center>
                 Stations are being built!
               </Text>
               <Text variant="body" color={palette.navySoft} center>
-                Pepper is helping the crew set out the cones. Come back soon — or take a call from Dispatch.
+                The crew is still setting out the cones. Come back soon — or take a call from Dispatch.
               </Text>
               <Button label="Go to Dispatch ›" tone="green" size="lg" block onPress={() => router.push('/dispatch')} />
             </Panel>

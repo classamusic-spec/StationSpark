@@ -10,10 +10,10 @@ import type { useMiniGameSession } from '@/minigames/useMiniGameSession';
 export type Session = ReturnType<typeof useMiniGameSession>;
 
 /* ------------------------------------------------------------------ */
-/* Beacon's hint ladder                                                 */
+/* The hint ladder                                                 */
 /* ------------------------------------------------------------------ */
 
-export interface BeaconHint {
+export interface CaptainHint {
   text: string;
   es?: string;
   visible: boolean;
@@ -22,9 +22,9 @@ export interface BeaconHint {
   /** after two misses we point at the answer, after three we offer to do it */
   highlight: boolean;
   offerHelp: boolean;
-  /** a soft "not quite" — never a failure: wobble + soft sound + Beacon speaks */
+  /** a soft "not quite" — never a failure: wobble + soft sound + Captain Bea speaks */
   nudge: (text: string, es?: string) => void;
-  /** Beacon says something friendly without counting it as a mistake */
+  /** Captain Bea says something friendly without counting it as a mistake */
   cheer: (text: string, es?: string) => void;
   dismiss: () => void;
   /** the child asked for help: counts as a hint, not a mistake */
@@ -33,11 +33,11 @@ export interface BeaconHint {
 
 /**
  * The "a child can ALWAYS finish" rule, in one hook.
- *  - miss 1: gentle wobble + Beacon says why
+ *  - miss 1: gentle wobble + Captain Bea says why
  *  - miss 2: the answer is highlighted
  *  - miss 3: a "Show me" button appears that makes the next correct move
  */
-export function useBeaconHint(session: Session): BeaconHint {
+export function useCaptainHint(session: Session): CaptainHint {
   const [state, setState] = useState<{ text: string; es?: string; visible: boolean; misses: number }>({
     text: '',
     visible: false,
@@ -55,7 +55,7 @@ export function useBeaconHint(session: Session): BeaconHint {
 
   const show = useCallback((text: string, es: string | undefined, countsAsMiss: boolean) => {
     setState((s) => ({ text, es, visible: true, misses: s.misses + (countsAsMiss ? 1 : 0) }));
-    speech.say(text, { speaker: 'beacon' });
+    speech.say(text, { speaker: 'bea' });
     if (timer.current) clearTimeout(timer.current);
     timer.current = setTimeout(() => setState((s) => ({ ...s, visible: false })), 4200);
   }, []);
@@ -63,7 +63,7 @@ export function useBeaconHint(session: Session): BeaconHint {
   const nudge = useCallback(
     (text: string, es?: string) => {
       session.incorrect(text);
-      session.say('beacon', text, es);
+      session.say('bea', text, es);
       sfx.play('wrong-soft');
       haptics.nudge();
       show(text, es, true);
@@ -73,7 +73,7 @@ export function useBeaconHint(session: Session): BeaconHint {
 
   const cheer = useCallback(
     (text: string, es?: string) => {
-      session.say('beacon', text, es);
+      session.say('bea', text, es);
       show(text, es, false);
     },
     [session, show],

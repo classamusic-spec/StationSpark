@@ -6,7 +6,7 @@ import { palette, radii, shadows, spacing } from '@/theme';
 import { Text } from '@/ui/Text';
 import { Button } from '@/ui/Button';
 import { ChevronRightIcon } from '@/ui/icons';
-import { useRise, useSwing } from './motion';
+import { useRise } from './motion';
 
 /* ------------------------------------------------------------------ */
 /* Wooden peel (the board the pizza sits on)                             */
@@ -167,43 +167,6 @@ export function CheckerCloth({ width, height, style }: { width: number; height: 
       <Svg width={width} height={height} viewBox={`0 0 ${width} ${height}`}>
         <Rect x={0} y={0} width={width} height={height} rx={12} fill={palette.white} />
         <G opacity={0.95}>{cells}</G>
-      </Svg>
-    </View>
-  );
-}
-
-/* ------------------------------------------------------------------ */
-/* Pepper begging under the table                                        */
-/* ------------------------------------------------------------------ */
-
-export function BeggingPepper({ size = 84, style }: { size?: number; style?: StyleProp<ViewStyle> }) {
-  const wag = useSwing(9, 620);
-  const tail = useAnimatedStyle(() => ({ transform: [{ rotate: `${wag.value}deg` }] }));
-  return (
-    <View style={[{ width: size, height: size * 0.8 }, style]} pointerEvents="none">
-      <Animated.View style={[{ position: 'absolute', left: size * 0.02, top: size * 0.3 }, tail]}>
-        <Svg width={size * 0.3} height={size * 0.3} viewBox="0 0 24 24">
-          <Path d="M22 20C14 20 6 16 2 8" stroke={palette.white} strokeWidth={7} strokeLinecap="round" fill="none" />
-          <Path d="M22 20C14 20 6 16 2 8" stroke="#E4E8F5" strokeWidth={3} strokeLinecap="round" fill="none" />
-        </Svg>
-      </Animated.View>
-      <Svg width={size} height={size * 0.8} viewBox="0 0 100 80">
-        <Ellipse cx={52} cy={74} rx={30} ry={5} fill="rgba(31,42,90,0.12)" />
-        <Ellipse cx={46} cy={54} rx={26} ry={19} fill={palette.white} />
-        <Circle cx={38} cy={50} r={4} fill={palette.navy} opacity={0.85} />
-        <Circle cx={54} cy={60} r={3} fill={palette.navy} opacity={0.85} />
-        <Circle cx={72} cy={40} r={20} fill={palette.white} />
-        <Circle cx={64} cy={33} r={4} fill={palette.navy} opacity={0.8} />
-        <Ellipse cx={60} cy={44} rx={7} ry={9} fill={palette.white} />
-        <Circle cx={68} cy={38} r={3.2} fill={palette.navy} />
-        <Circle cx={69} cy={37} r={1.1} fill={palette.white} />
-        <Circle cx={80} cy={38} r={3.2} fill={palette.navy} />
-        <Circle cx={81} cy={37} r={1.1} fill={palette.white} />
-        <Ellipse cx={74} cy={47} rx={4} ry={3} fill={palette.navy} />
-        <Path d="M74 50c0 4 4 5 6 3" stroke={palette.engineRedLight} strokeWidth={3} strokeLinecap="round" fill="none" />
-        <Ellipse cx={88} cy={30} rx={7} ry={11} fill={palette.navy} opacity={0.85} />
-        <Rect x={56} y={54} width={30} height={7} rx={3.5} fill={palette.engineRed} />
-        <Circle cx={71} cy={61} r={4} fill={palette.gold} />
       </Svg>
     </View>
   );

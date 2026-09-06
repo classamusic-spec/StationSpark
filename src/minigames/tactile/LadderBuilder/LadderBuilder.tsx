@@ -8,7 +8,7 @@ import { Chip, Text, Tray, TrayRow } from '@/ui';
 import { sfx } from '@/services/audio';
 import { haptics } from '@/services/haptics';
 import { speech } from '@/services/speech';
-import { Pepper, Rookie } from '@/characters';
+import { CaptainBea, Rookie } from '@/characters';
 import { Stage } from '@/world';
 import { SceneCrew } from '@/world/scenes';
 import { Animal, LadderPiece, UnitWall, animalName } from '@/world/props';
@@ -116,13 +116,13 @@ export function LadderBuilder({ challenge, ageBand, onComplete, onEvent, compact
         ? `Build a ladder ${target} tall!`
         : `Reach the ${pet.en} at ${target}!`;
   const subtitle = compact || ageBand === 'A' ? undefined : 'Tap or drag a ladder piece onto the stack.';
-  useSpokenPrompt(prompt, { speaker: 'beacon' });
+  useSpokenPrompt(prompt, { speaker: 'bea' });
 
   /* ---- speak the running total ---- */
   useEffect(() => {
     if (total === 0 || total === spokenTotal.current) return;
     spokenTotal.current = total;
-    if (ageBand !== 'C') speech.say(String(total), { speaker: 'beacon' });
+    if (ageBand !== 'C') speech.say(String(total), { speaker: 'bea' });
   }, [ageBand, total]);
 
   /* ---- geometry ---- */
@@ -185,7 +185,7 @@ export function LadderBuilder({ challenge, ageBand, onComplete, onEvent, compact
       dispatch({ type: 'record', key });
       dispatch({ type: 'climb' });
       climb.value = withTiming(1, { duration: 1100 });
-      speech.say(`${values.join(' plus ')} equals ${target}`, { speaker: 'beacon' });
+      speech.say(`${values.join(' plus ')} equals ${target}`, { speaker: 'bea' });
 
       setTimeout(() => {
         sfx.play(pet.sound);
@@ -202,8 +202,8 @@ export function LadderBuilder({ challenge, ageBand, onComplete, onEvent, compact
           setTimeout(() => session.complete(), 900);
         } else {
           session.progress(state.found.length + 1, needed);
-          session.say('beacon', 'Great! Now find another way to make the same height.');
-          speech.say('Now find another way!', { speaker: 'beacon' });
+          session.say('bea', 'Great! Now find another way to make the same height.');
+          speech.say('Now find another way!', { speaker: 'bea' });
           climb.value = withTiming(0, { duration: 320 });
           dispatch({ type: 'again' });
         }
@@ -346,9 +346,14 @@ export function LadderBuilder({ challenge, ageBand, onComplete, onEvent, compact
             <View style={styles.groundLip} />
           </View>
 
-          {/* Pepper waits at the foot of the ladder */}
+          {/* Captain Bea foots the ladder while the child climbs */}
           <View style={[styles.pepper, { left: Math.max(4, geo.stackX - stage.s(60)), top: geo.groundY - stage.s(62) }]} pointerEvents="none">
-            <Pepper size={stage.s(62)} emotion={state.phase === 'done' ? 'excited' : 'happy'} wag={state.phase !== 'building'} jumping={state.phase === 'done'} />
+            <CaptainBea
+              size={stage.s(78)}
+              emotion={state.phase === 'done' ? 'proud' : 'calm'}
+              pose={state.phase === 'done' ? 'cheer' : 'stand'}
+              bobPhase={0.55}
+            />
           </View>
 
           {/* the ladder stack */}

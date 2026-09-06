@@ -2,7 +2,7 @@ import React, { useCallback, useState } from 'react';
 import { StyleSheet, View, type LayoutChangeEvent } from 'react-native';
 import { PromptBanner } from '@/ui';
 import { spacing } from '@/theme';
-import { BeaconHint } from './BeaconHint';
+import { CaptainHint } from './CaptainHint';
 import type { HintText } from './useHintLadder';
 
 export interface GameShellProps {
@@ -29,7 +29,7 @@ export interface GameShellProps {
 
 /**
  * The common tactile-game frame: prompt banner on top, a measured play area in
- * the middle, an optional tray at the bottom, and Beacon's hint bubble on top
+ * the middle, an optional tray at the bottom, and the hint bubble on top
  * of everything. The host draws the sky and the top chrome above us.
  */
 export function GameShell({
@@ -77,7 +77,7 @@ export function GameShell({
         /* the hint bubble is lifted clear of the tray so it can never cover an
            interactive tile (blocking defect in the art critique) */
         <View style={[styles.hintLane, { bottom: trayH }]} pointerEvents="box-none">
-          <BeaconHint hint={hint ?? null} onDismiss={onDismissHint} />
+          <CaptainHint hint={hint ?? null} onDismiss={onDismissHint} />
         </View>
       ) : null}
     </View>

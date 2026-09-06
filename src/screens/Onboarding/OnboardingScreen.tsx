@@ -63,7 +63,7 @@ export function OnboardingScreen() {
   const speakBeat = useCallback((index: number) => {
     const b = BEATS[index];
     if (!b) return;
-    speech.say(b.title, { speaker: index === 2 ? 'beacon' : 'bea' });
+    speech.say(b.title, { speaker: index === 2 ? 'rookie' : 'bea' });
   }, []);
 
   useEffect(() => {

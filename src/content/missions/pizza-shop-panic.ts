@@ -8,7 +8,7 @@ import {
   generateWaterTank,
   hoseHeroWithFlames,
 } from '@/learning/generators';
-import { bea, beacon, inScene, npc, pepper } from './parts';
+import { bea, radio, inScene, npc } from './parts';
 
 const GINO = 'Gino';
 
@@ -45,8 +45,7 @@ export const pizzaShopPanic: MissionDef = {
       backdrop: 'station-yard',
       lines: [
         bea("Gino's oven flared up. He needs us.", 'excited'),
-        beacon('Beep! Address coming over the radio.'),
-        pepper(),
+        radio('Address coming over the radio. Listen closely.'),
       ],
     },
     {
@@ -59,7 +58,7 @@ export const pizzaShopPanic: MissionDef = {
         correct: '24',
         options: ctx.rng.shuffle(['14', '24', '42']),
       }),
-      intro: [beacon('Careful — two digits. Which number was it?')],
+      intro: [radio('Careful — two digits. Which number was it?')],
       outro: [bea('Twenty-four Market Street. Great listening.', 'proud')],
     },
     {
@@ -71,7 +70,7 @@ export const pizzaShopPanic: MissionDef = {
         decoys: ['axe', 'rope'] as EquipmentId[],
       }),
       intro: [bea('Two hoses. Three cones. One first-aid.')],
-      outro: [beacon('Six things, packed exactly right!')],
+      outro: [radio('Six things, packed exactly right!')],
     },
     {
       type: 'minigame',
@@ -81,7 +80,7 @@ export const pizzaShopPanic: MissionDef = {
         const shortLen = Math.max(2, route.maxCommands - 2);
         return { ...route, compareRoutes: { a: shortLen, b: shortLen + 4, shorter: 'a' as const } };
       },
-      intro: [beacon('Two roads to Market Street. Take the shorter one.')],
+      intro: [radio('Two roads to Market Street. Take the shorter one.')],
       outro: [bea('Shortest route wins. Hold on!')],
     },
     { type: 'travel', from: 'station', to: 'pizza' },
@@ -91,7 +90,7 @@ export const pizzaShopPanic: MissionDef = {
       location: 'pizza',
       lines: [
         npc(GINO, '¡Ayuda! My oven, she is too excited!', '¡Ayuda! ¡Mi horno está muy emocionado!', 'worried'),
-        beacon('Ayuda means help!', 'Ayuda.'),
+        radio('Ayuda means help!', 'Ayuda.'),
         bea('Tank first. Then the windows.'),
       ],
     },
@@ -106,14 +105,14 @@ export const pizzaShopPanic: MissionDef = {
         allowOverflow: false,
       }),
       intro: [bea('Fill the tank to three quarters.')],
-      outro: [beacon('Three quarters exactly. Beautiful.')],
+      outro: [radio('Three quarters exactly. Beautiful.')],
     },
     {
       type: 'minigame',
       game: 'hose-hero',
       challenge: (ctx) => hoseHeroWithFlames(generateHoseHero(inScene(ctx, 'pizza')), 6, { rows: 2, cols: 3 }),
       intro: [bea('Six flames. Sweep left to right.')],
-      outro: [pepper('Woof woof!')],
+      outro: [],
     },
     {
       type: 'scene',
@@ -121,7 +120,7 @@ export const pizzaShopPanic: MissionDef = {
       location: 'pizza',
       lines: [
         npc(GINO, '¡Gracias! ¡Gracias, bomberos!', '¡Gracias! ¡Gracias, bomberos!', 'excited'),
-        beacon('Gracias means thank you. He said it twice!', 'Gracias.'),
+        radio('Gracias means thank you. He said it twice!', 'Gracias.'),
         bea("You're welcome, Gino. Anytime."),
       ],
     },
@@ -137,7 +136,7 @@ export const pizzaShopPanic: MissionDef = {
       type: 'dialogue',
       lines: [
         npc(GINO, 'Eight slices, four friends. ¿Cuántas cada uno?', 'Ocho rebanadas, cuatro amigos. ¿Cuántas cada uno?', 'happy'),
-        beacon('Two each! I did the maths.', 'Dos.'),
+        radio('Two each. You worked that out beautifully.', 'Dos.'),
         bea('Fair shares always taste better.', 'proud'),
       ],
     },

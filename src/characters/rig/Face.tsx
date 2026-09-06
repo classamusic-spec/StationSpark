@@ -18,7 +18,7 @@ export interface FaceProps {
   blushColor: string;
   eyeColor?: string;
   mouthColor?: string;
-  /** hide brows (Beacon, Pepper) */
+  /** hide brows */
   brows?: boolean;
 }
 

@@ -19,7 +19,6 @@ import { DialogueOverlay } from '@/characters/DialogueOverlay';
 import { CelebrationOverlay } from '@/characters/CelebrationOverlay';
 import { RecipeCardFrame, RecipeStepStrip } from './parts/RecipeCardFrame';
 import { DinnerTable } from './parts/DinnerTable';
-import { BeggingPepper } from './parts/SceneBits';
 import { hashString, recipeStars } from './progress';
 
 type RecipeStepDef = RecipeDef['steps'][number] & { bands?: AgeBand[] };
@@ -182,7 +181,6 @@ export function KitchenRunner({ recipeId, onDone, embedded }: KitchenRunnerProps
                   </Text>
                 </RecipeCardFrame>
               </Animated.View>
-              <BeggingPepper size={96} style={styles.tickPepper} />
             </Pressable>
           </Animated.View>
         ) : phase.t === 'table' ? (
@@ -315,6 +313,5 @@ const styles = StyleSheet.create({
   tickWrap: { flex: 1 },
   tickPress: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: spacing.lg },
   tickCard: { width: '100%', maxWidth: 460 },
-  tickPepper: { position: 'absolute', right: spacing.lg, bottom: spacing.xl },
   missing: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.md, padding: spacing.lg },
 });

@@ -12,14 +12,16 @@ import { Text } from '@/ui/Text';
 import { Button } from '@/ui/Button';
 import { VocabIcon } from '@/ui/kit/VocabIcon';
 import { CharacterPortrait } from '@/characters/CharacterPortrait';
-import { BeggingPepper } from './SceneBits';
+import type { NpcVariant } from '@/characters/Npc';
 import { recipeGlyph } from '../food';
 
-const SEATS: { id: CharacterId; name: string }[] = [
+/* Four at the table, and four is load-bearing: the share maths divides by
+ * however many seats there are. Adding or removing one changes the lesson. */
+const SEATS: { id: CharacterId; npc?: NpcVariant; name: string }[] = [
   { id: 'rookie', name: 'You' },
   { id: 'bea', name: 'Captain Bea' },
-  { id: 'beacon', name: 'Beacon' },
-  { id: 'pepper', name: 'Pepper' },
+  { id: 'npc', npc: 'rosa', name: 'Rosa' },
+  { id: 'npc', npc: 'gino', name: 'Gino' },
 ];
 
 /**
@@ -80,7 +82,6 @@ export function DinnerTable({
           ))}
         </View>
 
-        <BeggingPepper size={92} style={styles.pepper} />
       </View>
 
       <Button label="Nice work!" tone="green" size="lg" onPress={onNext} sound="pop" />
@@ -121,5 +122,4 @@ const styles = StyleSheet.create({
   diner: { alignItems: 'center' },
   table: { alignItems: 'center', justifyContent: 'center', marginVertical: -6 },
   dish: { position: 'absolute', top: 4 },
-  pepper: { position: 'absolute', right: -30, bottom: -14 },
 });

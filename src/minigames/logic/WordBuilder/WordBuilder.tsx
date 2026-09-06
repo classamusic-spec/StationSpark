@@ -171,7 +171,7 @@ export function WordBuilder({ challenge, ageBand, onComplete, onEvent, compact }
   }, [lang, word.en, word.es]);
 
   useEffect(() => {
-    session.say('beacon', `Can you spell ${word[lang]}?`, word[other]);
+    session.say('bea', `Can you spell ${word[lang]}?`, word[other]);
     const t = setTimeout(sayWord, 380);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps

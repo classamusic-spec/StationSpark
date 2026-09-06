@@ -81,8 +81,8 @@ export function SprayPattern({ challenge, ageBand, onComplete, onEvent, compact 
   /* say the pattern out loud on mount */
   useEffect(() => {
     const words = shown.map((s) => NAMES[s].en).join(', ');
-    session.say('beacon', `${words}… what comes next?`);
-    const t = setTimeout(() => speech.say(`${words}. What comes next?`, { speaker: 'beacon' }), 350);
+    session.say('bea', `${words}… what comes next?`);
+    const t = setTimeout(() => speech.say(`${words}. What comes next?`, { speaker: 'bea' }), 350);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -146,7 +146,7 @@ export function SprayPattern({ challenge, ageBand, onComplete, onEvent, compact 
       backdrop={
         <>
           <Stage variant="yard" groundHeight={150} />
-          <SceneCrew side="right" size={54} showPepper mood={state.phase === 'solved' ? 'cheer' : state.phase === 'spraying' ? 'happy' : 'idle'} />
+          <SceneCrew side="right" size={54} mood={state.phase === 'solved' ? 'cheer' : state.phase === 'spraying' ? 'happy' : 'idle'} />
         </>
       }
       hint={{ text: hintText, visible: hintLadder.showBubble, onDismiss: hintLadder.dismiss }}

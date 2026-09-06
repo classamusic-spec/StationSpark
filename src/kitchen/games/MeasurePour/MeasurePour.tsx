@@ -22,7 +22,7 @@ import { SceneCrew } from '@/world/scenes';
 import { Stage, at } from '../../parts/Stage';
 import { CookCTA } from '../../parts/SceneBits';
 import { useRise } from '../../parts/motion';
-import { kitchenFeel, useBeaconHint } from '../useKitchenGame';
+import { kitchenFeel, useCaptainHint } from '../useKitchenGame';
 
 const D = { w: 390, h: 400 };
 const CUP = { x: 52, y: 44, w: 172, h: 300 };
@@ -49,7 +49,7 @@ const liquidLook: Record<string, { fill: string; foam: string; tin: string }> = 
 
 export function MeasurePour({ challenge, onComplete, onEvent, compact }: MiniGameProps<'measure-pour'>) {
   const session = useMiniGameSession('measure-pour', onComplete, onEvent);
-  const beacon = useBeaconHint(session);
+  const assist = useCaptainHint(session);
 
   const zero: Fraction = useMemo(() => ({ num: 0, den: 1 }), []);
   const [poured, setPoured] = useState<Fraction>(zero);
@@ -132,23 +132,23 @@ export function MeasurePour({ challenge, onComplete, onEvent, compact }: MiniGam
     if (equals(poured, target)) {
       setDone(true);
       kitchenFeel.finish();
-      beacon.cheer(`${formatFraction(target)} ${unitWord} exactly. Perfect!`);
+      assist.cheer(`${formatFraction(target)} ${unitWord} exactly. Perfect!`);
       session.correct('measure');
       setTimeout(() => session.complete(), 900);
     } else if (cmp > 0) {
-      beacon.nudge('A bit too much — pour some back.');
+      assist.nudge('A bit too much — pour some back.');
     } else {
-      beacon.nudge(`Almost! Keep pouring up to the ${formatFraction(target)} line.`);
+      assist.nudge(`Almost! Keep pouring up to the ${formatFraction(target)} line.`);
     }
-  }, [beacon, done, poured, session, target, unitWord]);
+  }, [assist, done, poured, session, target, unitWord]);
 
   const showMe = useCallback(() => {
-    beacon.askedForHelp();
+    assist.askedForHelp();
     pourRef.current = target;
     setPoured(target);
     sfx.play('pour');
     haptics.drop();
-  }, [beacon, target]);
+  }, [assist, target]);
 
   /* ---- animated pieces ---- */
   const liquidStyle = useAnimatedStyle(() => ({ height: Math.max(0, level.value) * SPAN }));
@@ -163,7 +163,7 @@ export function MeasurePour({ challenge, onComplete, onEvent, compact }: MiniGam
     <View style={styles.root}>
       {/* a kitchen game belongs on a counter, not on a sky gradient */}
       <SceneStage variant="counter" groundHeight={170} />
-      <SceneCrew side="right" size={50} showPepper mood={done ? 'cheer' : pouring ? 'happy' : 'idle'} />
+      <SceneCrew side="right" size={50} mood={done ? 'cheer' : pouring ? 'happy' : 'idle'} />
       <PromptBanner
         title={`Pour ${formatFraction(target)} ${unitWord}${targetN === 1 ? '' : 's'} of ${challenge.ingredient.en}`}
         subtitle="Press and hold the container to pour."
@@ -310,7 +310,7 @@ export function MeasurePour({ challenge, onComplete, onEvent, compact }: MiniGam
           {pouredN > 0 && !done ? (
             <Button label="Pour back" tone="white" size="sm" onPress={pourBack} sound="tap-soft" />
           ) : null}
-          {beacon.offerHelp && !done ? <Button label="Show me" tone="yellow" size="sm" onPress={showMe} sound="tap-soft" /> : null}
+          {assist.offerHelp && !done ? <Button label="Show me" tone="yellow" size="sm" onPress={showMe} sound="tap-soft" /> : null}
           {pouring ? (
             <Text variant="small" color={palette.waterCyanDark}>
               pouring…
@@ -320,7 +320,7 @@ export function MeasurePour({ challenge, onComplete, onEvent, compact }: MiniGam
         <CookCTA label={done ? 'Measured!' : 'Done'} tone={done ? 'green' : 'red'} onPress={check} disabled={done} />
       </Tray>
 
-      <HintBubble text={beacon.text} es={beacon.es} visible={beacon.visible} onDismiss={beacon.dismiss} />
+      <HintBubble text={assist.text} es={assist.es} visible={assist.visible} onDismiss={assist.dismiss} />
     </View>
   );
 }

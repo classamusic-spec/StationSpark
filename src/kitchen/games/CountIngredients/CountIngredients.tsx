@@ -35,7 +35,7 @@ import { RecipeCardFrame } from '../../parts/RecipeCardFrame';
 import { CookCTA } from '../../parts/SceneBits';
 import { countPhraseEn, countPhraseEs, needsPhraseEn, needsPhraseEs, pluralEs } from '../../spanish';
 import { checkCounts, pantryList } from '../../shareMath';
-import { kitchenFeel, nearestTarget, useBeaconHint, useDragSource } from '../useKitchenGame';
+import { kitchenFeel, nearestTarget, useCaptainHint, useDragSource } from '../useKitchenGame';
 
 const D = { w: 390, h: 400 };
 const BLENDER = { x: 195, y: 116 };
@@ -52,7 +52,7 @@ interface PantryItem {
 
 export function CountIngredients({ challenge, onComplete, onEvent, compact }: MiniGameProps<'count-ingredients'>) {
   const session = useMiniGameSession('count-ingredients', onComplete, onEvent);
-  const beacon = useBeaconHint(session);
+  const assist = useCaptainHint(session);
 
   /**
    * The shelf.
@@ -96,10 +96,10 @@ export function CountIngredients({ challenge, onComplete, onEvent, compact }: Mi
     sfx.play('robot-beep');
     haptics.select();
     if (spanishFirst) {
-      speech.say(needsPhraseEs(challenge.needs), { speaker: 'beacon', lang: 'es' });
-      setTimeout(() => speech.say(needsPhraseEn(challenge.needs), { speaker: 'beacon' }), 1900);
+      speech.say(needsPhraseEs(challenge.needs), { speaker: 'bea', lang: 'es' });
+      setTimeout(() => speech.say(needsPhraseEn(challenge.needs), { speaker: 'bea' }), 1900);
     } else {
-      speech.say(needsPhraseEn(challenge.needs), { speaker: 'beacon' });
+      speech.say(needsPhraseEn(challenge.needs), { speaker: 'bea' });
     }
   }, [challenge.needs, spanishFirst]);
 
@@ -184,21 +184,21 @@ export function CountIngredients({ challenge, onComplete, onEvent, compact }: Mi
     if (result.done) {
       kitchenFeel.good();
       session.correct('counts');
-      beacon.cheer('¡Perfecto! Blender time!');
+      assist.cheer('¡Perfecto! Blender time!');
       setTimeout(finish, 520);
       return;
     }
     if (result.extras.length > 0) {
       const id = result.extras[0] ?? '';
       const word = challenge.extras.find((e) => e.id === id);
-      beacon.nudge(`${word ? word.en : 'That one'} is not in this recipe — pop it back.`, word?.es);
+      assist.nudge(`${word ? word.en : 'That one'} is not in this recipe — pop it back.`, word?.es);
       popBackWrong(result.extras);
       return;
     }
     if (result.over.length > 0) {
       const id = result.over[0] ?? '';
       const need = challenge.needs.find((n) => n.item.id === id);
-      if (need) beacon.nudge(`That's too many — we need ${countPhraseEn(need.count, need.item)}.`, countPhraseEs(need.count, need.item));
+      if (need) assist.nudge(`That's too many — we need ${countPhraseEn(need.count, need.item)}.`, countPhraseEs(need.count, need.item));
       popBackWrong(result.over);
       return;
     }
@@ -206,15 +206,15 @@ export function CountIngredients({ challenge, onComplete, onEvent, compact }: Mi
     const need = challenge.needs.find((n) => n.item.id === id);
     if (need) {
       const have = bowl[id] ?? 0;
-      beacon.nudge(
+      assist.nudge(
         `We still need ${need.count - have} more ${pluralEs(need.item.en)}.`,
         countPhraseEs(need.count, need.item),
       );
     }
-  }, [beacon, blended, bowl, challenge.extras, challenge.needs, finish, needsForCheck, popBackWrong, session]);
+  }, [assist, blended, bowl, challenge.extras, challenge.needs, finish, needsForCheck, popBackWrong, session]);
 
   const showMe = useCallback(() => {
-    beacon.askedForHelp();
+    assist.askedForHelp();
     const result = checkCounts(needsForCheck, bowl);
     if (result.extras.length > 0) {
       popBackWrong(result.extras);
@@ -228,7 +228,7 @@ export function CountIngredients({ challenge, onComplete, onEvent, compact }: Mi
     if (!id) return;
     const item = pantry.find((p) => p.word.id === id && !taken.includes(p.uid));
     if (item) addToBowl(item);
-  }, [addToBowl, beacon, bowl, needsForCheck, pantry, popBackWrong, taken]);
+  }, [addToBowl, assist, bowl, needsForCheck, pantry, popBackWrong, taken]);
 
   const blenderStyle = useAnimatedStyle(() => ({ transform: [{ translateX: shake.value }] }));
   const inBowl = Object.entries(bowl).filter(([, n]) => n > 0);
@@ -237,7 +237,7 @@ export function CountIngredients({ challenge, onComplete, onEvent, compact }: Mi
     <View style={styles.root}>
       {/* a pantry, not a sky: shelves, jars, sacks and crates behind the play */}
       <SceneStage variant="pantry" groundHeight={160} />
-      <SceneCrew side="right" size={50} showPepper npc="rosa" mood={blended ? 'cheer' : Object.keys(bowl).length > 0 ? 'happy' : 'idle'} />
+      <SceneCrew side="right" size={50} npc="rosa" mood={blended ? 'cheer' : Object.keys(bowl).length > 0 ? 'happy' : 'idle'} />
       <PromptBanner title="Fill the blender!" subtitle="Drag what the recipe asks for — no more, no less." compact={compact} />
 
       <View style={styles.listWrap}>
@@ -310,7 +310,7 @@ export function CountIngredients({ challenge, onComplete, onEvent, compact }: Mi
                     const p = { x: item.x + ITEM / 2 + dx, y: item.y + ITEM / 2 + dy };
                     const hit = nearestTarget(p, [BLENDER], 96);
                     if (hit < 0) {
-                      beacon.cheer('Drop it into the blender!');
+                      assist.cheer('Drop it into the blender!');
                       return;
                     }
                     addToBowl(item);
@@ -331,7 +331,7 @@ export function CountIngredients({ challenge, onComplete, onEvent, compact }: Mi
 
       <Tray tone="cream">
         <View style={styles.trayRow}>
-          {beacon.offerHelp && !blended ? <Button label="Show me" tone="yellow" size="sm" onPress={showMe} sound="tap-soft" /> : null}
+          {assist.offerHelp && !blended ? <Button label="Show me" tone="yellow" size="sm" onPress={showMe} sound="tap-soft" /> : null}
           {taken.length > 0 && !blended ? (
             <Text variant="small" color={palette.navySoft}>
               {taken.length} in the blender
@@ -341,7 +341,7 @@ export function CountIngredients({ challenge, onComplete, onEvent, compact }: Mi
         <CookCTA label={blended ? 'Delicious!' : 'Blend it!'} tone={blended ? 'green' : 'red'} onPress={check} disabled={blended} />
       </Tray>
 
-      <HintBubble text={beacon.text} es={beacon.es} visible={beacon.visible} onDismiss={beacon.dismiss} />
+      <HintBubble text={assist.text} es={assist.es} visible={assist.visible} onDismiss={assist.dismiss} />
     </View>
   );
 }

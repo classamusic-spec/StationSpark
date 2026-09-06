@@ -9,7 +9,7 @@
 import React, { memo } from 'react';
 import type { StyleProp, ViewStyle } from 'react-native';
 import type { CharacterId, Emotion } from '@/content/types';
-import { Beacon, CaptainBea, Npc, Pepper, Rookie, type NpcVariant } from '@/characters';
+import { CaptainBea, Npc, Rookie, type NpcVariant } from '@/characters';
 
 export interface CrewFigureProps {
   id: CharacterId;
@@ -34,11 +34,6 @@ export const CrewFigure = memo(function CrewFigure({
   style,
 }: CrewFigureProps) {
   switch (id) {
-    case 'beacon':
-      // Beacon hovers, so his rig reads best a little smaller than the humans
-      return <Beacon size={size * 0.78} emotion={emotion} spinning={jumping} style={style} />;
-    case 'pepper':
-      return <Pepper size={size * 0.72} emotion={emotion} wag jumping={jumping} bobPhase={bobPhase} style={style} />;
     case 'bea':
       return <CaptainBea size={size} emotion={emotion} pose={jumping ? 'cheer' : 'stand'} bobPhase={bobPhase} style={style} />;
     case 'npc':

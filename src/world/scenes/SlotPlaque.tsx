@@ -17,7 +17,7 @@ export interface SlotPlaqueProps {
   index: number;
   width: number;
   height: number;
-  /** Beacon is pointing at this one */
+  /** the hint is pointing at this one */
   highlight?: boolean;
 }
 

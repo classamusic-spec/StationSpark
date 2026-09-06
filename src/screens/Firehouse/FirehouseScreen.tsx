@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Pressable, StyleSheet, View, type LayoutChangeEvent } from 'react-native';
 import Animated, { FadeInDown, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { useFocusEffect, useRouter, type Href } from 'expo-router';
-import Svg, { Circle, Defs, Ellipse, Path, RadialGradient, Stop } from 'react-native-svg';
+import Svg, { Circle, Path } from 'react-native-svg';
 import { durations, easings, hit, palette, radii, shadows, spacing, timings } from '@/theme';
 import { Button, ChevronRightIcon, GearIcon, Logo, RoundIconButton, ScreenFrame, Text, TopBar } from '@/ui';
 import { sfx } from '@/services/audio';
@@ -13,8 +13,7 @@ import { useShiftSummary } from '@/state/selectors';
 import { useShift } from '@/hooks/useShift';
 import { Bell, ChimneySmoke, CatWindow, DoorLight, FACADE_VB, Flag, Neighbours, Pigeon, StationFacade, TownBackdrop, facadeLayout } from '@/world';
 import { Rookie } from '@/characters/Rookie';
-import { Beacon } from '@/characters/Beacon';
-import { Pepper } from '@/characters/Pepper';
+import { CaptainBea } from '@/characters/CaptainBea';
 import { BottomBar, SparksCounter, RoomTile, useScaledLayout, type RoomId } from '@/screens/shared';
 import { ShiftChip } from './ShiftChip';
 import { GreetingBubble } from './GreetingBubble';
@@ -165,14 +164,13 @@ export function FirehouseScreen() {
     const base = station ? station.apronTop : 320;
     return {
       rookie: Math.max(96, Math.min(150, base * 0.37)),
-      beacon: Math.max(62, Math.min(100, base * 0.24)),
-      pepper: Math.max(58, Math.min(94, base * 0.23)),
+      bea: Math.max(92, Math.min(146, base * 0.36)),
     };
   }, [station]);
 
   /**
    * Wide enough that the longest greeting never truncates (rule #10) but
-   * narrow enough to stop short of Beacon, who hovers on the right.
+   * narrow enough to stop short of Captain Bea, who stands on the right.
    */
   const bubbleW = Math.max(132, Math.min(152, stage.w * 0.42));
 
@@ -276,22 +274,8 @@ export function FirehouseScreen() {
                 </View>
               </View>
               <View style={[styles.crewRight, { bottom: 10 }]} pointerEvents="none">
-                <View style={[styles.beacon, { width: crew.beacon }]}>
-                  <Beacon size={crew.beacon} emotion="happy" />
-                  {/* the cyan pool Beacon's hover throws onto the ground */}
-                  <View style={styles.beaconGlow}>
-                    <Svg width={crew.beacon * 0.9} height={crew.beacon * 0.28} viewBox="0 0 90 28">
-                      <Defs>
-                        <RadialGradient id="beaconPool" cx="50%" cy="50%" r="50%">
-                          <Stop offset="0" stopColor={palette.waterCyan} stopOpacity={0.5} />
-                          <Stop offset="1" stopColor={palette.waterCyan} stopOpacity={0} />
-                        </RadialGradient>
-                      </Defs>
-                      <Ellipse cx={45} cy={14} rx={45} ry={14} fill="url(#beaconPool)" />
-                    </Svg>
-                  </View>
-                </View>
-                <Pepper size={crew.pepper} emotion="happy" wag />
+                {/* Captain Bea waits by the apron for the shift to start */}
+                <CaptainBea size={crew.bea} emotion="calm" pose="stand" bobPhase={0.45} />
               </View>
 
               {/* the big call to action */}

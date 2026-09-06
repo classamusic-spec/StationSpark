@@ -16,7 +16,6 @@ import { VocabIcon } from '@/ui/kit/VocabIcon';
 import { CharacterPortrait } from '@/characters/CharacterPortrait';
 import { KitchenBackdrop } from './KitchenBackdrop';
 import { KitchenSign } from './parts/KitchenSign';
-import { BeggingPepper } from './parts/SceneBits';
 import { recipeGlyph } from './food';
 import { buildShelf } from './progress';
 
@@ -98,9 +97,8 @@ export function KitchenScreen() {
         ))}
 
         <View style={styles.footer}>
-          <BeggingPepper size={104} />
           <Text variant="small" color={palette.navySoft} style={styles.footerText}>
-            Pepper hopes you drop something.
+            Cook one and the whole crew sits down to eat.
           </Text>
         </View>
       </ScrollView>

@@ -4,7 +4,7 @@
  *
  * `GameCrew` takes a fixed distance from the bottom edge, and trays range from
  * ~120 px (a single button row) to ~300 px (a two-row drag tray), so a constant
- * put Beacon and Pepper *on top of* the answer tiles in half the games. The
+ * put the crew *on top of* the answer tiles in half the games. The
  * tray publishes its measured height (`@/ui/kit/playArea`), so the crew can
  * stand on its top edge instead — correct in every game, one line each.
  */

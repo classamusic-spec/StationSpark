@@ -4,7 +4,7 @@ import { palette } from '@/theme';
 export type AwningStyle = 'stripe' | 'solid' | 'none';
 
 export interface SceneTheme {
-  /** kid-facing name, used in prompts and Beacon lines */
+  /** kid-facing name, used in prompts and dialogue */
   name: string;
   nameEs: string;
   /** the word painted on the sign plate */

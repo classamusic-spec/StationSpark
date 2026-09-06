@@ -23,7 +23,7 @@ import { AskQuestion } from '../shared/AskQuestion';
 import { GameFrame } from '../shared/GameFrame';
 import { SlotZone } from '../shared/SlotZone';
 import { useGameLayout } from '../shared/layout';
-import { useBeaconLine } from '../shared/speak';
+import { useCaptainLine } from '../shared/speak';
 import { useHintLadder } from '../shared/useHintLadder';
 import { useDragToSlot, type DropOutcome } from '../shared/useDragToSlot';
 import { Bunting, CoinDisc, MarketGround, PaperBag, StallFront, stallRects } from './Stall';
@@ -157,7 +157,7 @@ export function MarketMoney({ challenge, ageBand, onComplete, onEvent, compact }
   const short = price - total;
   const enough = exactChange ? total === price : total >= price;
 
-  /* the cheapest way to pay, used by Beacon's hint and the auto-assist glow */
+  /* the cheapest way to pay, used by the hint and the auto-assist glow */
   const bestSolution = useMemo(() => {
     const sorted = [...challenge.solutions].sort((a, b) => a.length - b.length);
     return sorted[0] ?? [];
@@ -188,7 +188,7 @@ export function MarketMoney({ challenge, ageBand, onComplete, onEvent, compact }
     session.progress(Math.min(total, price), price);
   }, [price, session, total]);
 
-  useBeaconLine(
+  useCaptainLine(
     state.phase === 'shopping' ? `The ${item.en} costs ${price} coins. Count them onto the counter!` : null,
     session.say,
     { es: `${item.es}: ${price} monedas.`, key: state.phase },

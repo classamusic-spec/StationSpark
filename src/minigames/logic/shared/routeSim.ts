@@ -83,7 +83,7 @@ export function optimalLength(spec: RouteSpec): number | null {
   return solveRoute(spec)?.length ?? null;
 }
 
-/** The single best next command from an arbitrary state — powers Beacon's hint. */
+/** The single best next command from an arbitrary state — powers the hint. */
 export function bestNextCommand(spec: RouteSpec, from: RouteState): RouteCommand | null {
   const solution = solveRoute({ ...spec, start: from.pos, startHeading: from.heading });
   return solution?.[0] ?? null;

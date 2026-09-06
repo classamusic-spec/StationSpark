@@ -27,13 +27,13 @@ const mission: MissionDef = {
   xp: 40,
   sparks: 10,
   beats: [
-    { type: 'dialogue', lines: [{ speaker: 'bea', text: 'Hi' }, { speaker: 'beacon', text: 'Beep' }] },
+    { type: 'dialogue', lines: [{ speaker: 'bea', text: 'Hi' }, { speaker: 'rookie', text: 'Beep' }] },
     { type: 'travel', from: 'station', to: 'bakery' },
     {
       type: 'minigame',
       game: 'hose-hero',
       challenge: () => ({ kind: 'hose-hero', scene: 'bakery', totalFlames: 6, alreadyOut: 0, grid: { rows: 2, cols: 3 }, flameSlots: [0, 1, 2, 3, 4, 5] }),
-      intro: [{ speaker: 'beacon', text: 'Spray!' }],
+      intro: [{ speaker: 'bea', text: 'Spray!' }],
       outro: [{ speaker: 'npc', npcName: 'Rosa', text: '¡Gracias!', es: '¡Gracias!' }],
     },
     {

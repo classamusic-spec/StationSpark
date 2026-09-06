@@ -34,7 +34,7 @@ rescue kittens, cook with the crew, and learn words in English and Spanish along
 
 - **The Firehouse** — a 2.5D cutaway station as the home screen. Every room is a real place: Dispatch,
   Map, Training Yard, Kitchen, Garage, Badge Wall. Clouds drift, the flag waves, the bell sways,
-  pigeons hop, Pepper wags. Station upgrades bought with Sparks visibly change the building.
+  pigeons hop, the crew breathes and blinks. Station upgrades bought with Sparks visibly change the building.
 - **Twelve story missions** across Spark City (Cat in the Clock Tower, Bakery Bell, Pizza Shop Panic,
   Park Picnic Problem, Library Lights-Out, Pet Shop Parade, School Fair Rescue, Farmers Market Morning,
   Community Clean-Up, Museum Mystery, Train Station Timetable and the Festival Rescue Exchange —
@@ -54,14 +54,16 @@ rescue kittens, cook with the crew, and learn words in English and Spanish along
 - **Spark City map**, **Training Yard**, **Garage** truck customiser (with a truck wash), **Locker**
   avatar builder, **Badge Wall** with ranks from Cadet to Community Hero, and a parent-gated
   **Grown-Ups** area with settings, a progress report and the safety card.
-- **Characters**: Rookie (the child, customisable), Beacon the rescue robot, Pepper the Dalmatian,
-  Captain Bea and the bilingual neighbours — all SVG rigs with emotions, blinking and idle life.
+- **Characters**: Rookie (the child, customisable), Captain Bea and the bilingual neighbours.
+  The two leads are the authored vector art in `SVG ART/`, split into an animated rig without
+  changing a pixel (`npm run art:verify` proves it) and driven by an XState behaviour machine —
+  breathing, blinking, glancing, waving, thinking and cheering. See `docs/CHARACTERS.md`.
 - **Sound & voice**: a procedurally synthesised toy-like SFX library (`npm run sfx:build`) and
   on-device text-to-speech with a distinct voice per character, in English and Mexican Spanish.
 
 ## Design principles
 
-- Red is brand energy, never "wrong". Mistakes wobble softly and Beacon offers a hint; a child can
+- Red is brand energy, never "wrong". Mistakes wobble softly and Captain Bea offers a hint; a child can
   always finish.
 - Everything breathes: springs, staggered entrances, and idle animation on every character and prop.
 - Every tactile action is motion + sound + haptic.

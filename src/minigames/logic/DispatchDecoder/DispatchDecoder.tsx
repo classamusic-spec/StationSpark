@@ -96,8 +96,8 @@ export function DispatchDecoder({ challenge, ageBand, onComplete, onEvent, compa
   }, [message]);
 
   useEffect(() => {
-    const t = setTimeout(() => speech.say(message, { speaker: 'beacon' }), 380);
-    session.say('beacon', message, challenge.messageEs);
+    const t = setTimeout(() => speech.say(message, { speaker: 'bea' }), 380);
+    session.say('bea', message, challenge.messageEs);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [message]);
@@ -113,7 +113,7 @@ export function DispatchDecoder({ challenge, ageBand, onComplete, onEvent, compa
       sfx.play('radio');
       haptics.tap();
       const text = lang === 'es' ? (challenge.messageEs ?? message) : message;
-      speech.say(text, { speaker: 'beacon', lang });
+      speech.say(text, { speaker: 'bea', lang });
     },
     [challenge.messageEs, message],
   );
@@ -142,7 +142,7 @@ export function DispatchDecoder({ challenge, ageBand, onComplete, onEvent, compa
     [challenge.correct, session, state.phase],
   );
 
-  /* LCD text, with the key word underlined once Beacon helps */
+  /* LCD text, with the key word underlined once the hint appears */
   const shown = message.slice(0, chars);
   const glow = useSharedValue(0.75);
   useEffect(() => {

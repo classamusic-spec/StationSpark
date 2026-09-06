@@ -13,7 +13,7 @@ Reference frames live in `SPARK STATION REF ART/`. Study them first. Everything 
 | engineRed / Dark | #E63B2E / #B9261C | Brand energy: logo, primary CTA face/edge, truck, awnings. **Never "error".** |
 | safetyYellow / gold | #FFC72C / #F5A800 | Stars, rays, math pills, helmets, reflective stripes |
 | skyTop → skyBottom | #4FB3F6 → #BDE7FF | Every outdoor screen is a vertical sky gradient |
-| waterCyan | #4FC3F7 | Water, hose spray, Beacon's face, teamwork |
+| waterCyan | #4FC3F7 | Water, hose spray, teamwork |
 | navy | #1F2A5A | ALL text, outlines of the logo, dark accents. Never black. |
 | cream / panel / tan | #FFF6E5 / #FFF9EF / #F5D9A6 | Cards, station façade, boards |
 | leafGreen / grass | #4CAF50 / #8FD16B | Go/done buttons, hills, "Problem Solving" |
@@ -54,21 +54,37 @@ Fredoka Bold for display, headings, buttons, numerals. Nunito Bold/ExtraBold for
 
 ## Characters (src/characters)
 
-All rigs are SVG built from simple shapes; big eyes (navy with white highlight), rosy cheek dots, thick soft limbs. Each rig exposes `emotion` and idles: **bob** (3 px, 2.2 s), **blink** (2.6–5.2 s random), **breathe** (2 % scale). Emotion swaps eye/mouth shapes only.
+The two leads are **authored artwork, not code drawings**. `SVG ART/CAPTAIN.svg`
+and `SVG ART/FIREFIGHTER.svg` are the characters; a build tool splits them into
+rig parts without changing a pixel, and `npm run art:verify` proves it. Never
+redraw them — see **docs/CHARACTERS.md** for the pipeline and the rig.
 
-- **Rookie** — the child. Customisable skin (peach/tan/brown/deep), hair (dark/brown/blonde/red/black-curly), helmet colour (red/yellow/blue/pink). Red helmet with gold flame shield, navy jacket with two yellow reflective stripes, red accents, big wave pose.
-- **Beacon** — small floating rescue robot. White rounded capsule body, cyan visor face (two happy arc eyes, small smile), blue shoulder accents, antenna with a blinking cyan light. Hovers (bob 5 px) with a soft cyan glow beneath. Beacon scans numbers, translates (RadioCard), points at hints. Voice: high, quick.
-- **Pepper** — Dalmatian puppy. White with navy spots, red collar with gold tag, one floppy ear, tongue out. Tail wags when something goes right; comic relief.
-- **Captain Bea** — warm station leader. Navy uniform, white captain cap with gold badge, brown skin, kind smile, short instructions only.
-- NPCs — Rosa (baker, apron, flour cheek), Gino (pizzaiolo, moustache), Ms. Lee (teacher, cardigan), Mr. Okafor (park keeper), the Pet Shop twins. Bilingual, cheerful.
+- **Rookie** — the child the player is. Red helmet with a gold flame shield, navy
+  turnout coat with cream-edged yellow reflective bands, a flame badge on the
+  chest, black boots. Skin, hair and helmet colour are customisable in the
+  Locker; the default is the authored art exactly.
+- **Captain Bea** — the warm station leader. Navy dress uniform, gold cuff
+  stripes, three gold buttons, a chest shield, and a white-crown cap with a gold
+  star badge. Short instructions only, never hurried. She is also the station's
+  radio and its Spanish voice.
+- NPCs — Rosa (baker, apron, flour cheek), Gino (pizzaiolo, moustache), Ms. Lee (teacher, cardigan), Mr. Okafor (park keeper), the Pet Shop twins. Bilingual, cheerful. These still use the shared `Person` rig.
+
+There is no robot and no dog. Beacon and Pepper were cut: two mascots in the
+corner of a phone screen ate the play area, and Captain Bea does their jobs
+better. A mini-game shows **one** lead, never a huddle.
+
+Each lead idles by breathing, blinking and bobbing, and every few seconds plays
+a small piece of business — a glance, a weight shift, a tug on the hat. The hat
+lags the head by a beat. `bobPhase` must differ between two characters on one
+screen or they move like one puppet.
 
 ## Motion principles
 
-1. **Alive at rest** — nothing is static. Clouds drift (42 s), flag waves, bell sways, chimney puffs, Beacon hovers, Pepper's tail.
+1. **Alive at rest** — nothing is static. Clouds drift (42 s), flag waves, bell sways, chimney puffs, and every character breathes, blinks and shifts its weight.
 2. **Anticipation + follow-through** — buttons squash; tokens overshoot into slots (`springs.snap`); cards enter with `FadeInDown.springify()` staggered 60–90 ms.
 3. **Physical feedback triad** — every meaningful touch = motion + sound + haptic.
-4. **Correct** = pop scale 1→1.15→1, `correct` chime, sparkle burst, character reaction (Beacon spins, Pepper wags). **Mission complete** = confetti (Skia particles), `fanfare`, characters jump, badge flips in.
-5. **Wrong** = wobble ±6 px ×3 (220 ms), `wrong-soft`, `haptics.nudge()`, Beacon offers a hint bubble. Never a red X, never a buzzer, never a lost life.
+4. **Correct** = pop scale 1→1.15→1, `correct` chime, sparkle burst, character reaction (the crew lead bounces). **Mission complete** = confetti (Skia particles), `fanfare`, characters jump, badge flips in.
+5. **Wrong** = wobble ±6 px ×3 (220 ms), `wrong-soft`, `haptics.nudge()`, Captain Bea offers a hint bubble. Never a red X, never a buzzer, never a lost life.
 6. **Transitions** — screens crossfade; entering a room in the firehouse zooms slightly into that room (scale 1→1.06 then cut). Missions travel with the truck across the map (2–3 s cinematic, `engine` loop + `siren` blip).
 7. **Reduced motion** — decorative loops stop; feedback animations shorten to 120 ms.
 

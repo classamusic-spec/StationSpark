@@ -58,11 +58,11 @@ export function ListenCount({ challenge, ageBand, onComplete, onEvent, compact }
 
   const speakPhrase = useCallback(() => {
     sfx.play('robot-beep');
-    speech.say(challenge.phraseEs, { speaker: 'beacon', lang: 'es' });
+    speech.say(challenge.phraseEs, { speaker: 'bea', lang: 'es' });
   }, [challenge.phraseEs]);
 
   useEffect(() => {
-    session.say('beacon', challenge.phraseEn, challenge.phraseEs);
+    session.say('bea', challenge.phraseEn, challenge.phraseEs);
     const t = setTimeout(speakPhrase, 350);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -102,7 +102,7 @@ export function ListenCount({ challenge, ageBand, onComplete, onEvent, compact }
       sfx.play('correct');
       haptics.celebrate();
       setTimeout(
-        () => speech.say(`${numberWordFor(challenge.count).es} ${challenge.item.es}`, { speaker: 'beacon', lang: 'es' }),
+        () => speech.say(`${numberWordFor(challenge.count).es} ${challenge.item.es}`, { speaker: 'bea', lang: 'es' }),
         450,
       );
       if (!done.current) {
@@ -119,14 +119,14 @@ export function ListenCount({ challenge, ageBand, onComplete, onEvent, compact }
   }, [challenge.count, challenge.item.es, session, speakPhrase, state.phase, state.taken.length]);
 
   const word = numberWordFor(challenge.count);
-  const hintText = `Beacon said “${word.es}”. ${word.es} = ${challenge.count}. Put ${challenge.count} in the crate!`;
+  const hintText = `Captain Bea said “${word.es}”. ${word.es} = ${challenge.count}. Put ${challenge.count} in the crate!`;
   const itemSize = layout.s(ageBand === 'A' ? 58 : 50);
   const crateWidth = Math.min(layout.s(190), layout.boxWidth * 0.6);
 
   return (
     <GameFrame
       title="Listen & Count"
-      subtitle={ageBand === 'A' ? undefined : 'Beacon speaks Spanish. Fill the crate!'}
+      subtitle={ageBand === 'A' ? undefined : 'Captain Bea speaks Spanish. Fill the crate!'}
       compact={compact}
       backdrop={
         <>

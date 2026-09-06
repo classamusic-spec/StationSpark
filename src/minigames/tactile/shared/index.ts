@@ -4,6 +4,6 @@ export * from './stage';
 export * from './useHintLadder';
 export * from './useSpokenPrompt';
 export * from './AskQuestion';
-export * from './BeaconHint';
+export * from './CaptainHint';
 export * from './GameShell';
 export * from './DragToken';

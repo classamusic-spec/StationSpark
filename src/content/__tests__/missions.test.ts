@@ -202,10 +202,9 @@ describe.each(missions)('$id', (mission: MissionDef) => {
     }
   });
 
-  it('lets Pepper be a dog', () => {
-    const barks = allLines(mission).filter((l) => l.speaker === 'pepper');
-    expect(barks.length).toBeGreaterThan(0);
-    expect(barks.every((l) => /woof/i.test(l.text))).toBe(true);
+  it('only casts the three characters the game has', () => {
+    const speakers = new Set(allLines(mission).map((l) => l.speaker));
+    for (const s of speakers) expect(['bea', 'rookie', 'npc']).toContain(s);
   });
 
   it('gives the NPC Spanish to say', () => {
@@ -272,11 +271,11 @@ describe('story details from the design doc', () => {
     }
   });
 
-  it('has Gino say ¡Gracias! and Beacon translate it', () => {
+  it('has Gino say ¡Gracias! and Captain Bea translate it', () => {
     const lines = pizza ? allLines(pizza) : [];
     const gino = lines.find((l) => l.speaker === 'npc' && /gracias/i.test(l.text));
     expect(gino).toBeDefined();
-    expect(lines.some((l) => l.speaker === 'beacon' && /thank you/i.test(l.text))).toBe(true);
+    expect(lines.some((l) => l.speaker === 'bea' && /thank you/i.test(l.text))).toBe(true);
   });
 
   it('sends the clock-tower crew after a kitten and the clean-up crew after a duckling', () => {
@@ -400,7 +399,7 @@ describe('the twelve-mission town', () => {
     }
   });
 
-  it('runs the exchange call Spanish-first, with Beacon translating', () => {
+  it('runs the exchange call Spanish-first, with Captain Bea translating', () => {
     const decoder = beatFor('festival-exchange', 'dispatch-decoder').challenge({ ageBand: 'B', rng: createRng(6) });
     if (decoder.kind !== 'dispatch-decoder') throw new Error('expected a dispatch-decoder');
     expect(decoder.messageEs).toContain('quince');

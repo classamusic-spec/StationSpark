@@ -41,7 +41,7 @@ export interface UnderConstructionCardProps {
   ctaLabel?: string;
   onContinue: () => void;
   /** who is standing next to the sign */
-  character?: 'beacon' | 'pepper' | 'bea' | 'rookie';
+  character?: 'bea' | 'rookie';
 }
 
 export function UnderConstructionCard({
@@ -49,7 +49,7 @@ export function UnderConstructionCard({
   note = 'The crew is still putting this one together. Tap to carry on with the mission!',
   ctaLabel = 'Tap to continue ›',
   onContinue,
-  character = 'beacon',
+  character = 'bea',
 }: UnderConstructionCardProps) {
   return (
     <View style={styles.wrap}>

@@ -25,7 +25,7 @@ export function KitchenBeat({ recipeId, onDone }: KitchenBeatProps) {
       title="The kitchen is warming up"
       note="The crew is still setting out the pans. Tap to head back out on the call!"
       ctaLabel="Back to the call ›"
-      character="pepper"
+      character="bea"
       onContinue={() => onDone([])}
     />
   );

@@ -26,7 +26,7 @@ import { SceneCrew } from '@/world/scenes';
 import { AskQuestion } from '../shared/AskQuestion';
 import { GameFrame } from '../shared/GameFrame';
 import { useGameLayout } from '../shared/layout';
-import { useBeaconLine } from '../shared/speak';
+import { useCaptainLine } from '../shared/speak';
 import { useHintLadder } from '../shared/useHintLadder';
 import { HEADING_ANGLE, bestNextCommand, commandLabel, optimalLength, traceRoute } from '../shared/routeSim';
 import { BarrierGlyph, FlameGlyph, ForwardArrow, PlayGlyph, TurnArrow, UTurnArrow } from '../shared/art/Glyphs';
@@ -210,7 +210,7 @@ export function RescueRoute({ challenge, ageBand, onComplete, onEvent, compact }
 
   const goalName = sceneLabel[challenge.goalScene].en;
   const goalStreet = challenge.streetNames?.find((s) => s.row === challenge.goal.row)?.name;
-  useBeaconLine(
+  useCaptainLine(
     state.phase === 'coding' && state.program.length === 0
       ? `Code the route! Help the fire truck reach the ${goalName}.`
       : null,
@@ -398,7 +398,7 @@ export function RescueRoute({ challenge, ageBand, onComplete, onEvent, compact }
       backdrop={
         <>
           <Stage variant="street" groundHeight={150} />
-          <SceneCrew side="right" size={52} showPepper mood={state.phase === 'arrived' ? 'cheer' : state.phase === 'running' ? 'happy' : 'idle'} />
+          <SceneCrew side="right" size={52} mood={state.phase === 'arrived' ? 'cheer' : state.phase === 'running' ? 'happy' : 'idle'} />
         </>
       }
       hint={{ text: hintText, visible: hintLadder.showBubble && state.phase !== 'running', onDismiss: hintLadder.dismiss }}

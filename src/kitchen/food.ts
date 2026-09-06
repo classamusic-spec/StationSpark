@@ -46,7 +46,7 @@ export function foodById(id: string): VocabWord {
 /* ------------------------------------------------------------------ */
 
 export interface ToppingLook {
-  /** English + Spanish name (Beacon says the Spanish one when it is picked up) */
+  /** English + Spanish name (Captain Bea says the Spanish one when it is picked up) */
   word: VocabWord;
   /** main fill of the little scattered shapes */
   fill: string;

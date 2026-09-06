@@ -7,7 +7,7 @@ import {
   generateRescuePets,
   generateRescueRoute,
 } from '@/learning/generators';
-import { bea, beacon, inScene, npc, pepper } from './parts';
+import { bea, radio, inScene, npc } from './parts';
 
 const MAYA = 'Maya';
 
@@ -38,15 +38,14 @@ export const clockTowerCat: MissionDef = {
       backdrop: 'station-yard',
       lines: [
         bea("Bell's ringing! Boots on, crew.", 'excited'),
-        beacon('Beep beep! Radio call from the square!'),
-        pepper(),
+        radio('Radio call from the square. Boots on!'),
       ],
     },
     {
       type: 'minigame',
       game: 'dispatch-decoder',
       challenge: (ctx) => dispatchDecoderFor('address', ctx),
-      intro: [beacon("Listen for the number. I'll write it down.")],
+      intro: [radio("Listen for the number. I'll write it down.")],
       outro: [bea("Good ears. That's our address.", 'proud')],
     },
     {
@@ -54,13 +53,13 @@ export const clockTowerCat: MissionDef = {
       game: 'equipment-check',
       challenge: (ctx) => generateEquipmentCheck(ctx),
       intro: [bea('Pack the truck. Count each one twice.')],
-      outro: [beacon('Truck packed! Ladder is on top.'), pepper('Woof!')],
+      outro: [radio('Truck packed! Ladder is on top.')],
     },
     {
       type: 'minigame',
       game: 'rescue-route',
       challenge: (ctx) => generateRescueRoute(inScene(ctx, 'clock-tower')),
-      intro: [beacon('Market stalls are in the way. Plan the drive!')],
+      intro: [radio('Market stalls are in the way. Plan the drive!')],
       outro: [bea('Smooth driving. No cones harmed.')],
     },
     { type: 'travel', from: 'station', to: 'clock-tower' },
@@ -70,7 +69,7 @@ export const clockTowerCat: MissionDef = {
       location: 'clock-tower',
       lines: [
         npc(MAYA, '¡Hola! Luna climbed the clock tower again.', '¡Hola! Luna subió otra vez a la torre del reloj.', 'worried'),
-        beacon('Hola means hello. Luna is the library cat!', 'Hola.'),
+        radio('Hola means hello. Luna is the library cat!', 'Hola.'),
         bea('Ladder first. Nice and steady.'),
       ],
     },
@@ -86,27 +85,27 @@ export const clockTowerCat: MissionDef = {
       game: 'number-ladder',
       bands: ['B', 'C'],
       challenge: (ctx) => generateNumberLadder(ctx),
-      intro: [beacon('Now climb. Hop rung by rung to Luna.')],
-      outro: [beacon('Beep! You landed exactly right.')],
+      intro: [radio('Now climb. Hop rung by rung to Luna.')],
+      outro: [radio('You landed exactly right.')],
     },
     {
       type: 'minigame',
       game: 'rescue-pets',
       challenge: (ctx) => ({ ...generateRescuePets(inScene(ctx, 'clock-tower')), animal: 'kitten' as const }),
       intro: [npc(MAYA, 'Slow hands, please. She is a little shy.', 'Manos suaves, por favor. Es tímida.', 'calm')],
-      outro: [bea('Luna is safe. Beautiful work.', 'proud'), pepper()],
+      outro: [bea('Luna is safe. Beautiful work.', 'proud')],
     },
     {
       type: 'scene',
       scene: 'rescue-complete',
       location: 'clock-tower',
-      lines: [beacon('Purr detected! Mission successful.'), pepper('Woof woof!')],
+      lines: [radio('I can hear purring. Mission complete.')],
     },
     {
       type: 'dialogue',
       lines: [
         npc(MAYA, '¡Gracias, bomberos! Come read with us on Saturday.', '¡Gracias, bomberos! Vengan a leer el sábado.', 'excited'),
-        beacon('Gracias means thank you!', 'Gracias.'),
+        radio('Gracias means thank you!', 'Gracias.'),
         bea("Any time, Maya. That's what neighbours do.", 'happy'),
       ],
     },

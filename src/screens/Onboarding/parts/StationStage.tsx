@@ -3,8 +3,8 @@
  *
  * Bunting swaying across the sky, the STATION SPARK board hanging from it,
  * and the crew standing on the station apron in front of the treeline:
- * Captain Bea and Beacon first, then the child's own Rookie (updating live as
- * they pick their look, with a sparkle on every change), then Beacon with
+ * Captain Bea first, then the child's own Rookie (updating live as
+ * they pick their look, with a sparkle on every change), then Rookie with
  * the one safety message. One ground plane; nobody floats.
  */
 import React, { memo, useMemo } from 'react';
@@ -15,18 +15,15 @@ import { palette } from '@/theme';
 import { usePulse } from '@/hooks';
 import type { Avatar } from '@/state/store';
 import { SparkleBurst, Text } from '@/ui';
-import { Beacon } from '@/characters/Beacon';
 import { CaptainBea } from '@/characters/CaptainBea';
-import { Pepper } from '@/characters/Pepper';
 import { Rookie } from '@/characters/Rookie';
 import { SignBoard } from '@/screens/Locker/parts/SignBoard';
 import { HIGHLIGHT, SHADE, SHADOW_FILL } from '@/world/tone';
 
 const FLAG_COLORS = [palette.engineRed, palette.safetyYellow, palette.waterCyan, palette.leafGreen, palette.pink] as const;
 const APRON = 44;
-const PERSON = 120 / 165;
-const BEACON = 110 / 150;
-const PEPPER = 132 / 126;
+/** The two leads are drawn in a square box, so width follows height 1:1. */
+const LEAD = 1;
 
 /** A string of pennants across the top of the stage — drawn once, swayed as a whole. */
 const BuntingArt = memo(function BuntingArt({ w }: { w: number }) {
@@ -97,10 +94,8 @@ export function StationStage({ height, step, avatar, sparkle }: StationStageProp
 
   const crew = useMemo(() => {
     const bea = big;
-    const beacon = Math.round(big * 0.58);
     const rookie = big;
-    const pepper = Math.round(big * 0.4);
-    return { bea, beacon, rookie, pepper };
+    return { bea, rookie };
   }, [big]);
 
   return (
@@ -118,39 +113,36 @@ export function StationStage({ height, step, avatar, sparkle }: StationStageProp
 
       {step === 0 ? (
         <Animated.View key="s0" entering={FadeIn.duration(260)} exiting={FadeOut.duration(160)} style={StyleSheet.absoluteFill}>
-          <View style={[styles.actor, { left: cx - cw * 0.12 - (crew.bea * PERSON) / 2, bottom: feet }]}>
-            <CaptainBea size={crew.bea} emotion="happy" pose="wave" />
+          <View style={[styles.actor, { left: cx - cw * 0.14 - (crew.bea * LEAD) / 2, bottom: feet }]}>
+            <CaptainBea size={crew.bea} emotion="happy" pose="wave" bobPhase={0.35} />
           </View>
-          <View style={[styles.actor, { left: cx + cw * 0.26 - (crew.beacon * BEACON) / 2, bottom: feet + crew.bea * 0.16 }]}>
-            <Beacon size={crew.beacon} emotion="excited" bobPhase={1.2} />
+          <View style={[styles.actor, { left: cx + cw * 0.16 - (crew.rookie * 0.82 * LEAD) / 2, bottom: feet }]}>
+            <Rookie size={Math.round(crew.rookie * 0.82)} emotion="excited" pose="stand" bobPhase={0.8} />
           </View>
         </Animated.View>
       ) : null}
 
       {step === 1 ? (
         <Animated.View key="s1" entering={FadeIn.duration(260)} exiting={FadeOut.duration(160)} style={StyleSheet.absoluteFill}>
-          <View style={[styles.actor, { left: cx - cw * 0.3 - (crew.bea * 0.8 * PERSON) / 2, bottom: feet + 4 }]}>
-            <CaptainBea size={Math.round(crew.bea * 0.8)} emotion="proud" pose="stand" bobPhase={1.6} />
+          <View style={[styles.actor, { left: cx - cw * 0.3 - (crew.bea * 0.8 * LEAD) / 2, bottom: feet + 4 }]}>
+            <CaptainBea size={Math.round(crew.bea * 0.8)} emotion="proud" pose="stand" bobPhase={0.6} />
           </View>
-          <View style={[styles.actor, { left: cx + cw * 0.02 - (crew.rookie * PERSON) / 2, bottom: feet }]}>
+          <View style={[styles.actor, { left: cx + cw * 0.02 - (crew.rookie * LEAD) / 2, bottom: feet }]}>
             <Rookie size={crew.rookie} avatar={avatar} pose="wave" emotion="excited" />
             <View pointerEvents="none" style={styles.sparkle}>
               <SparkleBurst play={sparkle} radius={Math.round(crew.rookie * 0.36)} count={10} />
             </View>
-          </View>
-          <View style={[styles.actor, { left: cx + cw * 0.3 - (crew.pepper * PEPPER) / 2, bottom: feet }]}>
-            <Pepper size={crew.pepper} emotion="happy" wag bobPhase={2.1} />
           </View>
         </Animated.View>
       ) : null}
 
       {step >= 2 ? (
         <Animated.View key="s2" entering={FadeIn.duration(260)} exiting={FadeOut.duration(160)} style={StyleSheet.absoluteFill}>
-          <View style={[styles.actor, { left: cx - cw * 0.24 - (crew.beacon * 1.15 * BEACON) / 2, bottom: feet + crew.bea * 0.14 }]}>
-            <Beacon size={Math.round(crew.beacon * 1.15)} emotion="calm" bobPhase={0.4} />
+          <View style={[styles.actor, { left: cx - cw * 0.2 - (crew.rookie * 0.86 * LEAD) / 2, bottom: feet }]}>
+            <Rookie size={Math.round(crew.rookie * 0.86)} emotion="happy" pose="stand" bobPhase={0.15} />
           </View>
-          <View style={[styles.actor, { left: cx + cw * 0.14 - (crew.bea * PERSON) / 2, bottom: feet }]}>
-            <CaptainBea size={crew.bea} emotion="calm" pose="point" bobPhase={0.9} />
+          <View style={[styles.actor, { left: cx + cw * 0.16 - (crew.bea * LEAD) / 2, bottom: feet }]}>
+            <CaptainBea size={crew.bea} emotion="calm" pose="point" bobPhase={0.55} />
           </View>
         </Animated.View>
       ) : null}

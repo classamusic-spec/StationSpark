@@ -9,7 +9,7 @@ import {
   generateRescueRoute,
   generateSignals,
 } from '@/learning/generators';
-import { bea, beacon, inScene, npc, pepper } from './parts';
+import { bea, radio, inScene, npc } from './parts';
 
 const LOU = 'Conductor Lou';
 
@@ -62,15 +62,14 @@ export const trainTimetable: MissionDef = {
       backdrop: 'station-yard',
       lines: [
         bea('Conductor Lou called. The platform clock stopped.', 'excited'),
-        beacon('Beep! Address coming over the radio now.'),
-        pepper('Woof!'),
+        radio('Address coming over the radio now. Listen closely.'),
       ],
     },
     {
       type: 'minigame',
       game: 'dispatch-decoder',
       challenge: (ctx) => dispatchDecoderFor('address', ctx),
-      intro: [beacon('Listen for the number. I will write it down.')],
+      intro: [radio('Listen for the number. I will write it down.')],
       outro: [bea('Good ears. That is our platform.', 'proud')],
     },
     {
@@ -78,7 +77,7 @@ export const trainTimetable: MissionDef = {
       game: 'signals',
       challenge: (ctx) => generateSignals(ctx),
       intro: [bea('Steps in order. A station likes order.')],
-      outro: [beacon('Order locked in. Engine started!')],
+      outro: [radio('Order locked in. Engine started!')],
     },
     {
       type: 'minigame',
@@ -95,7 +94,7 @@ export const trainTimetable: MissionDef = {
           compareRoutes: { a: shortLen, b: shortLen + 3, shorter: 'a' as const },
         };
       },
-      intro: [beacon('Two roads to Platform Way. Read the street names!')],
+      intro: [radio('Two roads to Platform Way. Read the street names!')],
       outro: [bea('Shortest road, smoothest drive.')],
     },
     { type: 'travel', from: 'station', to: 'train-station' },
@@ -105,7 +104,7 @@ export const trainTimetable: MissionDef = {
       location: 'train-station',
       lines: [
         npc(LOU, '¡Qué bueno verlos! My clock stopped and nobody knows the time.', '¡Qué bueno verlos! Mi reloj se paró y nadie sabe la hora.', 'worried'),
-        beacon('El reloj means the clock!', 'El reloj.'),
+        radio('El reloj means the clock!', 'El reloj.'),
         bea('Branch off the gate. Then the clock.'),
       ],
     },
@@ -114,14 +113,14 @@ export const trainTimetable: MissionDef = {
       game: 'clock-watch',
       challenge: (ctx) => ({ ...generateClockWatch(ctx), event: 'the next train leaves platform one' }),
       intro: [npc(LOU, 'Set the hands, please. When do we leave?', 'Pongan las manecillas, por favor. ¿A qué hora salimos?', 'calm')],
-      outro: [beacon('Clock ticking. The timetable is true again!')],
+      outro: [radio('Clock ticking. The timetable is true again!')],
     },
     {
       type: 'minigame',
       game: 'hydrant-match',
       bands: ['A'],
       challenge: (ctx) => generateHydrantMatch(ctx),
-      intro: [beacon('Every platform has a number. Find the match!')],
+      intro: [radio('Every platform has a number. Find the match!')],
       outro: [bea('Platform found. Nice number spotting.')],
     },
     {
@@ -129,7 +128,7 @@ export const trainTimetable: MissionDef = {
       game: 'number-ladder',
       bands: ['B', 'C'],
       challenge: (ctx) => generateNumberLadder(ctx),
-      intro: [beacon('Count the carriages. Hop along the train!')],
+      intro: [radio('Count the carriages. Hop along the train!')],
       outro: [bea('Landed on the last carriage exactly.', 'proud')],
     },
     {
@@ -137,19 +136,19 @@ export const trainTimetable: MissionDef = {
       game: 'gear-sort',
       challenge: () => gearSortWithBins(lostBins, lostItems),
       intro: [npc(LOU, 'The lost-property shelf tipped over. ¡Ayúdenme!', 'Se cayó el estante de objetos perdidos. ¡Ayúdenme!', 'happy')],
-      outro: [pepper('Woof woof!')],
+      outro: [],
     },
     {
       type: 'scene',
       scene: 'rescue-complete',
       location: 'train-station',
-      lines: [beacon('Gate clear. Clock ticking. Train leaving!'), pepper()],
+      lines: [radio('Gate clear. Clock ticking. Train leaving!')],
     },
     {
       type: 'dialogue',
       lines: [
         npc(LOU, '¡Gracias, equipo! Right on time, as always.', '¡Gracias, equipo! Justo a tiempo, como siempre.', 'proud'),
-        beacon('Equipo means team. That is us!', 'Equipo.'),
+        radio('Equipo means team. That is us!', 'Equipo.'),
         bea('On time beats fast. Every shift.', 'happy'),
       ],
     },

@@ -24,7 +24,7 @@ export interface GameFrameProps {
 
 /**
  * Shared shell for every logic mini-game: PromptBanner on top, play area in the
- * middle, Tray at the bottom, Beacon's hint bubble floating above the tray.
+ * middle, Tray at the bottom, the hint bubble floating above the tray.
  * The whole frame is one drag arena so tray tokens and play-area slots share
  * a coordinate space.
  */
@@ -43,7 +43,7 @@ export function GameFrame({
   bodyStyle,
 }: GameFrameProps) {
   /**
-   * Blocking defect: Beacon's hint bubble sits at `bottom: 16` of the frame,
+   * Blocking defect: the hint bubble sits at `bottom: 16` of the frame,
    * so on six games it landed straight on top of the answer row. Measure the
    * tray and lift the bubble clear of it — the child can always see and reach
    * every answer while a hint is open.

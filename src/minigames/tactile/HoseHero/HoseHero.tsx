@@ -174,7 +174,7 @@ export function HoseHero({ challenge, ageBand, onComplete, onEvent, compact, mis
   const place = missionContext?.locationName ?? theme.name;
   const subtitle = compact || ageBand === 'A' ? undefined : `Drag to aim, hold to spray the ${place}.`;
   const promptEs = hasStages && currentFraction ? `Apaga ${formatFraction(currentFraction)} de las llamas` : `¡Apaga ${total} llamas!`;
-  useSpokenPrompt(state.phase === 'asking' ? null : prompt, { speaker: 'beacon' });
+  useSpokenPrompt(state.phase === 'asking' ? null : prompt, { speaker: 'bea' });
 
   /* ---- effects: idle nudges ---- */
   useEffect(() => {
@@ -241,7 +241,7 @@ export function HoseHero({ challenge, ageBand, onComplete, onEvent, compact, mis
     haptics.celebrate();
     session.progress(total, total);
     sfx.play('dog-bark');
-    session.say('pepper', 'Woof woof!');
+    session.say('rookie', 'Every flame out!');
     session.say('rookie', 'Every flame is out! Great aim, rookie!');
     speech.say('Every flame is out! Great aim!', { speaker: 'rookie' });
     const t = setTimeout(() => session.complete(), 1200);
@@ -254,8 +254,8 @@ export function HoseHero({ challenge, ageBand, onComplete, onEvent, compact, mis
     session.correct('fraction-beat');
     sfx.play('sparkle');
     haptics.success();
-    session.say('beacon', line);
-    speech.say(line, { speaker: 'beacon' });
+    session.say('bea', line);
+    speech.say(line, { speaker: 'bea' });
     dispatch({ type: 'nextStage' });
     dispatch({ type: 'resume', pressing: pressingRef.current });
   }, [challenge.fractionTargets, session, state.stage]);
@@ -264,7 +264,7 @@ export function HoseHero({ challenge, ageBand, onComplete, onEvent, compact, mis
     if (state.phase !== 'flameOut') return;
     const remaining = total - state.outCount;
     session.progress(state.outCount, total);
-    if (ageBand !== 'C' && remaining > 0) speech.say(String(remaining), { speaker: 'beacon' });
+    if (ageBand !== 'C' && remaining > 0) speech.say(String(remaining), { speaker: 'bea' });
     const t = setTimeout(() => {
       if (state.outCount >= total) {
         finish();
@@ -409,7 +409,7 @@ export function HoseHero({ challenge, ageBand, onComplete, onEvent, compact, mis
         <SceneCrew
           side="right"
           size={64}
-          showPepper
+         
           mood={state.phase === 'done' ? 'cheer' : state.phase === 'flameOut' ? 'happy' : 'idle'}
         />
         <AskQuestion

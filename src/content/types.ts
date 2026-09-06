@@ -4,7 +4,7 @@
  */
 import type { AgeBand, Challenge, ChallengeKind, GeneratorContext, SceneId, Subject } from '@/learning/types';
 
-export type CharacterId = 'rookie' | 'beacon' | 'bea' | 'pepper' | 'npc';
+export type CharacterId = 'rookie' | 'bea' | 'npc';
 export type Emotion = 'happy' | 'excited' | 'think' | 'calm' | 'worried' | 'proud' | 'surprised';
 
 export interface DialogueLine {
@@ -12,7 +12,7 @@ export interface DialogueLine {
   /** NPC display name when speaker === 'npc' */
   npcName?: string;
   text: string;
-  /** Spanish version; when present the RadioCard shows both and Beacon can "translate" */
+  /** Spanish version; when present the RadioCard shows both and Captain Bea reads it aloud */
   es?: string;
   emotion?: Emotion;
   /** Speak aloud with expo-speech (default true for short lines) */

@@ -169,7 +169,7 @@ export function RescuePets({ challenge, ageBand, onComplete, onEvent, compact }:
   const prompt =
     ageBand === 'A' ? `Rescue the ${pet.plural}!` : `${needHelp} ${needHelp === 1 ? pet.en : pet.plural} need help at the ${place}`;
   const subtitle = compact ? undefined : 'Drag each one into the basket.';
-  useSpokenPrompt(state.phase === 'asking' ? null : `Rescue the ${pet.plural}`, { speaker: 'beacon' });
+  useSpokenPrompt(state.phase === 'asking' ? null : `Rescue the ${pet.plural}`, { speaker: 'bea' });
 
   /* ---- geometry ---- */
   const geo = useMemo(() => {
@@ -237,7 +237,7 @@ export function RescuePets({ challenge, ageBand, onComplete, onEvent, compact }:
       setTimeout(() => {
         dispatch({ type: 'finish' });
         sfx.play('fanfare');
-        session.say('pepper', 'Woof!');
+        session.say('rookie', 'Got you! You are safe.');
         session.complete();
       }, 1400),
     );
@@ -253,7 +253,7 @@ export function RescuePets({ challenge, ageBand, onComplete, onEvent, compact }:
       const nextToGo = total - nextSafe;
       session.correct(`safe=${nextSafe}`);
       session.progress(nextSafe, total);
-      speech.say(nextToGo > 0 ? `${nextSafe} safe. ${nextToGo} to go.` : `${nextSafe} safe!`, { speaker: 'beacon' });
+      speech.say(nextToGo > 0 ? `${nextSafe} safe. ${nextToGo} to go.` : `${nextSafe} safe!`, { speaker: 'bea' });
       if (nextToGo === 0) timers.current.push(setTimeout(finish, 520));
     },
     [finish, safeCount, session, state.phase, state.saved, total],
@@ -321,7 +321,7 @@ export function RescuePets({ challenge, ageBand, onComplete, onEvent, compact }:
       }
       overlay={
         <>
-        <SceneCrew side="left" size={58} showPepper npc="okafor" mood={state.phase === 'done' ? 'cheer' : state.saved.length > 0 ? 'happy' : 'idle'} />
+        <SceneCrew side="left" size={58} npc="okafor" mood={state.phase === 'done' ? 'cheer' : state.saved.length > 0 ? 'happy' : 'idle'} />
         <AskQuestion
           visible={state.phase === 'asking'}
           question={askText}

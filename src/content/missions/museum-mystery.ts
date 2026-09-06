@@ -10,7 +10,7 @@ import {
   generateSignals,
   generateSprayPattern,
 } from '@/learning/generators';
-import { bea, beacon, inScene, npc, pepper } from './parts';
+import { bea, radio, inScene, npc } from './parts';
 
 const PATEL = 'Dr. Patel';
 
@@ -64,15 +64,14 @@ export const museumMystery: MissionDef = {
       backdrop: 'station-yard',
       lines: [
         bea('Museum call. A drip and a puzzle.', 'happy'),
-        beacon('Beep! Dr. Patel sent a very old notice.'),
-        pepper(),
+        radio('Dr. Patel sent a very old notice. Careful reading.'),
       ],
     },
     {
       type: 'minigame',
       game: 'dispatch-decoder',
       challenge: (ctx) => dispatchDecoderFor('sentence', inScene(ctx, 'library')),
-      intro: [beacon('Read it slowly. What is she asking for?')],
+      intro: [radio('Read it slowly. What is she asking for?')],
       outro: [bea('Good reading. Now we know the job.', 'proud')],
     },
     {
@@ -80,7 +79,7 @@ export const museumMystery: MissionDef = {
       game: 'clock-watch',
       challenge: (ctx) => ({ ...generateClockWatch(ctx), event: 'the new museum room opens' }),
       intro: [bea('Set the clock. When do the doors open?')],
-      outro: [beacon('Time locked in. Plenty of minutes!')],
+      outro: [radio('Time locked in. Plenty of minutes!')],
     },
     { type: 'travel', from: 'station', to: 'museum' },
     {
@@ -89,7 +88,7 @@ export const museumMystery: MissionDef = {
       location: 'museum',
       lines: [
         npc(PATEL, '¡Bienvenidos! My mosaic lost its last tile.', '¡Bienvenidos! A mi mosaico le falta la última pieza.', 'worried'),
-        beacon('Bienvenidos means welcome!', 'Bienvenidos.'),
+        radio('Bienvenidos means welcome!', 'Bienvenidos.'),
         bea('Patterns first. Then the drip.'),
       ],
     },
@@ -98,7 +97,7 @@ export const museumMystery: MissionDef = {
       game: 'spray-pattern',
       challenge: (ctx) => ({ ...generateSprayPattern(ctx), ...mosaic[ctx.ageBand] }),
       intro: [npc(PATEL, 'Look at the tiles. What belongs at the end?', 'Miren las piezas. ¿Qué va al final?', 'think')],
-      outro: [beacon('Tile placed. The mosaic is whole again!')],
+      outro: [radio('Tile placed. The mosaic is whole again!')],
     },
     {
       type: 'minigame',
@@ -112,14 +111,14 @@ export const museumMystery: MissionDef = {
       game: 'build-barrier',
       challenge: (ctx) => generateBuildBarrier(ctx),
       intro: [bea('Foam blocks around the drip. Fill it exactly.')],
-      outro: [beacon('Gap closed. The dinosaurs stay dry.')],
+      outro: [radio('Gap closed. The dinosaurs stay dry.')],
     },
     {
       type: 'minigame',
       game: 'hose-path',
       challenge: (ctx) => generateHosePath(inScene(ctx, 'library')),
-      intro: [beacon('Now the line to the drain. Corner by corner.')],
-      outro: [pepper('Woof woof!')],
+      intro: [radio('Now the line to the drain. Corner by corner.')],
+      outro: [],
     },
     {
       type: 'minigame',
@@ -127,7 +126,7 @@ export const museumMystery: MissionDef = {
       bands: ['A'],
       challenge: (ctx) => generateSignals(ctx),
       intro: [bea('Opening steps. Put them in order.')],
-      outro: [beacon('Order locked in. Doors in a minute!')],
+      outro: [radio('Order locked in. Doors in a minute!')],
     },
     {
       type: 'minigame',
@@ -141,13 +140,13 @@ export const museumMystery: MissionDef = {
       type: 'scene',
       scene: 'rescue-complete',
       location: 'museum',
-      lines: [beacon('Mosaic finished. Drip stopped. Doors open!'), pepper('Woof!')],
+      lines: [radio('Mosaic finished. Drip stopped. Doors open!')],
     },
     {
       type: 'dialogue',
       lines: [
         npc(PATEL, '¡Gracias! Come back — you are in the exhibit now.', '¡Gracias! Vuelvan: ahora ustedes están en la exposición.', 'proud'),
-        beacon('Gracias means thank you. We are art!', 'Gracias.'),
+        radio('Gracias means thank you. We are art!', 'Gracias.'),
         bea('Shapes, patterns, teamwork. Museum-worthy.', 'happy'),
       ],
     },

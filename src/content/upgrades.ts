@@ -31,7 +31,7 @@ export const upgrades: StationUpgradeDef[] = [
   {
     id: 'garden',
     name: 'Station Garden',
-    description: 'Tomatoes, basil and sunflowers in the side yard. Pepper loves it.',
+    description: 'Tomatoes, basil and sunflowers in the side yard. The whole crew picks from it.',
     cost: 45,
     room: 'yard',
   },

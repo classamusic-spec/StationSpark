@@ -26,7 +26,7 @@ import { AskQuestion } from '../shared/AskQuestion';
 import { GameFrame } from '../shared/GameFrame';
 import { SlotZone } from '../shared/SlotZone';
 import { useGameLayout } from '../shared/layout';
-import { useBeaconLine } from '../shared/speak';
+import { useCaptainLine } from '../shared/speak';
 import { useHintLadder } from '../shared/useHintLadder';
 import { useDragToSlot, type DropOutcome } from '../shared/useDragToSlot';
 import {
@@ -55,7 +55,7 @@ interface State {
   /** piece id → the way it is turned right now */
   turns: Record<string, Turn>;
   misses: number;
-  /** slot Beacon is pointing at */
+  /** slot the hint is pointing at */
   focus: string | null;
 }
 
@@ -243,7 +243,7 @@ export function ShapeBuilder({ challenge, ageBand, onComplete, onEvent, compact 
     session.progress(Object.keys(state.placed).length, pieces.length);
   }, [pieces.length, session, state.placed]);
 
-  useBeaconLine(
+  useCaptainLine(
     state.phase === 'building'
       ? `Let's build a ${blueprintName[challenge.blueprint]?.en ?? 'shape'}! Drag each piece onto its dotted outline.`
       : null,
@@ -307,7 +307,7 @@ export function ShapeBuilder({ challenge, ageBand, onComplete, onEvent, compact 
         };
       }
       if (canTurn(piece) && slot.rotation !== turn) {
-        // Beacon has already given the answer away — let it click into place turned right.
+        // the hint has already given the answer away — let it click into place turned right.
         if (hintLadder.highlight) return { accept: true, snapToSlotId: slot.id, onSettled: () => place(slot, piece, slot.rotation) };
         return {
           accept: false,

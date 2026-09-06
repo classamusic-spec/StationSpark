@@ -1,7 +1,7 @@
 /**
  * PLAY-AREA ANCHORS
  *
- * Beacon's hint bubble used to sit at the bottom of the screen, which put it
+ * the hint bubble used to sit at the bottom of the screen, which put it
  * straight over the answer row on six games (Vocab Tap, Gear Sort, Hydrant
  * Match, Dispatch Decoder, Spray Patterns, Hose Path) — a blocking defect in
  * the art critique.

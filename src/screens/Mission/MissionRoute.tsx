@@ -21,12 +21,12 @@ export function MissionRoute({ id }: { id: string }) {
       <ScreenFrame chrome={<TopBar />}>
         <View style={styles.wrap}>
           <Panel tone="white" radius="panel" style={styles.card}>
-            <CharacterPortrait id="beacon" emotion="think" size={80} />
+            <CharacterPortrait id="bea" emotion="think" size={80} />
             <Text variant="h1" center>
               That call has closed
             </Text>
             <Text variant="body" center>
-              Beacon could not find this job on the board. Let&apos;s pick another one!
+              Captain Bea could not find this job on the board. Let&apos;s pick another one!
             </Text>
             <Button label="Back to Dispatch ›" tone="green" size="lg" block onPress={() => router.replace('/dispatch')} />
           </Panel>

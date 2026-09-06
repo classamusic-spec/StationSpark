@@ -9,7 +9,7 @@ import {
   generateSignals,
 } from '@/learning/generators';
 import { wordById } from '@/learning/vocabulary';
-import { bea, beacon, inScene, npc, pepper } from './parts';
+import { bea, radio, inScene, npc } from './parts';
 
 const ANA = 'Ana';
 const LUIS = 'Luis';
@@ -64,8 +64,7 @@ export const communityCleanup: MissionDef = {
       backdrop: 'station-yard',
       lines: [
         bea('Clean-up day! The twins asked for us.', 'happy'),
-        beacon('Beep! Recycling bins are all mixed up.'),
-        pepper(),
+        radio('The recycling bins are all mixed up. Pond Park.'),
       ],
     },
     {
@@ -73,7 +72,7 @@ export const communityCleanup: MissionDef = {
       game: 'gear-sort',
       challenge: () => gearSortWithBins(recycleBins, recycleItems),
       intro: [bea('Three bins. Paper, plastic, cans.')],
-      outro: [beacon('Sorted! The pond says thank you.')],
+      outro: [radio('Sorted! The pond says thank you.')],
     },
     { type: 'travel', from: 'station', to: 'pet-shop' },
     {
@@ -82,7 +81,7 @@ export const communityCleanup: MissionDef = {
       location: 'pet-shop',
       lines: [
         npc(ANA, "Hi! We're Ana and Luis. ¡Bienvenidos!", '¡Hola! Somos Ana y Luis. ¡Bienvenidos!', 'excited'),
-        beacon('Twins! Double the helpers.'),
+        radio('Twins! Double the helpers.'),
         bea('Supplies first. Count them out.'),
       ],
     },
@@ -99,7 +98,7 @@ export const communityCleanup: MissionDef = {
         decoys: ['axe', 'extinguisher'] as EquipmentId[],
       }),
       intro: [npc(LUIS, 'Count the supplies with us, please.', 'Cuenten los materiales con nosotros, por favor.', 'happy')],
-      outro: [beacon('All counted. Gloves on!')],
+      outro: [radio('All counted. Gloves on!')],
     },
     {
       type: 'minigame',
@@ -115,21 +114,21 @@ export const communityCleanup: MissionDef = {
         };
       },
       intro: [npc(LUIS, 'Count the supplies with us. ¡En español!', 'Cuenten los materiales. ¡En español!', 'happy')],
-      outro: [beacon('Counted in two languages. Beep!')],
+      outro: [radio('Counted in two languages. Wonderful.')],
     },
     {
       type: 'minigame',
       game: 'listen-count',
       challenge: (ctx) => generateListenCount(ctx),
       intro: [npc(ANA, 'Listen: how many do we need?', 'Escucha: ¿cuántos necesitamos?', 'calm')],
-      outro: [beacon('You heard every number!')],
+      outro: [radio('You heard every number!')],
     },
     {
       type: 'minigame',
       game: 'signals',
       challenge: (ctx) => generateSignals(ctx),
       intro: [bea('Clean-up steps. Put them in order.')],
-      outro: [pepper('Woof!')],
+      outro: [],
     },
     {
       type: 'minigame',
@@ -137,7 +136,7 @@ export const communityCleanup: MissionDef = {
       challenge: (ctx) => ({ ...generateRescuePets(inScene(ctx, 'park')), animal: 'duckling' as const, scene: 'park' as const }),
       intro: [
         npc(ANA, '¡Un patito! He lost his family by the pond.', '¡Un patito! Perdió a su familia junto al estanque.', 'worried'),
-        beacon('Patito means duckling!', 'Patito.'),
+        radio('Patito means duckling!', 'Patito.'),
       ],
       outro: [npc(LUIS, '¡Gracias! Look — mamá duck is coming.', '¡Gracias! Miren, ya viene mamá pata.', 'excited')],
     },
@@ -145,7 +144,7 @@ export const communityCleanup: MissionDef = {
       type: 'scene',
       scene: 'rescue-complete',
       location: 'pet-shop',
-      lines: [beacon('Pond clean. Duckling home. Beep beep!'), pepper('Woof woof!')],
+      lines: [radio('Pond clean, duckling home. Proud of you.')],
     },
     {
       type: 'kitchen',
@@ -159,7 +158,7 @@ export const communityCleanup: MissionDef = {
       type: 'dialogue',
       lines: [
         npc(LUIS, 'Twelve tacos, four firefighters. ¡Tres cada uno!', 'Doce tacos, cuatro bomberos. ¡Tres cada uno!', 'proud'),
-        beacon('Tres means three!', 'Tres.'),
+        radio('Tres means three!', 'Tres.'),
         bea('Clean pond, full crew. Perfect shift.', 'proud'),
       ],
     },

@@ -45,7 +45,7 @@ export interface AskQuestionProps {
 }
 
 /**
- * The mid-game maths beat: a soft scrim, Beacon asking, and big AnswerTiles.
+ * The mid-game maths beat: a soft scrim, Captain Bea asking, and big AnswerTiles.
  * Wrong taps wobble the tile and come straight back — nothing is ever lost.
  */
 export function AskQuestion(props: AskQuestionProps) {
@@ -69,7 +69,7 @@ function AskQuestionCard({ question, es, options, correct, ageBand, countGlyph =
 
   useEffect(() => {
     sfx.play('robot-beep', { volume: 0.7 });
-    speech.say(question, { speaker: 'beacon' });
+    speech.say(question, { speaker: 'bea' });
   }, [question]);
 
   const glyph: CountGlyph = ageBand === 'A' ? countGlyph : 'none';
@@ -81,7 +81,7 @@ function AskQuestionCard({ question, es, options, correct, ageBand, countGlyph =
         setPicked(value);
         sfx.play('correct');
         haptics.success();
-        speech.say(String(value), { speaker: 'beacon' });
+        speech.say(String(value), { speaker: 'bea' });
         onAnswer(true, value);
       } else {
         setWrong(value);
@@ -111,7 +111,7 @@ function AskQuestionCard({ question, es, options, correct, ageBand, countGlyph =
     <Animated.View entering={FadeIn.duration(180)} style={styles.scrim}>
       <Animated.View entering={ZoomIn.springify().damping(15)} style={[styles.card, shadows.card, compact && styles.cardCompact]}>
         <View style={styles.head}>
-          <CharacterPortrait id="beacon" emotion="think" size={compact ? 52 : 64} />
+          <CharacterPortrait id="bea" emotion="think" size={compact ? 52 : 64} />
           <View style={styles.headText}>
             <Text variant={compact ? 'h3' : 'h2'}>{question}</Text>
             {es ? (

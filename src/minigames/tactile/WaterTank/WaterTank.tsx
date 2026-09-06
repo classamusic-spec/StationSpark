@@ -33,7 +33,7 @@ type Phase = 'filling' | 'confirming' | 'wrong' | 'done';
 interface State {
   phase: Phase;
   pumps: number;
-  /** Beacon has already warned about going over on this fill */
+  /** Captain Bea has already warned about going over on this fill */
   warned: boolean;
 }
 
@@ -97,7 +97,7 @@ export function WaterTank({ challenge, ageBand, onComplete, onEvent, compact }: 
   /* ---- prompt ---- */
   const prompt = ageBand === 'A' ? `Fill to ${formatFraction(target)}!` : `Fill the tank to ${formatFraction(target)}`;
   const subtitle = compact ? undefined : 'Pump the lever, then press Ready!';
-  useSpokenPrompt(`Fill the tank to ${speakFraction(target)}`, { speaker: 'beacon' });
+  useSpokenPrompt(`Fill the tank to ${speakFraction(target)}`, { speaker: 'bea' });
 
   /* ---- water animation ---- */
   useEffect(() => {
@@ -125,7 +125,7 @@ export function WaterTank({ challenge, ageBand, onComplete, onEvent, compact }: 
     slosh.value = withSequence(withTiming(1, { duration: 80 }), withTiming(0, { duration: 950 }));
   }, [hints, maxPumps, slosh, state.phase, state.pumps, state.warned, target]);
 
-  /* ---- Beacon warns as soon as the child goes past the target ---- */
+  /* ---- Captain Bea warns as soon as the child goes past the target ---- */
   useEffect(() => {
     if (challenge.allowOverflow || state.warned) return;
     if (state.pumps > targetPumps) {
@@ -152,8 +152,8 @@ export function WaterTank({ challenge, ageBand, onComplete, onEvent, compact }: 
       sfx.play('correct');
       haptics.success();
       const line = `${speakFraction(target)}. Tank ready!`;
-      session.say('beacon', line);
-      speech.say(line, { speaker: 'beacon' });
+      session.say('bea', line);
+      speech.say(line, { speaker: 'bea' });
       session.progress(1, 1);
       dispatch({ type: 'done' });
       setTimeout(() => {
@@ -249,7 +249,7 @@ export function WaterTank({ challenge, ageBand, onComplete, onEvent, compact }: 
       hint={hints.bubble}
       onDismissHint={hints.dismiss}
       backdrop={<Stage variant="yard" groundHeight={150} />}
-      overlay={<SceneCrew side="left" size={62} showPepper mood={state.phase === 'done' ? 'cheer' : state.phase === 'confirming' ? 'happy' : 'idle'} />}
+      overlay={<SceneCrew side="left" size={62} mood={state.phase === 'done' ? 'cheer' : state.phase === 'confirming' ? 'happy' : 'idle'} />}
       hud={
         <View style={styles.hud}>
           <Text variant="h2">{formatFraction(target)}</Text>

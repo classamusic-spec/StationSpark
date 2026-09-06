@@ -82,7 +82,7 @@ export function isScaleLineCorrect(value: number, expected: number): boolean {
   return value === expected;
 }
 
-/** Beacon's one-line explanation of a single wrong recipe line. */
+/** Captain Bea's one-line explanation of a single wrong recipe line. */
 export function scaleExplanation(itemEn: string, amount: number, serves: number, eating: number, scaled: number): string {
   const more = scaled - amount;
   const tail =

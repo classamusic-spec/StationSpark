@@ -11,7 +11,7 @@ export function useSpokenPrompt(
   opts: { speaker?: CharacterId; lang?: 'en' | 'es'; delayMs?: number } = {},
 ): void {
   const said = useRef<string | null>(null);
-  const { speaker = 'beacon', lang = 'en', delayMs = 320 } = opts;
+  const { speaker = 'bea', lang = 'en', delayMs = 320 } = opts;
 
   useEffect(() => {
     if (!text || said.current === text) return;
@@ -25,5 +25,5 @@ export function useSpokenPrompt(
 
 /** Speak a number/word that IS the learning payload (counts, sums, fractions). */
 export function sayPayload(text: string, lang: 'en' | 'es' = 'en'): void {
-  speech.say(text, { speaker: 'beacon', lang });
+  speech.say(text, { speaker: 'bea', lang });
 }

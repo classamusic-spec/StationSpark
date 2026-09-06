@@ -16,7 +16,7 @@ import { Draggable } from '../shared/Draggable';
 import { GameFrame } from '../shared/GameFrame';
 import { SlotZone } from '../shared/SlotZone';
 import { useGameLayout } from '../shared/layout';
-import { useBeaconLine } from '../shared/speak';
+import { useCaptainLine } from '../shared/speak';
 import { useHintLadder } from '../shared/useHintLadder';
 import { BinBox } from '../shared/art/Props';
 
@@ -70,7 +70,7 @@ export function GearSort({ challenge, ageBand, onComplete, onEvent, compact }: M
   );
   const hintLadder = useHintLadder(state.misses, session.hint);
 
-  useBeaconLine(`${prompt.title}. Drag each thing into the right bin!`, session.say, { es: prompt.es });
+  useCaptainLine(`${prompt.title}. Drag each thing into the right bin!`, session.say, { es: prompt.es });
 
   useEffect(() => {
     session.progress(challenge.items.length - remaining.length, challenge.items.length);
@@ -204,7 +204,7 @@ export function GearSort({ challenge, ageBand, onComplete, onEvent, compact }: M
                       color={palette.purple}
                       center
                       numberOfLines={1}
-                      onPress={() => speech.say(bin.labelEs ?? '', { speaker: 'beacon', lang: 'es' })}
+                      onPress={() => speech.say(bin.labelEs ?? '', { speaker: 'bea', lang: 'es' })}
                     >
                       {bin.labelEs}
                     </Text>

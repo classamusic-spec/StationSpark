@@ -17,7 +17,7 @@ export interface AskQuestionProps {
   options: string[];
   correct: string;
   ageBand?: AgeBand;
-  /** Beacon's line after two misses — should make the answer obvious */
+  /** Captain Bea's line after two misses — should make the answer obvious */
   hintText?: string;
   hintEs?: string;
   onCorrect?: () => void;
@@ -57,7 +57,7 @@ export function AskQuestion({
 
   useEffect(() => {
     if (!visible || !speakOnShow) return;
-    const t = setTimeout(() => speech.say(prompt, { speaker: 'beacon' }), 300);
+    const t = setTimeout(() => speech.say(prompt, { speaker: 'bea' }), 300);
     return () => clearTimeout(t);
   }, [visible, prompt, speakOnShow]);
 
@@ -118,7 +118,7 @@ export function AskQuestion({
             );
           })}
         </View>
-        <Pressable onPress={() => speech.say(prompt, { speaker: 'beacon' })} style={styles.replay} accessibilityRole="button" accessibilityLabel="Hear the question again">
+        <Pressable onPress={() => speech.say(prompt, { speaker: 'bea' })} style={styles.replay} accessibilityRole="button" accessibilityLabel="Hear the question again">
           <Text variant="tiny" color={palette.navyMuted}>
             TAP TO HEAR AGAIN
           </Text>
