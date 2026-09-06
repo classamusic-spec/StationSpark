@@ -47,3 +47,4 @@ yarn-error.*
 # QA harness output
 /tools/qa/out
 /tools/qa/.tmp
+/tools/qa/out2
