@@ -1,5 +1,5 @@
-import React, { useCallback, useMemo, useReducer, useRef } from 'react';
-import { StyleSheet, View } from 'react-native';
+import React, { useCallback, useMemo, useReducer, useRef, useState } from 'react';
+import { StyleSheet, View, type LayoutChangeEvent } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   FadeIn,
@@ -13,10 +13,11 @@ import Animated, {
 } from 'react-native-reanimated';
 import type { MiniGameProps } from '@/minigames/types';
 import { useMiniGameSession } from '@/minigames/useMiniGameSession';
-import { hit, palette, radii, shadows, spacing, springs } from '@/theme';
+import { activity, hit, palette, radii, roles, spacing, springs } from '@/theme';
 import { sfx } from '@/services/audio';
 import { haptics } from '@/services/haptics';
-import { Button, CheckIcon, GlyphIcon, Text } from '@/ui';
+import { speech } from '@/services/speech';
+import { Button, CheckIcon, GlyphIcon, Text, useSideRail } from '@/ui';
 
 import { Stage } from '@/world';
 import { SceneCrew } from '@/world/scenes';
@@ -34,11 +35,19 @@ const clockLabel = (totalMinutes: number) => {
   return `${h === 0 ? 12 : h}:${String(m).padStart(2, '0')}`;
 };
 
+/** Generated events read "the school fair opens" — a headline starts upper case. */
+const sentence = (s: string) => {
+  const trimmed = s.replace(/\.$/, '').trim();
+  return trimmed.charAt(0).toUpperCase() + trimmed.slice(1);
+};
+
 interface State {
   /** minutes moved from the start time (can be negative while exploring) */
   delta: number;
   misses: number;
   solved: boolean;
+  /** the answer was checked and was not there yet — cleared as soon as it moves */
+  offBy: boolean;
 }
 
 type Action = { type: 'SET'; delta: number } | { type: 'MISS' } | { type: 'SOLVE' };
@@ -46,9 +55,9 @@ type Action = { type: 'SET'; delta: number } | { type: 'MISS' } | { type: 'SOLVE
 function reducer(state: State, action: Action): State {
   switch (action.type) {
     case 'SET':
-      return { ...state, delta: action.delta };
+      return { ...state, delta: action.delta, offBy: false };
     case 'MISS':
-      return { ...state, misses: state.misses + 1 };
+      return { ...state, misses: state.misses + 1, offBy: true };
     case 'SOLVE':
       return { ...state, solved: true };
     default:
@@ -56,10 +65,10 @@ function reducer(state: State, action: Action): State {
   }
 }
 
-export function ClockWatch({ challenge, ageBand, onComplete, onEvent, compact }: MiniGameProps<'clock-watch'>) {
+export function ClockWatch({ challenge, onComplete, onEvent, compact }: MiniGameProps<'clock-watch'>) {
   const session = useMiniGameSession('clock-watch', onComplete, onEvent);
   const layout = useGameLayout({ compact });
-  const [state, dispatch] = useReducer(reducer, { delta: 0, misses: 0, solved: false });
+  const [state, dispatch] = useReducer(reducer, { delta: 0, misses: 0, solved: false, offBy: false });
   const hintLadder = useHintLadder(state.misses, session.hint);
   const done = useRef(false);
 
@@ -70,7 +79,32 @@ export function ClockWatch({ challenge, ageBand, onComplete, onEvent, compact }:
   const moved = ((state.delta % 720) + 720) % 720;
   const matches = ((current % 720) + 720) % 720 === ((targetTotal % 720) + 720) % 720;
 
-  const size = Math.min(layout.boxWidth - spacing.lg * 2, layout.s(268));
+  const headline = sentence(challenge.event);
+
+  /*
+   * THE CLOCK IS THE ACTIVITY — it takes every pixel the chrome does not need,
+   * including the extra room a tablet gives once the controls become a rail.
+   * The play area measures itself so the dial is sized against the room it
+   * really has: too big and it grows up underneath the task bar.
+   */
+  const sideRail = useSideRail();
+  const playWidth = sideRail
+    ? Math.min(layout.width - activity.sidePanelWidth - spacing.sm * 3, 820)
+    : layout.boxWidth;
+
+  const [stageH, setStageH] = useState(0);
+  const onStageLayout = useCallback((e: LayoutChangeEvent) => {
+    const h = e.nativeEvent.layout.height;
+    setStageH((prev) => (Math.abs(prev - h) < 1 ? prev : h));
+  }, []);
+
+  const basePad = layout.s(24);
+  const ledgeH = layout.s(36);
+  const roomForDial = stageH > 0 ? stageH - basePad - ledgeH : Number.POSITIVE_INFINITY;
+  const size = Math.max(
+    200,
+    Math.min(playWidth - spacing.xs * 2, layout.s(352) * (sideRail ? 1.3 : 1), layout.height * 0.62, roomForDial),
+  );
   const centre = size / 2;
 
   const minuteAngle = useSharedValue((startTotal % 60) * 6);
@@ -78,7 +112,14 @@ export function ClockWatch({ challenge, ageBand, onComplete, onEvent, compact }:
   const wobble = useSharedValue(0);
   const lastSnapped = useSharedValue((startTotal % 60 + 60) % 60);
 
-  useCaptainLine(`${challenge.event.replace(/\.$/, '')}. Move the long hand to show ${clockLabel(targetTotal)}.`, session.say);
+  const call = `${headline} at ${clockLabel(targetTotal)}. Move the long hand to show ${clockLabel(targetTotal)}.`;
+  useCaptainLine(call, session.say);
+
+  const replay = useCallback(() => {
+    sfx.play('tap-soft');
+    haptics.tap();
+    speech.say(call, { speaker: 'bea' });
+  }, [call]);
 
   const applyDelta = useCallback(
     (nextDelta: number) => {
@@ -171,29 +212,74 @@ export function ClockWatch({ challenge, ageBand, onComplete, onEvent, compact }:
   const minuteLen = size * 0.38;
   const hourLen = size * 0.26;
 
-  const hintText = `${challenge.event.replace(/\.$/, '')} — that is ${clockLabel(targetTotal)}. Move the long hand ${answerDelta} minutes forward.`;
+  const hintText = `${headline} — that is ${clockLabel(targetTotal)}. Move the long hand ${answerDelta} minutes forward.`;
+  /*
+   * While a hint is up the dial lifts into whatever sky is left above it, so
+   * the bubble stands on the tower rather than on the clock face. It only ever
+   * takes room that is actually free — the dial never shrinks mid-puzzle.
+   */
+  const freeSky = stageH > 0 ? Math.max(0, stageH - basePad - ledgeH - size) : 0;
+  const hintLane = hintLadder.showBubble ? Math.min(layout.s(150), freeSky) : 0;
+
+  /* One status line, never colour alone: it always carries words, and a mark. */
+  const status = state.solved
+    ? { text: 'Right on time!', tone: roles.state.successFill, ink: palette.leafGreenDark, glyph: 'check' }
+    : state.offBy
+      ? { text: `Not there yet — keep moving the long hand`, tone: roles.state.retryFill, ink: palette.orangeDark, glyph: undefined }
+      : moved === answerDelta && moved > 0
+        ? { text: `Moved ${moved} minutes — press Done`, tone: roles.state.successFill, ink: palette.leafGreenDark, glyph: 'check' }
+        : { text: `Moved ${moved} minutes`, tone: roles.surface.sunken, ink: roles.ink.secondary, glyph: undefined };
 
   return (
     <GameFrame
-      title={clockLabel(targetTotal) === clockLabel(current) ? 'That looks right!' : 'Set the Clock'}
-      subtitle={ageBand === 'A' ? undefined : 'Drag the long hand around the dial.'}
+      title="Set the Clock"
+      subtitle="Drag the hand, or tap − and +."
       compact={compact}
+      onReplay={replay}
       backdrop={<Stage variant="tower" groundHeight={140} />}
       overlay={<SceneCrew side="left" size={54} mood={state.solved ? 'cheer' : 'idle'} />}
       hint={{ text: hintText, visible: hintLadder.showBubble, onDismiss: hintLadder.dismiss }}
       tray={
         <View style={styles.tray}>
+          {/*
+           * ONE readout. The event, the time it starts from, the time it has to
+           * reach and how far the child has turned the hand used to be four
+           * separate scraps scattered around the dial; they are one card now,
+           * directly above the buttons that change them.
+           */}
           <View style={styles.readout}>
-            <Text variant="h3" center>
-              {clockLabel(startTotal)} → {clockLabel(targetTotal)}
+            <Text variant="bodyStrong" center numberOfLines={2}>
+              {headline}
             </Text>
-            <View style={styles.movedRow}>
-              <Text variant="small" color={palette.navySoft} center>
-                you moved {moved} minutes
+            <View style={styles.times}>
+              <View style={styles.timeBox}>
+                <Text variant="tiny" color={roles.ink.muted}>
+                  NOW
+                </Text>
+                <Text variant="h2" center>
+                  {clockLabel(current)}
+                </Text>
+              </View>
+              <Text variant="h2" color={roles.ink.muted}>
+                →
               </Text>
-              {moved === answerDelta ? <GlyphIcon id="check" size={18} label="correct" /> : null}
+              <View style={[styles.timeBox, styles.timeTarget]}>
+                <Text variant="tiny" color={palette.goldDark}>
+                  NEEDS
+                </Text>
+                <Text variant="h2" center>
+                  {clockLabel(targetTotal)}
+                </Text>
+              </View>
+            </View>
+            <View style={[styles.status, { backgroundColor: status.tone }]}>
+              {status.glyph ? <GlyphIcon id={status.glyph} size={16} label="correct" /> : null}
+              <Text variant="small" color={status.ink} center>
+                {status.text}
+              </Text>
             </View>
           </View>
+
           <View style={styles.controls}>
             <Button label={`−${step}`} tone="white" size="md" onPress={() => nudgeBy(-1)} disabled={state.solved} />
             <Button
@@ -209,13 +295,7 @@ export function ClockWatch({ challenge, ageBand, onComplete, onEvent, compact }:
         </View>
       }
     >
-      <View style={styles.stage}>
-        <View style={styles.eventCard}>
-          <Text variant="bodyStrong" center>
-            {challenge.event}
-          </Text>
-        </View>
-
+      <View style={[styles.stage, { paddingBottom: basePad + hintLane }]} onLayout={onStageLayout}>
         <GestureDetector gesture={drag}>
           <Animated.View style={[{ width: size, height: size }, dialStyle]} collapsable={false}>
             <ClockFace size={size} />
@@ -311,18 +391,12 @@ export function ClockWatch({ challenge, ageBand, onComplete, onEvent, compact }:
         </GestureDetector>
 
         {/* the tower ledge under the dial, with Luna sitting on it */}
-        <View style={[styles.ledge, { width: size * 1.12 }]} pointerEvents="none">
+        <View style={[styles.ledge, { width: size * 1.1 }]} pointerEvents="none">
           <View style={styles.ledgeTop} />
           <View style={styles.ledgeShade} />
           <View style={styles.luna}>
-            <Animal id="kitten" size={Math.max(38, size * 0.24)} mood={state.solved ? 'happy' : 'help'} />
+            <Animal id="kitten" size={Math.max(38, size * 0.2)} mood={state.solved ? 'happy' : 'help'} />
           </View>
-        </View>
-
-        <View style={styles.bigTime}>
-          <Text variant="h1" center>
-            {clockLabel(current)}
-          </Text>
         </View>
 
         {state.solved ? (
@@ -338,38 +412,41 @@ export function ClockWatch({ challenge, ageBand, onComplete, onEvent, compact }:
 }
 
 const styles = StyleSheet.create({
-  stage: { alignItems: 'center', justifyContent: 'center', gap: spacing.sm },
-  eventCard: {
-    backgroundColor: palette.white,
-    borderRadius: radii.card,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
-    maxWidth: 420,
-    ...shadows.soft,
-  },
+  stage: { flex: 1, alignItems: 'center', justifyContent: 'flex-end', gap: spacing.xs },
   numeral: { position: 'absolute', textAlign: 'center' },
-  ledge: { alignItems: 'center', marginTop: -6 },
+  ledge: { alignItems: 'center', marginTop: -4 },
   ledgeTop: { height: 12, alignSelf: 'stretch', borderRadius: 6, backgroundColor: '#DCC79F' },
   ledgeShade: { height: 5, alignSelf: 'stretch', marginTop: -1, borderRadius: 3, backgroundColor: 'rgba(31,42,90,0.14)' },
   luna: { position: 'absolute', right: '12%', bottom: 10 },
   hand: { position: 'absolute', borderRadius: 8 },
   cap: { position: 'absolute', backgroundColor: palette.gold, borderWidth: 3, borderColor: palette.white },
-  bigTime: {
-    backgroundColor: palette.cream,
-    borderRadius: radii.pill,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: 2,
-    minWidth: 120,
-    ...shadows.soft,
-  },
   banner: {
-    backgroundColor: palette.mint,
+    backgroundColor: roles.state.successFill,
     borderRadius: radii.pill,
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.xs,
   },
   tray: { gap: spacing.sm },
-  readout: { alignItems: 'center' },
-  movedRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4 },
+  readout: { alignItems: 'center', gap: 6 },
+  times: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm },
+  timeBox: {
+    alignItems: 'center',
+    minWidth: 96,
+    backgroundColor: roles.surface.sunken,
+    borderRadius: radii.tag,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 2,
+  },
+  timeTarget: { backgroundColor: '#FFE9A8' },
+  status: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    borderRadius: radii.pill,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 3,
+    minHeight: 26,
+  },
   controls: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: spacing.sm, minHeight: hit.min },
 });

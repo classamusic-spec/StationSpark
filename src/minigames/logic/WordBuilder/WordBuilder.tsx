@@ -13,12 +13,12 @@ import Animated, {
 } from 'react-native-reanimated';
 import type { MiniGameProps } from '@/minigames/types';
 import { useMiniGameSession } from '@/minigames/useMiniGameSession';
-import { hit, palette, radii, shadows, spacing, springs, timings } from '@/theme';
+import { activity, hit, palette, radii, roles, shadows, spacing, springs, timings } from '@/theme';
 import { useIdleBob } from '@/hooks';
 import { sfx } from '@/services/audio';
 import { haptics } from '@/services/haptics';
 import { speech } from '@/services/speech';
-import { Button, Chip, SparkleBurst, SpeakerIcon, Text, TrayRow, VocabIcon } from '@/ui';
+import { Chip, SparkleBurst, Text, TrayRow, VocabIcon, useSideRail } from '@/ui';
 import { GameFrame } from '../shared/GameFrame';
 import { SlotZone } from '../shared/SlotZone';
 import { useGameLayout } from '../shared/layout';
@@ -142,7 +142,6 @@ export function WordBuilder({ challenge, ageBand, onComplete, onEvent, compact }
   const session = useMiniGameSession('word-builder', onComplete, onEvent);
   const layout = useGameLayout({ compact });
   const { word, lang, letters, tiles, prefilled } = challenge;
-  const other: 'en' | 'es' = lang === 'en' ? 'es' : 'en';
   const finished = useRef(false);
 
   const [state, dispatch] = useReducer(reducer, undefined, () => ({
@@ -170,8 +169,12 @@ export function WordBuilder({ challenge, ageBand, onComplete, onEvent, compact }
     speech.sayWord({ en: word.en, es: word.es }, lang);
   }, [lang, word.en, word.es]);
 
+  /*
+   * The prompt is SPOKEN and printed once in the task bar. It used to also be
+   * raised as a `say` event, which drew a card over the answer slots repeating
+   * "Can you spell frog?" — the same instruction for a third time.
+   */
   useEffect(() => {
-    session.say('bea', `Can you spell ${word[lang]}?`, word[other]);
     const t = setTimeout(sayWord, 380);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -245,15 +248,20 @@ export function WordBuilder({ challenge, ageBand, onComplete, onEvent, compact }
     [expected, miss, place, state.phase, tiles],
   );
 
-  /* ----- geometry ----- */
-  const boardWidth = Math.min(layout.boxWidth - spacing.md * 2, layout.s(322));
+  /* ----- geometry: the board and the letter bank both get room ----- */
+  const sideRail = useSideRail();
+  const playWidth = sideRail
+    ? Math.min(layout.width - activity.sidePanelWidth - spacing.sm * 3, 820)
+    : layout.boxWidth;
+  const boardWidth = Math.min(playWidth - spacing.sm * 2, sideRail ? 580 : layout.s(360));
   const inner = boardWidth - spacing.md * 2 - 20;
   const perRow = letters.length <= 5 ? letters.length : Math.ceil(letters.length / 2);
-  const slotSize = Math.max(30, Math.min(layout.s(54), (inner - (perRow - 1) * 8) / perRow));
+  const slotGap = 10;
+  const slotSize = Math.max(34, Math.min(sideRail ? 82 : layout.s(62), (inner - (perRow - 1) * slotGap) / perRow));
   /** pin the row width so a long word always wraps into two tidy lines */
-  const rowWidth = perRow * (slotSize + 8) - 8;
-  const tileSize = Math.max(hit.min, layout.s(tiles.length > 6 ? 56 : tiles.length > 4 ? 58 : 64));
-  const iconSize = layout.s(ageBand === 'A' ? 88 : 76);
+  const rowWidth = perRow * (slotSize + slotGap) - slotGap;
+  const tileSize = Math.max(hit.min, layout.s(tiles.length > 6 ? 58 : tiles.length > 4 ? 62 : 66));
+  const iconSize = layout.s(ageBand === 'A' ? 84 : 72);
 
   /* ----- copy ----- */
   const hintText = useMemo(() => {
@@ -263,53 +271,48 @@ export function WordBuilder({ challenge, ageBand, onComplete, onEvent, compact }
 
   const solved = state.phase !== 'spelling';
 
+  /* the hint points at "the glowing space" — so the board moves up while the
+     bubble is on screen instead of letting it sit on the answer slots */
+  const hintLane = hintLadder.showBubble && !solved ? layout.s(140) : 0;
+
   return (
     <GameFrame
       title={lang === 'es' ? `Escribe: ${word.es}` : `Spell the ${word.en}`}
-      subtitle={ageBand === 'A' ? 'Tap or drag the letters.' : 'Listen, then build the word letter by letter.'}
+      subtitle="Tap or drag the letters."
       es={lang === 'es' ? 'Escucha y escribe la palabra.' : `En español: ${word.es}`}
       compact={compact}
+      /* one hear-it-again, in the task bar — the tray's own "Hear it" button is gone */
+      onReplay={sayWord}
+      /* …and the "0 / 4 letters" chip is gone too: the bar draws the dots */
+      progress={{ done: state.filled, total: letters.length }}
       hint={{ text: hintText, visible: hintLadder.showBubble && !solved, onDismiss: hintLadder.dismiss }}
       tray={
-        <View style={styles.trayInner}>
-          <TrayRow style={styles.tileRow}>
-            {tiles.map((letter, i) => (
-              <TileToken
-                key={`${letter}-${i}`}
-                letter={letter}
-                index={i}
-                size={tileSize}
-                used={state.used.includes(i)}
-                wrong={state.wrong === i}
-                highlight={hintLadder.highlight && !state.used.includes(i) && letter === expected}
-                disabled={solved}
-                onDropTile={(slotId) => onDropTile(i, slotId)}
-                onTap={() => tapTile(i)}
-              />
-            ))}
-          </TrayRow>
-          <View style={styles.actions}>
-            <Chip label={`${state.filled} / ${letters.length} letters`} tone="cream" />
-            <Button
-              label={lang === 'es' ? 'Escuchar' : 'Hear it'}
-              tone="blue"
-              size="md"
-              sound="none"
-              icon={<SpeakerIcon size={20} color={palette.white} />}
-              onPress={sayWord}
+        <TrayRow style={styles.tileRow}>
+          {tiles.map((letter, i) => (
+            <TileToken
+              key={`${letter}-${i}`}
+              letter={letter}
+              index={i}
+              size={tileSize}
+              used={state.used.includes(i)}
+              wrong={state.wrong === i}
+              highlight={hintLadder.highlight && !state.used.includes(i) && letter === expected}
+              disabled={solved}
+              onDropTile={(slotId) => onDropTile(i, slotId)}
+              onTap={() => tapTile(i)}
             />
-          </View>
-        </View>
+          ))}
+        </TrayRow>
       }
     >
-      <View style={styles.stage}>
+      <View style={[styles.stage, { paddingBottom: spacing.lg + hintLane }]}>
         {/* ---- the ready room the board hangs in ---- */}
         <View style={StyleSheet.absoluteFill} pointerEvents="none">
           <View style={styles.wall}>
-            <ReadyRoomWall width={layout.boxWidth} />
+            <ReadyRoomWall width={playWidth} />
           </View>
           <View style={styles.floor}>
-            <ReadyRoomFloor width={layout.boxWidth} />
+            <ReadyRoomFloor width={playWidth} />
           </View>
         </View>
 
@@ -327,7 +330,7 @@ export function WordBuilder({ challenge, ageBand, onComplete, onEvent, compact }
             </View>
           ) : null}
 
-          <Animated.View style={[styles.slots, { width: rowWidth }, solved && glowStyle]}>
+          <Animated.View style={[styles.slots, { width: rowWidth, gap: slotGap }, solved && glowStyle]}>
             {letters.map((letter, i) => {
               const isFilled = i < state.filled;
               return (
@@ -373,7 +376,9 @@ export function WordBuilder({ challenge, ageBand, onComplete, onEvent, compact }
 }
 
 const styles = StyleSheet.create({
-  stage: { flex: 1, alignSelf: 'stretch', alignItems: 'center', justifyContent: 'flex-end', paddingBottom: spacing.sm },
+  /* the board sits just above the letter bank: a short drag, and the word and
+     the letters read as one thing */
+  stage: { flex: 1, alignSelf: 'stretch', alignItems: 'center', justifyContent: 'flex-end' },
   wall: {
     position: 'absolute',
     left: 0,
@@ -397,13 +402,13 @@ const styles = StyleSheet.create({
   },
   board: {
     alignItems: 'center',
-    gap: spacing.xs,
+    gap: spacing.sm,
     backgroundColor: palette.panel,
     borderRadius: radii.panel,
     borderWidth: 10,
     borderColor: palette.wood,
     paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
+    paddingVertical: spacing.md,
     ...shadows.card,
   },
   support: { alignItems: 'center' },
@@ -412,18 +417,17 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
     marginTop: 2,
+    marginBottom: 2,
   },
   banner: {
-    backgroundColor: palette.mint,
+    backgroundColor: roles.state.successFill,
     borderRadius: radii.pill,
     paddingHorizontal: spacing.md,
     paddingVertical: 2,
   },
-  trayInner: { gap: spacing.sm },
-  tileRow: { rowGap: spacing.xs },
-  actions: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: spacing.md },
+  /* the letter bank needs air: a tile is a target as well as a token */
+  tileRow: { rowGap: spacing.sm, columnGap: spacing.sm, paddingVertical: 2 },
   tileWrap: { borderRadius: radii.tile },
   dragging: { zIndex: 60, elevation: 14 },
 });

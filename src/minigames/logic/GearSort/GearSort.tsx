@@ -4,12 +4,12 @@ import Animated, { FadeIn, ZoomIn } from 'react-native-reanimated';
 import type { GearSortChallenge } from '@/learning/types';
 import type { MiniGameProps } from '@/minigames/types';
 import { useMiniGameSession } from '@/minigames/useMiniGameSession';
-import { hit, palette, radii, roles, spacing } from '@/theme';
+import { activity, hit, palette, radii, roles, spacing } from '@/theme';
 import { useShowTranslation } from '@/hooks';
 import { sfx } from '@/services/audio';
 import { haptics } from '@/services/haptics';
 import { speech } from '@/services/speech';
-import { EquipmentIcon, Text, TrayRow, equipmentLabel } from '@/ui';
+import { EquipmentIcon, Text, TrayRow, equipmentLabel, useSideRail } from '@/ui';
 
 import { Stage } from '@/world';
 import { SceneCrew } from '@/world/scenes';
@@ -72,6 +72,12 @@ export function GearSort({ challenge, ageBand, onComplete, onEvent, compact }: M
   const session = useMiniGameSession('gear-sort', onComplete, onEvent);
   const layout = useGameLayout({ compact });
   const showEs = useShowTranslation();
+  /* on a tablet the tray becomes a side rail, so the play column is narrower
+     than the window — size the bins against that, not against the screen */
+  const sideRail = useSideRail();
+  const playWidth = sideRail
+    ? Math.min(layout.width - activity.sidePanelWidth - spacing.sm * 3, 820)
+    : layout.boxWidth;
   const [state, dispatch] = useReducer(reducer, { phase: 'sorting', placed: {}, misses: 0, focusBin: null });
 
   const prompt = PROMPTS[challenge.by];
@@ -137,12 +143,20 @@ export function GearSort({ challenge, ageBand, onComplete, onEvent, compact }: M
   const binCount = Math.max(1, challenge.bins.length);
   const binGap = spacing.xs;
   const binWidth = Math.min(
-    layout.s(168),
-    (layout.boxWidth - spacing.md * 2 - (binCount - 1) * binGap) / binCount,
+    sideRail ? 224 : layout.s(168),
+    (playWidth - spacing.md * 2 - (binCount - 1) * binGap) / binCount,
   );
-  const binHeight = Math.round(binWidth * 0.92);
+  /*
+   * BinBox is drawn in a 120 × 100 box and keeps its aspect ratio, so any other
+   * height just letterboxes the artwork — which is what left a dead 30 px band
+   * between a bin and its name plate, and made the measured drop target taller
+   * than the bin a child can see. The slot is now exactly the bin.
+   */
+  const binHeight = Math.round((binWidth * 100) / 120);
   const tokenIcon = Math.max(44, layout.s(ageBand === 'C' ? 48 : 54));
-  const tokenWidth = Math.max(hit.big + 20, layout.s(98));
+  /* wide enough for the longest gear name — "Extinguisher" used to be clipped
+     to "Extinguish…", then broken mid-word */
+  const tokenWidth = Math.max(hit.big + 24, layout.s(110));
 
   const focusItem = remaining[0];
   const hintBin = state.focusBin ?? focusItem?.bin ?? null;
@@ -152,6 +166,10 @@ export function GearSort({ challenge, ageBand, onComplete, onEvent, compact }: M
     const by = challenge.by === 'category' ? 'kind' : challenge.by;
     return `Look at the ${by}. The ${itemLabel(focusItem).toLowerCase()} belongs in the ${bin?.label ?? 'right'} bin.`;
   }, [challenge.bins, challenge.by, focusItem]);
+
+  /* while a hint is up the bins move up out of its way — a hint must never
+     cover the bin name it is telling the child to aim for */
+  const hintLane = hintLadder.showBubble ? layout.s(132) : 0;
 
   return (
     <GameFrame
@@ -202,7 +220,16 @@ export function GearSort({ challenge, ageBand, onComplete, onEvent, compact }: M
         </TrayRow>
       }
     >
-      <View style={styles.bench}>
+      {/* the bottom band is the lane the resident firefighter stands in, so a
+          bin label is never behind a character */}
+      <View
+        style={[
+          styles.bench,
+          sideRail
+            ? { justifyContent: 'center', paddingBottom: spacing.md + hintLane }
+            : { paddingBottom: layout.s(62) + hintLane },
+        ]}
+      >
         <View style={[styles.bins, { gap: binGap }]}>
           {challenge.bins.map((bin, i) => {
             const contents = challenge.items.filter((it) => state.placed[it.id] === bin.id);
@@ -221,7 +248,7 @@ export function GearSort({ challenge, ageBand, onComplete, onEvent, compact }: M
                     <View
                       style={[
                         styles.well,
-                        { top: binHeight * 0.34, height: binHeight * 0.42, left: binWidth * 0.16, right: binWidth * 0.16 },
+                        { top: binHeight * 0.34, height: binHeight * 0.5, left: binWidth * 0.17, right: binWidth * 0.17 },
                       ]}
                       pointerEvents="none"
                     />
@@ -256,7 +283,9 @@ export function GearSort({ challenge, ageBand, onComplete, onEvent, compact }: M
 }
 
 const styles = StyleSheet.create({
-  bench: { flex: 1, justifyContent: 'center', paddingHorizontal: spacing.sm, paddingBottom: spacing.xs },
+  /* the bins sit right above the tray: the shortest possible drag, and no
+     empty floor between the thing you pick up and the place it goes */
+  bench: { flex: 1, justifyContent: 'flex-end', paddingHorizontal: spacing.sm },
   bins: { flexDirection: 'row', justifyContent: 'center', alignItems: 'flex-start' },
   binCol: { alignItems: 'center', gap: 6 },
   well: {
@@ -288,6 +317,6 @@ const styles = StyleSheet.create({
     ...roles.lift.surface,
   },
   tokens: { rowGap: spacing.xs },
-  tokenLabel: { marginTop: 2 },
+  tokenLabel: { marginTop: 2, letterSpacing: 0.1, paddingHorizontal: 2 },
   clear: { minHeight: hit.big, justifyContent: 'center' },
 });

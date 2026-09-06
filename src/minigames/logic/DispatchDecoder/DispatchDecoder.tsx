@@ -4,12 +4,12 @@ import Animated, { FadeInDown, useAnimatedStyle, useSharedValue, withRepeat, wit
 import type { SceneId } from '@/learning/types';
 import type { MiniGameProps } from '@/minigames/types';
 import { useMiniGameSession } from '@/minigames/useMiniGameSession';
-import { hit, palette, radii, roles, spacing } from '@/theme';
-import { useShowTranslation } from '@/hooks';
+import { activity, hit, palette, radii, roles, spacing } from '@/theme';
+import { useReducedMotion, useShowTranslation } from '@/hooks';
 import { sfx } from '@/services/audio';
 import { haptics } from '@/services/haptics';
 import { speech } from '@/services/speech';
-import { AnswerTile, Text, TrayRow, VocabIcon } from '@/ui';
+import { AnswerTile, Text, TrayRow, VocabIcon, useSideRail } from '@/ui';
 import type { AnswerState } from '@/ui/kit/AnswerTile';
 
 import { Stage } from '@/world';
@@ -152,10 +152,17 @@ export function DispatchDecoder({ challenge, ageBand, onComplete, onEvent, compa
 
   /* LCD text, with the key word underlined once the hint appears */
   const shown = message.slice(0, chars);
-  const glow = useSharedValue(0.8);
+  /* the "live" lamp breathes — a decorative loop, so it stops on reduced motion */
+  const reduced = useReducedMotion();
+  const glow = useSharedValue(1);
   useEffect(() => {
+    if (reduced) {
+      glow.value = 1;
+      return;
+    }
+    glow.value = 0.8;
     glow.value = withRepeat(withTiming(1, { duration: 1400 }), -1, true);
-  }, [glow]);
+  }, [glow, reduced]);
   const lampStyle = useAnimatedStyle(() => ({ opacity: glow.value }));
 
   const lcdParts = useMemo(() => {
@@ -169,8 +176,15 @@ export function DispatchDecoder({ challenge, ageBand, onComplete, onEvent, compa
     };
   }, [challenge.correct, hintLadder.level, message]);
 
-  const panelWidth = Math.min(layout.boxWidth - spacing.md * 2, layout.s(360));
-  const lcdSize = layout.s(ageBand === 'A' ? 21 : 19);
+  /* on a tablet the tray becomes a side rail, so the radio sizes against the
+     narrower play column — and gets to be bigger inside it */
+  const sideRail = useSideRail();
+  const playWidth = sideRail
+    ? Math.min(layout.width - activity.sidePanelWidth - spacing.sm * 3, 820)
+    : layout.boxWidth;
+  /* the 76 px left inset on a tablet is the lane the crew stands in */
+  const panelWidth = Math.min(playWidth - spacing.md * 2 - (sideRail ? 76 : 0), sideRail ? 620 : layout.s(360));
+  const lcdSize = layout.s(ageBand === 'A' ? 21 : 19) * (sideRail ? 1.15 : 1);
 
   const tileState = (option: string): AnswerState => {
     if (state.phase === 'solved') return option === challenge.correct ? 'correct' : 'disabled';
@@ -188,6 +202,13 @@ export function DispatchDecoder({ challenge, ageBand, onComplete, onEvent, compa
 
   const scene = challenge.scene;
   const stacked = challenge.mode === 'sentence';
+
+  /*
+   * Captain Bea's bubble stands on the top edge of the tray. While it is up the
+   * play area gives it a lane of its own, so a hint can never sit on the very
+   * thing it is talking about.
+   */
+  const hintLane = hintLadder.showBubble ? layout.s(132) : 0;
 
   return (
     <GameFrame
@@ -246,7 +267,16 @@ export function DispatchDecoder({ challenge, ageBand, onComplete, onEvent, compa
         </TrayRow>
       }
     >
-      <View style={styles.stage}>
+      {/* the bottom band is the lane the resident firefighter stands in, so
+          decoration never covers the passage */}
+      <View
+        style={[
+          styles.stage,
+          sideRail
+            ? { justifyContent: 'center', paddingBottom: spacing.md + hintLane, paddingLeft: 76 }
+            : { paddingBottom: layout.s(62) + hintLane },
+        ]}
+      >
         {/*
          * ONE copy of the call. The radio chassis is drawn here rather than
          * pulled from a fixed-aspect sprite so the display grows with the
@@ -274,7 +304,7 @@ export function DispatchDecoder({ challenge, ageBand, onComplete, onEvent, compa
             <Text
               variant="bodyStrong"
               color="#8CFFC0"
-              style={[styles.lcdText, { fontSize: lcdSize, lineHeight: Math.round(lcdSize * 1.42) }]}
+              style={[styles.lcdText, { fontSize: Math.round(lcdSize), lineHeight: Math.round(lcdSize * 1.42) }]}
             >
               {lcdParts ? (
                 <>
@@ -318,7 +348,9 @@ export function DispatchDecoder({ challenge, ageBand, onComplete, onEvent, compa
 }
 
 const styles = StyleSheet.create({
-  stage: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.sm },
+  /* the call sits directly above the answers, so the screen reads top to
+     bottom: hear it, read it, choose */
+  stage: { flex: 1, alignItems: 'center', justifyContent: 'flex-end', gap: spacing.sm },
   radio: {
     backgroundColor: palette.navy,
     borderRadius: radii.panel,

@@ -3,7 +3,7 @@ import { StyleSheet, View, type LayoutChangeEvent } from 'react-native';
 import Animated, { FadeInDown, useAnimatedStyle, useSharedValue, withSequence, withSpring, withTiming } from 'react-native-reanimated';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { useRouter, type Href } from 'expo-router';
-import { radii, shadows, spacing, springs } from '@/theme';
+import { radii, roles, spacing, springs } from '@/theme';
 import { Button, ChevronRightIcon, Panel, ScreenFrame, Text, TopBar } from '@/ui';
 import { sfx } from '@/services/audio';
 import { haptics } from '@/services/haptics';
@@ -14,7 +14,7 @@ import { useGame } from '@/state/store';
 import { selectTruck } from '@/state/selectors';
 import { Birds, FireTruck, MAP_PLACES, MAP_VB, TRUCK_PARK, TownMap } from '@/world';
 import { BottomBar, PinLabel, StarCounter, useScaledLayout } from '@/screens/shared';
-import { LocationSheet, type SheetMission } from './LocationSheet';
+import { LocationPanel, LocationSheet, type SheetMission } from './LocationSheet';
 
 const MIN_ZOOM = 1;
 const MAX_ZOOM = 2.6;
@@ -23,6 +23,12 @@ type PlaceState = 'open' | 'locked' | 'soon';
 
 /** Height the "Choose a Mission" button reserves at the foot of the board. */
 const CTA_ROOM = 118;
+/**
+ * On a wide window the town keeps the room and the jobs stand beside it. The
+ * board is portrait and fits to the height, so the width it cannot use goes to
+ * the rail rather than to empty sky.
+ */
+const railWidth = (w: number) => Math.round(Math.max(320, Math.min(460, w * 0.34)));
 
 /**
  * Pin label placement. Labels are wider than the buildings they mark, so on a
@@ -102,11 +108,19 @@ export function MapScreen() {
    * the Market, the Homes and the town sign were only ever reachable by
    * panning (art re-score item 10: nothing under the CTA).
    */
+  /**
+   * A tablet does not get a phone map with sky either side. Once there is room
+   * for a rail, the CTA and the selected place move into it and the board takes
+   * the whole of the remaining area.
+   */
+  const side = layout.wide;
+  const ctaRoom = side ? 0 : CTA_ROOM;
+
   const mapW = useMemo(() => {
     const w = viewport.w > 0 ? viewport.w : layout.contentWidth;
-    const room = viewport.h > 0 ? viewport.h - CTA_ROOM : 0;
+    const room = viewport.h > 0 ? viewport.h - ctaRoom : 0;
     return room > 0 ? Math.min(w, (room * MAP_VB.w) / MAP_VB.h) : w;
-  }, [layout.contentWidth, viewport.h, viewport.w]);
+  }, [ctaRoom, layout.contentWidth, viewport.h, viewport.w]);
   const mapH = (MAP_VB.h / MAP_VB.w) * mapW;
   const unit = mapW / MAP_VB.w;
   const scale = useSharedValue(1);
@@ -258,18 +272,22 @@ export function MapScreen() {
       backdrop={<Birds count={1} top={40} arc={20} size={28} periodMs={22000} />}
       chrome={<TopBar right={<StarCounter />} />}
     >
-      <View style={styles.body}>
+      <View style={[styles.body, side && styles.bodyRow]}>
+        <View style={styles.mapCol}>
         {/* critique #14: the map is the screen — it runs edge to edge and the
-            title and the CTA float over it instead of boxing it in. */}
-        <Animated.View entering={FadeInDown.springify().damping(17)} style={styles.header} pointerEvents="box-none">
-          <Panel tone="cream" padding="xs" radius="pill" style={styles.banner}>
-            <Text variant="h3" center numberOfLines={1}>
-              Spark City
-            </Text>
-          </Panel>
-        </Animated.View>
+            title and the CTA float over it instead of boxing it in. On a wide
+            window both move into the rail so nothing floats over the town. */}
+        {!side ? (
+          <Animated.View entering={FadeInDown.springify().damping(17)} style={styles.header} pointerEvents="box-none">
+            <Panel tone="cream" padding="xs" radius="pill" style={styles.banner}>
+              <Text variant="h3" center numberOfLines={1}>
+                Spark City
+              </Text>
+            </Panel>
+          </Animated.View>
+        ) : null}
 
-        <View style={styles.viewport} onLayout={onViewport}>
+        <View style={[styles.viewport, { paddingBottom: ctaRoom }]} onLayout={onViewport}>
           {viewport.w > 0 ? (
             <GestureDetector gesture={gesture}>
               <Animated.View style={[styles.mapWrap, { width: mapW, height: mapH }, mapStyle]}>
@@ -302,22 +320,69 @@ export function MapScreen() {
           ) : null}
         </View>
 
-        <View style={styles.ctaWrap} pointerEvents="box-none">
-          <View style={[styles.cta, { maxWidth: layout.contentWidth }]}>
+        {!side ? (
+          <View style={styles.ctaWrap} pointerEvents="box-none">
+            <View style={[styles.cta, { maxWidth: layout.contentWidth }]}>
+              <Button
+                label="Choose a Mission"
+                size="xl"
+                tone={roles.action.primary}
+                block
+                glow
+                iconRight={<ChevronRightIcon size={28} />}
+                onPress={() => router.push('/dispatch')}
+              />
+            </View>
+          </View>
+        ) : null}
+        </View>
+
+        {side ? (
+          <Animated.View entering={FadeInDown.springify().damping(17)} style={[styles.rail, { width: railWidth(layout.width) }]}>
+            <View style={styles.railHead}>
+              <Text variant="h1" numberOfLines={1} accessibilityRole="header">
+                Spark City
+              </Text>
+              <Text variant="small" color={roles.ink.secondary}>
+                Tap a place to see the jobs there.
+              </Text>
+            </View>
+
+            <Panel tone="white" radius="panel" padding="sm" style={styles.railPanel}>
+              {openInfo ? (
+                <LocationPanel
+                  name={openInfo.name}
+                  nameEs={openInfo.nameEs}
+                  color={openInfo.color}
+                  missions={sheetMissions}
+                  onGo={go}
+                />
+              ) : (
+                <View style={styles.railEmpty}>
+                  <Text variant="bodyStrong" center>
+                    Where shall we help?
+                  </Text>
+                  <Text variant="small" color={roles.ink.secondary} center>
+                    Every white pin on the town is a place that needs the crew. Tap one and its jobs appear here.
+                  </Text>
+                </View>
+              )}
+            </Panel>
+
             <Button
               label="Choose a Mission"
-              size="xl"
-              tone="red"
+              size="lg"
+              tone={roles.action.primary}
               block
-              iconRight={<ChevronRightIcon size={28} />}
+              glow
+              iconRight={<ChevronRightIcon size={26} />}
               onPress={() => router.push('/dispatch')}
-              style={shadows.glowGold}
             />
-          </View>
-        </View>
+          </Animated.View>
+        ) : null}
       </View>
 
-      {openInfo ? (
+      {openInfo && !side ? (
         <LocationSheet
           name={openInfo.name}
           nameEs={openInfo.nameEs}
@@ -335,6 +400,17 @@ export function MapScreen() {
 
 const styles = StyleSheet.create({
   body: { flex: 1, width: '100%' },
+  bodyRow: { flexDirection: 'row' },
+  mapCol: { flex: 1 },
+  rail: {
+    paddingHorizontal: spacing.sm,
+    paddingTop: 84,
+    paddingBottom: spacing.sm,
+    gap: spacing.sm,
+  },
+  railHead: { gap: 2, paddingHorizontal: spacing.xxs },
+  railPanel: { flex: 1, gap: spacing.sm },
+  railEmpty: { flex: 1, justifyContent: 'center', gap: spacing.xs, paddingHorizontal: spacing.xs },
   /*
    * The title rides in the chrome row between the back button and the star
    * counter, not below it. Sitting lower put it over the first row of the
@@ -349,7 +425,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   banner: { paddingHorizontal: spacing.md },
-  viewport: { flex: 1, overflow: 'hidden', alignItems: 'center', justifyContent: 'center', paddingBottom: CTA_ROOM },
+  viewport: { flex: 1, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
   mapWrap: { borderRadius: radii.panel, overflow: 'hidden' },
   abs: { position: 'absolute' },
   ctaWrap: {

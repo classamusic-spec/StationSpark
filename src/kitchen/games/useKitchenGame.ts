@@ -10,6 +10,75 @@ import type { useMiniGameSession } from '@/minigames/useMiniGameSession';
 export type Session = ReturnType<typeof useMiniGameSession>;
 
 /* ------------------------------------------------------------------ */
+/* Timers that cannot outlive the game                                  */
+/* ------------------------------------------------------------------ */
+
+export interface Timers {
+  /** a setTimeout that is cancelled when the game unmounts */
+  after: (ms: number, fn: () => void) => void;
+  clear: () => void;
+}
+
+/**
+ * Every kitchen game finishes on a timer — count the slices, let the blender
+ * whirr, then complete. If the child walks out first those timers must die with
+ * the screen, or they set state on a gone component and report a result into a
+ * mission that has moved on.
+ */
+export function useTimers(): Timers {
+  const live = useRef<ReturnType<typeof setTimeout>[]>([]);
+  const clear = useCallback(() => {
+    for (const t of live.current) clearTimeout(t);
+    live.current = [];
+  }, []);
+  useEffect(() => clear, [clear]);
+  const after = useCallback((ms: number, fn: () => void) => {
+    const id = setTimeout(() => {
+      live.current = live.current.filter((t) => t !== id);
+      fn();
+    }, ms);
+    live.current.push(id);
+  }, []);
+  return useMemo(() => ({ after, clear }), [after, clear]);
+}
+
+/* ------------------------------------------------------------------ */
+/* The task, spoken — never mirrored into a bubble                      */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Says the current step out loud when it opens, and hands back a `replay` for
+ * the TaskBar's speaker button.
+ *
+ * It deliberately never raises `session.say`: that would print the task into
+ * Captain Bea's bubble underneath the TaskBar that already says it. The bar
+ * owns the words, this owns the voice, and the bubble is left free for the only
+ * thing worth reading — a hint or a reaction.
+ */
+export function useSpokenTask(line: string, opts: { delayMs?: number; key?: string | number } = {}): () => void {
+  const { delayMs = 380, key } = opts;
+  const latest = useRef(line);
+  latest.current = line;
+
+  const replay = useCallback(() => {
+    if (!latest.current) return;
+    sfx.play('tap-soft');
+    haptics.select();
+    speech.say(latest.current, { speaker: 'bea' });
+  }, []);
+
+  useEffect(() => {
+    if (!line) return;
+    const t = setTimeout(() => speech.say(latest.current, { speaker: 'bea' }), delayMs);
+    return () => clearTimeout(t);
+  }, [delayMs, key, line]);
+
+  useEffect(() => () => speech.stop(), []);
+
+  return replay;
+}
+
+/* ------------------------------------------------------------------ */
 /* The hint ladder                                                 */
 /* ------------------------------------------------------------------ */
 
@@ -124,6 +193,34 @@ export const kitchenFeel = {
     sfx.play('success');
     haptics.celebrate();
   },
+
+  /* ---- the physical verbs ---- */
+
+  /** one pass of the rolling pin, or one sweep of a spreader */
+  roll() {
+    sfx.play('slide');
+    haptics.tap();
+  },
+  /** the dough gives way and goes wide */
+  flatten() {
+    sfx.play('whoosh');
+    haptics.drop();
+  },
+  /** one turn of the spoon */
+  stir() {
+    sfx.play('slide');
+    haptics.select();
+  },
+  /** the knife goes through */
+  chop() {
+    sfx.play('chop');
+    haptics.thud();
+  },
+  /** liquid leaving the jug */
+  pour() {
+    sfx.play('pour');
+    haptics.tap();
+  },
 };
 
 /* ------------------------------------------------------------------ */
@@ -138,6 +235,13 @@ export interface DragSourceOptions {
   onTap?: () => void;
   /** released this far (in DESIGN units) from where the item sits */
   onDrop: (dx: number, dy: number) => void;
+  /**
+   * Where the item is hovering, in DESIGN units, while it is still in the air.
+   * Games use it to light up the bowl/plate the drop would land in, so a child
+   * can see the answer *before* letting go — the cure for "dropped it into
+   * nowhere". Reported at most every few pixels, never per frame.
+   */
+  onMove?: (dx: number, dy: number) => void;
   enabled?: boolean;
   tapSlop?: number;
 }
@@ -146,10 +250,12 @@ export interface DragSourceOptions {
  * A draggable that reports its drop in design units, so drop targets can be
  * plain numbers instead of measured layouts. Springs home on release.
  */
-export function useDragSource({ scale, onPickUp, onTap, onDrop, enabled = true, tapSlop = 9 }: DragSourceOptions) {
+export function useDragSource({ scale, onPickUp, onTap, onDrop, onMove, enabled = true, tapSlop = 9 }: DragSourceOptions) {
   const tx = useSharedValue(0);
   const ty = useSharedValue(0);
   const lift = useSharedValue(0);
+  const reportedX = useSharedValue(0);
+  const reportedY = useSharedValue(0);
 
   const pick = useCallback(() => {
     onPickUp?.();
@@ -163,6 +269,15 @@ export function useDragSource({ scale, onPickUp, onTap, onDrop, enabled = true, 
     [onDrop, onTap, scale, tapSlop],
   );
 
+  const hover = useCallback(
+    (dx: number, dy: number) => {
+      onMove?.(dx / (scale || 1), dy / (scale || 1));
+    },
+    [onMove, scale],
+  );
+
+  const wantsHover = !!onMove;
+
   const gesture = useMemo(
     () =>
       Gesture.Pan()
@@ -170,11 +285,18 @@ export function useDragSource({ scale, onPickUp, onTap, onDrop, enabled = true, 
         .minDistance(0)
         .onBegin(() => {
           lift.value = withSpring(1, springs.pop);
+          reportedX.value = 0;
+          reportedY.value = 0;
           runOnJS(pick)();
         })
         .onUpdate((e) => {
           tx.value = e.translationX;
           ty.value = e.translationY;
+          if (!wantsHover) return;
+          if (Math.hypot(e.translationX - reportedX.value, e.translationY - reportedY.value) < 8) return;
+          reportedX.value = e.translationX;
+          reportedY.value = e.translationY;
+          runOnJS(hover)(e.translationX, e.translationY);
         })
         .onEnd((e) => {
           runOnJS(release)(e.translationX, e.translationY);
@@ -183,8 +305,9 @@ export function useDragSource({ scale, onPickUp, onTap, onDrop, enabled = true, 
           tx.value = withSpring(0, springs.snap);
           ty.value = withSpring(0, springs.snap);
           lift.value = withSpring(0, springs.gentle);
+          if (wantsHover) runOnJS(hover)(Number.NaN, Number.NaN);
         }),
-    [enabled, lift, pick, release, tx, ty],
+    [enabled, hover, lift, pick, release, reportedX, reportedY, tx, ty, wantsHover],
   );
 
   const style = useAnimatedStyle(() => ({

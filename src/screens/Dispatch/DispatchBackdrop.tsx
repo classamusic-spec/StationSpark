@@ -25,8 +25,16 @@ import { Text } from '@/ui/Text';
 import { CaptainBea } from '@/characters/CaptainBea';
 
 /** how tall the hero band is, and how tall the console strip is */
-export const heroHeight = (tablet: boolean) => (tablet ? 254 : 210);
-export const deskHeight = (tablet: boolean) => (tablet ? 288 : 172);
+const clamp = (n: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, n));
+
+/**
+ * The sky band and the console band are scenery, so they are sized as a share
+ * of the window rather than by device class. A fixed 254 + 288 left a 768 px
+ * tablet with barely 200 px of board between them — the choosing, which is the
+ * point of the screen, got the smallest slice.
+ */
+export const heroHeight = (tablet: boolean, h = 844) => Math.round(clamp(h * 0.235, 168, tablet ? 226 : 212));
+export const deskHeight = (tablet: boolean, h = 844) => Math.round(clamp(h * 0.215, 148, tablet ? 226 : 178));
 /** the tan station wall at the foot of the hero band */
 const COPING = 78;
 
@@ -166,7 +174,7 @@ export interface DispatchBackdropProps {
 export function DispatchBackdrop({ hero }: DispatchBackdropProps) {
   const { width, height } = useWindowDimensions();
   const tablet = Math.min(width, height) >= 600;
-  const h = hero ?? heroHeight(tablet);
+  const h = hero ?? heroHeight(tablet, height);
   const drift = useLoop(idle.cloudDriftMs);
   const clouds = useAnimatedStyle(() => ({ transform: [{ translateX: -30 + drift.value * 60 }] }));
 
@@ -293,8 +301,8 @@ export interface DispatchDeskProps {
 export function DispatchDesk({ line, safeBottom = 0 }: DispatchDeskProps) {
   const { width, height } = useWindowDimensions();
   const tablet = Math.min(width, height) >= 600;
-  const h = deskHeight(tablet) + safeBottom;
-  const beaSize = tablet ? 232 : 188;
+  const h = deskHeight(tablet, height) + safeBottom;
+  const beaSize = Math.round(Math.min(tablet ? 224 : 188, h * 1.14));
   /** the right-hand slice of the console Captain Bea occupies */
   const beaLane = Math.max(120, Math.min(190, width * 0.36));
 

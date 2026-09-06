@@ -15,14 +15,15 @@ import type { SkillTag } from '@/learning/types';
 import { challengeSkills } from '@/learning/types';
 import type { MiniGameMeta, Stars } from '@/minigames/types';
 import { listMiniGames } from '@/minigames/registry';
-import { palette, spacing, stagger, subjectColors, type SubjectId } from '@/theme';
+import { roles, spacing, stagger, subjectColors, type SubjectId } from '@/theme';
 import { useShift } from '@/hooks/useShift';
 import { useGame } from '@/state/store';
-import { Button, Logo, Panel, ScreenFrame, Text, TopBar } from '@/ui';
+import { Button, Panel, ScreenFrame, Text, TopBar } from '@/ui';
 import { subjectLabel } from '@/ui/SubjectPill';
 import { CharacterPortrait } from '@/characters';
 import { StarCounter } from '@/screens/Mission/StarCounter';
 import { SignBoard } from '@/screens/Locker/parts/SignBoard';
+import { GRID_GAP, useScaledLayout } from '@/screens/shared';
 import { TrainingBackdrop } from './TrainingBackdrop';
 import { TrainingStationTile } from './TrainingStationTile';
 import { YardSign } from './parts/YardSign';
@@ -57,6 +58,7 @@ export function stationStars(kind: MiniGameMeta['kind'], plays: number, mastery:
 export function TrainingYardScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const layout = useScaledLayout();
 
   const gamesPlayed = useGame((s) => s.progress.gamesPlayed);
   const mastery = useGame((s) => s.progress.mastery);
@@ -76,6 +78,11 @@ export function TrainingYardScreen() {
     return SUBJECT_ORDER.filter((s) => bySubject.has(s)).map((s) => ({ subject: s, metas: bySubject.get(s) ?? [] }));
   }, [stations]);
 
+  /* The yard is a board: a wide window gets more stations across, not wider ones. */
+  const cols = layout.columns(330, 3);
+  const cellWidth = (layout.gridWidth - spacing.md * 2 - GRID_GAP * (cols - 1)) / cols;
+  const roomy = cellWidth >= 400;
+
   return (
     <ScreenFrame
       backdrop={<TrainingBackdrop />}
@@ -83,21 +90,18 @@ export function TrainingYardScreen() {
       safeBottom={false}
     >
       <ScrollView
-        contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + spacing.xl }]}
+        contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + spacing.xl, maxWidth: layout.gridWidth }]}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.logoRow} pointerEvents="none">
-          <Logo size={160} tagline={false} />
-        </View>
-
-        {/* the yard's name board, hanging from the bunting */}
+        {/* the yard's name board, hanging from the bunting — and the only place
+            this screen states what it is for */}
         <Animated.View entering={FadeInDown.springify().damping(16)} style={styles.titleWrap}>
           <SignBoard hang>
             <View style={styles.titleText}>
-              <Text variant="h2" center>
+              <Text variant="h2" center accessibilityRole="header">
                 Training Yard
               </Text>
-              <Text variant="small" color={palette.navySoft} center>
+              <Text variant="small" color={roles.ink.secondary} center>
                 Practise anything, any time!
               </Text>
             </View>
@@ -111,7 +115,7 @@ export function TrainingYardScreen() {
               <Text variant="h1" center>
                 Stations are being built!
               </Text>
-              <Text variant="body" color={palette.navySoft} center>
+              <Text variant="body" color={roles.ink.secondary} center>
                 The crew is still setting out the cones. Come back soon — or take a call from Dispatch.
               </Text>
               <Button label="Go to Dispatch ›" tone="green" size="lg" block onPress={() => router.push('/dispatch')} />
@@ -127,14 +131,16 @@ export function TrainingYardScreen() {
                 {group.metas.map((meta, i) => {
                   const plays = gamesPlayed[meta.kind] ?? 0;
                   return (
-                    <TrainingStationTile
-                      key={meta.kind}
-                      meta={meta}
-                      index={i}
-                      plays={plays}
-                      stars={stationStars(meta.kind, plays, mastery)}
-                      onPress={() => router.push({ pathname: '/training/[kind]', params: { kind: meta.kind } })}
-                    />
+                    <View key={meta.kind} style={cols > 1 ? { width: cellWidth } : styles.fullCell}>
+                      <TrainingStationTile
+                        meta={meta}
+                        index={i}
+                        plays={plays}
+                        stars={stationStars(meta.kind, plays, mastery)}
+                        roomy={roomy}
+                        onPress={() => router.push({ pathname: '/training/[kind]', params: { kind: meta.kind } })}
+                      />
+                    </View>
                   );
                 })}
               </View>
@@ -145,7 +151,7 @@ export function TrainingYardScreen() {
         {stations.length > 0 ? (
           <View style={styles.footer}>
             <SignBoard compact>
-              <Text variant="small" color={palette.navySoft} center>
+              <Text variant="small" color={roles.ink.secondary} center>
                 {`Every station you finish adds 5 XP. You have ${xp} XP.`}
               </Text>
             </SignBoard>
@@ -157,14 +163,14 @@ export function TrainingYardScreen() {
 }
 
 const styles = StyleSheet.create({
-  scroll: { paddingHorizontal: spacing.md, gap: spacing.md, paddingTop: spacing.xs },
-  logoRow: { alignItems: 'center' },
+  scroll: { paddingHorizontal: spacing.md, gap: spacing.md, paddingTop: spacing.xs, width: '100%', alignSelf: 'center' },
   /** the ropes reach up to the bunting line in the backdrop */
-  titleWrap: { alignItems: 'center', marginTop: 14 },
+  titleWrap: { alignItems: 'center', marginTop: 56 },
   titleText: { alignItems: 'center', paddingHorizontal: spacing.xs },
   empty: { alignItems: 'center', gap: spacing.sm },
   group: { gap: spacing.xs },
   signRow: { alignSelf: 'flex-start', marginLeft: spacing.xs },
-  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: GRID_GAP },
+  fullCell: { width: '100%' },
   footer: { alignItems: 'center', marginTop: spacing.xs },
 });

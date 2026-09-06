@@ -2,10 +2,10 @@ import React from 'react';
 import { Pressable, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
-import { hit, palette, radii, shadows, spacing, stagger, type SubjectId } from '@/theme';
+import { hit, palette, radii, roles, spacing, stagger, type SubjectId } from '@/theme';
 import { useFeedbackAnim } from '@/hooks';
 import { Text } from '../Text';
-import { SubjectPill } from '../SubjectPill';
+import { SubjectLine, subjectSentence } from '../SubjectPill';
 import { ChevronRightIcon, LockIcon } from '../icons';
 import { StarRow } from './StarRow';
 
@@ -34,9 +34,11 @@ const THUMB_H = 96;
 
 /**
  * The dispatch slip — Station Spark's mission card. A white card floating over
- * the sky: scene thumbnail, title, tagline, subject pills and a big green round
- * chevron. Locked slips stay friendly: greyed art, a padlock, and a hint about
- * what opens them (never "you failed").
+ * the sky, carrying four things in this order: the scene thumbnail, the title,
+ * one line about the job, and a big green round chevron. What it practises is
+ * printed once, quietly, under the tagline; the colour-coded subject pills live
+ * in the detail views. Locked slips stay friendly: greyed art, a padlock, and a
+ * hint about what opens them (never "you failed").
  */
 export function DispatchSlip({ title, tagline, subjects, thumbnail, stars, locked = false, lockedHint, meta, onPress, index = 0, style }: DispatchSlipProps) {
   const { style: anim, press } = useFeedbackAnim();
@@ -47,13 +49,17 @@ export function DispatchSlip({ title, tagline, subjects, thumbnail, stars, locke
       <Pressable
         accessibilityRole="button"
         accessibilityState={{ disabled: locked }}
-        accessibilityLabel={locked ? `${title}, locked. ${lockedHint ?? ''}` : `${title}. ${tagline ?? ''}`}
+        accessibilityLabel={
+          locked
+            ? `${title}. Not open yet. ${lockedHint ?? ''}`
+            : `${title}. ${tagline ?? ''}${subjects?.length ? ` Practises ${subjectSentence(subjects)}.` : ''}`
+        }
         disabled={locked || !onPress}
         onPressIn={() => press(true)}
         onPressOut={() => press(false)}
         onPress={onPress}
       >
-        <View style={[styles.card, shadows.card, locked && styles.locked]}>
+        <View style={[styles.card, roles.lift.interactive, locked && styles.locked]}>
           <View style={styles.thumb}>
             <LinearGradient
               colors={locked ? [palette.slateLight, '#B9C0D6'] : [palette.skyMid, palette.grass]}
@@ -81,23 +87,21 @@ export function DispatchSlip({ title, tagline, subjects, thumbnail, stars, locke
               ) : null}
             </View>
             {tagline ? (
-              <Text variant="small" color={palette.navySoft} numberOfLines={2}>
+              <Text variant="small" color={roles.ink.secondary} numberOfLines={2}>
                 {tagline}
               </Text>
             ) : null}
             {locked && lockedHint ? (
-              <Text variant="tiny" color={palette.navyMuted}>
+              <Text variant="small" color={roles.ink.muted} numberOfLines={2}>
                 {lockedHint}
               </Text>
             ) : null}
-            {subjects && subjects.length ? (
-              <View style={styles.pills}>
-                {subjects.map((s) => (
-                  <SubjectPill key={s} subject={s} small />
-                ))}
+            {!locked ? (
+              <View style={styles.foot}>
+                {subjects && subjects.length ? <SubjectLine subjects={subjects} /> : <View />}
+                {stars ? <StarRow stars={stars} size={18} /> : null}
               </View>
             ) : null}
-            {stars !== undefined && !locked ? <StarRow stars={stars} size={20} /> : null}
           </View>
 
           <View style={styles.go}>
@@ -124,7 +128,7 @@ const styles = StyleSheet.create({
   card: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: palette.white,
+    backgroundColor: roles.surface.card,
     borderRadius: radii.card,
     padding: spacing.sm,
     gap: spacing.sm,
@@ -144,7 +148,7 @@ const styles = StyleSheet.create({
   body: { flex: 1, gap: 4, justifyContent: 'center' },
   titleRow: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: spacing.xs },
   title: { flexShrink: 1 },
-  pills: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 2 },
+  foot: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.xs, marginTop: 2 },
   go: { width: hit.min + 4, alignItems: 'center', justifyContent: 'center' },
   chevronEdge: { borderRadius: hit.min, backgroundColor: palette.leafGreenDark, paddingBottom: 4 },
   chevron: {

@@ -1,6 +1,6 @@
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
-import { radii, subjectColors, type SubjectId } from '@/theme';
+import { radii, roles, subjectColors, type SubjectId } from '@/theme';
 import { GlyphIcon } from './kit/GlyphIcon';
 import { Text } from './Text';
 
@@ -32,6 +32,29 @@ export function SubjectPill({ subject, small }: { subject: SubjectId; small?: bo
 }
 
 export const subjectLabel = (s: SubjectId) => labels[s];
+
+/**
+ * The quiet form of the same information.
+ *
+ * A row of seven-colour pills on a chooser card shouts as loudly as the title
+ * and the picture, and a five-year-old cannot use it to choose. Where a card
+ * only needs to *mention* what it practises, it prints one muted line and
+ * leaves the colour-coded pills to the detail views (the map's location sheet,
+ * the mission recap, the Grown-Ups report).
+ */
+export function SubjectLine({ subjects, max = 3, color }: { subjects: readonly SubjectId[]; max?: number; color?: string }) {
+  if (subjects.length === 0) return null;
+  const shown = subjects.slice(0, max).map((s) => labels[s]);
+  const rest = subjects.length - shown.length;
+  return (
+    <Text variant="small" color={color ?? roles.ink.muted} numberOfLines={1}>
+      {rest > 0 ? `${shown.join(' · ')} +${rest}` : shown.join(' · ')}
+    </Text>
+  );
+}
+
+/** "Math, Reading and Problem Solving" — for accessibility labels. */
+export const subjectSentence = (subjects: readonly SubjectId[]) => subjects.map((s) => labels[s]).join(', ');
 
 const styles = StyleSheet.create({
   pill: {

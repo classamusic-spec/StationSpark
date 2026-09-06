@@ -3,8 +3,8 @@ import { Pressable, StyleSheet, View, type LayoutChangeEvent } from 'react-nativ
 import Animated, { FadeInDown, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { useFocusEffect, useRouter, type Href } from 'expo-router';
 import Svg, { Circle, Path } from 'react-native-svg';
-import { durations, easings, hit, palette, radii, shadows, spacing, timings } from '@/theme';
-import { Button, ChevronRightIcon, GearIcon, Logo, RoundIconButton, ScreenFrame, Text, TopBar } from '@/ui';
+import { durations, easings, hit, palette, radii, roles, spacing, timings } from '@/theme';
+import { Button, ChevronRightIcon, ScreenFrame, Text, TopBar } from '@/ui';
 import { sfx } from '@/services/audio';
 import { haptics } from '@/services/haptics';
 import { speech } from '@/services/speech';
@@ -14,33 +14,50 @@ import { useShift } from '@/hooks/useShift';
 import { Bell, ChimneySmoke, CatWindow, DoorLight, FACADE_VB, Flag, Neighbours, Pigeon, StationFacade, TownBackdrop, facadeLayout } from '@/world';
 import { Rookie } from '@/characters/Rookie';
 import { CaptainBea } from '@/characters/CaptainBea';
-import { BottomBar, SparksCounter, RoomTile, useScaledLayout, type RoomId } from '@/screens/shared';
+import { SparksCounter, RoomTile, useScaledLayout, type RoomId } from '@/screens/shared';
 import { ShiftChip } from './ShiftChip';
 import { GreetingBubble } from './GreetingBubble';
 
+/**
+ * THE STATION IS THE MENU.
+ *
+ * Six doors, one on each panel of the wall, in two readable rows:
+ *
+ *   row 1 — places you go to help and practise:  Map · Training · Kitchen
+ *   row 2 — the things that are yours:           Garage · Locker · Badges
+ *
+ * Dispatch is deliberately *not* a tile. Dispatch is what "Start Shift" does,
+ * and two doors into the same room is exactly what made this screen hard to
+ * read. For the same reason the settings cog and the "For Grown-Ups" pill are
+ * now one door, and Badges is named "Badges" wherever it appears.
+ */
 const ROOMS: { id: RoomId; label: string; href: string }[] = [
-  { id: 'dispatch', label: 'Dispatch', href: '/dispatch' },
   { id: 'map', label: 'Map', href: '/map' },
   { id: 'training', label: 'Training', href: '/training' },
   { id: 'kitchen', label: 'Kitchen', href: '/kitchen' },
   { id: 'garage', label: 'Garage', href: '/garage' },
+  { id: 'locker', label: 'Locker', href: '/locker' },
   { id: 'badges', label: 'Badges', href: '/badges' },
 ];
 
 /** Spoken once per app open, not once per mount. */
 let greetedThisSession = false;
 
-function GrownUpsPill({ onPress }: { onPress: () => void }) {
+/**
+ * The one adult door on the home screen. It used to be two — a cog and a pill,
+ * both landing on the same gated screen. The gate itself is untouched.
+ */
+function GrownUpsDoor({ onPress }: { onPress: () => void }) {
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel="For Grown-Ups"
+      accessibilityLabel="For Grown-Ups: settings, progress and safety"
       onPress={() => {
         sfx.play('tap-soft');
         haptics.tap();
         onPress();
       }}
-      style={[styles.grownUps, shadows.soft]}
+      style={[styles.grownUps, roles.lift.surface]}
       hitSlop={8}
     >
       <View style={styles.avatarDot}>
@@ -49,23 +66,22 @@ function GrownUpsPill({ onPress }: { onPress: () => void }) {
           <Path d="M4.6 20c0-4 3.3-6.6 7.4-6.6s7.4 2.6 7.4 6.6z" fill={palette.white} />
         </Svg>
       </View>
-      <Text variant="tiny" color={palette.navy} style={styles.grownUpsText}>
-        {'For\nGrown-Ups'}
+      <Text variant="tiny" color={roles.ink.primary} numberOfLines={1}>
+        Grown-Ups
       </Text>
     </Pressable>
   );
 }
 
 /**
- * Vertical space reserved below the station for the crew + CTA.
+ * Vertical space reserved below the station for the crew.
  *
- * The façade now carries its own apron (the slab the hydrant, hose, bollards
- * and cone stand on), so the crew stands *in front of* the building on the
- * grass rather than in a gap under it — which lets the whole station sit ~15 %
- * larger in frame and closes the empty sky at the top (critique #5).
+ * The façade carries its own apron (the slab the hydrant, hose, bollards and
+ * cone stand on), so the crew stands *in front of* the building on the grass
+ * rather than in a gap under it.
  */
 const CREW_ZONE = 84;
-/** how far the apron runs on behind the crew and the CTA */
+/** how far the apron runs on behind the crew */
 const APRON_OVERLAP = 8;
 
 export function FirehouseScreen() {
@@ -125,7 +141,7 @@ export function FirehouseScreen() {
   const station = useMemo(() => {
     if (stage.w < 40 || stage.h < 40) return null;
     const ratio = FACADE_VB.w / FACADE_VB.h;
-    // leave room under the façade for the crew and the Start Shift button
+    // leave room under the façade for the crew; the CTA now has its own band
     const width = Math.max(220, Math.min(stage.w, (stage.h - CREW_ZONE) * ratio));
     return facadeLayout(width);
   }, [stage.h, stage.w]);
@@ -172,13 +188,39 @@ export function FirehouseScreen() {
    * The crew stands on the apron, above the button rather than behind it: at
    * ground level the "Start Shift" pill cut both characters off at the knee.
    */
-  const crewLift = 86;
+  const crewLift = 78;
 
   /**
-   * Wide enough that the longest greeting never truncates (rule #10) but
-   * narrow enough to stop short of Captain Bea, who stands on the right.
+   * The crew flanks the *building*, not the window. On a wide screen the stage
+   * is much wider than the façade, and anchoring to the stage edges left the
+   * two of them stranded out on the grass with the firehouse marooned between.
    */
-  const bubbleW = Math.max(132, Math.min(152, stage.w * 0.42));
+  const crewX = useMemo(() => {
+    if (!station) return { left: -10, right: -10 };
+    const gutter = (stage.w - station.width) / 2;
+    return {
+      left: Math.max(-10, gutter - crew.rookie * 0.52),
+      right: Math.max(-10, gutter - crew.bea * 0.52),
+    };
+  }, [crew.bea, crew.rookie, stage.w, station]);
+
+  /**
+   * Captain Bea does the talking (she is the voice that speaks the greeting),
+   * so the bubble hangs off her shoulder with the tail on the right. It has to
+   * thread a needle: below the room grid, because a greeting must never cover a
+   * door, and clear of both faces. So it sits at shoulder height across the bay
+   * doors — which are scenery — and stops short of each of them.
+   */
+  const bubble = useMemo(() => {
+    if (!station) return null;
+    const last = station.tiles[station.tiles.length - 1];
+    const gridBottom = last ? last.y + last.h : station.height * 0.7;
+    /* px from the bottom of the stage to the underside of the room grid */
+    const clear = CREW_ZONE - APRON_OVERLAP + (station.height - gridBottom);
+    const width = Math.max(144, Math.min(184, stage.w * 0.46));
+    const bottom = Math.min(crewLift + crew.bea * 0.36, Math.max(72, clear - 76));
+    return { width, bottom, right: crewX.right + crew.bea * 0.66 };
+  }, [crew.bea, crewX.right, stage.w, station]);
 
   /** the neighbouring block, sitting on the same ground line as the apron */
   const block = useMemo(() => {
@@ -191,33 +233,33 @@ export function FirehouseScreen() {
     };
   }, [stage.w, station]);
 
+  /**
+   * The station is a scene, not a reading column, so it is capped wider than
+   * `contentWidth` — an iPad in portrait should get a bigger firehouse, not a
+   * phone-sized one floating in the middle of the glass.
+   */
+  const stageWidth = Math.min(layout.width, Math.max(layout.contentWidth, 720));
+
   return (
     <ScreenFrame
       mood={evening ? 'evening' : 'day'}
-      safeBottom={false}
       backdrop={<TownBackdrop mood={evening ? 'evening' : 'day'} hills={240} cloudCount={4} />}
+      /*
+       * No floating wordmark. It cost ~110 px of the play area and said the
+       * app's name a second time, ten pixels above a station sign that already
+       * reads STATION SPARK in the same display face. The lock-up still opens
+       * the app on the splash and in onboarding; here, the building is the
+       * brand and the room goes to the shift.
+       */
       chrome={
         <TopBar
           back={false}
-          left={
-            <RoundIconButton accessibilityLabel="Settings" onPress={() => router.push({ pathname: '/grownups', params: { section: 'settings' } })}>
-              <GearIcon />
-            </RoundIconButton>
-          }
-          right={<GrownUpsPill onPress={() => router.push('/grownups')} />}
+          left={<GrownUpsDoor onPress={() => router.push('/grownups')} />}
+          right={<SparksCounter />}
         />
       }
     >
-      <View style={[styles.body, { maxWidth: layout.contentWidth }]}>
-        <Animated.View entering={FadeInDown.springify().damping(18)} style={styles.logo}>
-          <Logo size={Math.min(layout.s(152), 200)} />
-        </Animated.View>
-
-        <View style={styles.chipRow}>
-          <ShiftChip label={summary.label} active={summary.active} />
-          <SparksCounter />
-        </View>
-
+      <View style={[styles.body, { maxWidth: stageWidth }]}>
         <View style={styles.stage} onLayout={onStage}>
           {station ? (
             <>
@@ -251,7 +293,7 @@ export function FirehouseScreen() {
                   </View>
                 ))}
 
-                {/* the six rooms */}
+                {/* the six doors */}
                 {ROOMS.map((room, i) => {
                   const r = station.tiles[i];
                   if (!r) return null;
@@ -271,64 +313,63 @@ export function FirehouseScreen() {
               </Animated.View>
 
               {/* crew — standing on the ground in front of the apron */}
-              <View style={[styles.crewLeft, { bottom: crewLift }]} pointerEvents="none">
+              <View style={[styles.crewLeft, { bottom: crewLift, left: crewX.left }]} pointerEvents="none">
                 <Rookie size={crew.rookie} avatar={profile.avatar} pose="wave" emotion="happy" />
-                {/* the greeting reads out of Rookie's shoulder, so it never
-                    sits over the room tiles */}
-                <View style={[styles.bubble, { left: crew.rookie * 0.38, bottom: crew.rookie * 0.5, width: bubbleW }]}>
-                  <GreetingBubble lines={greetings} maxWidth={bubbleW} />
-                </View>
               </View>
-              <View style={[styles.crewRight, { bottom: crewLift - 2 }]} pointerEvents="none">
+              <View style={[styles.crewRight, { bottom: crewLift - 2, right: crewX.right }]} pointerEvents="none">
                 {/* Captain Bea waits by the apron for the shift to start */}
                 <CaptainBea size={crew.bea} emotion="calm" pose="stand" bobPhase={0.45} />
               </View>
-
-              {/* the big call to action */}
-              <View style={styles.ctaWrap}>
-                <Button
-                  label={shiftActive ? 'Continue Shift' : 'Start Shift'}
-                  size="xl"
-                  tone="red"
-                  onPress={startShift}
-                  iconRight={<ChevronRightIcon size={28} />}
-                  style={[styles.cta, shadows.glowGold]}
-                  accessibilityLabel={shiftActive ? 'Continue your shift' : 'Start your shift'}
-                />
-              </View>
+              {bubble ? (
+                <View style={[styles.bubble, { right: bubble.right, bottom: bubble.bottom, width: bubble.width }]} pointerEvents="none">
+                  <GreetingBubble lines={greetings} maxWidth={bubble.width} tail="right" />
+                </View>
+              ) : null}
             </>
           ) : null}
         </View>
-      </View>
 
-      <BottomBar />
+        {/* THE one thing to do. Nothing else on this screen is red, lifted this
+            far, or this wide — and the shift count reads as its caption rather
+            than as a fourth counter floating in the sky. */}
+        <Animated.View entering={FadeInDown.delay(140).springify().damping(17)} style={styles.ctaBlock}>
+          <Button
+            label={shiftActive ? 'Continue Shift' : 'Start Shift'}
+            size="xl"
+            tone={roles.action.primary}
+            glow
+            onPress={startShift}
+            iconRight={<ChevronRightIcon size={28} />}
+            style={styles.cta}
+            accessibilityLabel={shiftActive ? `Continue your shift. ${summary.label}` : `Start your shift. ${summary.label}`}
+          />
+          <ShiftChip label={summary.label} active={summary.active} />
+        </Animated.View>
+      </View>
     </ScreenFrame>
   );
 }
 
 const styles = StyleSheet.create({
   body: { flex: 1, width: '100%', alignSelf: 'center', paddingHorizontal: spacing.sm },
-  logo: { alignItems: 'center', marginTop: 6 },
-  chipRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: spacing.xs, marginTop: spacing.xxs },
-  stage: { flex: 1, alignItems: 'center', justifyContent: 'flex-end', marginTop: 2 },
+  stage: { flex: 1, alignItems: 'center', justifyContent: 'flex-end', marginTop: 72 },
   stationWrap: { position: 'absolute', bottom: CREW_ZONE - APRON_OVERLAP, alignSelf: 'center' },
   abs: { position: 'absolute' },
   sign: { alignItems: 'center', justifyContent: 'center' },
-  crewLeft: { position: 'absolute', left: -10, alignItems: 'flex-start', zIndex: 2 },
-  bubble: { position: 'absolute' },
-  crewRight: { position: 'absolute', right: -10, flexDirection: 'row', alignItems: 'flex-end', gap: 0, zIndex: 2 },
-  ctaWrap: { position: 'absolute', bottom: -4, left: 0, right: 0, alignItems: 'center', paddingHorizontal: spacing.lg },
-  cta: { minWidth: 200, maxWidth: 252, alignSelf: 'center' },
+  crewLeft: { position: 'absolute', alignItems: 'flex-start', zIndex: 2 },
+  bubble: { position: 'absolute', alignItems: 'flex-end', zIndex: 3 },
+  crewRight: { position: 'absolute', flexDirection: 'row', alignItems: 'flex-end', gap: 0, zIndex: 2 },
+  ctaBlock: { alignItems: 'center', gap: spacing.xs, paddingTop: spacing.xs, paddingBottom: spacing.xs },
+  cta: { minWidth: 236, maxWidth: 300, alignSelf: 'center' },
   grownUps: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    backgroundColor: palette.white,
+    backgroundColor: roles.surface.card,
     borderRadius: radii.pill,
     paddingLeft: 6,
     paddingRight: 14,
     minHeight: hit.min,
   },
   avatarDot: { width: 40, height: 40, borderRadius: 20, backgroundColor: palette.navy, alignItems: 'center', justifyContent: 'center' },
-  grownUpsText: { lineHeight: 15 },
 });

@@ -1,18 +1,23 @@
 /**
  * TrainingStationTile — one practice station on the yard grid.
  *
- * White card: subject pill, title, blurb, a "≈40 s" chip, how many times it has
- * been played and how well it is going. Nothing here is a leaderboard.
+ * Deliberately the same card as a dispatch slip: a picture, a name, one line,
+ * and a green GO. Nothing here is a leaderboard, and nothing here is a spec
+ * sheet — the "≈120 s" chip and the play counter were metadata competing with
+ * the two things a child chooses by. Stars stay, because the child earned them,
+ * and they are always paired with a word ("New!" / "×3"), never colour alone.
  */
 import React from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import Animated, { FadeInDown, useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
+import Svg, { Circle, Path } from 'react-native-svg';
 import type { MiniGameMeta, Stars } from '@/minigames/types';
-import { hit, palette, radii, shadows, spacing, springs, stagger, subjectColors, type SubjectId } from '@/theme';
+import { palette, radii, roles, spacing, springs, stagger, subjectColors, type SubjectId } from '@/theme';
+import { useShowTranslation } from '@/hooks';
 import { StarIcon } from '@/ui/icons';
 import { GlyphIcon, hasGlyph, type GlyphId } from '@/ui/kit/GlyphIcon';
 import { VocabIcon, vocabIconIds, type VocabIconId } from '@/ui/kit/VocabIcon';
-import { SubjectPill } from '@/ui/SubjectPill';
+import { subjectSentence } from '@/ui/SubjectPill';
 import { Text } from '@/ui/Text';
 
 type StationMark = { kind: 'glyph'; id: GlyphId } | { kind: 'vocab'; id: VocabIconId };
@@ -27,10 +32,24 @@ function resolveMark(icon: string): StationMark {
 }
 
 /** A big drawn station mark on a soft tile in the game's subject colour. */
-function StationGlyph({ subject, mark }: { subject: SubjectId; mark: StationMark }) {
+function StationGlyph({ subject, mark, size }: { subject: SubjectId; mark: StationMark; size: number }) {
   return (
-    <View style={[styles.glyph, { backgroundColor: subjectColors[subject].soft }]}>
-      {mark.kind === 'glyph' ? <GlyphIcon id={mark.id} size={52} /> : <VocabIcon id={mark.id} size={52} noShadow />}
+    <View style={[styles.glyph, { width: size, height: size, backgroundColor: subjectColors[subject].soft }]}>
+      {mark.kind === 'glyph' ? <GlyphIcon id={mark.id} size={size * 0.72} /> : <VocabIcon id={mark.id} size={size * 0.72} noShadow />}
+    </View>
+  );
+}
+
+/** The same green GO the dispatch slips use, so "touch here" is one shape. */
+function GoChevron({ size }: { size: number }) {
+  return (
+    <View style={[styles.chevron, { width: size, height: size }]}>
+      <Svg width={size} height={size} viewBox="0 0 54 54">
+        <Circle cx={27} cy={29} r={25} fill={palette.leafGreenDark} />
+        <Circle cx={27} cy={26} r={25} fill={palette.leafGreen} />
+        <Circle cx={27} cy={26} r={25} fill="none" stroke="rgba(255,255,255,0.4)" strokeWidth={2.5} />
+        <Path d="M 22 15 L 34 26 L 22 37" stroke={palette.white} strokeWidth={5} strokeLinecap="round" strokeLinejoin="round" fill="none" />
+      </Svg>
     </View>
   );
 }
@@ -79,95 +98,101 @@ export interface TrainingStationTileProps {
   plays?: number;
   /** how it is going, 0 = not played yet */
   stars?: Stars;
+  /** roomier art and type once the card has a board's worth of width */
+  roomy?: boolean;
   onPress?: () => void;
 }
 
-export function TrainingStationTile({ meta, index = 0, plays = 0, stars = 0, onPress }: TrainingStationTileProps) {
+export function TrainingStationTile({ meta, index = 0, plays = 0, stars = 0, roomy, onPress }: TrainingStationTileProps) {
   const press = useSharedValue(0);
   const a = useAnimatedStyle(() => ({ transform: [{ scale: 1 - press.value * 0.03 }] }));
   const subject: SubjectId = meta.subjects[0] ?? 'logic';
   const mark = resolveMark(meta.icon);
+  const showEs = useShowTranslation();
+  const es = showEs && meta.titleEs && meta.titleEs !== meta.title ? meta.titleEs : undefined;
 
   return (
+    /* grow to the height of the tallest tile in the row */
     <Animated.View
+      style={styles.grow}
       entering={FadeInDown.delay(index * stagger.tile)
         .springify()
         .damping(15)}
-      style={styles.wrap}
     >
-      <Animated.View style={a}>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={`${meta.title}. ${meta.blurb}. About ${meta.seconds} seconds.`}
-        onPressIn={() => {
-          press.value = withSpring(1, springs.pop);
-        }}
-        onPressOut={() => {
-          press.value = withSpring(0, springs.pop);
-        }}
-        onPress={onPress}
-        style={[styles.card, shadows.card]}
-      >
-        <View style={styles.head}>
-          <StationGlyph subject={subject} mark={mark} />
-          <View style={styles.headText}>
-            <Text variant="h3" numberOfLines={3}>
-              {meta.title}
-            </Text>
-            <SubjectPill subject={subject} small />
-          </View>
-        </View>
+      <Animated.View style={[a, styles.grow]}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`${meta.title}. ${meta.blurb} Practises ${subjectSentence(meta.subjects)}. ${plays > 0 ? `Played ${plays} times.` : 'Not played yet.'}`}
+          onPressIn={() => {
+            press.value = withSpring(1, springs.pop);
+          }}
+          onPressOut={() => {
+            press.value = withSpring(0, springs.pop);
+          }}
+          onPress={onPress}
+          style={[styles.card, roles.lift.interactive]}
+        >
+          <StationGlyph subject={subject} mark={mark} size={roomy ? 74 : 62} />
 
-        <Text variant="small" color={palette.navySoft} numberOfLines={3} style={styles.blurb}>
-          {meta.blurb}
-        </Text>
-
-        <View style={styles.foot}>
-          <View style={styles.seconds}>
-            <Text variant="tiny" color={palette.navy}>
-              ≈{meta.seconds}s
-            </Text>
-          </View>
-          {plays > 0 ? (
-            <View style={styles.stars}>
-              {[0, 1, 2].map((i) => (
-                <StarIcon
-                  key={i}
-                  size={15}
-                  color={i < stars ? palette.safetyYellow : palette.lockedGrey}
-                  stroke={i < stars ? palette.goldDark : palette.slate}
-                />
-              ))}
-              <Text variant="tiny" color={palette.navyMuted}>
-                {` ×${plays}`}
+          <View style={styles.body}>
+            <View style={styles.titleRow}>
+              <Text variant={roomy ? 'h2' : 'h3'} numberOfLines={2} style={styles.title}>
+                {meta.title}
               </Text>
+              {/* the subject is the sign this tile stands under, so it is not
+                  reprinted here; only the child's own record is */}
+              {plays > 0 ? (
+                <View style={styles.stars}>
+                  {[0, 1, 2].map((i) => (
+                    <StarIcon
+                      key={i}
+                      size={15}
+                      color={i < stars ? palette.safetyYellow : palette.lockedGrey}
+                      stroke={i < stars ? palette.goldDark : palette.slate}
+                    />
+                  ))}
+                  <Text variant="tiny" color={roles.ink.muted}>
+                    {` ×${plays}`}
+                  </Text>
+                </View>
+              ) : (
+                <Text variant="tiny" color={roles.ink.muted}>
+                  New!
+                </Text>
+              )}
             </View>
-          ) : (
-            <Text variant="tiny" color={palette.navyMuted}>
-              New!
+            {es ? (
+              <Text variant="small" color={roles.ink.translation} numberOfLines={1}>
+                {es}
+              </Text>
+            ) : null}
+            <Text variant="small" color={roles.ink.secondary} numberOfLines={roomy ? 2 : 3}>
+              {meta.blurb}
             </Text>
-          )}
-        </View>
-      </Pressable>
+          </View>
+
+          <GoChevron size={roomy ? 56 : 50} />
+        </Pressable>
       </Animated.View>
     </Animated.View>
   );
 }
 
 const styles = StyleSheet.create({
-  wrap: { flexGrow: 1, flexBasis: 250, maxWidth: 420 },
+  grow: { flexGrow: 1 },
   card: {
-    backgroundColor: palette.white,
+    flexGrow: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: roles.surface.card,
     borderRadius: radii.card,
     padding: spacing.sm,
-    gap: 6,
-    minHeight: hit.big + 62,
+    gap: spacing.sm,
   },
-  head: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
-  headText: { flex: 1, gap: 4, alignItems: 'flex-start' },
-  glyph: { width: 64, height: 64, borderRadius: radii.tile, alignItems: 'center', justifyContent: 'center' },
-  blurb: { minHeight: 40 },
-  foot: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  seconds: { backgroundColor: palette.creamDeep, borderRadius: radii.tag, paddingHorizontal: 10, paddingVertical: 4 },
+  body: { flex: 1, gap: 2 },
+  titleRow: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: spacing.xs },
+  title: { flexShrink: 1 },
+  glyph: { borderRadius: radii.tile, alignItems: 'center', justifyContent: 'center' },
   stars: { flexDirection: 'row', alignItems: 'center', gap: 2 },
+  chevron: { alignItems: 'center', justifyContent: 'center' },
 });

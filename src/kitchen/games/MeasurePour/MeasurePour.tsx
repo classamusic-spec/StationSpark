@@ -1,28 +1,36 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import Svg, { Defs, LinearGradient, Path, Rect, Stop } from 'react-native-svg';
-import Animated, { FadeIn, useAnimatedStyle, useSharedValue, withSequence, withSpring, withTiming } from 'react-native-reanimated';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import Animated, {
+  FadeIn,
+  runOnJS,
+  useAnimatedStyle,
+  useSharedValue,
+  withSequence,
+  withSpring,
+  withTiming,
+} from 'react-native-reanimated';
 import type { Fraction } from '@/learning/types';
 import type { MiniGameProps } from '@/minigames/types';
 import { useMiniGameSession } from '@/minigames/useMiniGameSession';
-import { palette, radii, shadows, spacing, springs } from '@/theme';
+import { palette, radii, roles, shadows, spacing, springs } from '@/theme';
 import { add, compare, equals, formatFraction, speakFraction, subtract, toNumber } from '@/utils/fractions';
 import { sfx } from '@/services/audio';
 import { haptics } from '@/services/haptics';
 import { speech } from '@/services/speech';
+import { useReducedMotion } from '@/hooks';
 import { Text } from '@/ui/Text';
 import { Button } from '@/ui/Button';
-import { PromptBanner } from '@/ui/kit/PromptBanner';
-import { HintBubble } from '@/ui/kit/HintBubble';
-import { Tray } from '@/ui/kit/Tray';
+import { ActivityFrame } from '@/ui/kit/ActivityFrame';
 import { VocabIcon } from '@/ui/kit/VocabIcon';
 
 import { Stage as SceneStage } from '@/world';
 import { SceneCrew } from '@/world/scenes';
 import { Stage, at } from '../../parts/Stage';
 import { CookCTA } from '../../parts/SceneBits';
-import { useRise } from '../../parts/motion';
-import { kitchenFeel, useCaptainHint } from '../useKitchenGame';
+import { useRise, useSwing } from '../../parts/motion';
+import { kitchenFeel, useCaptainHint, useSpokenTask, useTimers } from '../useKitchenGame';
 
 const D = { w: 390, h: 400 };
 const CUP = { x: 52, y: 44, w: 172, h: 300 };
@@ -30,7 +38,16 @@ const INNER = { x: CUP.x + 14, y: CUP.y + 26, w: CUP.w - 28, h: CUP.h - 46 };
 /** the "1 cup" line sits here, leaving headroom above so you *can* overfill */
 const SPAN = INNER.h * 0.8;
 const JUG = { x: 246, y: 26, w: 118, h: 150 };
-const POUR_MS = 620;
+/** how often the flow is topped up while the jug is tipped */
+const FLOW_TICK_MS = 120;
+/** chunks per second, from a barely-tipped jug to a fully upended one */
+const FLOW_SLOW = 1.5;
+const FLOW_FAST = 4.4;
+/** the jug rests here the moment it is picked up, before any tilting */
+const TILT_REST = -22;
+const TILT_MAX = -68;
+/** past this the cup is overflowing and the jug closes itself */
+const BRIM = 1.25;
 
 /**
  * `tin` is the colour of the container the ingredient is *in*.
@@ -50,18 +67,24 @@ const liquidLook: Record<string, { fill: string; foam: string; tin: string }> = 
 export function MeasurePour({ challenge, onComplete, onEvent, compact }: MiniGameProps<'measure-pour'>) {
   const session = useMiniGameSession('measure-pour', onComplete, onEvent);
   const assist = useCaptainHint(session);
+  const timers = useTimers();
+  const reduced = useReducedMotion();
 
   const zero: Fraction = useMemo(() => ({ num: 0, den: 1 }), []);
   const [poured, setPoured] = useState<Fraction>(zero);
   const [pouring, setPouring] = useState(false);
   const [done, setDone] = useState(false);
-  const timer = useRef<ReturnType<typeof setInterval> | null>(null);
+  const ticker = useRef<ReturnType<typeof setInterval> | null>(null);
   const pourRef = useRef<Fraction>(zero);
-  pourRef.current = poured;
+  const flow = useRef(0);
+  const doneRef = useRef(false);
+  const saidWord = useRef(false);
+  const warnedFull = useRef(false);
 
   const level = useSharedValue(0);
   const tilt = useSharedValue(0);
   const stream = useSharedValue(0);
+  const tipped = useSharedValue(0);
   const wobble = useSharedValue(0);
 
   const target = challenge.target;
@@ -70,54 +93,115 @@ export function MeasurePour({ challenge, onComplete, onEvent, compact }: MiniGam
   const look = liquidLook[challenge.ingredient.id] ?? { fill: '#7ED2F7', foam: '#BDECFF', tin: '#CFEFFF' };
   const unitWord = challenge.unit === 'cup' ? 'cup' : 'spoon';
 
-  useEffect(() => {
-    speech.say(`Pour ${speakFraction(target)} ${unitWord}${targetN === 1 ? '' : 's'} of ${challenge.ingredient.en}.`, {
-      speaker: 'bea',
-    });
-    return () => speech.stop();
-  }, [challenge.ingredient.en, target, targetN, unitWord]);
+  const task = `Pour ${formatFraction(target)} ${unitWord}${targetN === 1 ? '' : 's'} of ${challenge.ingredient.en}`;
+  const replay = useSpokenTask(
+    `Pour ${speakFraction(target)} ${unitWord}${targetN === 1 ? '' : 's'} of ${challenge.ingredient.en}.`,
+  );
 
   useEffect(() => {
-    level.value = withSpring(Math.min(1.16, pouredN), springs.gentle);
+    level.value = withSpring(Math.min(1.35, pouredN), springs.gentle);
   }, [level, pouredN]);
 
   const stopPour = useCallback(() => {
-    if (timer.current) clearInterval(timer.current);
-    timer.current = null;
+    if (ticker.current) clearInterval(ticker.current);
+    ticker.current = null;
+    flow.current = 0;
     setPouring(false);
     tilt.value = withSpring(0, springs.gentle);
     stream.value = withTiming(0, { duration: 140 });
-  }, [stream, tilt]);
+    tipped.value = withTiming(0, { duration: 200 });
+  }, [stream, tilt, tipped]);
 
   useEffect(() => () => stopPour(), [stopPour]);
 
+  /** One more measure out of the jug. Returns false when the cup is at the brim. */
   const addChunk = useCallback(() => {
     const next = add(pourRef.current, challenge.step);
-    if (toNumber(next) > 1.2) {
-      wobble.value = withSequence(withTiming(-5, { duration: 60 }), withTiming(5, { duration: 60 }), withTiming(0, { duration: 60 }));
-      sfx.play('wrong-soft');
-      haptics.nudge();
-      return;
+    if (toNumber(next) > BRIM) {
+      if (!warnedFull.current) {
+        warnedFull.current = true;
+        wobble.value = withSequence(
+          withTiming(-5, { duration: 60 }),
+          withTiming(5, { duration: 60 }),
+          withTiming(0, { duration: 60 }),
+        );
+        assist.cheer('The cup is full! Pour some back if you went past the line.');
+        sfx.play('wrong-soft');
+        haptics.nudge();
+      }
+      return false;
     }
     pourRef.current = next;
     setPoured(next);
-    sfx.play('pour');
-    haptics.tap();
-  }, [challenge.step, wobble]);
+    kitchenFeel.pour();
+    return true;
+  }, [assist, challenge.step, wobble]);
 
-  const startPour = useCallback(() => {
-    if (done) return;
+  /* ------------------------------------------------------------------ */
+  /* Tilt the jug to pour                                                 */
+  /* ------------------------------------------------------------------ */
+
+  const beginPour = useCallback(() => {
+    if (doneRef.current) return;
     setPouring(true);
-    tilt.value = withSpring(-34, springs.gentle);
-    stream.value = withTiming(1, { duration: 120 });
-    speech.sayWord(challenge.ingredient);
-    session.learnedWord(challenge.ingredient.es);
+    warnedFull.current = false;
+    flow.current = 0;
+    tilt.value = withSpring(TILT_REST, springs.gentle);
+    tipped.value = withTiming(0, { duration: 120 });
+    stream.value = withTiming(0.55, { duration: 120 });
+    if (!saidWord.current) {
+      saidWord.current = true;
+      speech.sayWord(challenge.ingredient);
+      session.learnedWord(challenge.ingredient.es);
+    }
     addChunk();
-    if (timer.current) clearInterval(timer.current);
-    timer.current = setInterval(addChunk, POUR_MS);
-  }, [addChunk, challenge.ingredient, done, session, stream, tilt]);
+    if (ticker.current) clearInterval(ticker.current);
+    ticker.current = setInterval(() => {
+      const rate = FLOW_SLOW + (FLOW_FAST - FLOW_SLOW) * Math.max(0, Math.min(1, tipped.value));
+      flow.current += (rate * FLOW_TICK_MS) / 1000;
+      while (flow.current >= 1) {
+        flow.current -= 1;
+        if (!addChunk()) {
+          flow.current = 0;
+          return;
+        }
+      }
+    }, FLOW_TICK_MS);
+  }, [addChunk, challenge.ingredient, session, stream, tilt, tipped]);
+
+  /**
+   * TILT TO POUR. `tipped` is 0 when the jug is only just leaning and 1 when it
+   * is fully upended; the drag writes it straight on the UI thread so the jug
+   * and the stream track the hand with no lag, and the flow timer reads it to
+   * decide how fast the liquid comes out.
+   *
+   * But *any* press already pours at a steady rate, so nobody has to discover
+   * the tilt to finish the measure. That is the rule for every gesture in this
+   * kitchen: it makes the job better, it never makes the job possible.
+   */
+  const jugGesture = useMemo(
+    () =>
+      Gesture.Pan()
+        .minDistance(0)
+        .onBegin(() => {
+          runOnJS(beginPour)();
+        })
+        .onUpdate((e) => {
+          // pulling the jug down and towards the cup on the left tips it further
+          const lean = Math.max(0, Math.min(1, (e.translationY + -e.translationX) / 130));
+          tipped.value = lean;
+          if (!reduced) tilt.value = TILT_REST + (TILT_MAX - TILT_REST) * lean;
+          stream.value = 0.55 + lean * 0.45;
+        })
+        .onFinalize(() => {
+          runOnJS(stopPour)();
+        }),
+    [beginPour, reduced, stopPour, stream, tilt, tipped],
+  );
 
   const pourBack = useCallback(() => {
+    if (doneRef.current) return;
+    warnedFull.current = false;
     const next = subtract(pourRef.current, challenge.step);
     const clamped = toNumber(next) < 0 ? zero : next;
     pourRef.current = clamped;
@@ -127,50 +211,88 @@ export function MeasurePour({ challenge, onComplete, onEvent, compact }: MiniGam
   }, [challenge.step, zero]);
 
   const check = useCallback(() => {
-    if (done) return;
-    const cmp = compare(poured, target);
-    if (equals(poured, target)) {
+    if (doneRef.current) return;
+    const cmp = compare(pourRef.current, target);
+    if (equals(pourRef.current, target)) {
+      doneRef.current = true;
       setDone(true);
+      stopPour();
       kitchenFeel.finish();
       assist.cheer(`${formatFraction(target)} ${unitWord} exactly. Perfect!`);
       session.correct('measure');
-      setTimeout(() => session.complete(), 900);
+      timers.after(900, () => session.complete());
     } else if (cmp > 0) {
       assist.nudge('A bit too much — pour some back.');
     } else {
       assist.nudge(`Almost! Keep pouring up to the ${formatFraction(target)} line.`);
     }
-  }, [assist, done, poured, session, target, unitWord]);
+  }, [assist, session, stopPour, target, timers, unitWord]);
 
   const showMe = useCallback(() => {
     assist.askedForHelp();
     pourRef.current = target;
     setPoured(target);
-    sfx.play('pour');
-    haptics.drop();
+    kitchenFeel.pour();
   }, [assist, target]);
 
   /* ---- animated pieces ---- */
+  /**
+   * A jug nobody has touched rocks gently towards the cup: the gesture, shown
+   * rather than written. It stops the instant a hand is on it, and stays still
+   * for a child who asked for less motion.
+   */
+  const nudge = useSwing(1, 2400);
   const liquidStyle = useAnimatedStyle(() => ({ height: Math.max(0, level.value) * SPAN }));
-  const jugStyle = useAnimatedStyle(() => ({ transform: [{ rotate: `${tilt.value}deg` }] }));
-  const streamStyle = useAnimatedStyle(() => ({ opacity: stream.value, transform: [{ scaleY: 0.6 + stream.value * 0.4 }] }));
+  const jugStyle = useAnimatedStyle(() => {
+    const resting = pouredN === 0 && !pouring && !reduced ? 1 : 0;
+    return { transform: [{ rotate: `${tilt.value + nudge.value * 5 * resting}deg` }] };
+  });
+  const streamStyle = useAnimatedStyle(() => ({
+    opacity: stream.value,
+    transform: [{ scaleY: 0.5 + stream.value * 0.5 }, { scaleX: 0.7 + tipped.value * 0.6 }],
+  }));
   const cupWobble = useAnimatedStyle(() => ({ transform: [{ translateX: wobble.value }] }));
 
   const ticks = Array.from({ length: challenge.ticks }, (_, i) => (i + 1) / challenge.ticks);
   const over = compare(poured, target) > 0;
 
-  return (
-    <View style={styles.root}>
-      {/* a kitchen game belongs on a counter, not on a sky gradient */}
-      <SceneStage variant="counter" groundHeight={170} />
-      <SceneCrew side="right" size={50} mood={done ? 'cheer' : pouring ? 'happy' : 'idle'} />
-      <PromptBanner
-        title={`Pour ${formatFraction(target)} ${unitWord}${targetN === 1 ? '' : 's'} of ${challenge.ingredient.en}`}
-        subtitle="Press and hold the container to pour."
-        es={challenge.ingredient.es}
-        compact={compact}
-      />
+  const controls = (
+    <>
+      <View style={styles.trayRow}>
+        {pouredN > 0 && !done ? (
+          <Button label="Pour back" tone="white" size="md" onPress={pourBack} sound="tap-soft" />
+        ) : null}
+        {assist.offerHelp && !done ? (
+          <Button label="Show me" tone="yellow" size="md" onPress={showMe} sound="tap-soft" />
+        ) : null}
+        {pouring ? (
+          <Text variant="small" color={palette.waterCyanDark}>
+            pouring…
+          </Text>
+        ) : null}
+      </View>
+      <CookCTA label={done ? 'Measured!' : 'Done'} tone={done ? 'green' : 'red'} onPress={check} disabled={done} />
+    </>
+  );
 
+  return (
+    <ActivityFrame
+      task={task}
+      detail="Hold the jug and tilt it towards the cup — let go to stop."
+      es={challenge.ingredient.es}
+      compact={compact}
+      onReplay={replay}
+      backdrop={
+        <>
+          {/* a kitchen game belongs on a counter, not on a sky gradient */}
+          <SceneStage variant="counter" groundHeight={170} />
+          <SceneCrew side="right" size={50} mood={done ? 'cheer' : pouring ? 'happy' : 'idle'} />
+        </>
+      }
+      controls={controls}
+      controlsTone="cream"
+      hint={{ text: assist.text, es: assist.es, visible: assist.visible, onDismiss: assist.dismiss }}
+    >
       <Stage design={D} style={styles.stage}>
         {(s) => (
           <>
@@ -178,7 +300,7 @@ export function MeasurePour({ challenge, onComplete, onEvent, compact }: MiniGam
             {/* critique: the handle used to be clipped by the SVG box, so only
                 two nubs showed behind the right edge. The box is wider now and
                 the handle is a real three-tone object standing proud of the cup. */}
-            <Animated.View style={[at(s, CUP.x, CUP.y, CUP.w + 48, CUP.h), cupWobble]}>
+            <Animated.View style={[at(s, CUP.x, CUP.y, CUP.w + 48, CUP.h), cupWobble]} pointerEvents="none">
               <Svg width={(CUP.w + 48) * s} height={CUP.h * s} viewBox={`0 0 ${CUP.w + 48} ${CUP.h}`}>
                 <Defs>
                   <LinearGradient id="glass" x1="0" y1="0" x2="1" y2="0">
@@ -239,7 +361,7 @@ export function MeasurePour({ challenge, onComplete, onEvent, compact }: MiniGam
                     />
                     <Text
                       variant="tiny"
-                      color={isTarget ? palette.engineRed : lit ? palette.goldDark : palette.navyMuted}
+                      color={isTarget ? palette.engineRed : lit ? palette.goldDark : roles.ink.muted}
                       style={{ fontSize: 14 * s, lineHeight: 18 * s }}
                     >
                       {formatFraction({ num: Math.round(t * challenge.ticks), den: challenge.ticks })}
@@ -259,13 +381,11 @@ export function MeasurePour({ challenge, onComplete, onEvent, compact }: MiniGam
 
             {/* the pouring container */}
             <View style={at(s, JUG.x, JUG.y, JUG.w, JUG.h + 40)}>
-              <Animated.View style={jugStyle}>
-                <Pressable
+              <GestureDetector gesture={jugGesture}>
+                <Animated.View
+                  style={jugStyle}
                   accessibilityRole="button"
-                  accessibilityLabel={`Hold to pour ${challenge.ingredient.en}`}
-                  onPressIn={startPour}
-                  onPressOut={stopPour}
-                  disabled={done}
+                  accessibilityLabel={`Hold to pour ${challenge.ingredient.en}, and tilt it towards the cup`}
                 >
                   <View style={[styles.jug, { width: JUG.w * s, height: JUG.h * s, borderRadius: 20 * s, borderWidth: 4 * s }]}>
                     {/* the tin the ingredient sits in — gives white contents
@@ -281,22 +401,23 @@ export function MeasurePour({ challenge, onComplete, onEvent, compact }: MiniGam
                       {challenge.ingredient.es}
                     </Text>
                   </View>
-                </Pressable>
-              </Animated.View>
-              <Animated.View style={[at(s, 6, JUG.h - 8, 16, 120), styles.stream, streamStyle]} pointerEvents="none">
-                <View style={[styles.streamBody, { backgroundColor: look.fill, borderRadius: 8 * s }]} />
+                </Animated.View>
+              </GestureDetector>
+              <Animated.View style={[at(s, 2, JUG.h - 8, 20, 130), styles.stream, streamStyle]} pointerEvents="none">
+                <View style={[styles.streamBody, { backgroundColor: look.fill, borderRadius: 10 * s }]} />
+                <View style={[styles.droplet, { backgroundColor: look.foam, width: 12 * s, height: 12 * s, borderRadius: 6 * s }]} />
               </Animated.View>
             </View>
 
-            <View style={at(s, 240, 208, 132)} pointerEvents="none">
+            <View style={at(s, 240, 214, 132)} pointerEvents="none">
               <View style={[styles.readout, shadows.soft]}>
-                <Text variant="tiny" color={palette.navyMuted}>
+                <Text variant="tiny" color={roles.ink.muted}>
                   In the cup
                 </Text>
                 <Text variant="h1" color={over ? palette.orangeDark : palette.navy}>
                   {formatFraction(poured)}
                 </Text>
-                <Text variant="tiny" color={palette.navySoft}>
+                <Text variant="tiny" color={roles.ink.secondary}>
                   need {formatFraction(target)} {unitWord}
                 </Text>
               </View>
@@ -304,24 +425,7 @@ export function MeasurePour({ challenge, onComplete, onEvent, compact }: MiniGam
           </>
         )}
       </Stage>
-
-      <Tray tone="cream">
-        <View style={styles.trayRow}>
-          {pouredN > 0 && !done ? (
-            <Button label="Pour back" tone="white" size="sm" onPress={pourBack} sound="tap-soft" />
-          ) : null}
-          {assist.offerHelp && !done ? <Button label="Show me" tone="yellow" size="sm" onPress={showMe} sound="tap-soft" /> : null}
-          {pouring ? (
-            <Text variant="small" color={palette.waterCyanDark}>
-              pouring…
-            </Text>
-          ) : null}
-        </View>
-        <CookCTA label={done ? 'Measured!' : 'Done'} tone={done ? 'green' : 'red'} onPress={check} disabled={done} />
-      </Tray>
-
-      <HintBubble text={assist.text} es={assist.es} visible={assist.visible} onDismiss={assist.dismiss} />
-    </View>
+    </ActivityFrame>
   );
 }
 
@@ -339,7 +443,6 @@ function Wave({ s, width, color }: { s: number; width: number; color: string }) 
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1 },
   stage: { flex: 1 },
   clip: { overflow: 'hidden', justifyContent: 'flex-end' },
   liquid: { width: '100%', justifyContent: 'flex-start' },
@@ -348,7 +451,7 @@ const styles = StyleSheet.create({
   tick: { borderRadius: 3 },
   flag: { marginLeft: 2 },
   jug: {
-    backgroundColor: palette.white,
+    backgroundColor: roles.surface.card,
     borderColor: palette.creamDeep,
     alignItems: 'center',
     justifyContent: 'center',
@@ -357,12 +460,20 @@ const styles = StyleSheet.create({
   tin: { position: 'absolute', top: '14%' },
   stream: { alignItems: 'center' },
   streamBody: { flex: 1, width: '100%' },
+  droplet: { position: 'absolute', bottom: -4, alignSelf: 'center', opacity: 0.9 },
   readout: {
-    backgroundColor: palette.white,
+    backgroundColor: roles.surface.card,
     borderRadius: radii.tile,
     paddingVertical: spacing.xs,
     paddingHorizontal: spacing.sm,
     alignItems: 'center',
   },
-  trayRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm, marginBottom: spacing.xs, minHeight: 4 },
+  trayRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    marginBottom: spacing.xs,
+    minHeight: 4,
+  },
 });

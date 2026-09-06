@@ -1,12 +1,14 @@
 /**
  * MissionSlip — a dispatch slip card.
  *
- * White card floating on the sky: scene thumbnail, title, tagline, subject
- * pills, stars already earned, and a green round chevron. Locked slips show a
- * lock and the mission that unlocks them; they are never scary, just "not yet".
+ * FOUR THINGS, IN THIS ORDER: the picture of the place, the name of the job,
+ * one line about it, and the big green GO. Everything else — which subjects it
+ * practises, how long it takes, how many stars are already on it — is support,
+ * printed once and quietly, or left to the detail views.
  *
- * (The UI kit is expected to grow a shared `DispatchSlip`. Until it exports one
- * this local card carries the look — same anatomy, same tokens.)
+ * The slip used to carry a title, a tagline, a thumbnail and a stack of three
+ * colour-coded subject pills at the same weight, which on a phone made the
+ * pills the tallest thing on the card and pushed the tagline into an ellipsis.
  */
 import React, { useEffect } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
@@ -21,29 +23,31 @@ import Animated, {
 import Svg, { Circle, Path } from 'react-native-svg';
 import type { MissionDef } from '@/content/types';
 import type { Stars } from '@/minigames/types';
-import { easings, hit, palette, radii, shadows, spacing, springs, stagger } from '@/theme';
+import { easings, palette, radii, roles, spacing, springs, stagger } from '@/theme';
+import { useShowTranslation } from '@/hooks';
 import { LockIcon, StarIcon } from '@/ui/icons';
-import { SubjectPill } from '@/ui/SubjectPill';
+import { SubjectLine, subjectSentence } from '@/ui/SubjectPill';
 import { Text } from '@/ui/Text';
 import { SceneThumb } from '@/screens/Mission/SceneHero';
 
-/** The green "go" chevron on the right of every slip. */
-function GoChevron({ dim }: { dim?: boolean }) {
+/** The green "go" chevron on the right of every slip — the selection action. */
+function GoChevron({ dim, size }: { dim?: boolean; size: number }) {
   return (
-    <View style={styles.chevron}>
-      <Svg width={54} height={54} viewBox="0 0 54 54">
+    <View style={[styles.chevron, { width: size, height: size }]}>
+      <Svg width={size} height={size} viewBox="0 0 54 54">
         <Circle cx={27} cy={29} r={25} fill={dim ? palette.slate : palette.leafGreenDark} />
         <Circle cx={27} cy={26} r={25} fill={dim ? palette.lockedGrey : palette.leafGreen} />
+        <Circle cx={27} cy={26} r={25} fill="none" stroke="rgba(255,255,255,0.4)" strokeWidth={2.5} />
         <Path d="M 22 15 L 34 26 L 22 37" stroke={palette.white} strokeWidth={5} strokeLinecap="round" strokeLinejoin="round" fill="none" />
       </Svg>
     </View>
   );
 }
 
-/** Tiny earned-stars row shown under the pills. */
+/** Tiny earned-stars row. Absent until the child has actually earned one. */
 function EarnedStars({ stars }: { stars: Stars }) {
   return (
-    <View style={styles.stars}>
+    <View style={styles.stars} accessibilityLabel={`${stars} of 3 stars`}>
       {[0, 1, 2].map((i) => (
         <StarIcon
           key={i}
@@ -95,79 +99,96 @@ export interface MissionSlipProps {
   lockLabel?: string;
   /** show the DISPATCHED stamp (the parent navigates once it lands) */
   dispatched?: boolean;
+  /** roomier art and type once the card has a board's worth of width */
+  roomy?: boolean;
   onPress?: () => void;
 }
 
-export function MissionSlip({ mission, index = 0, stars = 0, locked, lockLabel, dispatched, onPress }: MissionSlipProps) {
+export function MissionSlip({ mission, index = 0, stars = 0, locked, lockLabel, dispatched, roomy, onPress }: MissionSlipProps) {
   const press = useSharedValue(0);
   const a = useAnimatedStyle(() => ({ transform: [{ scale: 1 - press.value * 0.025 }] }));
+  const showEs = useShowTranslation();
+  const es = showEs && mission.titleEs && mission.titleEs !== mission.title ? mission.titleEs : undefined;
+
+  /* narrow cards trade a little picture for a tagline that finishes its sentence */
+  const thumbW = roomy ? 128 : 98;
+  const thumbH = roomy ? 108 : 86;
 
   return (
+    /* grow to the height of the tallest slip in the row, so a board of cards
+       reads as one shelf rather than a ragged edge */
     <Animated.View
+      style={styles.grow}
       entering={FadeInDown.delay(index * stagger.card)
         .springify()
         .damping(15)}
     >
-      <Animated.View style={a}>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={
-          locked ? `${mission.title}. Locked. ${lockLabel ?? ''}` : `${mission.title}. ${mission.tagline}`
-        }
-        accessibilityState={{ disabled: !!locked }}
-        disabled={locked || dispatched}
-        onPressIn={() => {
-          press.value = withSpring(1, springs.pop);
-        }}
-        onPressOut={() => {
-          press.value = withSpring(0, springs.pop);
-        }}
-        onPress={onPress}
-        style={[styles.card, shadows.card, locked && styles.cardLocked]}
-      >
-        <View>
-          <SceneThumb scene={mission.scene} width={112} height={92} style={locked ? styles.thumbLocked : undefined} />
-          {locked ? (
-            <View style={styles.lockBadge}>
-              <LockIcon size={26} color={palette.white} />
-            </View>
-          ) : null}
-        </View>
+      <Animated.View style={[a, styles.grow]}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={
+            locked
+              ? `${mission.title}. Not open yet. ${lockLabel ?? ''}`
+              : `${mission.title}. ${mission.tagline} Practises ${subjectSentence(mission.subjects)}.`
+          }
+          accessibilityState={{ disabled: !!locked }}
+          disabled={locked || dispatched}
+          onPressIn={() => {
+            press.value = withSpring(1, springs.pop);
+          }}
+          onPressOut={() => {
+            press.value = withSpring(0, springs.pop);
+          }}
+          onPress={onPress}
+          style={[styles.card, roles.lift.interactive, locked && styles.cardLocked]}
+        >
+          <View>
+            <SceneThumb scene={mission.scene} width={thumbW} height={thumbH} style={locked ? styles.thumbLocked : undefined} />
+            {locked ? (
+              <View style={styles.lockBadge}>
+                <LockIcon size={24} color={palette.white} />
+              </View>
+            ) : null}
+          </View>
 
-        <View style={styles.body}>
-          <Text variant="h2" numberOfLines={2} color={locked ? palette.slate : palette.navy}>
-            {mission.title}
-          </Text>
-          <Text variant="small" color={locked ? palette.slate : palette.navySoft} numberOfLines={2} style={styles.tagline}>
-            {locked ? (lockLabel ?? 'Finish an earlier mission first') : mission.tagline}
-          </Text>
-          {!locked ? (
-            <View style={styles.pills}>
-              {mission.subjects.slice(0, 3).map((s) => (
-                <SubjectPill key={s} subject={s} small />
-              ))}
-            </View>
-          ) : null}
-          {!locked && stars > 0 ? <EarnedStars stars={stars} /> : null}
-        </View>
+          <View style={styles.body}>
+            <Text variant={roomy ? 'h2' : 'h3'} numberOfLines={2} color={locked ? palette.slate : roles.ink.primary}>
+              {mission.title}
+            </Text>
+            {es ? (
+              <Text variant="small" color={roles.ink.translation} numberOfLines={2}>
+                {es}
+              </Text>
+            ) : null}
+            <Text variant="small" color={locked ? palette.slate : roles.ink.secondary} numberOfLines={roomy ? 2 : 3}>
+              {locked ? (lockLabel ?? 'Finish an earlier mission first') : mission.tagline}
+            </Text>
+            {!locked ? (
+              <View style={styles.foot}>
+                <SubjectLine subjects={mission.subjects} max={roomy ? 3 : 2} />
+                {stars > 0 ? <EarnedStars stars={stars} /> : null}
+              </View>
+            ) : null}
+          </View>
 
-        <GoChevron dim={locked} />
-        <DispatchedStamp on={!!dispatched} />
-      </Pressable>
+          <GoChevron dim={locked} size={roomy ? 58 : 50} />
+          <DispatchedStamp on={!!dispatched} />
+        </Pressable>
       </Animated.View>
     </Animated.View>
   );
 }
 
 const styles = StyleSheet.create({
+  grow: { flexGrow: 1 },
   card: {
+    flexGrow: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: palette.white,
+    backgroundColor: roles.surface.card,
     borderRadius: radii.card,
     padding: spacing.sm,
     gap: spacing.sm,
-    minHeight: hit.big + 34,
     overflow: 'hidden',
   },
   cardLocked: { backgroundColor: '#F2F4FA' },
@@ -176,9 +197,9 @@ const styles = StyleSheet.create({
     position: 'absolute',
     right: -4,
     top: -4,
-    width: 38,
-    height: 38,
-    borderRadius: 19,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     backgroundColor: palette.slate,
     alignItems: 'center',
     justifyContent: 'center',
@@ -186,10 +207,9 @@ const styles = StyleSheet.create({
     borderColor: palette.white,
   },
   body: { flex: 1, gap: 3, paddingVertical: 2 },
-  tagline: { marginTop: -1 },
-  pills: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 3 },
-  stars: { flexDirection: 'row', gap: 3, marginTop: 2 },
-  chevron: { width: 54, alignItems: 'center', justifyContent: 'center' },
+  foot: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.xs, marginTop: 2 },
+  stars: { flexDirection: 'row', gap: 3 },
+  chevron: { alignItems: 'center', justifyContent: 'center' },
   stampWrap: { ...StyleSheet.absoluteFill, alignItems: 'center', justifyContent: 'center' },
   stamp: {
     borderWidth: 5,
