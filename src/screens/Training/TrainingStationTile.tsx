@@ -13,7 +13,6 @@ import Animated, { FadeInDown, useAnimatedStyle, useSharedValue, withSpring } fr
 import Svg, { Circle, Path } from 'react-native-svg';
 import type { MiniGameMeta, Stars } from '@/minigames/types';
 import { palette, radii, roles, spacing, springs, stagger, subjectColors, type SubjectId } from '@/theme';
-import { useShowTranslation } from '@/hooks';
 import { StarIcon } from '@/ui/icons';
 import { GlyphIcon, hasGlyph, type GlyphId } from '@/ui/kit/GlyphIcon';
 import { VocabIcon, vocabIconIds, type VocabIconId } from '@/ui/kit/VocabIcon';
@@ -108,8 +107,6 @@ export function TrainingStationTile({ meta, index = 0, plays = 0, stars = 0, roo
   const a = useAnimatedStyle(() => ({ transform: [{ scale: 1 - press.value * 0.03 }] }));
   const subject: SubjectId = meta.subjects[0] ?? 'logic';
   const mark = resolveMark(meta.icon);
-  const showEs = useShowTranslation();
-  const es = showEs && meta.titleEs && meta.titleEs !== meta.title ? meta.titleEs : undefined;
 
   return (
     /* grow to the height of the tallest tile in the row */
@@ -161,11 +158,12 @@ export function TrainingStationTile({ meta, index = 0, plays = 0, stars = 0, roo
                 </Text>
               )}
             </View>
-            {es ? (
-              <Text variant="small" color={roles.ink.translation} numberOfLines={1}>
-                {es}
-              </Text>
-            ) : null}
+            {/* The Spanish game name used to print here, under the English
+                one. On a board of a dozen tiles that is a dozen extra lines
+                between the child and the thing they came to choose, and the
+                name of a game is not what teaches Spanish — the games that
+                actually teach it do, and Captain Bea still says everything
+                aloud in both languages. */}
             <Text variant="small" color={roles.ink.secondary} numberOfLines={roomy ? 2 : 3}>
               {meta.blurb}
             </Text>

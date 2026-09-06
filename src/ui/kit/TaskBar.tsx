@@ -2,7 +2,6 @@ import React, { useCallback } from 'react';
 import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { palette, radii, roles, spacing } from '@/theme';
-import { useShowTranslation } from '@/hooks';
 import { speech } from '@/services/speech';
 import { useActivityChrome } from './activityChrome';
 import { BackIcon, SpeakerIcon } from '../icons';
@@ -12,7 +11,17 @@ import { Text } from '../Text';
 export interface TaskBarProps {
   /** the one short instruction for this activity — an imperative, not a sentence */
   task: string;
-  /** the same instruction in Spanish; shown only when the child asked for full support */
+  /**
+   * The same instruction in Spanish. It is SPOKEN — the replay button reads it
+   * after the English — but it is no longer printed here.
+   *
+   * Every activity was showing the task twice, once per language, which put a
+   * second line of text a five-year-old cannot yet read between them and the
+   * game, on all 27 screens. Spanish is still everywhere it teaches something:
+   * spoken aloud on every task and reaction, and printed in full by the games
+   * whose *subject* is Spanish (Vocab Tap, Listen & Count, the vocabulary
+   * cards) and in the Grown-Ups word list.
+   */
   es?: string;
   /**
    * One quiet line of scaffolding under the task — *how* to do it. Kept in the
@@ -49,12 +58,12 @@ export interface TaskBarProps {
  * when it does appear.
  */
 export function TaskBar({ task, es, detail, onBack, onReplay, progress, compact, style }: TaskBarProps) {
-  const showEs = useShowTranslation();
   /* The host supplies back / replay / progress so there is only ever one bar. */
   const chrome = useActivityChrome();
   const back = onBack ?? chrome.onBack;
   const steps = progress ?? chrome.progress;
-  const translated = showEs && es && es !== task ? es : undefined;
+  /* not printed any more — but still read aloud, see `es` above */
+  const spoken = es && es !== task ? es : undefined;
 
   /**
    * Reading the task back is the default, not a feature a game opts into.
@@ -67,9 +76,9 @@ export function TaskBar({ task, es, detail, onBack, onReplay, progress, compact,
        cutting the English off mid-word. */
     speech.say(task, {
       speaker: 'bea',
-      onDone: translated ? () => setTimeout(() => speech.say(translated, { speaker: 'bea', lang: 'es' }), 250) : undefined,
+      onDone: spoken ? () => setTimeout(() => speech.say(spoken, { speaker: 'bea', lang: 'es' }), 250) : undefined,
     });
-  }, [task, translated]);
+  }, [task, spoken]);
   const replay = onReplay === null ? undefined : (onReplay ?? chrome.onReplay ?? sayTask);
 
   return (
@@ -93,11 +102,6 @@ export function TaskBar({ task, es, detail, onBack, onReplay, progress, compact,
           {detail ? (
             <Text variant="small" color={roles.ink.secondary} center numberOfLines={2} style={styles.es}>
               {detail}
-            </Text>
-          ) : null}
-          {translated ? (
-            <Text variant="small" color={roles.ink.translation} center numberOfLines={1} style={styles.es}>
-              {translated}
             </Text>
           ) : null}
         </View>
