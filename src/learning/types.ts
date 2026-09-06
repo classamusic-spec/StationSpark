@@ -343,6 +343,85 @@ export interface WordBuilderChallenge {
   prefilled: number;
 }
 
+/* ---- The training road --------------------------------------------- */
+
+/** The road is always three lanes wide; the child only ever chooses one of them. */
+export const truckRunLanes = 3;
+
+/** What one `truck-run` road is asking about. A run keeps to one topic. */
+export type TruckRunTopic =
+  | 'number-word' // A: "Which gate says seven?"
+  | 'count-on' // A: "What comes next? 8, 9, 10"
+  | 'add-sub' // B: + and − within 20
+  | 'sight-word' // B: "Which word says stop?"
+  | 'times-divide' // C: × and ÷
+  | 'elapsed' // C: "3:15 to 3:45 — how long?"
+  | 'spanish'; // C: Spanish word → meaning
+
+/** Everything that can stand on the road. Nothing here can damage the truck. */
+export type TruckRunProp =
+  | 'pothole'
+  | 'cone'
+  | 'hose'
+  | 'puddle'
+  | 'car'
+  | 'ramp' // jump over whatever is next
+  | 'boost'; // a burst of speed and siren
+
+export interface TruckRunObstacle {
+  kind: TruckRunProp;
+  /** 0 = left, 1 = middle, 2 = right */
+  lane: number;
+  /** distance from the START OF ITS SEGMENT, in road units */
+  at: number;
+}
+
+export interface TruckRunQuestion {
+  /** the task, short enough to live in the TaskBar */
+  prompt: string;
+  promptEs?: string;
+  /** one label per lane, short enough to read at speed (≤ 8 characters) */
+  options: string[];
+  /** the label that opens the gate — appears in `options` exactly once */
+  answer: string;
+  /** Captain Bea's hint after the second miss; it should give the answer away */
+  hint: string;
+  hintEs?: string;
+}
+
+/** One stretch of road: hazard rows, then a set of three answer gates. */
+export interface TruckRunSegment {
+  /** total length of the stretch, gates included */
+  length: number;
+  obstacles: TruckRunObstacle[];
+  /** distance from the segment start to the gates */
+  gateAt: number;
+}
+
+/**
+ * TRUCK RUN — the driving station. The truck drives itself; the child steers
+ * between three lanes, dodges what the road throws at them, and answers by
+ * driving through one of three gates. Segments repeat until every question has
+ * been answered, so a wrong gate costs a moment, never the run.
+ */
+export interface TruckRunChallenge {
+  kind: 'truck-run';
+  topic: TruckRunTopic;
+  questions: TruckRunQuestion[];
+  segments: TruckRunSegment[];
+  /** road speed before boosts, in road units per second */
+  speed: number;
+  /** seconds to move one lane across */
+  laneChange: number;
+  /** how far apart hazard rows stand — the room a child has to change lane */
+  rowGap: number;
+  /** the victory straight after the last gate */
+  finish: number;
+  /** how many hazards a child may clip before Captain Bea offers driving advice */
+  bumpBudget: number;
+  scene?: SceneId;
+}
+
 /* ---- Kitchen ------------------------------------------------------- */
 
 export type ToppingId = 'cheese' | 'tomato' | 'pepper' | 'mushroom' | 'olive' | 'basil';
@@ -430,6 +509,7 @@ export type Challenge =
   | MarketMoneyChallenge
   | ShapeBuilderChallenge
   | WordBuilderChallenge
+  | TruckRunChallenge
   | PizzaFractionsChallenge
   | MeasurePourChallenge
   | CountIngredientsChallenge
@@ -473,6 +553,8 @@ export const challengeSkills: Record<ChallengeKind, SkillTag[]> = {
   'market-money': ['money', 'addition', 'subtraction', 'counting'],
   'shape-builder': ['geometry', 'spatial'],
   'word-builder': ['spelling', 'reading-words', 'vocabulary-en', 'vocabulary-es'],
+  /* the band's own subject is added per run via `session.complete(topicSkills)` */
+  'truck-run': ['spatial', 'number-recognition', 'reading-words'],
   'pizza-fractions': ['fraction-half', 'fraction-quarter', 'division', 'geometry'],
   'measure-pour': ['measurement', 'fraction-quarter'],
   'count-ingredients': ['counting', 'vocabulary-es'],

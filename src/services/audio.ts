@@ -26,6 +26,8 @@ export type SfxName =
   | 'siren' // short playful siren
   | 'horn'
   | 'engine' // loop while travelling
+  | 'bump' // pothole / cone on the training road
+  | 'boost' // boost pad
   | 'water-spray' // loop while spraying
   | 'splash'
   | 'steam' // flame goes out
@@ -59,6 +61,8 @@ const sources: Record<SfxName, number> = {
   siren: require('../../assets/sfx/siren.wav'),
   horn: require('../../assets/sfx/horn.wav'),
   engine: require('../../assets/sfx/engine.wav'),
+  bump: require('../../assets/sfx/bump.wav'),
+  boost: require('../../assets/sfx/boost.wav'),
   'water-spray': require('../../assets/sfx/water-spray.wav'),
   splash: require('../../assets/sfx/splash.wav'),
   steam: require('../../assets/sfx/steam.wav'),

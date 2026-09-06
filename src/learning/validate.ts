@@ -8,8 +8,9 @@
 import { add, equals, toNumber } from '@/utils/fractions';
 import { pathPieces, posKey, samePos, solveHosePath, solveRoute } from '@/utils/grid';
 import type { Challenge, Fraction, GridPos } from './types';
-import { rotatableShapes } from './types';
+import { rotatableShapes, truckRunLanes } from './types';
 import { isSubMultiset, solveNumberLadder, sumOf } from './solvers';
+import { GATE_LABEL_MAX, hazardRows, laneEscapeRoute } from './generators/truck-run';
 
 const isWholeMultiple = (value: Fraction, step: Fraction): boolean => {
   const quotient = (value.num * step.den) / (value.den * step.num);
@@ -323,6 +324,45 @@ export function validateChallenge(challenge: Challenge): string[] {
         else bag.set(letter, left - 1);
       }
       if (word.en.trim().length === 0 || word.es.trim().length === 0) bad('the word is missing a translation');
+      break;
+    }
+
+    case 'truck-run': {
+      const { questions, segments, speed, laneChange, rowGap, finish } = challenge;
+      if (questions.length === 0) bad('a run needs at least one question');
+      if (segments.length === 0) bad('a run needs at least one stretch of road');
+      if (speed <= 0) bad('the truck must move');
+      if (laneChange <= 0) bad('a lane change must take some time');
+      if (finish <= 0) bad('there is no victory straight after the last gate');
+      /* the promise that makes the road drivable: one lane change always fits
+         between two rows, even at full boost (see docs/DRIVING_GAME.md) */
+      if (rowGap < speed * laneChange * 2) bad('hazard rows are closer together than a lane change');
+
+      for (const q of questions) {
+        if (q.prompt.trim().length === 0) bad('a gate set has no question');
+        if (q.hint.trim().length === 0) bad('a gate set has no hint, so a child could be stuck');
+        if (q.options.length !== truckRunLanes) bad('every lane needs exactly one gate label');
+        if (uniqueCount(q.options) !== q.options.length) bad('two gates carry the same label');
+        if (q.options.filter((o) => o === q.answer).length !== 1) bad('exactly one gate must be the answer');
+        if (q.options.some((o) => o.trim().length === 0)) bad('a gate label is empty');
+        if (q.options.some((o) => o.length > GATE_LABEL_MAX)) bad('a gate label is too long to read at speed');
+      }
+
+      for (const segment of segments) {
+        if (segment.gateAt <= 0 || segment.gateAt >= segment.length) bad('the gates are not on the road');
+        for (const o of segment.obstacles) {
+          if (o.lane < 0 || o.lane >= truckRunLanes) bad('an obstacle is off the road');
+          if (o.at < 0 || o.at > segment.gateAt) bad('an obstacle stands on or past the gates');
+        }
+        const rows = hazardRows(segment);
+        for (let i = 1; i < rows.length; i += 1) {
+          const gap = (rows[i]?.at ?? 0) - (rows[i - 1]?.at ?? 0);
+          if (gap < rowGap - 0.5) bad('two hazard rows are closer than the row gap');
+        }
+        const last = rows[rows.length - 1];
+        if (last && segment.gateAt - last.at < rowGap) bad('there is no clear approach to the gates');
+        if (!laneEscapeRoute(segment)) bad('this stretch of road cannot be driven cleanly');
+      }
       break;
     }
 

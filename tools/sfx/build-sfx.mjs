@@ -748,6 +748,51 @@ const SOUNDS = {
     },
   },
 
+  /**
+   * BUMP — the training road's pothole (and a cone going over, and a wrong
+   * gate). A soft suspension thud with a little body rattle: it has to read as
+   * "ooh, that slowed us down", never as a crash or a buzzer.
+   */
+  bump: {
+    make: (S) => {
+      const thud = S.osc({ type: 'sine', freq: (u) => 128 * Math.pow(0.5, u), dur: 0.22, amp: 0.9, env: S.perc(0.055) });
+      const tyre = S.gain(S.lowpass(S.noise(0.08, S.perc(0.022, 0.001)), 700), 0.5);
+      const rattle = S.gain(
+        S.bandpass(S.noise(0.14, S.perc(0.05, 0.004)), 380, 1700),
+        (u) => 0.22 * (1 - u) * (0.7 + 0.3 * Math.sin(TAU * 26 * u)),
+      );
+      const spring = S.osc({ type: 'tri', freq: (u) => 240 - 60 * u, dur: 0.16, amp: 0.14, env: S.perc(0.05, 0.01) });
+      return S.fade(S.dcBlock(S.softClip(S.mix(thud, tyre, rattle, spring), 1.2)), 0.002, 0.05);
+    },
+  },
+
+  /**
+   * BOOST — the boost pad: a rising whoosh under a bright rising third, so the
+   * ear hears "up and away" rather than "faster". Pairs with the siren blip.
+   */
+  boost: {
+    make: (S) => {
+      const dur = 0.5;
+      const air = S.gain(
+        S.bandpass(S.noise(dur, S.bell(1.2)), (u) => 260 + 900 * u, (u) => 1800 + 6000 * u),
+        0.55,
+      );
+      const rise = S.osc({
+        type: 'tri',
+        freq: (u) => NOTE.C5 * Math.pow(2, u * 0.75),
+        dur,
+        amp: 0.45,
+        env: S.swell(0.03, 0.18, dur),
+      });
+      const shine = S.osc({ type: 'sine', freq: (u) => NOTE.G5 * Math.pow(2, u * 0.75), dur, amp: 0.2, env: S.swell(0.06, 0.2, dur) });
+      let out = S.mix(air, rise, shine);
+      /* two sparkles on the way out, so it lands as a reward */
+      out = S.place(out, S.osc({ type: 'sine', freq: NOTE.E6, dur: 0.16, amp: 0.24, env: S.perc(0.045) }), 0.3);
+      out = S.place(out, S.osc({ type: 'sine', freq: NOTE.G6, dur: 0.18, amp: 0.2, env: S.perc(0.05) }), 0.38);
+      return S.fade(S.reverb(S.softClip(S.dcBlock(out), 1.25), { amount: 0.16, decaySec: 0.26, tailSec: 0.28 }), 0.004, 0.07);
+    },
+  },
+
   /** WATER-SPRAY — seamless 1.2 s hose loop: filtered noise, gentle modulation. */
   'water-spray': {
     sr: SR_LOOP,

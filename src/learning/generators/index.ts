@@ -33,6 +33,7 @@ import { generateShapeBuilder } from './shape-builder';
 import { generateSignals } from './signals';
 import { generateSoupPot } from './soup-pot';
 import { generateSprayPattern } from './spray-pattern';
+import { generateTruckRun } from './truck-run';
 import { generateVocabTap } from './vocab-tap';
 import { generateWaterTank } from './water-tank';
 import { generateWordBuilder } from './word-builder';
@@ -60,6 +61,7 @@ export * from './shape-builder';
 export * from './signals';
 export * from './soup-pot';
 export * from './spray-pattern';
+export * from './truck-run';
 export * from './vocab-tap';
 export * from './water-tank';
 export * from './word-builder';
@@ -85,6 +87,7 @@ export const generators: { [K in ChallengeKind]: ChallengeGenerator<K> } = {
   'market-money': generateMarketMoney,
   'shape-builder': generateShapeBuilder,
   'word-builder': generateWordBuilder,
+  'truck-run': generateTruckRun,
   'pizza-fractions': generatePizzaFractions,
   'measure-pour': generateMeasurePour,
   'count-ingredients': generateCountIngredients,
