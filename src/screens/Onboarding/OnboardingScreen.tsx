@@ -97,7 +97,8 @@ export function OnboardingScreen() {
     setCelebrating(true);
   }, [name, setProfile, step]);
 
-  const stageH = Math.round(Math.max(300, Math.min(layout.height * 0.44, 520)));
+  /* the scene takes a little under half the screen; taller on tablets so the sheet never yawns */
+  const stageH = Math.round(Math.max(300, Math.min(layout.height * 0.46, 600)));
   const hills = layout.height - stageH + 40;
 
   return (
@@ -186,7 +187,8 @@ const styles = StyleSheet.create({
     borderTopRightRadius: radii.panel + 6,
     overflow: 'hidden',
   },
-  content: { width: '100%', alignSelf: 'center', paddingHorizontal: spacing.md, paddingTop: spacing.sm, gap: spacing.sm },
+  /** short beats sit centred in the sheet; the picker beat scrolls as normal */
+  content: { width: '100%', alignSelf: 'center', flexGrow: 1, justifyContent: 'center', paddingHorizontal: spacing.md, paddingTop: spacing.sm, gap: spacing.sm },
   beat: { gap: spacing.sm },
   card: { gap: 6 },
   esRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 2 },

@@ -18,7 +18,8 @@ import { useGameLayout } from '../shared/layout';
 import { useBeaconLine } from '../shared/speak';
 import { useHintLadder } from '../shared/useHintLadder';
 import { WaterBurst } from '../shared/art/Glyphs';
-import { Hydrant, TruckSide } from '../shared/art/Props';
+import { TruckSide } from '../shared/art/Props';
+import { Hydrant } from '@/world/props';
 
 interface State {
   phase: 'connecting' | 'connected';
@@ -196,7 +197,7 @@ export function HydrantMatch({ challenge, ageBand, onComplete, onEvent, compact 
                         <WaterBurst size={hydrantWidth * 1.5} />
                       </Animated.View>
                     ) : null}
-                    <Hydrant width={hydrantWidth} tone={i % 2 === 0 ? 'red' : 'yellow'} wet={isMatch} />
+                    <Hydrant width={hydrantWidth} tone={i % 2 === 0 ? 'red' : 'yellow'} wet={isMatch} label={value} />
                     <View style={styles.plate}>
                       <Text variant="h3" center>
                         {value}

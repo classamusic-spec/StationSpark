@@ -99,14 +99,14 @@ export function TrainingStationTile({ meta, index = 0, plays = 0, stars = 0, onP
         <View style={styles.head}>
           <StationGlyph subject={subject} glyph={glyph} />
           <View style={styles.headText}>
-            <Text variant="h3" numberOfLines={2}>
+            <Text variant="h3" numberOfLines={3}>
               {meta.title}
             </Text>
             <SubjectPill subject={subject} small />
           </View>
         </View>
 
-        <Text variant="small" color={palette.navySoft} numberOfLines={2} style={styles.blurb}>
+        <Text variant="small" color={palette.navySoft} numberOfLines={3} style={styles.blurb}>
           {meta.blurb}
         </Text>
 

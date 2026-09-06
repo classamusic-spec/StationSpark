@@ -50,10 +50,9 @@ function RingingBell() {
 export interface BellStepsProps {
   step: number;
   total: number;
-  labels?: readonly string[];
 }
 
-export function BellSteps({ step, total, labels }: BellStepsProps) {
+export function BellSteps({ step, total }: BellStepsProps) {
   return (
     <View style={styles.row} accessibilityRole="progressbar" accessibilityValue={{ min: 1, max: total, now: step + 1 }} accessibilityLabel={`Step ${step + 1} of ${total}`}>
       {Array.from({ length: total }, (_, i) => {
@@ -78,7 +77,6 @@ export function BellSteps({ step, total, labels }: BellStepsProps) {
           </React.Fragment>
         );
       })}
-      {labels ? null : null}
     </View>
   );
 }

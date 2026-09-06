@@ -45,7 +45,8 @@ export function SignBoard({ children, posts = false, hang = false, compact = fal
 }
 
 const styles = StyleSheet.create({
-  wrap: { alignItems: 'center', alignSelf: 'flex-start' },
+  /** hugs its content; the parent decides where it sits (centred, or flush left on a post) */
+  wrap: { alignItems: 'center' },
   ropes: { flexDirection: 'row', gap: 44, marginBottom: -2 },
   rope: { width: 4, height: 16, borderRadius: 2, backgroundColor: palette.woodDark },
   edge: { backgroundColor: palette.tanDark, borderRadius: radii.tile, paddingBottom: 4 },

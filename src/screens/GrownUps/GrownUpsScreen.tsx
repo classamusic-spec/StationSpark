@@ -26,9 +26,9 @@ import { SafetyPoster } from './parts/SafetyPoster';
 import { ParentGate } from './ParentGate';
 
 const SPANISH_OPTIONS = [
-  { id: 'full' as const, label: 'Full', hint: 'English beside every line' },
-  { id: 'some' as const, label: 'Some', hint: 'help on new words' },
-  { id: 'min' as const, label: 'Minimal', hint: 'Spanish on its own' },
+  { id: 'full' as const, label: 'Full' },
+  { id: 'some' as const, label: 'Some' },
+  { id: 'min' as const, label: 'Minimal' },
 ];
 
 function GrownUpsSettings() {
@@ -97,7 +97,12 @@ function GrownUpsSettings() {
       </Animated.View>
 
       <Animated.View entering={enter(2)}>
-        <Paper tab="LANGUAGE" tabColor={palette.purpleSoft} title="Spanish support" subtitle="How much English scaffolding shows next to Spanish lines.">
+        <Paper
+          tab="LANGUAGE"
+          tabColor={palette.purpleSoft}
+          title="Spanish support"
+          subtitle="How much English shows beside Spanish lines: all of it, help on new words only, or Spanish on its own."
+        >
           <SegmentedPills options={SPANISH_OPTIONS} value={settings.spanishSupport} onChange={(v) => setSettings({ spanishSupport: v })} color={palette.purple} />
         </Paper>
       </Animated.View>

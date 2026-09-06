@@ -12,16 +12,22 @@ rescue kittens, cook with the crew, and learn words in English and Spanish along
 > more neighbours, and cooking teaches measurement and sharing.
 
 <p align="center">
-  <img src="docs/screenshots/home-phone.png" width="200" alt="Firehouse home" />
-  <img src="docs/screenshots/dispatch.png" width="200" alt="Dispatch" />
-  <img src="docs/screenshots/hose-hero.png" width="200" alt="Hose Hero" />
-  <img src="docs/screenshots/code-the-route.png" width="200" alt="Code the Route" />
+  <img src="docs/screenshots/home-phone.png" width="190" alt="Firehouse home" />
+  <img src="docs/screenshots/map-phone.png" width="190" alt="Spark City map" />
+  <img src="docs/screenshots/dispatch.png" width="190" alt="Dispatch" />
+  <img src="docs/screenshots/hose-hero.png" width="190" alt="Hose Hero" />
 </p>
 <p align="center">
-  <img src="docs/screenshots/kitchen.png" width="200" alt="Firehouse Kitchen" />
-  <img src="docs/screenshots/ladder-builder.png" width="200" alt="Ladder Builder" />
-  <img src="docs/screenshots/garage.png" width="200" alt="Garage" />
-  <img src="docs/screenshots/badge-wall.png" width="200" alt="Badge wall" />
+  <img src="docs/screenshots/code-the-route.png" width="190" alt="Code the Route" />
+  <img src="docs/screenshots/market-money.png" width="190" alt="Market Money" />
+  <img src="docs/screenshots/shape-builder.png" width="190" alt="Shape Builder" />
+  <img src="docs/screenshots/word-builder.png" width="190" alt="Word Builder" />
+</p>
+<p align="center">
+  <img src="docs/screenshots/pizza-fractions.png" width="190" alt="Pizza Fractions" />
+  <img src="docs/screenshots/garage.png" width="190" alt="3D Garage" />
+  <img src="docs/screenshots/locker.png" width="190" alt="Locker room" />
+  <img src="docs/screenshots/badge-wall.png" width="190" alt="Badge wall" />
 </p>
 
 ## What is in the box
