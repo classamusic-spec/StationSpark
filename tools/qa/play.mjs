@@ -693,6 +693,41 @@ const drivers = {
     }
   },
 
+  /**
+   * Truck Run is not a "do the thing once" driver — the road runs until every
+   * question is answered, so the driver is a read/steer loop. It reads the
+   * game's own testID (`truck-run:q<i>:a<attempt>:lane<current>:<done>/<total>`),
+   * works out which lane carries the answer for this attempt (the game rotates
+   * the options one lane per wrong try), and taps Steer left/right until the
+   * truck is in it. Wrong gates only slow the truck, so this always finishes.
+   */
+  async 'truck-run'(page, c) {
+    const laneFor = (q, attempt) => {
+      const at = q.options.indexOf(q.answer);
+      return (at - (attempt % 3) + 3) % 3;
+    };
+    const readState = async () => {
+      const id = await page.evaluate(() => {
+        const n = document.querySelector('[data-testid^="truck-run:q"]');
+        return n ? n.getAttribute('data-testid') : null;
+      });
+      const m = id && /^truck-run:q(\d+):a(\d+):lane(\d+):(\d+)\/(\d+)$/.exec(id);
+      return m ? { q: +m[1], attempt: +m[2], lane: +m[3], done: +m[4], total: +m[5] } : null;
+    };
+    const left = byLabel(page, 'Steer left');
+    const right = byLabel(page, 'Steer right');
+    for (let guard = 0; guard < 4000; guard += 1) {
+      const st = await readState();
+      if (!st) break; // the road is gone → the celebration is up
+      const want = laneFor(c.questions[st.q], st.attempt);
+      /* lane 0 is the left lane, so a lane index below the target means steer
+         right to raise it — matching the game's own steer handlers */
+      if (st.lane < want) await right.click({ timeout: 4000 }).catch(() => {});
+      else if (st.lane > want) await left.click({ timeout: 4000 }).catch(() => {});
+      else await sleep(45);
+    }
+  },
+
   async 'hose-hero'(page, c) {
     const surface = await boxOf(page, '[aria-label="Aim the hose and hold to spray"]');
     const total = Math.max(1, c.totalFlames);
@@ -925,6 +960,7 @@ const KINDS = [
   'divide-share',
   'recipe-scale',
   'soup-pot',
+  'truck-run',
 ];
 
 const results = [];

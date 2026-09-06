@@ -12,6 +12,7 @@
  * thing that broke.
  */
 import React from 'react';
+import { WEBGL_AVAILABLE } from './webgl';
 
 export interface ThreeBoundaryProps {
   children: React.ReactNode;
@@ -28,7 +29,14 @@ interface ThreeBoundaryState {
 }
 
 export class ThreeBoundary extends React.Component<ThreeBoundaryProps, ThreeBoundaryState> {
-  state: ThreeBoundaryState = { failed: false };
+  /*
+   * Start already tripped when we know up front there is no GL context. three
+   * throws during canvas setup, outside React's render, so waiting for the
+   * catch would flash an empty canvas first (or, for a scene that never errors
+   * cleanly, leave one). This protects the Garage turntable and the badge flip,
+   * not just the games that remembered to probe.
+   */
+  state: ThreeBoundaryState = { failed: !WEBGL_AVAILABLE };
 
   static getDerivedStateFromError(): ThreeBoundaryState {
     return { failed: true };
@@ -41,8 +49,11 @@ export class ThreeBoundary extends React.Component<ThreeBoundaryProps, ThreeBoun
   }
 
   componentDidUpdate(prev: ThreeBoundaryProps): void {
-    // Let the dev route toggle the fallback back off again.
-    if (prev.forceFallback && !this.props.forceFallback && this.state.failed) this.setState({ failed: false });
+    // Let the dev route toggle the fallback back off again — but never onto a
+    // browser that has no GL context, where trying again just throws.
+    if (prev.forceFallback && !this.props.forceFallback && this.state.failed && WEBGL_AVAILABLE) {
+      this.setState({ failed: false });
+    }
   }
 
   render(): React.ReactNode {
