@@ -157,8 +157,7 @@ export function GearSort({ challenge, ageBand, onComplete, onEvent, compact }: M
                   accessibilityLabel={itemLabel(item)}
                   style={[
                     styles.token,
-                    { width: tokenSize + spacing.md, backgroundColor: item.color ? `${item.color}33` : palette.panel },
-                    item.color ? { borderColor: item.color } : null,
+                    { width: tokenSize + spacing.md, backgroundColor: palette.panel },
                   ]}
                 >
                   <EquipmentIcon id={item.equipment} size={tokenSize * SIZE_SCALE[item.size ?? 'M']} />

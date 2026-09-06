@@ -127,7 +127,7 @@ export function VocabTap({ challenge, ageBand, onComplete, onEvent, compact }: M
               accessibilityLabel={option[promptLang]}
             >
               <View style={styles.option}>
-                <VocabIcon id={option.id} size={iconSize} />
+                <VocabIcon id={option.icon} size={iconSize} />
                 <Text variant="small" center numberOfLines={1}>
                   {option[promptLang]}
                 </Text>

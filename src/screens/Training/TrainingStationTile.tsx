@@ -11,14 +11,26 @@ import type { MiniGameMeta, Stars } from '@/minigames/types';
 import { hit, palette, radii, shadows, spacing, springs, stagger, subjectColors, type SubjectId } from '@/theme';
 import { StarIcon } from '@/ui/icons';
 import { GlyphIcon, hasGlyph, type GlyphId } from '@/ui/kit/GlyphIcon';
+import { VocabIcon, vocabIconIds, type VocabIconId } from '@/ui/kit/VocabIcon';
 import { SubjectPill } from '@/ui/SubjectPill';
 import { Text } from '@/ui/Text';
 
+type StationMark = { kind: 'glyph'; id: GlyphId } | { kind: 'vocab'; id: VocabIconId };
+
+/** Resolve a registry icon id to a drawn mark: the glyph kit first, then the vocabulary sheet, never a fallback star. */
+function resolveMark(icon: string): StationMark {
+  const mapped = ICON_GLYPHS[icon];
+  if (mapped) return { kind: 'glyph', id: mapped };
+  if (hasGlyph(icon)) return { kind: 'glyph', id: icon as GlyphId };
+  if ((vocabIconIds as readonly string[]).includes(icon)) return { kind: 'vocab', id: icon as VocabIconId };
+  return { kind: 'glyph', id: 'star' };
+}
+
 /** A big drawn station mark on a soft tile in the game's subject colour. */
-function StationGlyph({ subject, glyph }: { subject: SubjectId; glyph: GlyphId }) {
+function StationGlyph({ subject, mark }: { subject: SubjectId; mark: StationMark }) {
   return (
     <View style={[styles.glyph, { backgroundColor: subjectColors[subject].soft }]}>
-      <GlyphIcon id={glyph} size={52} />
+      {mark.kind === 'glyph' ? <GlyphIcon id={mark.id} size={52} /> : <VocabIcon id={mark.id} size={52} noShadow />}
     </View>
   );
 }
@@ -74,7 +86,7 @@ export function TrainingStationTile({ meta, index = 0, plays = 0, stars = 0, onP
   const press = useSharedValue(0);
   const a = useAnimatedStyle(() => ({ transform: [{ scale: 1 - press.value * 0.03 }] }));
   const subject: SubjectId = meta.subjects[0] ?? 'logic';
-  const glyph: GlyphId = ICON_GLYPHS[meta.icon] ?? (hasGlyph(meta.icon) ? (meta.icon as GlyphId) : 'star');
+  const mark = resolveMark(meta.icon);
 
   return (
     <Animated.View
@@ -97,7 +109,7 @@ export function TrainingStationTile({ meta, index = 0, plays = 0, stars = 0, onP
         style={[styles.card, shadows.card]}
       >
         <View style={styles.head}>
-          <StationGlyph subject={subject} glyph={glyph} />
+          <StationGlyph subject={subject} mark={mark} />
           <View style={styles.headText}>
             <Text variant="h3" numberOfLines={3}>
               {meta.title}
