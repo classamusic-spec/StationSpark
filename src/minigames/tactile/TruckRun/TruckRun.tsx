@@ -362,6 +362,7 @@ export function TruckRun({ challenge, ageBand, onComplete, onEvent, compact }: M
             width={box.w}
             height={box.h}
             reduced={reduced}
+            scene={challenge.scene}
           />
           <GateLabels frame={frame} width={box.w} height={box.h} />
           <GestureDetector gesture={gesture}>

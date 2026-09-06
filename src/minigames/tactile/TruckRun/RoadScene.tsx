@@ -38,13 +38,15 @@ export interface RoadSceneProps {
   width: number;
   height: number;
   reduced: boolean;
+  /** the run's scene — which corner of Spark City the drive runs through */
+  scene?: string;
   /** QA / dev: take the 2D road even where GL works */
   forceFallback?: boolean;
   containerStyle?: StyleProp<ViewStyle>;
 }
 
-export function RoadScene({ sample, frame, truck, width, height, reduced, forceFallback, containerStyle }: RoadSceneProps) {
-  const flat = <RoadView2D frame={frame} truck={truck} width={width} height={height} reduced={reduced} />;
+export function RoadScene({ sample, frame, truck, width, height, reduced, scene, forceFallback, containerStyle }: RoadSceneProps) {
+  const flat = <RoadView2D frame={frame} truck={truck} width={width} height={height} reduced={reduced} scene={scene} />;
   return (
     <ThreeBoundary forceFallback={forceFallback} fallback={flat}>
       <Suspense fallback={flat}>
@@ -53,6 +55,7 @@ export function RoadScene({ sample, frame, truck, width, height, reduced, forceF
           truck={truck}
           height={height}
           reduced={reduced}
+          scene={scene}
           containerStyle={containerStyle}
           testID="truck-run-canvas"
         />

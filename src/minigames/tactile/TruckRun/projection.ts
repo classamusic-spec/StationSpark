@@ -103,10 +103,22 @@ export const roadView = (vp: Viewport, truckLane: number): RoadView => ({
  * @param height road units above the tarmac
  */
 export function project(view: RoadView, lane: number, ahead: number, height = 0): Projected {
+  return projectX(view, laneX(lane), ahead, height);
+}
+
+/**
+ * The same projection, addressed in plain road units across the road rather
+ * than in lanes. Everything beside the tarmac — pavements, kerbs, gardens,
+ * lamps and the walls of Spark City — lives out here where lane numbers stop
+ * meaning anything, so the town is drawn through this.
+ *
+ * @param x      signed road units from the centre line (negative = left)
+ */
+export function projectX(view: RoadView, x: number, ahead: number, height = 0): Projected {
   const depth = Math.max(0.5, ahead + CAMERA.back);
   const scale = view.f / depth;
   return {
-    x: view.w / 2 + (laneX(lane) - view.camX) * scale,
+    x: view.w / 2 + (x - view.camX) * scale,
     y: view.h / 2 + (CAMERA.height - height) * scale,
     scale,
     depth,

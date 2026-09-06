@@ -56,7 +56,9 @@ export function LazyTruckScene3D({ fallback, forceFallback, ...props }: TruckSce
   return (
     <ThreeBoundary forceFallback={forceFallback} fallback={flat}>
       <Suspense fallback={flat}>
-        <TruckScene3D {...props} />
+        {/* the scene keeps its own inner boundary for a context lost mid-run;
+            hand it the same 2D view so the swap looks identical either way */}
+        <TruckScene3D {...props} fallback={flat} />
       </Suspense>
     </ThreeBoundary>
   );

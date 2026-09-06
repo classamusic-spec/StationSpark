@@ -1,7 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { StyleSheet, View, type LayoutChangeEvent } from 'react-native';
-import Animated, { FadeInDown, useAnimatedStyle, useSharedValue, withSequence, withSpring, withTiming } from 'react-native-reanimated';
-import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import Animated, { FadeInDown, useAnimatedStyle, useSharedValue, withSequence, withSpring } from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { GestureDetector } from 'react-native-gesture-handler';
 import { useRouter, type Href } from 'expo-router';
 import { radii, roles, spacing, springs } from '@/theme';
 import { Button, ChevronRightIcon, Panel, ScreenFrame, Text, TopBar } from '@/ui';
@@ -12,132 +13,63 @@ import type { Stars } from '@/minigames/types';
 import { missions } from '@/content/missions';
 import { useGame } from '@/state/store';
 import { selectTruck } from '@/state/selectors';
-import { Birds, FireTruck, MAP_PLACES, MAP_VB, TRUCK_PARK, TownMap } from '@/world';
-import { BottomBar, PinLabel, StarCounter, useScaledLayout } from '@/screens/shared';
+import { Birds, FireTruck, MAP_PLACES, TRUCK_PARK, TownMap, type MapPlace } from '@/world';
+import { BottomBar, StarCounter, useScaledLayout } from '@/screens/shared';
 import { LocationPanel, LocationSheet, type SheetMission } from './LocationSheet';
-
-const MIN_ZOOM = 1;
-const MAX_ZOOM = 2.6;
+import { MapPin } from './MapPin';
+import { MapViewButton } from './MapViewButton';
+import { CONTENT_H, CONTENT_W, MAP_UNIT, layoutPins } from './mapView';
+import { useMapCamera } from './useMapCamera';
 
 type PlaceState = 'open' | 'locked' | 'soon';
 
-/** Height the "Choose a Mission" button reserves at the foot of the board. */
-const CTA_ROOM = 118;
 /**
- * On a wide window the town keeps the room and the jobs stand beside it. The
- * board is portrait and fits to the height, so the width it cannot use goes to
- * the rail rather than to empty sky.
+ * On a wide window the town keeps the room and the jobs stand beside it, so
+ * the width the board cannot use goes to the rail rather than to empty sky.
  */
 const railWidth = (w: number) => Math.round(Math.max(320, Math.min(460, w * 0.34)));
 
-/**
- * Pin label placement. Labels are wider than the buildings they mark, so on a
- * phone three neighbours in one row would collide. We estimate each pill's
- * width from its name, clamp it inside the map, and drop every second pin in a
- * row a little lower so the pills stagger instead of stacking.
- */
-export interface PinBox {
-  place: (typeof MAP_PLACES)[number];
-  left: number;
-  top: number;
-  compact: boolean;
-  /** locked places get the small chip, not a name pill */
-  variant: 'pill' | 'marker';
-}
+/** Below this the name pills shrink so three neighbours still fit in a row. */
+const COMPACT_BELOW = 560;
 
-const MARKER_PX = 40;
+/** How wide the parked engine is, in plan units. */
+const TRUCK_UNITS = 64;
+
+/** A label sits in the grass below its building; frame the building itself. */
+const BUILDING_OFFSET = 34;
 
 /**
- * Places the labels in each block's grass strip.
+ * Spark City.
  *
- * Two rules do the work. Only a place you can actually visit gets a name
- * pill — everything else is a small chip on its own building, which is what
- * stops eleven white pills covering the town. And a pill is nudged along its
- * row rather than allowed to sit on a neighbour or run off the board, because
- * the strip it sits in is grass on purpose: no label ever lands on tarmac.
+ * The town is no longer squeezed until the whole plan fits the window — it is
+ * drawn at a working size and the screen is a window onto it. Drag anywhere to
+ * move, pinch or double-tap to come closer, and one button always brings the
+ * whole town back. See `mapView.ts` for the camera arithmetic and
+ * `useMapCamera.ts` for the gestures.
  */
-export function layoutPins(mapW: number, unit: number, isOpen: (id: LocationId) => boolean): PinBox[] {
-  const compact = mapW < 560;
-  const charW = compact ? 8.4 : 10.2;
-  const chrome = compact ? 52 : 62;
-  const width = (place: (typeof MAP_PLACES)[number]) =>
-    isOpen(place.id) ? Math.min(compact ? 170 : 200, chrome + place.name.length * charW) : MARKER_PX;
-
-  /* group by label band — every place in a band shares one strip of grass */
-  const rows = new Map<number, (typeof MAP_PLACES)[number][]>();
-  for (const place of MAP_PLACES) {
-    const band = Math.round(place.y / 40);
-    const row = rows.get(band) ?? [];
-    row.push(place);
-    rows.set(band, row);
-  }
-
-  const boxes = new Map<string, { left: number; top: number }>();
-  for (const row of rows.values()) {
-    const sorted = [...row].sort((a, b) => a.x - b.x);
-    let cursor = 4;
-    for (const place of sorted) {
-      const w = width(place);
-      /* centred on the place, then pushed right of whatever came before it */
-      const wanted = place.x * unit - w / 2;
-      const left = Math.min(Math.max(wanted, cursor), Math.max(4, mapW - w - 4));
-      boxes.set(place.id, { left, top: place.y * unit });
-      cursor = left + w + 6;
-    }
-  }
-
-  return MAP_PLACES.map((place) => {
-    const box = boxes.get(place.id) ?? { left: 4, top: place.y * unit };
-    return { place, left: box.left, top: box.top, compact, variant: isOpen(place.id) ? 'pill' : 'marker' };
-  });
-}
-
 export function MapScreen() {
   const router = useRouter();
   const layout = useScaledLayout();
+  const insets = useSafeAreaInsets();
   const truck = useGame(selectTruck);
   const played = useGame((s) => s.progress.missions);
 
   const [viewport, setViewport] = useState({ w: 0, h: 0 });
   const [openPlace, setOpenPlace] = useState<LocationId | null>(null);
   const pending = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-
-  /*
-   * The board is fitted to the room *left over* by the CTA, not to the width
-   * alone. Sizing by width put the last row of the town under the button, so
-   * the Market, the Homes and the town sign were only ever reachable by
-   * panning (art re-score item 10: nothing under the CTA).
-   */
-  /**
-   * A tablet does not get a phone map with sky either side. Once there is room
-   * for a rail, the CTA and the selected place move into it and the board takes
-   * the whole of the remaining area.
-   */
-  const side = layout.wide;
-  const ctaRoom = side ? 0 : CTA_ROOM;
-
-  const mapW = useMemo(() => {
-    const w = viewport.w > 0 ? viewport.w : layout.contentWidth;
-    const room = viewport.h > 0 ? viewport.h - ctaRoom : 0;
-    return room > 0 ? Math.min(w, (room * MAP_VB.w) / MAP_VB.h) : w;
-  }, [ctaRoom, layout.contentWidth, viewport.h, viewport.w]);
-  const mapH = (MAP_VB.h / MAP_VB.w) * mapW;
-  const unit = mapW / MAP_VB.w;
-  const scale = useSharedValue(1);
-  const savedScale = useSharedValue(1);
-  const tx = useSharedValue(0);
-  const ty = useSharedValue(0);
-  const startX = useSharedValue(0);
-  const startY = useSharedValue(0);
   const truckNudge = useSharedValue(0);
 
-  // start looking at the top of the town
-  useEffect(() => {
-    if (viewport.h <= 0) return;
-    const maxTy = Math.max(0, (mapH - viewport.h) / 2);
-    ty.value = withTiming(maxTy, { duration: 1 });
-    startY.value = maxTy;
-  }, [mapH, startY, ty, viewport.h]);
+  /**
+   * A tablet does not get a phone map with sky either side. Once there is room
+   * for a rail, the title, the selected place and the CTA move into it and the
+   * board takes the whole of the remaining area.
+   */
+  const side = layout.wide;
+
+  const { far, framedWhole, focus, gesture, scale, scales, showAll, showHome, tx, ty, wasDragged } = useMapCamera(
+    viewport.w,
+    viewport.h,
+  );
 
   useEffect(
     () => () => {
@@ -150,46 +82,6 @@ export function MapScreen() {
     const { width, height } = e.nativeEvent.layout;
     setViewport((p) => (Math.abs(p.w - width) < 1 && Math.abs(p.h - height) < 1 ? p : { w: width, h: height }));
   }, []);
-
-  const vpW = viewport.w;
-  const vpH = viewport.h;
-
-  const pan = useMemo(
-    () =>
-      Gesture.Pan()
-        .minDistance(6)
-        .onStart(() => {
-          startX.value = tx.value;
-          startY.value = ty.value;
-        })
-        .onUpdate((e) => {
-          const maxX = Math.max(0, (mapW * scale.value - vpW) / 2);
-          const maxY = Math.max(0, (mapH * scale.value - vpH) / 2);
-          tx.value = Math.max(-maxX, Math.min(maxX, startX.value + e.translationX));
-          ty.value = Math.max(-maxY, Math.min(maxY, startY.value + e.translationY));
-        }),
-    [mapH, mapW, scale, startX, startY, tx, ty, vpH, vpW],
-  );
-
-  const pinch = useMemo(
-    () =>
-      Gesture.Pinch()
-        .onStart(() => {
-          savedScale.value = scale.value;
-        })
-        .onUpdate((e) => {
-          scale.value = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, savedScale.value * e.scale));
-        })
-        .onEnd(() => {
-          const maxX = Math.max(0, (mapW * scale.value - vpW) / 2);
-          const maxY = Math.max(0, (mapH * scale.value - vpH) / 2);
-          tx.value = withSpring(Math.max(-maxX, Math.min(maxX, tx.value)), springs.gentle);
-          ty.value = withSpring(Math.max(-maxY, Math.min(maxY, ty.value)), springs.gentle);
-        }),
-    [mapH, mapW, savedScale, scale, tx, ty, vpH, vpW],
-  );
-
-  const gesture = useMemo(() => Gesture.Simultaneous(pan, pinch), [pan, pinch]);
 
   const mapStyle = useAnimatedStyle(() => ({
     transform: [{ translateX: tx.value }, { translateY: ty.value }, { scale: scale.value }],
@@ -221,7 +113,22 @@ export function MapScreen() {
     [byPlace, played],
   );
 
-  const pinLayout = useMemo(() => layoutPins(mapW, unit, (id) => stateFor(id) === 'open'), [mapW, stateFor, unit]);
+  /*
+   * Labels are laid out at the *tightest* spacing they will ever be asked to
+   * survive — the scale at which pills appear at all, or, once the camera is
+   * further out than that, the whole-town scale where every place is a chip.
+   * Closer in, the anchors only spread further apart.
+   */
+  const pinLayout = useMemo(
+    () =>
+      layoutPins(
+        MAP_UNIT * (far ? scales.min : scales.label),
+        viewport.w > 0 && viewport.w < COMPACT_BELOW,
+        (id) => stateFor(id) === 'open',
+        !far,
+      ),
+    [far, scales.label, scales.min, stateFor, viewport.w],
+  );
 
   const sheetMissions = useMemo((): SheetMission[] => {
     if (!openPlace) return [];
@@ -252,99 +159,139 @@ export function MapScreen() {
     [router, truckNudge],
   );
 
+  /**
+   * Tapping a place both opens its jobs and brings the camera to it, which is
+   * the second way in from the whole-town view: a child who has zoomed out
+   * never has to pinch to get back to a building.
+   */
   const openPin = useCallback(
-    (id: LocationId, state: PlaceState) => {
-      if (state === 'open') setOpenPlace(id);
-      else {
-        setOpenPlace(id);
-      }
+    (place: MapPlace) => {
+      /* a pin travels with the finger, so a swipe across one is not a tap */
+      if (wasDragged()) return;
+      setOpenPlace(place.id);
+      /* on a phone the sheet takes the lower half, so the place sits high */
+      focus(place.x, place.y - BUILDING_OFFSET, scales.home, side ? 0.44 : 0.26);
     },
-    [],
+    [focus, scales.home, side, wasDragged],
   );
 
-  const truckWidth = Math.max(56, unit * 64);
+  const truckWidth = TRUCK_UNITS * MAP_UNIT;
 
   return (
     <ScreenFrame
+      safeTop={false}
       safeBottom={false}
-      // the map board is full-bleed, so the bird flies in the sky strip above
-      // it rather than behind the board
+      // the town runs under the chrome, so the bird flies in the sky strip
+      // that only shows when the whole map is framed
       backdrop={<Birds count={1} top={40} arc={20} size={28} periodMs={22000} />}
       chrome={<TopBar right={<StarCounter />} />}
     >
       <View style={[styles.body, side && styles.bodyRow]}>
         <View style={styles.mapCol}>
-        {/* critique #14: the map is the screen — it runs edge to edge and the
-            title and the CTA float over it instead of boxing it in. On a wide
-            window both move into the rail so nothing floats over the town. */}
-        {!side ? (
-          <Animated.View entering={FadeInDown.springify().damping(17)} style={styles.header} pointerEvents="box-none">
-            <Panel tone="cream" padding="xs" radius="pill" style={styles.banner}>
-              <Text variant="h3" center numberOfLines={1}>
-                Spark City
-              </Text>
-            </Panel>
-          </Animated.View>
-        ) : null}
+          <View style={styles.viewport} onLayout={onViewport}>
+            {viewport.w > 0 ? (
+              <GestureDetector gesture={gesture}>
+                <View style={styles.stage} collapsable={false} testID="map-stage">
+                  <Animated.View
+                    testID="town-board"
+                    style={[
+                      styles.board,
+                      {
+                        width: CONTENT_W,
+                        height: CONTENT_H,
+                        left: (viewport.w - CONTENT_W) / 2,
+                        top: (viewport.h - CONTENT_H) / 2,
+                      },
+                      mapStyle,
+                    ]}
+                    pointerEvents="none"
+                  >
+                    <TownMap width={CONTENT_W} />
 
-        <View style={[styles.viewport, { paddingBottom: ctaRoom }]} onLayout={onViewport}>
-          {viewport.w > 0 ? (
-            <GestureDetector gesture={gesture}>
-              <Animated.View style={[styles.mapWrap, { width: mapW, height: mapH }, mapStyle]}>
-                <TownMap width={mapW} />
+                    {/* the engine, parked outside the station */}
+                    <Animated.View
+                      style={[
+                        styles.abs,
+                        { left: TRUCK_PARK.x * MAP_UNIT - truckWidth / 2, top: TRUCK_PARK.y * MAP_UNIT },
+                        truckStyle,
+                      ]}
+                    >
+                      <FireTruck truck={truck} width={truckWidth} />
+                    </Animated.View>
+                  </Animated.View>
 
-                {/* the engine, parked outside the station */}
-                <Animated.View style={[styles.abs, { left: TRUCK_PARK.x * unit - truckWidth / 2, top: TRUCK_PARK.y * unit }, truckStyle]} pointerEvents="none">
-                  <FireTruck truck={truck} width={truckWidth} />
-                </Animated.View>
-
-                {/* pins — laid out so neighbouring labels never overlap or leave the map */}
-                {pinLayout.map(({ place, left, top, compact, variant }, i) => {
-                  const state = stateFor(place.id);
-                  return (
-                    <View key={place.id} style={[styles.abs, { left, top }]}>
-                      <PinLabel
-                        name={place.name}
-                        color={place.color}
-                        locked={state !== 'open'}
+                  {/* pins ride above the town at a constant size, so a name is
+                      always readable and a target always ≥ 56 px */}
+                  <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
+                    {pinLayout.map((box, i) => (
+                      <MapPin
+                        key={box.place.id}
+                        box={box}
                         index={i}
-                        compact={compact}
-                        variant={variant}
-                        onPress={() => openPin(place.id, state)}
+                        locked={stateFor(box.place.id) !== 'open'}
+                        vpW={viewport.w}
+                        vpH={viewport.h}
+                        scale={scale}
+                        tx={tx}
+                        ty={ty}
+                        blocked={wasDragged}
+                        onPress={() => openPin(box.place)}
                       />
-                    </View>
-                  );
-                })}
-              </Animated.View>
-            </GestureDetector>
+                    ))}
+                  </View>
+                </View>
+              </GestureDetector>
+            ) : null}
+          </View>
+
+          {/* critique #14: the map is the screen — it runs edge to edge and the
+              title and the CTA float over it instead of boxing it in. On a wide
+              window both move into the rail so nothing floats over the town. */}
+          {!side ? (
+            <Animated.View
+              entering={FadeInDown.springify().damping(17)}
+              style={[styles.header, { top: insets.top + 18 }]}
+              pointerEvents="box-none"
+            >
+              <Panel tone="cream" padding="xs" radius="pill" style={styles.banner}>
+                <Text variant="h3" center numberOfLines={1}>
+                  Spark City
+                </Text>
+              </Panel>
+            </Animated.View>
+          ) : null}
+
+          {!side ? (
+            <View style={styles.ctaWrap} pointerEvents="box-none">
+              <View style={[styles.cta, { maxWidth: layout.contentWidth }]}>
+                <View style={styles.viewRow}>
+                  <MapViewButton framedWhole={framedWhole} onPress={framedWhole ? showHome : showAll} />
+                </View>
+                <Button
+                  label="Choose a Mission"
+                  size="xl"
+                  tone={roles.action.primary}
+                  block
+                  glow
+                  iconRight={<ChevronRightIcon size={28} />}
+                  onPress={() => router.push('/dispatch')}
+                />
+              </View>
+            </View>
           ) : null}
         </View>
 
-        {!side ? (
-          <View style={styles.ctaWrap} pointerEvents="box-none">
-            <View style={[styles.cta, { maxWidth: layout.contentWidth }]}>
-              <Button
-                label="Choose a Mission"
-                size="xl"
-                tone={roles.action.primary}
-                block
-                glow
-                iconRight={<ChevronRightIcon size={28} />}
-                onPress={() => router.push('/dispatch')}
-              />
-            </View>
-          </View>
-        ) : null}
-        </View>
-
         {side ? (
-          <Animated.View entering={FadeInDown.springify().damping(17)} style={[styles.rail, { width: railWidth(layout.width) }]}>
+          <Animated.View
+            entering={FadeInDown.springify().damping(17)}
+            style={[styles.rail, { width: railWidth(layout.width), paddingTop: insets.top + 76 }]}
+          >
             <View style={styles.railHead}>
               <Text variant="h1" numberOfLines={1} accessibilityRole="header">
                 Spark City
               </Text>
               <Text variant="small" color={roles.ink.secondary}>
-                Tap a place to see the jobs there.
+                Drag the map to look around. Tap a place to see the jobs there.
               </Text>
             </View>
 
@@ -368,6 +315,10 @@ export function MapScreen() {
                 </View>
               )}
             </Panel>
+
+            <View style={styles.viewRow}>
+              <MapViewButton framedWhole={framedWhole} onPress={framedWhole ? showHome : showAll} />
+            </View>
 
             <Button
               label="Choose a Mission"
@@ -404,7 +355,6 @@ const styles = StyleSheet.create({
   mapCol: { flex: 1 },
   rail: {
     paddingHorizontal: spacing.sm,
-    paddingTop: 84,
     paddingBottom: spacing.sm,
     gap: spacing.sm,
   },
@@ -420,13 +370,14 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: 78,
     right: 78,
-    top: 18,
     zIndex: 6,
     alignItems: 'center',
   },
   banner: { paddingHorizontal: spacing.md },
-  viewport: { flex: 1, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
-  mapWrap: { borderRadius: radii.panel, overflow: 'hidden' },
+  /* the map fills its column edge to edge and everything else floats over it */
+  viewport: { position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, overflow: 'hidden' },
+  stage: { flex: 1 },
+  board: { position: 'absolute', borderRadius: radii.panel, overflow: 'hidden' },
   abs: { position: 'absolute' },
   ctaWrap: {
     position: 'absolute',
@@ -438,5 +389,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.sm,
   },
-  cta: { width: '100%' },
+  cta: { width: '100%', gap: spacing.xs },
+  viewRow: { alignItems: 'flex-start' },
 });

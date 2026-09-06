@@ -6,10 +6,11 @@
  * list means the challenge is structurally sound AND solvable.
  */
 import { add, equals, toNumber } from '@/utils/fractions';
-import { pathPieces, posKey, samePos, solveHosePath, solveRoute } from '@/utils/grid';
+import { pathPieces, posKey, samePos, solveHosePath } from '@/utils/grid';
 import type { Challenge, Fraction, GridPos } from './types';
 import { rotatableShapes, truckRunLanes } from './types';
 import { isSubMultiset, solveNumberLadder, sumOf } from './solvers';
+import { destinationCell, drivableRoute } from './generators/rescue-route';
 import { GATE_LABEL_MAX, hazardRows, laneEscapeRoute } from './generators/truck-run';
 
 const isWholeMultiple = (value: Fraction, step: Fraction): boolean => {
@@ -156,9 +157,38 @@ export function validateChallenge(challenge: Challenge): string[] {
       if (walls.has(posKey(challenge.start)) || walls.has(posKey(challenge.goal))) bad('start or goal is blocked');
       if (uniqueCount(challenge.blocked.map(posKey)) !== challenge.blocked.length) bad('duplicate blocked cells');
       if (challenge.blocked.some((c) => !inGrid(challenge.grid, c))) bad('blocked cell is off the map');
-      const solution = solveRoute(challenge);
-      if (!solution) bad('there is no way through');
-      else if (solution.length > challenge.maxCommands) bad(`needs ${solution.length} commands but only ${challenge.maxCommands} are allowed`);
+      /* the route has to be drivable ON THE ROADS, never across a block */
+      const drive = drivableRoute(challenge);
+      if (!drive) bad('there is no way through on the roads');
+      else if (drive.program.length > challenge.maxCommands) {
+        bad(`needs ${drive.program.length} commands but only ${challenge.maxCommands} are allowed`);
+      }
+      if (challenge.landmarks) {
+        const covered = new Set<string>();
+        let destinations = 0;
+        for (const landmark of challenge.landmarks) {
+          if (landmark.cells.length === 0) bad('a landmark stands on no block');
+          if (landmark.destination) destinations += 1;
+          for (const cell of landmark.cells) {
+            if (!inGrid(challenge.grid, cell)) bad('a landmark is off the map');
+            if (!walls.has(posKey(cell))) bad('a landmark stands on the road');
+            if (covered.has(posKey(cell))) bad('two landmarks share a block');
+            covered.add(posKey(cell));
+          }
+        }
+        if (covered.size !== challenge.blocked.length) bad('a city block has nothing standing in it');
+        if (destinations > 1) bad('more than one landmark is the destination');
+      }
+      if (challenge.goalSide) {
+        const door = destinationCell(challenge);
+        if (!door) bad('the destination building is off the map');
+        else if (!walls.has(posKey(door))) bad('the destination building stands on the road');
+        else if (challenge.landmarks) {
+          const home = challenge.landmarks.find((l) => l.cells.some((c) => samePos(c, door)));
+          if (!home) bad('nothing stands where the call came from');
+          else if (!home.destination) bad('the truck pulls up beside the wrong building');
+        }
+      }
       if (challenge.compareRoutes) {
         const { a, b, shorter } = challenge.compareRoutes;
         if (a === b) bad('the two routes are the same length');

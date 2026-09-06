@@ -8,6 +8,7 @@ import {
   generateNumberLadder,
   generateRescueRoute,
   generateSignals,
+  truckRunFor,
 } from '@/learning/generators';
 import { bea, radio, inScene, npc } from './parts';
 
@@ -51,7 +52,7 @@ export const trainTimetable: MissionDef = {
   address: '1 Platform Way',
   npcName: LOU,
   subjects: ['math', 'reading', 'logic', 'teamwork'],
-  minutes: 13,
+  minutes: 14,
   badge: 'timetable-pro',
   xp: 50,
   sparks: 18,
@@ -96,6 +97,13 @@ export const trainTimetable: MissionDef = {
       },
       intro: [radio('Two roads to Platform Way. Read the street names!')],
       outro: [bea('Shortest road, smoothest drive.')],
+    },
+    {
+      type: 'minigame',
+      game: 'truck-run',
+      challenge: (ctx) => truckRunFor(['count-on', 'add-sub', 'elapsed'], inScene(ctx, 'clock-tower')),
+      intro: [radio('Now drive it. Platform Way, past the clock tower.')],
+      outro: [bea('Nine minutes early. Lou will be pleased.', 'proud')],
     },
     { type: 'travel', from: 'station', to: 'train-station' },
     {

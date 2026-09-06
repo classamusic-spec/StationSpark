@@ -6,6 +6,7 @@ import {
   generateHosePath,
   generateHydrantMatch,
   generateRescueRoute,
+  truckRunFor,
 } from '@/learning/generators';
 import { bea, radio, inScene, npc } from './parts';
 
@@ -26,7 +27,7 @@ export const schoolFair: MissionDef = {
   address: '15 School Road',
   npcName: LEE,
   subjects: ['math', 'reading', 'logic', 'teamwork'],
-  minutes: 12,
+  minutes: 14,
   badge: 'school-fair',
   xp: 50,
   sparks: 16,
@@ -64,6 +65,13 @@ export const schoolFair: MissionDef = {
       },
       intro: [radio('Two roads. Which is shorter? Then drive it.')],
       outro: [bea('Nice. That saved us minutes.')],
+    },
+    {
+      type: 'minigame',
+      game: 'truck-run',
+      challenge: (ctx) => truckRunFor(['count-on', 'sight-word', 'elapsed'], inScene(ctx, 'school')),
+      intro: [radio('Roll out! Read every gate on the way.')],
+      outro: [bea('School Road, and the fair has not started. Good.')],
     },
     { type: 'travel', from: 'station', to: 'school' },
     {

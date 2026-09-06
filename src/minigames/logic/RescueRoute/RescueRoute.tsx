@@ -1,5 +1,5 @@
-import React, { useCallback, useEffect, useMemo, useReducer, useRef } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import React, { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
+import { Pressable, StyleSheet, View, type LayoutChangeEvent } from 'react-native';
 import Animated, {
   FadeIn,
   FadeInDown,
@@ -10,16 +10,17 @@ import Animated, {
   withSpring,
   withTiming,
 } from 'react-native-reanimated';
-import Svg, { Polyline, Rect as SvgRect } from 'react-native-svg';
+import Svg, { Path, Rect as SvgRect } from 'react-native-svg';
 import type { GridPos, RouteCommand } from '@/learning/types';
 import type { MiniGameProps } from '@/minigames/types';
 import { useMiniGameSession } from '@/minigames/useMiniGameSession';
 import type { RouteSpec } from '@/utils/grid';
-import { posKey, samePos } from '@/utils/grid';
-import { hit, palette, radii, shadows, spacing, springs, timings } from '@/theme';
+import { samePos, stepForward } from '@/utils/grid';
+import { activity, hit, palette, radii, roles, shadows, spacing, springs, timings } from '@/theme';
+import { useReducedMotion } from '@/hooks';
 import { sfx } from '@/services/audio';
 import { haptics } from '@/services/haptics';
-import { Text } from '@/ui';
+import { Text, useSideRail } from '@/ui';
 
 import { Stage } from '@/world';
 import { SceneCrew } from '@/world/scenes';
@@ -29,9 +30,12 @@ import { useGameLayout } from '../shared/layout';
 import { useCaptainLine } from '../shared/speak';
 import { useHintLadder } from '../shared/useHintLadder';
 import { HEADING_ANGLE, bestNextCommand, commandLabel, optimalLength, traceRoute } from '../shared/routeSim';
-import { BarrierGlyph, FlameGlyph, ForwardArrow, PlayGlyph, TurnArrow, UTurnArrow } from '../shared/art/Glyphs';
-import { RoadworkPile, SceneBuilding, TreeCluster, TruckTop } from '../shared/art/Props';
+import { ForwardArrow, PlayGlyph, TurnArrow, UTurnArrow } from '../shared/art/Glyphs';
 import { sceneLabel } from '../shared/labels';
+import { CityBoard } from './CityBoard';
+import { RouteTruck } from './RouteTruck';
+import { cityPlan } from './cityPlan';
+import { ROAD } from './TownArt';
 
 /* ---------------- state ---------------- */
 
@@ -60,12 +64,17 @@ function reducer(state: State, action: Action): State {
   switch (action.type) {
     case 'COMPARE_DONE':
       return { ...state, phase: 'coding' };
+    /*
+     * Editing always puts the child back in charge. Without this a run that
+     * bumped left the game in 'bumped' for good and the Go button stopped
+     * answering — a dead end, which this game is never allowed to have.
+     */
     case 'ADD':
-      return { ...state, program: [...state.program, action.command] };
+      return { ...state, phase: 'coding', program: [...state.program, action.command], bumpedAt: null };
     case 'REMOVE':
-      return { ...state, program: state.program.filter((_, i) => i !== action.index) };
+      return { ...state, phase: 'coding', program: state.program.filter((_, i) => i !== action.index), bumpedAt: null };
     case 'CLEAR':
-      return { ...state, program: [], bumpedAt: null, cursor: -1 };
+      return { ...state, phase: 'coding', program: [], bumpedAt: null, cursor: -1 };
     case 'RUN':
       return { ...state, phase: 'running', cursor: -1, bumpedAt: null };
     case 'CURSOR':
@@ -140,11 +149,28 @@ function ChunkyButton({
   );
 }
 
+/** The little map on a compare card: tarmac, two blocks, one route. */
+function RouteCard({ route, blocks }: { route: string; blocks: string }) {
+  return (
+    <Svg width={112} height={82} viewBox="0 0 112 82">
+      <SvgRect x={0} y={0} width={112} height={82} rx={12} fill={ROAD.tarmac} />
+      <SvgRect x={16} y={14} width={26} height={22} rx={7} fill={ROAD.kerbFace} />
+      <SvgRect x={16} y={14} width={26} height={22} rx={7} fill={blocks} opacity={0.35} />
+      <SvgRect x={66} y={44} width={30} height={24} rx={7} fill={ROAD.kerbFace} />
+      <Path d={route} fill="none" stroke={palette.safetyYellow} strokeWidth={6} strokeLinecap="round" strokeLinejoin="round" />
+    </Svg>
+  );
+}
+
+const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
+
 /* ---------------- game ---------------- */
 
 export function RescueRoute({ challenge, ageBand, onComplete, onEvent, compact }: MiniGameProps<'rescue-route'>) {
   const session = useMiniGameSession('rescue-route', onComplete, onEvent);
   const layout = useGameLayout({ compact });
+  const sideRail = useSideRail();
+  const reduceMotion = useReducedMotion();
 
   const spec: RouteSpec = useMemo(
     () => ({
@@ -156,6 +182,7 @@ export function RescueRoute({ challenge, ageBand, onComplete, onEvent, compact }
     }),
     [challenge],
   );
+  const plan = useMemo(() => cityPlan(challenge), [challenge]);
 
   const optimal = useMemo(() => optimalLength(spec) ?? challenge.maxCommands, [challenge.maxCommands, spec]);
   const showCompare = !!challenge.compareRoutes && ageBand !== 'A';
@@ -185,13 +212,28 @@ export function RescueRoute({ challenge, ageBand, onComplete, onEvent, compact }
     [clearTimers],
   );
 
-  /* ----- geometry ----- */
-  const gap = layout.s(11);
-  const boardWidth = Math.min(layout.boxWidth - spacing.md * 2, layout.s(342));
-  const cell = (boardWidth - gap * (challenge.grid.cols + 1)) / challenge.grid.cols;
-  const boardHeight = cell * challenge.grid.rows + gap * (challenge.grid.rows + 1);
-  const cellStep = cell + gap;
-  const truckSize = cell * 0.78;
+  /* ----- geometry: the town grows into whatever room the play area has ----- */
+  const [stage, setStage] = useState({ w: 0, h: 0 });
+  const onStageLayout = useCallback((e: LayoutChangeEvent) => {
+    const { width, height } = e.nativeEvent.layout;
+    setStage((prev) => (Math.abs(prev.w - width) < 1 && Math.abs(prev.h - height) < 1 ? prev : { w: width, h: height }));
+  }, []);
+
+  /* a hint must never sit on the board it is pointing at, so the town gives
+     the bubble its lane back while it is up */
+  const hintLane = hintLadder.showBubble && state.phase !== 'running' ? layout.s(118) : 0;
+  const noticeLane = layout.s(34);
+
+  const availW = (stage.w || layout.boxWidth) - spacing.xs * 2;
+  const availH = (stage.h || layout.s(400)) - hintLane - noticeLane;
+  /* the town grows into a wide window; the chrome does not */
+  const cell = clamp(
+    Math.floor(Math.min(availW / (challenge.grid.cols + 0.34), availH / (challenge.grid.rows + 0.34))),
+    28,
+    132,
+  );
+  const margin = Math.round(cell * 0.17);
+  const truckBox = cell * 1.4;
 
   const col = useSharedValue(challenge.start.col);
   const row = useSharedValue(challenge.start.row);
@@ -201,8 +243,8 @@ export function RescueRoute({ challenge, ageBand, onComplete, onEvent, compact }
 
   const truckStyle = useAnimatedStyle(() => ({
     transform: [
-      { translateX: gap + col.value * cellStep + (cell - truckSize) / 2 },
-      { translateY: gap + row.value * cellStep + (cell - truckSize) / 2 + bounce.value },
+      { translateX: margin + col.value * cell + (cell - truckBox) / 2 },
+      { translateY: margin + row.value * cell + (cell - truckBox) / 2 + bounce.value },
       { rotate: `${angle.value}deg` },
       { translateY: nudge.value },
     ],
@@ -212,7 +254,7 @@ export function RescueRoute({ challenge, ageBand, onComplete, onEvent, compact }
   const goalStreet = challenge.streetNames?.find((s) => s.row === challenge.goal.row)?.name;
   useCaptainLine(
     state.phase === 'coding' && state.program.length === 0
-      ? `Code the route! Help the fire truck reach the ${goalName}.`
+      ? `Drive the truck to the ${goalName}. Stay on the roads!`
       : null,
     session.say,
     { key: state.phase },
@@ -242,7 +284,7 @@ export function RescueRoute({ challenge, ageBand, onComplete, onEvent, compact }
   const resetTruck = useCallback(
     (animated: boolean) => {
       heldAngle.current = HEADING_ANGLE[challenge.startHeading];
-      if (animated) {
+      if (animated && !reduceMotion) {
         col.value = withTiming(challenge.start.col, { duration: 460 });
         row.value = withTiming(challenge.start.row, { duration: 460 });
         angle.value = withTiming(heldAngle.current, { duration: 460 });
@@ -252,12 +294,20 @@ export function RescueRoute({ challenge, ageBand, onComplete, onEvent, compact }
         angle.value = heldAngle.current;
       }
     },
-    [angle, challenge.start.col, challenge.start.row, challenge.startHeading, col, row],
+    [angle, challenge.start.col, challenge.start.row, challenge.startHeading, col, reduceMotion, row],
   );
+
+  const clearProgram = useCallback(() => {
+    if (state.program.length === 0) return;
+    sfx.play('whoosh');
+    haptics.tap();
+    resetTruck(true);
+    dispatch({ type: 'CLEAR' });
+  }, [resetTruck, state.program.length]);
 
   /* ----- run ----- */
   const run = useCallback(() => {
-    if (state.phase !== 'coding' || state.program.length === 0) {
+    if (state.phase === 'running' || state.phase === 'arrived' || state.program.length === 0) {
       sfx.play('wrong-soft');
       haptics.nudge();
       return;
@@ -270,7 +320,7 @@ export function RescueRoute({ challenge, ageBand, onComplete, onEvent, compact }
     const finishArrival = () => {
       dispatch({ type: 'ARRIVE' });
       session.correct('route');
-      bounce.value = withSequence(withSpring(-cell * 0.18, springs.pop), withSpring(0, springs.bounce));
+      if (!reduceMotion) bounce.value = withSequence(withSpring(-cell * 0.16, springs.pop), withSpring(0, springs.bounce));
       sfx.play('horn');
       haptics.celebrate();
       if (!finished.current) {
@@ -303,12 +353,9 @@ export function RescueRoute({ challenge, ageBand, onComplete, onEvent, compact }
       const isForward = step.command === 'forward';
 
       if (isForward && (step.outcome === 'blocked' || step.outcome === 'off-map')) {
-        // gentle bonk: lean into the obstacle, then back
-        nudge.value = withSequence(
-          withTiming(-cellStep * 0.22, { duration: 160 }),
-          withSpring(0, springs.bounce),
-        );
-        sfx.play('clank');
+        /* a gentle nose-in against the kerb, then back: never a crash */
+        nudge.value = withSequence(withTiming(-cell * 0.2, { duration: 160 }), withSpring(0, springs.bounce));
+        sfx.play('bump');
         haptics.thud();
         sfx.stopLoop('engine');
         timers.current.push(
@@ -336,69 +383,77 @@ export function RescueRoute({ challenge, ageBand, onComplete, onEvent, compact }
     };
 
     stepOnce();
-  }, [angle, bounce, cell, cellStep, col, nudge, resetTruck, row, session, spec, state.phase, state.program]);
+  }, [angle, bounce, cell, col, nudge, reduceMotion, resetTruck, row, session, spec, state.phase, state.program]);
 
   useEffect(() => {
     session.progress(Math.min(state.program.length, challenge.maxCommands), challenge.maxCommands);
   }, [challenge.maxCommands, session, state.program.length]);
 
+  /* ----- what the programme would do, drawn on the road before Go ----- */
+  const trace = useMemo(() => traceRoute(spec, state.program), [spec, state.program]);
+  const editing = state.phase === 'coding' || state.phase === 'bumped';
+  const previewPath = useMemo(() => {
+    if (!editing) return [];
+    const cells: GridPos[] = [challenge.start];
+    for (const step of trace.steps) if (step.outcome === 'moved' || step.outcome === 'arrived') cells.push(step.to.pos);
+    return cells;
+  }, [challenge.start, editing, trace]);
+  /* the truck's own headlights already show the next cell when the tape is
+     empty, so the road chevron only appears once a programme is being built */
+  const aheadCell = useMemo(() => {
+    if (!editing || state.program.length === 0) return null;
+    const next = stepForward(trace.end.pos, trace.end.heading);
+    return plan.isRoad(next) && !samePos(next, trace.end.pos) ? next : null;
+  }, [editing, plan, state.program.length, trace]);
+
   /* ----- hints ----- */
   const bumpStep = state.bumpedAt;
   const hintText = useMemo(() => {
+    const blocker = (pos: GridPos): string => {
+      const plot = plan.plots.find((p) => p.cells.some((c) => samePos(c, pos)));
+      return plot ? `the ${sceneLabel[plot.scene].en.toLowerCase()}` : 'the edge of town';
+    };
     if (bumpStep !== null) {
-      const suggestion = bestNextCommand(spec, { pos: challenge.start, heading: challenge.startHeading });
-      const trace = traceRoute(spec, state.program.slice(0, bumpStep));
-      const better = bestNextCommand(spec, trace.end) ?? suggestion;
-      return `Step ${bumpStep + 1} bumps into the closed road. Try “${better ? commandLabel[better] : 'Forward'}” there instead.`;
+      const stopped = traceRoute(spec, state.program.slice(0, bumpStep));
+      const better = bestNextCommand(spec, stopped.end);
+      const wall = stepForward(stopped.end.pos, stopped.end.heading);
+      return `Step ${bumpStep + 1} drives into ${blocker(wall)}. There is no road that way — try “${better ? commandLabel[better] : 'Left'}” instead.`;
     }
     const first = bestNextCommand(spec, { pos: challenge.start, heading: challenge.startHeading });
-    return `Start with “${first ? commandLabel[first] : 'Forward'}”. Follow the open roads to the ${goalName}.`;
-  }, [bumpStep, challenge.start, challenge.startHeading, goalName, spec, state.program]);
+    return `Follow the road to the ${goalName} and stop in the marked bay. Start with “${first ? commandLabel[first] : 'Forward'}”.`;
+  }, [bumpStep, challenge.start, challenge.startHeading, goalName, plan.plots, spec, state.program]);
 
   const suggestedCommand = useMemo(() => {
-    if (!hintLadder.highlight || state.phase !== 'coding') return null;
-    const trace = traceRoute(spec, state.program);
+    if (!hintLadder.highlight || !editing) return null;
     if (trace.bumpedAt !== null) return null;
     return bestNextCommand(spec, trace.end);
-  }, [hintLadder.highlight, spec, state.phase, state.program]);
+  }, [editing, hintLadder.highlight, spec, trace]);
 
-  /* ----- board cells ----- */
-  const blockedKeys = useMemo(() => new Set(challenge.blocked.map(posKey)), [challenge.blocked]);
-  const cells: { pos: GridPos; kind: 'grass' | 'blocked' | 'goal' | 'start'; deco: number }[] = useMemo(() => {
-    const out: { pos: GridPos; kind: 'grass' | 'blocked' | 'goal' | 'start'; deco: number }[] = [];
-    for (let r = 0; r < challenge.grid.rows; r++) {
-      for (let c = 0; c < challenge.grid.cols; c++) {
-        const pos = { row: r, col: c };
-        const kind = blockedKeys.has(posKey(pos))
-          ? 'blocked'
-          : samePos(pos, challenge.goal)
-            ? 'goal'
-            : samePos(pos, challenge.start)
-              ? 'start'
-              : 'grass';
-        out.push({ pos, kind, deco: (r * challenge.grid.cols + c * 3) % 4 });
-      }
-    }
-    return out;
-  }, [blockedKeys, challenge.goal, challenge.grid.cols, challenge.grid.rows, challenge.start]);
+  /* ----- the programme tape grows with the child's plan ----- */
+  const tapeCols = sideRail ? 5 : 8;
+  const trayWidth = (sideRail ? activity.sidePanelWidth : Math.min(layout.boxWidth, 520)) - spacing.md * 2;
+  const slotWidth = clamp((trayWidth - (tapeCols - 1) * 6) / tapeCols, 28, 46);
+  const shownSlots = Math.min(challenge.maxCommands, Math.max(4, state.program.length + 1));
+  const strip = Array.from({ length: shownSlots }, (_, i) => state.program[i] ?? null);
 
-  const strip = Array.from({ length: challenge.maxCommands }, (_, i) => state.program[i] ?? null);
-  /** long programs wrap onto a second row so every slot stays comfortably tappable */
-  const perStripRow = Math.min(challenge.maxCommands, 8);
-  const slotWidth = Math.min(layout.s(40), (layout.boxWidth - spacing.md * 2 - (perStripRow - 1) * 6) / perStripRow);
-  const cmdSize = Math.max(hit.min, Math.min(layout.s(62), (layout.boxWidth - spacing.md * 2 - 5 * spacing.xs) / 5));
+  const paletteCols = sideRail ? 3 : 5;
+  const cmdSize = clamp((trayWidth - (paletteCols - 1) * spacing.xs) / paletteCols, hit.min, 74);
+
+  const busy = state.phase === 'running' || state.phase === 'arrived';
 
   return (
     <GameFrame
-      title="Code the Route!"
-      subtitle={
-        goalStreet ? `Drive to the ${goalName} on ${goalStreet}!` : `Help the fire truck reach the ${goalName}!`
-      }
+      title={`Code the route to the ${goalName}`}
+      subtitle={goalStreet ? `On ${goalStreet}. Build the steps, then press Go.` : 'Build the steps, then press Go.'}
       compact={compact}
       backdrop={
         <>
-          <Stage variant="street" groundHeight={150} />
-          <SceneCrew side="right" size={52} mood={state.phase === 'arrived' ? 'cheer' : state.phase === 'running' ? 'happy' : 'idle'} />
+          <Stage variant="street" groundHeight={140} />
+          <SceneCrew
+            side="right"
+            size={52}
+            mood={state.phase === 'arrived' ? 'cheer' : state.phase === 'running' ? 'happy' : 'idle'}
+          />
         </>
       }
       hint={{ text: hintText, visible: hintLadder.showBubble && state.phase !== 'running', onDismiss: hintLadder.dismiss }}
@@ -419,17 +474,10 @@ export function RescueRoute({ challenge, ageBand, onComplete, onEvent, compact }
               <View style={styles.compareRow}>
                 {(['a', 'b'] as const).map((key) => (
                   <View key={key} style={styles.compareCard}>
-                    <Svg width={110} height={80} viewBox="0 0 110 80">
-                      <SvgRect x={0} y={0} width={110} height={80} rx={12} fill={palette.mint} />
-                      <Polyline
-                        points={key === 'a' ? '12,68 12,26 96,26 96,14' : '12,68 62,68 62,40 96,40 96,14'}
-                        fill="none"
-                        stroke={key === 'a' ? palette.engineRed : palette.purple}
-                        strokeWidth={7}
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                    </Svg>
+                    <RouteCard
+                      route={key === 'a' ? 'M14,70 L14,48 L96,48 L96,20' : 'M14,70 L58,70 L58,36 L96,36 L96,20'}
+                      blocks={key === 'a' ? palette.engineRed : palette.purple}
+                    />
                     <Text variant="bodyStrong" center>
                       {key.toUpperCase()} = {challenge.compareRoutes?.[key]} blocks
                     </Text>
@@ -450,7 +498,7 @@ export function RescueRoute({ challenge, ageBand, onComplete, onEvent, compact }
                 edge={c.edge}
                 size={cmdSize}
                 accessibilityLabel={commandLabel[c.id]}
-                disabled={state.phase === 'running' || state.phase === 'arrived'}
+                disabled={busy}
                 glow={suggestedCommand === c.id}
                 onPress={() => addCommand(c.id)}
               >
@@ -465,7 +513,7 @@ export function RescueRoute({ challenge, ageBand, onComplete, onEvent, compact }
               edge={palette.engineRedDark}
               size={cmdSize}
               accessibilityLabel="Go"
-              disabled={state.phase === 'running' || state.phase === 'arrived'}
+              disabled={busy}
               onPress={run}
             >
               <PlayGlyph size={cmdSize * 0.46} />
@@ -475,182 +523,125 @@ export function RescueRoute({ challenge, ageBand, onComplete, onEvent, compact }
             </ChunkyButton>
           </View>
 
-          <View style={styles.strip}>
-            {strip.map((command, i) => {
-              const active = state.cursor === i;
-              const bumped = state.bumpedAt === i;
-              return (
-                <View key={i} style={styles.slotCol}>
-                  <Text variant="tiny" color={command ? palette.navy : palette.slate} center>
-                    {i + 1}
-                  </Text>
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel={command ? `Remove step ${i + 1}` : `Empty step ${i + 1}`}
-                    hitSlop={8}
-                    disabled={!command || state.phase === 'running' || state.phase === 'arrived'}
-                    onPress={() => removeCommand(i)}
-                  >
-                    {command ? (
-                      <Animated.View
-                        entering={ZoomIn.springify().damping(12)}
-                        style={[
-                          styles.slotFilled,
-                          {
-                            width: slotWidth,
-                            height: slotWidth,
-                            backgroundColor: COMMANDS.find((c) => c.id === command)?.face ?? palette.leafGreen,
-                          },
-                          active && styles.slotActive,
-                          bumped && styles.slotBumped,
-                        ]}
-                      >
-                        <CommandIcon id={command} size={slotWidth * 0.62} />
-                      </Animated.View>
-                    ) : (
-                      <View style={[styles.slotEmpty, { width: slotWidth, height: slotWidth }]} />
-                    )}
-                  </Pressable>
-                </View>
-              );
-            })}
+          <View style={styles.tapeRow}>
+            <View style={styles.tape}>
+              {strip.map((command, i) => {
+                const active = state.cursor === i;
+                const bumped = state.bumpedAt === i;
+                return (
+                  <View key={i} style={styles.slotCol}>
+                    <Text variant="tiny" color={command ? palette.navy : palette.slate} center style={styles.slotIndex}>
+                      {i + 1}
+                    </Text>
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel={command ? `Remove step ${i + 1}` : `Empty step ${i + 1}`}
+                      hitSlop={10}
+                      disabled={!command || busy}
+                      onPress={() => removeCommand(i)}
+                    >
+                      {command ? (
+                        <Animated.View
+                          entering={ZoomIn.springify().damping(12)}
+                          style={[
+                            styles.slotFilled,
+                            {
+                              width: slotWidth,
+                              height: slotWidth,
+                              backgroundColor: COMMANDS.find((c) => c.id === command)?.face ?? palette.leafGreen,
+                            },
+                            active && styles.slotActive,
+                            bumped && styles.slotBumped,
+                          ]}
+                        >
+                          <CommandIcon id={command} size={slotWidth * 0.62} />
+                        </Animated.View>
+                      ) : (
+                        <View style={[styles.slotEmpty, { width: slotWidth, height: slotWidth }]} />
+                      )}
+                    </Pressable>
+                  </View>
+                );
+              })}
+            </View>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Start over"
+              hitSlop={12}
+              disabled={busy || state.program.length === 0}
+              onPress={clearProgram}
+              style={[styles.clear, (busy || state.program.length === 0) && styles.disabled]}
+            >
+              <Text variant="tiny" color={roles.ink.secondary}>
+                Start over
+              </Text>
+            </Pressable>
           </View>
         </View>
       }
     >
-      <View style={styles.stage}>
-        <View style={[styles.board, { width: boardWidth, height: boardHeight }]}>
-          {/* road dashes */}
-          {Array.from({ length: challenge.grid.rows + 1 }, (_, r) => (
-            <View key={`h${r}`} style={[styles.dashRow, { top: r * cellStep + gap / 2 - 1.5, width: boardWidth }]}>
-              {Array.from({ length: Math.max(2, Math.floor(boardWidth / 18)) }, (_, d) => (
-                <View key={d} style={styles.dash} />
-              ))}
-            </View>
-          ))}
-          {Array.from({ length: challenge.grid.cols + 1 }, (_, c) => (
-            <View key={`v${c}`} style={[styles.dashCol, { left: c * cellStep + gap / 2 - 1.5, height: boardHeight }]}>
-              {Array.from({ length: Math.max(2, Math.floor(boardHeight / 18)) }, (_, d) => (
-                <View key={d} style={styles.dashV} />
-              ))}
-            </View>
-          ))}
-
-          {cells.map(({ pos, kind, deco }) => (
-            <View
-              key={posKey(pos)}
-              style={[
-                styles.cell,
-                {
-                  left: gap + pos.col * cellStep,
-                  top: gap + pos.row * cellStep,
-                  width: cell,
-                  height: cell,
-                  backgroundColor:
-                    kind === 'blocked' ? '#D8B487' : kind === 'start' ? '#FFEFBD' : palette.mint,
-                },
-              ]}
+      <View style={styles.stage} onLayout={onStageLayout}>
+        <View style={[styles.boardWrap, { paddingBottom: hintLane }]}>
+          <View style={shadows.card}>
+            <CityBoard
+              challenge={challenge}
+              plan={plan}
+              cell={cell}
+              margin={margin}
+              path={previewPath}
+              ahead={aheadCell}
+              aheadHeading={trace.end.heading}
+              arrived={state.phase === 'arrived'}
+              labelAll={cell >= 64}
+            />
+            <Animated.View
+              style={[styles.truck, { width: truckBox, height: truckBox }, truckStyle]}
+              pointerEvents="none"
             >
-              {kind === 'blocked' ? (
-                deco % 2 === 0 ? (
-                  <RoadworkPile size={cell * 0.82} />
-                ) : (
-                  <BarrierGlyph width={cell * 0.86} height={cell * 0.5} />
-                )
-              ) : kind === 'goal' ? (
-                <View style={styles.goalCell}>
-                  <SceneBuilding scene={challenge.goalScene} size={cell * 0.9} />
-                  {state.phase !== 'arrived' ? (
-                    <View style={styles.goalFlame}>
-                      <FlameGlyph size={cell * 0.36} />
-                    </View>
-                  ) : (
-                    <Animated.View entering={ZoomIn.springify()} style={styles.goalFlame}>
-                      <FlameGlyph size={cell * 0.36} out />
-                    </Animated.View>
-                  )}
-                </View>
-              ) : kind === 'grass' && deco === 1 ? (
-                <TreeCluster size={cell * 0.78} />
-              ) : kind === 'grass' && deco === 3 ? (
-                <SceneBuilding scene="apartments" size={cell * 0.74} />
-              ) : null}
-            </View>
-          ))}
+              <RouteTruck size={truckBox} beam={state.phase !== 'arrived'} />
+            </Animated.View>
+          </View>
 
-          <Animated.View
-            style={[styles.truck, { width: truckSize, height: truckSize }, truckStyle]}
-            pointerEvents="none"
-          >
-            <TruckTop size={truckSize} />
-          </Animated.View>
-
-          {/* street names painted along the road above each row */}
-          {challenge.streetNames?.map((street) => (
-            <Text
-              key={street.row}
-              variant="tiny"
-              color="rgba(255,255,255,0.95)"
-              numberOfLines={1}
-              style={[
-                styles.streetName,
-                { top: street.row * cellStep + gap / 2 - Math.max(5, gap * 0.42), width: boardWidth - 12 },
-              ]}
-            >
-              {street.name.toUpperCase()}
-            </Text>
-          ))}
+          <View style={[styles.noticeLane, { height: noticeLane }]} pointerEvents="none">
+            {state.phase === 'bumped' ? (
+              <Animated.View entering={FadeInDown.springify()} style={styles.notice}>
+                <Text variant="tiny" center color={roles.ink.primary}>
+                  {state.bumpedAt === null ? 'So close — the truck needs a few more steps.' : 'No road that way. Fix that step and try again.'}
+                </Text>
+              </Animated.View>
+            ) : null}
+            {state.phase === 'arrived' ? (
+              <Animated.View entering={FadeIn} style={[styles.notice, styles.noticeGood]}>
+                <Text variant="bodyStrong" color={palette.leafGreenDark} center>
+                  {state.program.length <= optimal ? 'Perfect route!' : 'You made it!'}
+                </Text>
+              </Animated.View>
+            ) : null}
+          </View>
         </View>
-
-        {state.phase === 'bumped' ? (
-          <Animated.View entering={FadeInDown.springify()} style={styles.notice}>
-            <Text variant="bodyStrong" center>
-              {state.bumpedAt === null
-                ? "Almost! The truck needs a few more steps."
-                : "Road closed! Let's fix that step."}
-            </Text>
-          </Animated.View>
-        ) : null}
-        {state.phase === 'arrived' ? (
-          <Animated.View entering={FadeIn} style={[styles.notice, styles.noticeGood]}>
-            <Text variant="h3" color={palette.leafGreenDark} center>
-              {state.program.length <= optimal ? 'Perfect route!' : 'You made it!'}
-            </Text>
-          </Animated.View>
-        ) : null}
       </View>
     </GameFrame>
   );
 }
 
 const styles = StyleSheet.create({
-  stage: { alignItems: 'center', justifyContent: 'center' },
-  streetName: { position: 'absolute', left: 8, fontSize: 9, lineHeight: 11, letterSpacing: 0.6 },
-  board: {
-    backgroundColor: '#B8C0D2',
-    borderRadius: radii.card,
-    overflow: 'hidden',
-    ...shadows.card,
-  },
-  cell: { position: 'absolute', borderRadius: 10, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
-  goalCell: { alignItems: 'center', justifyContent: 'center' },
-  goalFlame: { position: 'absolute', top: -2, right: -2 },
+  stage: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  boardWrap: { alignItems: 'center', justifyContent: 'center' },
   truck: { position: 'absolute', left: 0, top: 0, alignItems: 'center', justifyContent: 'center' },
-  dashRow: { position: 'absolute', left: 0, flexDirection: 'row', justifyContent: 'space-evenly' },
-  dashCol: { position: 'absolute', top: 0, alignItems: 'center', justifyContent: 'space-evenly' },
-  dash: { width: 8, height: 3, borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.75)' },
-  dashV: { width: 3, height: 8, borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.75)' },
+
+  noticeLane: { justifyContent: 'center', alignItems: 'center', paddingTop: spacing.xxs },
   notice: {
-    marginTop: spacing.sm,
-    backgroundColor: palette.white,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.xs,
+    backgroundColor: roles.surface.card,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 3,
     borderRadius: radii.pill,
+    maxWidth: 380,
     ...shadows.soft,
   },
-  noticeGood: { backgroundColor: palette.mint },
-  trayInner: { gap: spacing.sm },
-  palette: { flexDirection: 'row', justifyContent: 'center', gap: spacing.xs },
+  noticeGood: { backgroundColor: roles.state.successFill },
+
+  trayInner: { gap: spacing.xs },
+  palette: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: spacing.xs },
   cmdEdge: { borderRadius: 18, alignItems: 'center', justifyContent: 'flex-start' },
   cmdFace: {
     borderRadius: 18,
@@ -658,19 +649,24 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderWidth: 2,
     borderColor: 'rgba(255,255,255,0.35)',
-    gap: 0,
   },
   cmdLabel: { fontSize: 11, lineHeight: 13 },
-  disabled: { opacity: 0.5 },
-  strip: {
+  disabled: { opacity: 0.45 },
+
+  tapeRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.xs },
+  tape: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     justifyContent: 'center',
     gap: 6,
-    backgroundColor: palette.panel,
+    backgroundColor: roles.surface.sunken,
     borderRadius: radii.card,
-    paddingVertical: spacing.xs,
+    paddingVertical: spacing.xxs,
+    paddingHorizontal: spacing.xs,
+    flexShrink: 1,
   },
   slotCol: { alignItems: 'center' },
+  slotIndex: { fontSize: 10, lineHeight: 12 },
   slotEmpty: {
     borderRadius: 12,
     borderWidth: 2.5,
@@ -686,6 +682,8 @@ const styles = StyleSheet.create({
   },
   slotActive: { borderColor: palette.safetyYellow, borderWidth: 3 },
   slotBumped: { opacity: 0.55 },
+  clear: { paddingHorizontal: spacing.xs, paddingVertical: spacing.xxs },
+
   compareRow: { flexDirection: 'row', gap: spacing.md },
   compareCard: { alignItems: 'center', gap: 4 },
 });

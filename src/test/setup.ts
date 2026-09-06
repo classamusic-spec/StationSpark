@@ -1,8 +1,14 @@
 /* Jest setup: keep native modules quiet in unit tests. */
+/*
+ * These three resolve rather than returning undefined: `services/haptics.ts`
+ * calls `.catch()` on every one of them, and jest-expo reports `Platform.OS`
+ * as 'ios', so a render test that pops or wobbles really does go down that
+ * path. A bare `jest.fn()` threw "Cannot read properties of undefined".
+ */
 jest.mock('expo-haptics', () => ({
-  impactAsync: jest.fn(),
-  notificationAsync: jest.fn(),
-  selectionAsync: jest.fn(),
+  impactAsync: jest.fn(async () => {}),
+  notificationAsync: jest.fn(async () => {}),
+  selectionAsync: jest.fn(async () => {}),
   ImpactFeedbackStyle: { Light: 'light', Medium: 'medium', Heavy: 'heavy', Soft: 'soft', Rigid: 'rigid' },
   NotificationFeedbackType: { Success: 'success', Warning: 'warning', Error: 'error' },
 }));

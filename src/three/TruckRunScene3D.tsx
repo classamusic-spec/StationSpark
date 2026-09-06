@@ -25,6 +25,8 @@ export interface TruckRunScene3DProps {
   truck: TruckStyle;
   height: number;
   reduced?: boolean;
+  /** the run's scene — which corner of Spark City the street is dressed as */
+  scene?: string;
   containerStyle?: StyleProp<ViewStyle>;
   testID?: string;
 }
@@ -42,12 +44,13 @@ export const TruckRunScene3D = memo(function TruckRunScene3D({
   truck,
   height,
   reduced,
+  scene,
   containerStyle,
   testID,
 }: TruckRunScene3DProps) {
   return (
     <Stage height={height} camera={TRUCK_RUN_CAMERA} style={containerStyle} touchAction="none" testID={testID}>
-      <TruckRunRoad sample={sample} truck={truck} reduced={reduced} />
+      <TruckRunRoad sample={sample} truck={truck} reduced={reduced} scene={scene} />
     </Stage>
   );
 });

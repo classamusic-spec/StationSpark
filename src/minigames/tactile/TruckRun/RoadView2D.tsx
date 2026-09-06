@@ -10,7 +10,7 @@
  * Everything here is fed by `RunFrame` and placed by `project()`, so a cone is
  * on exactly the pixel the 3D scene would have put it on.
  */
-import React, { memo } from 'react';
+import React, { memo, useMemo } from 'react';
 import { StyleSheet, View } from 'react-native';
 import Svg, { Circle, Defs, Ellipse, G, LinearGradient, Path, Rect, Stop } from 'react-native-svg';
 import { palette } from '@/theme';
@@ -18,6 +18,8 @@ import type { TruckStyle } from '@/state/store';
 import { lampColors, truckTones } from '@/three/palette3d';
 import type { RunFrame, VisibleItem } from './run';
 import { CAMERA, ROAD_HALF, horizonY, project, roadView, type RoadView } from './projection';
+import { destinationFor, streetSeed } from './neighbourhood';
+import { TownArrival, TownBuildings, TownFurniture, TownJunctions, TownPavements, townFrame } from './TownView2D';
 
 /** How high above the tarmac the gate banner hangs, in road units. */
 export const GATE_BANNER_Y = 2.9;
@@ -29,6 +31,8 @@ const STRIPE_LENGTH = 3;
 const STRIPE_GAP = 5;
 
 const tarmac = { face: '#6E778F', shade: '#5C6580', light: '#8A93AB' } as const;
+/** The pale edge line that tells a child where the driveable road stops. */
+const KERB_LINE = '#E8ECF6';
 
 /* ------------------------------------------------------------------ */
 /* Props                                                                */
@@ -185,18 +189,24 @@ function laneStripes(vp: RoadView, distance: number, depth: number): React.React
   return out;
 }
 
-/** A soft ridge of hills sitting on the horizon line. */
-function hillPath(w: number, hy: number, h: number, shift = 0): string {
-  const p = (f: number) => w * ((f + shift) % 1.0001);
-  return [
-    `M0 ${hy}`,
-    `L0 ${hy - h * 0.5}`,
-    `Q${p(0.13)} ${hy - h * 1.5} ${p(0.27)} ${hy - h * 0.6}`,
-    `Q${p(0.41)} ${hy - h * 1.75} ${p(0.56)} ${hy - h * 0.55}`,
-    `Q${p(0.71)} ${hy - h * 1.55} ${p(0.86)} ${hy - h * 0.7}`,
-    `Q${p(0.94)} ${hy - h * 1.15} ${w} ${hy - h * 0.45}`,
-    `L${w} ${hy} Z`,
-  ].join(' ');
+/**
+ * The rest of Spark City, stepping along the horizon behind the street.
+ *
+ * Roof-lines, not hills: the drive is through a town now, so what stands at the
+ * end of the road has to be more town. It is drawn soft and low so it reads as
+ * distance and never competes with a gate.
+ */
+function skylinePath(w: number, hy: number, h: number, shift = 0): string {
+  const steps = 9;
+  const parts = [`M0 ${hy}`];
+  for (let i = 0; i < steps; i += 1) {
+    const x0 = ((i + shift) / steps) * w;
+    const x1 = ((i + 1 + shift) / steps) * w;
+    const top = hy - h * (0.35 + ((i * 7 + 3) % 5) * 0.19);
+    parts.push(`L${x0.toFixed(1)} ${top.toFixed(1)} L${x1.toFixed(1)} ${top.toFixed(1)}`);
+  }
+  parts.push(`L${w} ${hy} Z`);
+  return parts.join(' ');
 }
 
 function Gate({ vp, item, assist }: { vp: RoadView; item: VisibleItem; assist: boolean }) {
@@ -241,6 +251,8 @@ export interface RoadView2DProps {
   width: number;
   height: number;
   reduced: boolean;
+  /** the run's scene — which corner of Spark City the street is dressed as */
+  scene?: string;
 }
 
 /**
@@ -248,9 +260,14 @@ export interface RoadView2DProps {
  * `@/ui` `<Text>` in an overlay above this view (house rule: all text goes
  * through the type scale), placed with the very same projection.
  */
-export const RoadView2D = memo(function RoadView2D({ frame, truck, width, height, reduced }: RoadView2DProps) {
+export const RoadView2D = memo(function RoadView2D({ frame, truck, width, height, reduced, scene }: RoadView2DProps) {
   const vp = roadView({ w: width, h: height }, frame.lane);
   const hy = horizonY(vp);
+  /* the town beside the road: the same list the 3D street draws, from the same
+     distance, through the same camera */
+  const seed = useMemo(() => streetSeed(scene), [scene]);
+  const destination = useMemo(() => destinationFor(scene), [scene]);
+  const street = townFrame(frame.distance, seed, destination, frame.finishAhead);
   const near = project(vp, 1, -CAMERA.back + 1.2);
   const nearHalf = ROAD_HALF * near.scale;
   const nearMid = near.x;
@@ -270,19 +287,21 @@ export const RoadView2D = memo(function RoadView2D({ frame, truck, width, height
             <Stop offset="1" stopColor={palette.grassDark} />
           </LinearGradient>
           <LinearGradient id="truckRunHaze" x1="0" y1="0" x2="0" y2="1">
-            <Stop offset="0" stopColor={palette.skyBottom} stopOpacity={0.9} />
+            <Stop offset="0" stopColor={palette.skyBottom} stopOpacity={0.62} />
             <Stop offset="1" stopColor={palette.skyBottom} stopOpacity={0} />
           </LinearGradient>
         </Defs>
 
-        {/* hills on the skyline: the perimeter is dressed so the middle can be
-            empty road (the composition rule every Stage variant follows) */}
-        <Path d={hillPath(width, hy, Math.max(16, height * 0.05))} fill={palette.grassDark} opacity={0.45} />
-        <Path d={hillPath(width, hy, Math.max(11, height * 0.032), 0.37)} fill={palette.leafGreen} opacity={0.35} />
+        {/* the rest of the town, stepping along the horizon behind the street */}
+        <Path d={skylinePath(width, hy, Math.max(18, height * 0.055))} fill={palette.navySoft} opacity={0.24} />
+        <Path d={skylinePath(width, hy, Math.max(12, height * 0.036), 0.4)} fill={palette.navy} opacity={0.16} />
 
-        {/* the yard, running away to the horizon */}
+        {/* the ground the whole neighbourhood stands on */}
         <Rect x={0} y={hy} width={width} height={height - hy} fill="url(#truckRunGround)" />
-        <Rect x={0} y={hy - height * 0.06} width={width} height={height * 0.09} fill="url(#truckRunHaze)" />
+
+        {/* Spark City itself, behind the pavements */}
+        <TownBuildings vp={vp} street={street} />
+        <TownPavements vp={vp} />
 
         {/* tarmac */}
         <Path
@@ -299,12 +318,19 @@ export const RoadView2D = memo(function RoadView2D({ frame, truck, width, height
             <Path
               key={`kerb${side}`}
               d={`M${nx - side * nw} ${near.y} L${nx} ${near.y} L${fx} ${hy} L${fx - side * fw} ${hy} Z`}
-              fill={tarmac.light}
-              opacity={0.75}
+              fill={KERB_LINE}
+              opacity={0.9}
             />
           );
         })}
+        {/* side streets and their crossings, painted on the tarmac */}
+        <TownJunctions vp={vp} street={street} />
         {laneStripes(vp, frame.distance, 120)}
+        {/* lamps, trees, hydrants and parked cars stand in front of the walls */}
+        <TownFurniture vp={vp} street={street} />
+        <TownArrival vp={vp} street={street} />
+        {/* the haze the distance fades into — the SVG twin of the 3D fog */}
+        <Rect x={0} y={hy - height * 0.035} width={width} height={height * 0.09} fill="url(#truckRunHaze)" />
 
         {/* everything on the road, far things first */}
         {frame.items.map((item) => {

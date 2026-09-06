@@ -17,32 +17,58 @@ It stays out of the home screen, the map, every play field, the characters, and 
 | `TruckRunScene3D.tsx` / `TruckRunRoad.tsx` | The Truck Run road: chase camera over a scrolling three-lane road with hazards, ramps, boost pads and answer gates, reusing `TruckModel` with the child's own truck style. Loaded lazily so no route pays for `three` at first paint. |
 | `webgl.ts` | The one up-front "is there a GL context?" probe (`WEBGL_AVAILABLE`), consumed by `ThreeBoundary`. |
 | `ThreeBoundary.tsx` | Error boundary **and** GL gate: any GL failure (no WebGL, old device, Jest/SSR) renders the 2D fallback (`TruckFallback` → SVG `<FireTruck/>`, or `<BadgeArt/>`). |
+| `lazy.tsx` | **The doors screens use.** `<LazyTruckScene3D/>` and `<LazyBadge3D/>`: the two entry points behind a `lazy()` chunk, a `ThreeBoundary` and the 2D fallback. Free of `three`. |
+| `badgeIcons.ts` | The twelve badge emblem *names* (`badge3DIcons`, `Badge3DIcon`, `toBadge3DIcon`), free of `three` so a caller can name an emblem without loading a renderer. `shapes.ts` re-exports them. |
+
+## The one rule: screens import `@/three/lazy`, never `@/three`
+
+The web build is a **single page** (`app.json` → `web.output: "single"`), so every
+route is in the entry bundle. One eager `import … from '@/three'` anywhere in
+`app/` or `src/screens` therefore puts ~600 KB of renderer on the first paint of
+the *whole app* — the Firehouse, the map, every mini-game — not just the screen
+that shows a canvas.
+
+That is exactly what had happened: `GarageScreen` imported `@/three` at the top
+of the file, so the road's careful lazy loading bought nothing and the entry
+bundle carried `WebGLRenderer` regardless. Moving the Garage, the badge flip and
+the dev bench onto `@/three/lazy` took the entry chunk from **5,472,226 to
+4,454,996 bytes** and dropped `WebGLRenderer` out of it entirely; three now sits
+in an async `__common` chunk (~1 MB) that only a scene chunk pulls.
+
+```tsx
+import { LazyTruckScene3D, LazyBadge3D } from '@/three/lazy';
+
+<LazyTruckScene3D style={truck} height={300} honk={honks} shine={0.4} spinning />
+<LazyBadge3D color={def.color} icon={def.icon} size={104} flipKey={n} />
+```
+
+Same props as `<TruckScene3D/>` / `<Badge3D/>` (documented in `truckSceneProps.ts`
+and `Badge3D.tsx`), plus an optional `fallback` on the badge for a caller with its
+own 2D art — `CelebrationOverlay` passes its flipping SVG. Both accept
+`forceFallback` for QA (the `/dev/three` route has a "Force 2D fallback" button).
 
 **Loading a new 3D scene — copy this pattern.** Lazy-import the scene inside a
 `ThreeBoundary` with the 2D view as both the `fallback` and the `<Suspense>`
-fallback (`src/minigames/tactile/TruckRun/RoadScene.tsx` is the reference). The
-boundary alone is not enough on its own: three throws while the canvas is being
-set up, *outside* React's render phase, so a boundary never trips and the child
-gets an empty canvas. That is why the boundary now starts tripped when
-`WEBGL_AVAILABLE` is false — do not re-implement the probe per scene.
+fallback (`src/three/lazy.tsx` and `src/minigames/tactile/TruckRun/RoadScene.tsx`
+are the references). The boundary alone is not enough on its own: three throws
+while the canvas is being set up, *outside* React's render phase, so a boundary
+never trips and the child gets an empty canvas. That is why the boundary starts
+tripped when `WEBGL_AVAILABLE` is false — do not re-implement the probe per
+scene.
 
-Public API:
-
-```tsx
-import { TruckScene3D, Badge3D } from '@/three';
-
-<TruckScene3D style={truck} height={300} honk={honks} shine={0.4} spinning />
-<Badge3D color={def.color} icon={def.icon} size={104} flipKey={n} />
-```
-
-Props are documented in `src/three/index.ts` and `truckSceneProps.ts`. Both components accept
-`forceFallback` for QA (the `/dev/three` route has a "Force 2D fallback" button).
+Because the boundary renders its fallback *without mounting its children*, a
+device with no WebGL never even fires the dynamic import — and neither does Jest,
+where `WEBGL_AVAILABLE` is false by construction. That is what keeps `three` out
+of the tests without a `NODE_ENV` check at each call site.
 
 ## Rules
 
-- **Import `@/three` only from screens that show GL** (today: `src/screens/Garage`, `app/dev/three.tsx`).
-  Importing it elsewhere pulls `three` (~600 KB min) into that route's first paint.
-- **Jest never loads `three`**: no test imports a screen that imports `@/three`. Keep it that way.
+- **Never import `@/three` from a screen** — use `@/three/lazy` (see above). The eager barrel is for
+  code that is already inside a canvas. Today the only importers of the barrel are the modules under
+  `src/three/` themselves. `npm run export:web && grep -c WebGLRenderer dist/_expo/static/js/web/entry-*.js`
+  must print `0`; if it does not, something started importing the barrel eagerly.
+- **Jest never loads `three`**: `WEBGL_AVAILABLE` is false under test, so `ThreeBoundary` renders the
+  2D fallback and the lazy import is never fired. Keep it that way.
 - **Fallback is mandatory**: every 3D element is wrapped in `ThreeBoundary` with a 2D sibling that
   looks like the same object. A child on a device without GL must not notice.
 - **Reduced motion**: idle rotation/bob stop; flips shorten; wheel spin stays (it is the object's

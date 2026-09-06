@@ -15,6 +15,7 @@ export * from './Flag';
 export * from './Bell';
 export * from './Smoke';
 export * from './TownBackdrop';
+export * from './Street';
 export * from './StationFacade';
 export * from './StationDetails';
 export * from './FireTruck';

@@ -19,6 +19,7 @@
 import type {
   AgeBand,
   ChallengeGenerator,
+  ChallengeOf,
   GeneratorContext,
   SkillTag,
   TruckRunObstacle,
@@ -425,15 +426,32 @@ function makeQuestion(rng: Rng, topic: TruckRunTopic, ctx: GeneratorContext): Tr
 /* ------------------------------------------------------------------ */
 
 /**
- * TRUCK RUN — steer the engine down the practice road and answer by driving
+ * TRUCK RUN — steer the engine through Spark City and answer by driving
  * through a gate. One topic per run, so the recap tells the truth; one road
  * per question, cycled, so a wrong gate costs a moment and never the run.
  */
-export const generateTruckRun: ChallengeGenerator<'truck-run'> = (ctx) => {
+export const generateTruckRun: ChallengeGenerator<'truck-run'> = (ctx) => buildRun(ctx);
+
+/**
+ * The same road, on a topic the *story* chose.
+ *
+ * A mission that has just planned a route wants the drive that follows it to
+ * practise what the mission is about — counting on the way to the clock tower,
+ * elapsed time on the way to the platform. Topics are band-locked (a five year
+ * old is never asked to divide), so this takes a preference *list* and uses the
+ * first one this band actually teaches, falling back to the ordinary random
+ * pick. That way one mission beat reads correctly for all three bands.
+ */
+export function truckRunFor(prefer: readonly TruckRunTopic[], ctx: GeneratorContext): ChallengeOf<'truck-run'> {
+  const allowed = plans[ctx.ageBand].topics;
+  return buildRun(ctx, prefer.find((t) => allowed.includes(t)));
+}
+
+function buildRun(ctx: GeneratorContext, wanted?: TruckRunTopic): ChallengeOf<'truck-run'> {
   const { rng, ageBand } = ctx;
   const plan = plans[ageBand];
   const rowGap = round1(plan.speed * plan.rowSeconds);
-  const topic = rng.pick(plan.topics);
+  const topic = wanted ?? rng.pick(plan.topics);
 
   const questions: TruckRunQuestion[] = [];
   const seen = new Set<string>();
@@ -462,4 +480,4 @@ export const generateTruckRun: ChallengeGenerator<'truck-run'> = (ctx) => {
     bumpBudget: plan.bumpBudget,
     scene: sceneOr(ctx, 'station-yard'),
   };
-};
+}

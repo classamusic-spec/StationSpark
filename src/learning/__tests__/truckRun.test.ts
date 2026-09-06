@@ -16,7 +16,7 @@ import { createRng } from '@/utils/rng';
 import type { AgeBand, ChallengeOf, GeneratorContext, TruckRunTopic } from '@/learning/types';
 import { challengeSkills, truckRunLanes } from '@/learning/types';
 import { generateTruckRun } from '@/learning/generators';
-import { GATE_LABEL_MAX, hazardRows, laneEscapeRoute, truckRunSkills } from '@/learning/generators/truck-run';
+import { GATE_LABEL_MAX, hazardRows, laneEscapeRoute, truckRunFor, truckRunSkills } from '@/learning/generators/truck-run';
 import { validateChallenge } from '@/learning/validate';
 
 const BANDS: AgeBand[] = ['A', 'B', 'C'];
@@ -307,5 +307,34 @@ describe('the truck-run validator', () => {
       segments: [{ ...firstSegment, obstacles: [{ kind: 'cone' as const, lane: 1, at: firstSegment.gateAt + 5 }] }],
     };
     expect(validateChallenge(broken).join(' ')).toContain('on or past the gates');
+  });
+});
+
+/* ------------------------------------------------------------------ */
+/* The drive a mission asks for                                         */
+/* ------------------------------------------------------------------ */
+
+describe('truckRunFor', () => {
+  it('takes the story\u2019s first choice the band actually teaches', () => {
+    expect(truckRunFor(['count-on', 'add-sub', 'elapsed'], ctxFor('A', 1)).topic).toBe('count-on');
+    expect(truckRunFor(['count-on', 'add-sub', 'elapsed'], ctxFor('B', 1)).topic).toBe('add-sub');
+    expect(truckRunFor(['count-on', 'add-sub', 'elapsed'], ctxFor('C', 1)).topic).toBe('elapsed');
+  });
+
+  it('never hands a band a topic it does not teach, whatever the mission asks', () => {
+    for (const band of BANDS) {
+      for (let seed = 0; seed < 40; seed += 1) {
+        const run = truckRunFor(['times-divide', 'spanish'], ctxFor(band, seed));
+        expect(topicsFor[band]).toContain(run.topic);
+        expect(validateChallenge(run)).toEqual([]);
+      }
+    }
+  });
+
+  it('still builds a playable road, scene and all', () => {
+    const run = truckRunFor(['sight-word'], { ageBand: 'B', rng: createRng(9), scene: 'bakery' });
+    expect(run.topic).toBe('sight-word');
+    expect(run.scene).toBe('bakery');
+    expect(validateChallenge(run)).toEqual([]);
   });
 });

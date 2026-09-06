@@ -6,6 +6,7 @@ import {
   generateNumberLadder,
   generateRescuePets,
   generateRescueRoute,
+  truckRunFor,
 } from '@/learning/generators';
 import { bea, radio, inScene, npc } from './parts';
 
@@ -27,7 +28,7 @@ export const clockTowerCat: MissionDef = {
   address: '12 Clock Tower Square',
   npcName: MAYA,
   subjects: ['math', 'reading', 'logic', 'teamwork'],
-  minutes: 9,
+  minutes: 11,
   badge: 'clock-tower-cat',
   xp: 40,
   sparks: 12,
@@ -61,6 +62,13 @@ export const clockTowerCat: MissionDef = {
       challenge: (ctx) => generateRescueRoute(inScene(ctx, 'clock-tower')),
       intro: [radio('Market stalls are in the way. Plan the drive!')],
       outro: [bea('Smooth driving. No cones harmed.')],
+    },
+    {
+      type: 'minigame',
+      game: 'truck-run',
+      challenge: (ctx) => truckRunFor(['count-on', 'add-sub', 'elapsed'], inScene(ctx, 'clock-tower')),
+      intro: [radio('Route is set. Now drive it — through the square!')],
+      outro: [bea('Every gate open. The tower is right there.', 'proud')],
     },
     { type: 'travel', from: 'station', to: 'clock-tower' },
     {

@@ -313,9 +313,11 @@ export const StationFacade = memo(function StationFacade({ width, unlocked = [] 
           <Stop offset="0" stopColor="#1F2A5A" stopOpacity={0.2} />
           <Stop offset="1" stopColor="#1F2A5A" stopOpacity={0} />
         </LinearGradient>
+        {/* the apron reads a value step *under* the footpath it crosses, so
+            the driveway is a slab of its own rather than more paving */}
         <LinearGradient id="apronGrad" x1="0" y1="0" x2="0" y2="1">
-          <Stop offset="0" stopColor="#C4CADC" />
-          <Stop offset="1" stopColor="#DDE2EF" />
+          <Stop offset="0" stopColor="#BAC1D6" />
+          <Stop offset="1" stopColor="#CFD5E5" />
         </LinearGradient>
         <LinearGradient id="baseShade" x1="0" y1="0" x2="0" y2="1">
           <Stop offset="0" stopColor="#1F2A5A" stopOpacity={0.22} />
@@ -462,20 +464,32 @@ export const StationFacade = memo(function StationFacade({ width, unlocked = [] 
       ) : null}
 
       {/* ── the apron ────────────────────────────────────────────────── */}
-      {/* the slab, splayed a little wider at the front so it reads as ground */}
+      {/*
+        The forecourt, gathering from the full frontage into the width of the
+        crossover. It used to splay *outward* to the frame edges, which meant
+        that at phone size it covered the footpath and the kerb entirely — the
+        building met the road with no street between them. Drawing it as a
+        funnel gives the kerb line somewhere to run, and lets the tyre marks
+        converge onto the dropped kerb the engines actually use.
+      */}
       <Path
-        d={`M 6 ${APRON_Y} L 354 ${APRON_Y} Q 368 ${APRON_Y + 34} 372 548 L -12 548 Q -8 ${APRON_Y + 34} 6 ${APRON_Y} Z`}
+        d={`M 6 ${APRON_Y} L 354 ${APRON_Y} Q 348 ${APRON_Y + 34} 326 548 L 34 548 Q 12 ${APRON_Y + 34} 6 ${APRON_Y} Z`}
         fill="url(#apronGrad)"
       />
       {/* soft top lip, never a hard seam (rule #7) */}
       <Path d={`M 6 ${APRON_Y} L 354 ${APRON_Y} Q 356 ${APRON_Y + 5} 356 ${APRON_Y + 8} L 4 ${APRON_Y + 8} Q 4 ${APRON_Y + 5} 6 ${APRON_Y} Z`} fill="#EDF1F8" />
+      {/* the two gathered edges, lit so the ramp reads as a slab with a shape */}
+      <Path d={`M 6 ${APRON_Y} Q 12 ${APRON_Y + 34} 34 548 L 42 548 Q 20 ${APRON_Y + 34} 12 ${APRON_Y} Z`} fill="#E7EBF5" />
+      <Path d={`M 354 ${APRON_Y} Q 348 ${APRON_Y + 34} 326 548 L 318 548 Q 340 ${APRON_Y + 34} 348 ${APRON_Y} Z`} fill="#E7EBF5" />
       {/* the building's cast shadow spilling onto it */}
       <Rect x={-6} y={APRON_Y} width={372} height={22} fill="url(#baseShade)" />
-      {/* tyre marks rolling out of both bays */}
-      <Path d={`M 66 ${APRON_Y + 6} Q 58 ${APRON_Y + 32} 46 548`} stroke={SHADE} strokeWidth={9} fill="none" strokeLinecap="round" />
-      <Path d={`M 126 ${APRON_Y + 6} Q 126 ${APRON_Y + 32} 124 548`} stroke={SHADE} strokeWidth={9} fill="none" strokeLinecap="round" />
-      <Path d={`M 234 ${APRON_Y + 6} Q 234 ${APRON_Y + 32} 236 548`} stroke={SHADE} strokeWidth={9} fill="none" strokeLinecap="round" />
-      <Path d={`M 294 ${APRON_Y + 6} Q 302 ${APRON_Y + 32} 314 548`} stroke={SHADE} strokeWidth={9} fill="none" strokeLinecap="round" />
+      {/* tyre marks rolling out of both bays — a whisper, not a skid */}
+      <G opacity={0.62}>
+        <Path d={`M 66 ${APRON_Y + 6} Q 58 ${APRON_Y + 32} 50 548`} stroke={SHADE} strokeWidth={7} fill="none" strokeLinecap="round" />
+        <Path d={`M 126 ${APRON_Y + 6} Q 126 ${APRON_Y + 32} 124 548`} stroke={SHADE} strokeWidth={7} fill="none" strokeLinecap="round" />
+        <Path d={`M 234 ${APRON_Y + 6} Q 234 ${APRON_Y + 32} 236 548`} stroke={SHADE} strokeWidth={7} fill="none" strokeLinecap="round" />
+        <Path d={`M 294 ${APRON_Y + 6} Q 302 ${APRON_Y + 32} 310 548`} stroke={SHADE} strokeWidth={7} fill="none" strokeLinecap="round" />
+      </G>
       {/* the yellow guide dashes between the bays */}
       {[0, 1].map((i) => (
         <Rect key={i} x={177} y={APRON_Y + 18 + i * 15} width={7} height={11} rx={3.5} fill={palette.safetyYellow} opacity={0.9} />
@@ -496,17 +510,28 @@ export const StationFacade = memo(function StationFacade({ width, unlocked = [] 
         <Rect x={228} y={509.6} width={16} height={1.6} rx={0.8} fill={SHADE_DEEP} />
         <Rect x={228} y={512.4} width={16} height={1.6} rx={0.8} fill={SHADE_DEEP} />
       </G>
-      {/* hedges tucking the apron's edges into the ground plane */}
-      <G>
-        <Ellipse cx={4} cy={506} rx={30} ry={19} fill="#3F944E" />
-        <Ellipse cx={-4} cy={514} rx={30} ry={18} fill="#4FA858" />
-        <Ellipse cx={16} cy={512} rx={16} ry={11} fill="#4FA858" />
-        <Ellipse cx={8} cy={504} rx={11} ry={6} fill={HIGHLIGHT} />
-        <Ellipse cx={356} cy={506} rx={30} ry={19} fill="#3F944E" />
-        <Ellipse cx={364} cy={514} rx={30} ry={18} fill="#4FA858" />
-        <Ellipse cx={344} cy={512} rx={16} ry={11} fill="#4FA858" />
-        <Ellipse cx={348} cy={504} rx={11} ry={6} fill={HIGHLIGHT} />
-      </G>
+      {/*
+        Two planters, where the hedges used to sprawl.
+
+        The apron used to sit in grass, so its corners were tucked in with two
+        big hedge masses. It now meets a footpath and a kerb, and a shrub
+        growing out of paving reads as a mistake — so the green is potted. Same
+        job (the slab's corners are softened, the station keeps a touch of
+        life), one third of the ink.
+      */}
+      {[16, 344].map((cx) => (
+        <G key={cx}>
+          <Ellipse cx={cx} cy={528} rx={21} ry={4.6} fill={SHADOW_FILL} opacity={SHADOW_OPACITY} />
+          <Ellipse cx={cx - 5} cy={504} rx={16} ry={13} fill="#3F944E" />
+          <Ellipse cx={cx + 7} cy={506} rx={14} ry={12} fill="#4FA858" />
+          <Ellipse cx={cx} cy={496} rx={12} ry={10} fill="#5CB861" />
+          <Ellipse cx={cx - 4} cy={492} rx={7} ry={4} fill={HIGHLIGHT} />
+          <Path d={`M ${cx - 17} 512 L ${cx + 17} 512 L ${cx + 13} 530 L ${cx - 13} 530 Z`} fill={palette.tanDark} />
+          <Path d={`M ${cx + 4} 512 L ${cx + 17} 512 L ${cx + 13} 530 L ${cx + 3} 530 Z`} fill={SHADE} />
+          <Rect x={cx - 19} y={509} width={38} height={7} rx={3.5} fill={palette.creamDeep} />
+          <Rect x={cx - 19} y={513} width={38} height={3} rx={1.5} fill={SHADE} />
+        </G>
+      ))}
     </Svg>
   );
 });

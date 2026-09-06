@@ -61,3 +61,4 @@ yarn-error.*
 # one-off scratch drivers a harness run leaves behind
 *.tmp.mjs
 /.qa-*.mjs
+*.local.mjs

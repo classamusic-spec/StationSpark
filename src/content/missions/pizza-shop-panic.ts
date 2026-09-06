@@ -5,6 +5,7 @@ import {
   generateEquipmentCheck,
   generateHoseHero,
   generateRescueRoute,
+  truckRunFor,
   generateWaterTank,
   hoseHeroWithFlames,
 } from '@/learning/generators';
@@ -34,7 +35,7 @@ export const pizzaShopPanic: MissionDef = {
   address: '24 Market Street',
   npcName: GINO,
   subjects: ['math', 'spanish', 'cooking', 'teamwork'],
-  minutes: 12,
+  minutes: 13,
   badge: 'pizza-rescue',
   xp: 45,
   sparks: 16,
@@ -82,6 +83,13 @@ export const pizzaShopPanic: MissionDef = {
       },
       intro: [radio('Two roads to Market Street. Take the shorter one.')],
       outro: [bea('Shortest route wins. Hold on!')],
+    },
+    {
+      type: 'minigame',
+      game: 'truck-run',
+      challenge: (ctx) => truckRunFor(['number-word', 'add-sub', 'times-divide'], inScene(ctx, 'pizza')),
+      intro: [radio('Down Market Street now. Watch for cones!')],
+      outro: [bea('Past the bakery, past the school. We are here.')],
     },
     { type: 'travel', from: 'station', to: 'pizza' },
     {

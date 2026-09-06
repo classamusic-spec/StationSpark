@@ -196,11 +196,28 @@ export interface HosePathChallenge {
   pieces: HosePiece[];
 }
 
+/**
+ * A city block standing BETWEEN the roads of a rescue-route board.
+ *
+ * The truck never drives on one: every cell listed here is also in the
+ * challenge's `blocked` set. Blocks are what a child navigates *by* — "turn
+ * left at the library" — and one of them is the address the call came from.
+ */
+export interface RouteLandmark {
+  /** the block cells this landmark fills — always a rectangle (1×1, 1×2, 2×1) */
+  cells: GridPos[];
+  scene: SceneId;
+  /** the building the call is at; the truck pulls up on the road beside it */
+  destination?: boolean;
+}
+
 export interface RescueRouteChallenge {
   kind: 'rescue-route';
   grid: { rows: number; cols: number };
+  /** every cell that is NOT `blocked` is road: the truck drives the streets */
   start: GridPos;
   startHeading: Heading;
+  /** the ROAD cell outside the destination — "pull up here", never a rooftop */
   goal: GridPos;
   goalScene: SceneId;
   blocked: GridPos[];
@@ -208,6 +225,10 @@ export interface RescueRouteChallenge {
   /** For band B/C: optional two-route comparison ("which is shorter?") */
   compareRoutes?: { a: number; b: number; shorter: 'a' | 'b' };
   streetNames?: { row: number; name: string }[];
+  /** What stands in the blocks between the roads. Every cell is also `blocked`. */
+  landmarks?: RouteLandmark[];
+  /** From the goal road cell toward the destination building beside it. */
+  goalSide?: Heading;
 }
 
 export interface HydrantMatchChallenge {

@@ -471,6 +471,12 @@ export interface RunFrame {
   items: VisibleItem[];
   /** the lane the gold assist ring points at, or null when no help is showing */
   assistLane: number | null;
+  /**
+   * Road units to the arrival, once the last gate is open — `null` while there
+   * are still questions to answer. The town uses it to put the destination and
+   * the arrival banner at the end of the street, so the drive ends *somewhere*.
+   */
+  finishAhead: number | null;
 }
 
 export function runFrame(run: RunState, challenge: TruckRunChallenge, assist = false): RunFrame {
@@ -493,5 +499,6 @@ export function runFrame(run: RunState, challenge: TruckRunChallenge, assist = f
     done: run.done,
     items: visibleItems(run, challenge),
     assistLane: assist && question ? answerLane(question, run.attempt) : null,
+    finishAhead: run.finishAt === null ? null : run.finishAt - run.distance,
   };
 }

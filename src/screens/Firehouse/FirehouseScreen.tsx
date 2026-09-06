@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, StyleSheet, View, type LayoutChangeEvent } from 'react-native';
 import Animated, { FadeInDown, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect, useRouter, type Href } from 'expo-router';
 import Svg, { Circle, Path } from 'react-native-svg';
 import { durations, easings, hit, palette, radii, roles, spacing, timings } from '@/theme';
@@ -11,15 +12,16 @@ import { speech } from '@/services/speech';
 import { useGame } from '@/state/store';
 import { useShiftSummary } from '@/state/selectors';
 import { useShift } from '@/hooks/useShift';
-import { Bell, ChimneySmoke, CatWindow, DoorLight, FACADE_VB, Flag, Neighbours, Pigeon, StationFacade, TownBackdrop, facadeLayout } from '@/world';
+import { Bell, ChimneySmoke, CatWindow, ContactShadow, DoorLight, FACADE_VB, Flag, Neighbours, Pigeon, StationFacade, Street, facadeLayout } from '@/world';
 import { Rookie } from '@/characters/Rookie';
 import { CaptainBea } from '@/characters/CaptainBea';
-import { SparksCounter, RoomTile, useScaledLayout, type RoomId } from '@/screens/shared';
+import { SparksCounter, RoomTile, type RoomId } from '@/screens/shared';
 import { ShiftChip } from './ShiftChip';
 import { GreetingBubble } from './GreetingBubble';
+import { FirehouseBackdrop } from './FirehouseBackdrop';
 
 /**
- * THE STATION IS THE MENU.
+ * THE STATION IS THE MENU — and now it is also the picture.
  *
  * Six doors, one on each panel of the wall, in two readable rows:
  *
@@ -30,6 +32,17 @@ import { GreetingBubble } from './GreetingBubble';
  * and two doors into the same room is exactly what made this screen hard to
  * read. For the same reason the settings cog and the "For Grown-Ups" pill are
  * now one door, and Badges is named "Badges" wherever it appears.
+ *
+ * The composition is three planes and nothing else:
+ *
+ *   far    sky — a gradient, two clouds, one bloom, one bird
+ *   mid    the block: two hazed neighbours, placed *outside* the station
+ *   near   the station, filling the frame, its apron dropping onto a street
+ *
+ * There used to be a sixth and seventh layer back there — a treeline, three
+ * hill ridges and a wall of canopies — all at the same weight as the building
+ * they sat behind. They are gone. The station is the only thing in the frame
+ * asking to be looked at, and under it the one red button.
  */
 const ROOMS: { id: RoomId; label: string; href: string }[] = [
   { id: 'map', label: 'Map', href: '/map' },
@@ -73,20 +86,19 @@ function GrownUpsDoor({ onPress }: { onPress: () => void }) {
   );
 }
 
-/**
- * Vertical space reserved below the station for the crew.
- *
- * The façade carries its own apron (the slab the hydrant, hose, bollards and
- * cone stand on), so the crew stands *in front of* the building on the grass
- * rather than in a gap under it.
- */
-const CREW_ZONE = 84;
-/** how far the apron runs on behind the crew */
-const APRON_OVERLAP = 8;
+/** the kerb's own thickness, drawn by `Street` — the apron sits on top of it */
+const KERB = 10;
+/** clear air the roof keeps under the top-bar pills */
+const TOP_MIN = 28;
+/** the CTA and its caption, plus the air the road keeps around them */
+const CTA_BLOCK = 138;
+const CTA_AIR = 42;
+
+const clamp = (n: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, n));
 
 export function FirehouseScreen() {
   const router = useRouter();
-  const layout = useScaledLayout();
+  const insets = useSafeAreaInsets();
   const profile = useGame((s) => s.profile);
   const unlocked = useGame((s) => s.station.unlocked);
   const shiftActive = useGame((s) => s.shift.active);
@@ -101,6 +113,7 @@ export function FirehouseScreen() {
     const h = new Date().getHours();
     return h >= 18 || h < 6;
   }, []);
+  const mood = evening ? 'evening' : 'day';
 
   const greetings = useMemo(() => {
     const h = new Date().getHours();
@@ -138,13 +151,58 @@ export function FirehouseScreen() {
     setStage((prev) => (Math.abs(prev.w - width) < 1 && Math.abs(prev.h - height) < 1 ? prev : { w: width, h: height }));
   }, []);
 
-  const station = useMemo(() => {
-    if (stage.w < 40 || stage.h < 40) return null;
+  /**
+   * One measurement pass builds the whole scene, because every piece of it is
+   * a consequence of one decision: **the station is as big as the frame allows.**
+   *
+   * It is sized to the height left over once the road band is reserved, capped
+   * by the width of the screen — so on a phone the building runs very nearly
+   * edge to edge, and on a tablet it grows until the sky above it is a band
+   * rather than a field. Everything else hangs off `facadeLayout`: the apron's
+   * own height sets the depth of the footpath, so the ground plane is
+   * continuous from the building's foot to the kerb, and the apron's splayed
+   * front edge becomes the dropped kerb the engines roll down.
+   */
+  const scene = useMemo(() => {
+    const W = stage.w;
+    const H = stage.h;
+    if (W < 40 || H < 40) return null;
     const ratio = FACADE_VB.w / FACADE_VB.h;
-    // leave room under the façade for the crew; the CTA now has its own band
-    const width = Math.max(220, Math.min(stage.w, (stage.h - CREW_ZONE) * ratio));
-    return facadeLayout(width);
-  }, [stage.h, stage.w]);
+
+    /* the road band: the CTA lives on it, so it is never thinner than that */
+    const road = Math.round(clamp(H * 0.23, CTA_BLOCK + CTA_AIR + insets.bottom, 260 + insets.bottom));
+    const sideGap = Math.round(clamp(W * 0.028, 8, 44));
+    const fitH = H - road - TOP_MIN;
+    const width = Math.max(240, Math.min(W - sideGap * 2, fitH * ratio, 760));
+    const station = facadeLayout(width);
+    const left = (W - width) / 2;
+
+    /* the footpath is exactly as deep as the apron, so they read as one plane */
+    const pave = Math.max(16, Math.round(station.apronHeight) - KERB);
+    /* the apron's gathered front edge, dropping off the kerb (design 34 → 326) */
+    const crossing = { x: left + station.px(34), width: station.px(292) };
+
+    const crew = clamp(station.height * 0.25, 96, 200);
+    /* feet on the apron, a little back from its front edge */
+    const crewBottom = road + KERB + station.apronHeight * 0.24;
+    /* they flank the building, overhanging its corners by a shoulder */
+    const crewInset = left - crew * 0.16;
+
+    return {
+      W,
+      H,
+      road,
+      pave,
+      left,
+      station,
+      crossing,
+      crew,
+      crewBottom,
+      crewInset,
+      /** the block behind: never taller than the station's eaves */
+      block: { height: Math.round(station.height * 0.52), bottom: road + pave },
+    };
+  }, [insets.bottom, stage.h, stage.w]);
 
   const enterRoom = useCallback(
     (href: string) => {
@@ -176,74 +234,28 @@ export function FirehouseScreen() {
     router.push('/dispatch');
   }, [router, shift, shiftActive]);
 
-  const crew = useMemo(() => {
-    const base = station ? station.apronTop : 320;
-    return {
-      rookie: Math.max(96, Math.min(150, base * 0.37)),
-      bea: Math.max(92, Math.min(146, base * 0.36)),
-    };
-  }, [station]);
-
-  /**
-   * The crew stands on the apron, above the button rather than behind it: at
-   * ground level the "Start Shift" pill cut both characters off at the knee.
-   */
-  const crewLift = 78;
-
-  /**
-   * The crew flanks the *building*, not the window. On a wide screen the stage
-   * is much wider than the façade, and anchoring to the stage edges left the
-   * two of them stranded out on the grass with the firehouse marooned between.
-   */
-  const crewX = useMemo(() => {
-    if (!station) return { left: -10, right: -10 };
-    const gutter = (stage.w - station.width) / 2;
-    return {
-      left: Math.max(-10, gutter - crew.rookie * 0.52),
-      right: Math.max(-10, gutter - crew.bea * 0.52),
-    };
-  }, [crew.bea, crew.rookie, stage.w, station]);
-
   /**
    * Captain Bea does the talking (she is the voice that speaks the greeting),
-   * so the bubble hangs off her shoulder with the tail on the right. It has to
-   * thread a needle: below the room grid, because a greeting must never cover a
-   * door, and clear of both faces. So it sits at shoulder height across the bay
-   * doors — which are scenery — and stops short of each of them.
+   * so the bubble hangs off her inside shoulder with the tail on the right. It
+   * threads a needle: high enough to clear the crew's boots, low enough to stay
+   * off the room grid — a greeting must never cover a door — and stopping well
+   * short of both faces, so it lands across the bay doors, which are scenery.
    */
   const bubble = useMemo(() => {
-    if (!station) return null;
-    const last = station.tiles[station.tiles.length - 1];
-    const gridBottom = last ? last.y + last.h : station.height * 0.7;
-    /* px from the bottom of the stage to the underside of the room grid */
-    const clear = CREW_ZONE - APRON_OVERLAP + (station.height - gridBottom);
-    const width = Math.max(144, Math.min(184, stage.w * 0.46));
-    const bottom = Math.min(crewLift + crew.bea * 0.36, Math.max(72, clear - 76));
-    return { width, bottom, right: crewX.right + crew.bea * 0.66 };
-  }, [crew.bea, crewX.right, stage.w, station]);
-
-  /** the neighbouring block, sitting on the same ground line as the apron */
-  const block = useMemo(() => {
-    if (!station || stage.w < 40) return null;
-    const width = stage.w * 1.62;
+    if (!scene) return null;
+    const width = clamp(scene.W * 0.46, 148, 208);
     return {
       width,
-      left: (stage.w - width) / 2,
-      bottom: CREW_ZONE - APRON_OVERLAP + (station.height - station.apronTop) - 10,
+      bottom: scene.crewBottom + scene.crew * 0.46,
+      right: scene.crewInset + scene.crew * 0.72,
     };
-  }, [stage.w, station]);
-
-  /**
-   * The station is a scene, not a reading column, so it is capped wider than
-   * `contentWidth` — an iPad in portrait should get a bigger firehouse, not a
-   * phone-sized one floating in the middle of the glass.
-   */
-  const stageWidth = Math.min(layout.width, Math.max(layout.contentWidth, 720));
+  }, [scene]);
 
   return (
     <ScreenFrame
-      mood={evening ? 'evening' : 'day'}
-      backdrop={<TownBackdrop mood={evening ? 'evening' : 'day'} hills={240} cloudCount={4} />}
+      mood={mood}
+      safeBottom={false}
+      backdrop={<FirehouseBackdrop mood={mood} horizon={scene ? scene.road + scene.pave : 240} />}
       /*
        * No floating wordmark. It cost ~110 px of the play area and said the
        * app's name a second time, ten pixels above a station sign that already
@@ -259,108 +271,134 @@ export function FirehouseScreen() {
         />
       }
     >
-      <View style={[styles.body, { maxWidth: stageWidth }]}>
-        <View style={styles.stage} onLayout={onStage}>
-          {station ? (
-            <>
-              {/* the block behind the station: neighbour rooftops + a tree mass */}
-              {block ? <Neighbours width={block.width} style={{ left: block.left, bottom: block.bottom }} /> : null}
+      <View style={styles.stage} onLayout={onStage}>
+        {scene ? (
+          <>
+            {/* mid plane: the rest of the block, hazed, outside the station */}
+            <Neighbours
+              width={scene.W}
+              height={scene.block.height}
+              clear={scene.station.width}
+              mood={mood}
+              style={{ left: 0, bottom: scene.block.bottom }}
+            />
 
-              <Animated.View style={[styles.stationWrap, { width: station.width, height: station.height }, zoomStyle]}>
-                <StationFacade width={station.width} unlocked={unlocked} />
+            {/* near plane: footpath, kerb and the road the ramp leads down to */}
+            <Street width={scene.W} pave={scene.pave} road={scene.road} crossing={scene.crossing} mood={mood} />
 
-                {/* living details, anchored to the façade */}
-                <View style={[styles.abs, { left: station.bell.x, top: station.bell.y }]} pointerEvents="none">
-                  <Bell size={station.bell.size} brass={unlocked.includes('bell-brass')} />
-                </View>
-                <View style={[styles.abs, { left: station.flag.x, top: station.flag.y }]} pointerEvents="none">
-                  <Flag width={station.flag.width} poleHeight={station.flag.poleHeight} gold={unlocked.includes('flag-gold')} />
-                </View>
-                <View style={[styles.abs, { left: station.chimney.x, top: station.chimney.y }]} pointerEvents="none">
-                  <ChimneySmoke size={station.chimney.size} />
-                </View>
-                <View style={[styles.abs, { left: station.catWindow.x, top: station.catWindow.y }]} pointerEvents="none">
-                  <CatWindow size={station.catWindow.size} />
-                </View>
-                {station.pigeons.map((p, i) => (
-                  <View key={i} style={[styles.abs, { left: p.x, top: p.y }]} pointerEvents="none">
-                    <Pigeon size={p.size} delay={i * 700} />
-                  </View>
-                ))}
-                {station.doorLights.map((d, i) => (
-                  <View key={i} style={[styles.abs, { left: d.x, top: d.y }]} pointerEvents="none">
-                    <DoorLight w={d.w} h={d.h} phase={i * 0.5} />
-                  </View>
-                ))}
+            <Animated.View
+              style={[
+                styles.stationWrap,
+                { width: scene.station.width, height: scene.station.height, left: scene.left, bottom: scene.road + KERB },
+                zoomStyle,
+              ]}
+            >
+              <StationFacade width={scene.station.width} unlocked={unlocked} />
 
-                {/* the six doors */}
-                {ROOMS.map((room, i) => {
-                  const r = station.tiles[i];
-                  if (!r) return null;
-                  return (
-                    <View key={room.id} style={[styles.abs, { left: r.x, top: r.y }]}>
-                      <RoomTile room={room.id} label={room.label} index={i} width={r.w} height={r.h} onPress={() => enterRoom(room.href)} />
-                    </View>
-                  );
-                })}
-
-                {/* station sign */}
-                <View style={[styles.abs, styles.sign, { left: station.sign.x, top: station.sign.y, width: station.sign.w, height: station.sign.h }]} pointerEvents="none">
-                  <Text variant="h3" color={palette.navy} center numberOfLines={1} style={{ fontSize: Math.max(13, station.sign.h * 0.46) }}>
-                    STATION SPARK
-                  </Text>
-                </View>
-              </Animated.View>
-
-              {/* crew — standing on the ground in front of the apron */}
-              <View style={[styles.crewLeft, { bottom: crewLift, left: crewX.left }]} pointerEvents="none">
-                <Rookie size={crew.rookie} avatar={profile.avatar} pose="wave" emotion="happy" />
+              {/* living details, anchored to the façade */}
+              <View style={[styles.abs, { left: scene.station.bell.x, top: scene.station.bell.y }]} pointerEvents="none">
+                <Bell size={scene.station.bell.size} brass={unlocked.includes('bell-brass')} />
               </View>
-              <View style={[styles.crewRight, { bottom: crewLift - 2, right: crewX.right }]} pointerEvents="none">
-                {/* Captain Bea waits by the apron for the shift to start */}
-                <CaptainBea size={crew.bea} emotion="calm" pose="stand" bobPhase={0.45} />
+              <View style={[styles.abs, { left: scene.station.flag.x, top: scene.station.flag.y }]} pointerEvents="none">
+                <Flag width={scene.station.flag.width} poleHeight={scene.station.flag.poleHeight} gold={unlocked.includes('flag-gold')} />
               </View>
-              {bubble ? (
-                <View style={[styles.bubble, { right: bubble.right, bottom: bubble.bottom, width: bubble.width }]} pointerEvents="none">
-                  <GreetingBubble lines={greetings} maxWidth={bubble.width} tail="right" />
+              <View style={[styles.abs, { left: scene.station.chimney.x, top: scene.station.chimney.y }]} pointerEvents="none">
+                <ChimneySmoke size={scene.station.chimney.size} />
+              </View>
+              <View style={[styles.abs, { left: scene.station.catWindow.x, top: scene.station.catWindow.y }]} pointerEvents="none">
+                <CatWindow size={scene.station.catWindow.size} />
+              </View>
+              {scene.station.pigeons.map((p, i) => (
+                <View key={i} style={[styles.abs, { left: p.x, top: p.y }]} pointerEvents="none">
+                  <Pigeon size={p.size} delay={i * 700} />
                 </View>
-              ) : null}
-            </>
-          ) : null}
-        </View>
+              ))}
+              {scene.station.doorLights.map((d, i) => (
+                <View key={i} style={[styles.abs, { left: d.x, top: d.y }]} pointerEvents="none">
+                  <DoorLight w={d.w} h={d.h} phase={i * 0.5} />
+                </View>
+              ))}
 
-        {/* THE one thing to do. Nothing else on this screen is red, lifted this
-            far, or this wide — and the shift count reads as its caption rather
-            than as a fourth counter floating in the sky. */}
-        <Animated.View entering={FadeInDown.delay(140).springify().damping(17)} style={styles.ctaBlock}>
-          <Button
-            label={shiftActive ? 'Continue Shift' : 'Start Shift'}
-            size="xl"
-            tone={roles.action.primary}
-            glow
-            onPress={startShift}
-            iconRight={<ChevronRightIcon size={28} />}
-            style={styles.cta}
-            accessibilityLabel={shiftActive ? `Continue your shift. ${summary.label}` : `Start your shift. ${summary.label}`}
-          />
-          <ShiftChip label={summary.label} active={summary.active} />
-        </Animated.View>
+              {/* the six doors */}
+              {ROOMS.map((room, i) => {
+                const r = scene.station.tiles[i];
+                if (!r) return null;
+                return (
+                  <View key={room.id} style={[styles.abs, { left: r.x, top: r.y }]}>
+                    <RoomTile room={room.id} label={room.label} index={i} width={r.w} height={r.h} onPress={() => enterRoom(room.href)} />
+                  </View>
+                );
+              })}
+
+              {/* station sign */}
+              <View
+                style={[
+                  styles.abs,
+                  styles.sign,
+                  { left: scene.station.sign.x, top: scene.station.sign.y, width: scene.station.sign.w, height: scene.station.sign.h },
+                ]}
+                pointerEvents="none"
+              >
+                <Text variant="h3" color={palette.navy} center numberOfLines={1} style={{ fontSize: Math.max(13, scene.station.sign.h * 0.46) }}>
+                  STATION SPARK
+                </Text>
+              </View>
+            </Animated.View>
+
+            {/* the crew, standing on the apron at the bay mouths — each on a
+                contact ellipse, because nothing in this world floats */}
+            <View style={[styles.crew, { bottom: scene.crewBottom, left: scene.crewInset }]} pointerEvents="none">
+              <ContactShadow width={scene.crew * 0.46} style={[styles.contact, { left: scene.crew * 0.27 }]} />
+              <Rookie size={scene.crew} avatar={profile.avatar} pose="wave" emotion="happy" />
+            </View>
+            <View style={[styles.crew, { bottom: scene.crewBottom, right: scene.crewInset }]} pointerEvents="none">
+              <ContactShadow width={scene.crew * 0.44} style={[styles.contact, { left: scene.crew * 0.28 }]} />
+              {/* Captain Bea waits by the apron for the shift to start */}
+              <CaptainBea size={scene.crew} emotion="calm" pose="stand" bobPhase={0.45} />
+            </View>
+            {bubble ? (
+              <View style={[styles.bubble, { right: bubble.right, bottom: bubble.bottom, width: bubble.width }]} pointerEvents="none">
+                <GreetingBubble lines={greetings} maxWidth={bubble.width} tail="right" />
+              </View>
+            ) : null}
+
+            {/* THE one thing to do — alone on the road, where nothing else on
+                the screen is red, glowing, or this wide, and the shift count
+                reads as its caption rather than a fourth floating counter. */}
+            <Animated.View
+              entering={FadeInDown.delay(140).springify().damping(17)}
+              style={[styles.ctaBlock, { bottom: insets.bottom + Math.max(12, (scene.road - insets.bottom - CTA_BLOCK) * 0.42) }]}
+            >
+              <Button
+                label={shiftActive ? 'Continue Shift' : 'Start Shift'}
+                size="xl"
+                tone={roles.action.primary}
+                glow
+                onPress={startShift}
+                iconRight={<ChevronRightIcon size={28} />}
+                style={styles.cta}
+                accessibilityLabel={shiftActive ? `Continue your shift. ${summary.label}` : `Start your shift. ${summary.label}`}
+              />
+              <ShiftChip label={summary.label} active={summary.active} />
+            </Animated.View>
+          </>
+        ) : null}
       </View>
     </ScreenFrame>
   );
 }
 
 const styles = StyleSheet.create({
-  body: { flex: 1, width: '100%', alignSelf: 'center', paddingHorizontal: spacing.sm },
-  stage: { flex: 1, alignItems: 'center', justifyContent: 'flex-end', marginTop: 72 },
-  stationWrap: { position: 'absolute', bottom: CREW_ZONE - APRON_OVERLAP, alignSelf: 'center' },
+  stage: { flex: 1, width: '100%', overflow: 'hidden' },
+  stationWrap: { position: 'absolute' },
   abs: { position: 'absolute' },
   sign: { alignItems: 'center', justifyContent: 'center' },
-  crewLeft: { position: 'absolute', alignItems: 'flex-start', zIndex: 2 },
+  crew: { position: 'absolute', zIndex: 2 },
+  /* drawn before the rig, so the ellipse is under the boots, never over them */
+  contact: { position: 'absolute', bottom: 1 },
   bubble: { position: 'absolute', alignItems: 'flex-end', zIndex: 3 },
-  crewRight: { position: 'absolute', flexDirection: 'row', alignItems: 'flex-end', gap: 0, zIndex: 2 },
-  ctaBlock: { alignItems: 'center', gap: spacing.xs, paddingTop: spacing.xs, paddingBottom: spacing.xs },
-  cta: { minWidth: 236, maxWidth: 300, alignSelf: 'center' },
+  ctaBlock: { position: 'absolute', left: 0, right: 0, alignItems: 'center', gap: spacing.xs, zIndex: 4 },
+  cta: { minWidth: 236, maxWidth: 320, alignSelf: 'center' },
   grownUps: {
     flexDirection: 'row',
     alignItems: 'center',
