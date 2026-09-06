@@ -23,7 +23,7 @@ import {
   Modal,
   Panel,
   ProgressBar,
-  PromptBanner,
+  TaskBar,
   RadioCard,
   RecipeCard,
   ScreenFrame,
@@ -510,7 +510,13 @@ export default function KitGallery() {
         </Section>
 
         <Section title="Mini-game furniture">
-          <PromptBanner title="Put Out 6 Flames!" subtitle="Aim the hose and hold to spray." es="¡Apaga 6 llamas!" />
+          {/* the one instruction area every activity shares */}
+          <TaskBar
+            task="Put Out 6 Flames!"
+            detail="Aim the hose and hold to spray."
+            es="¡Apaga 6 llamas!"
+            progress={{ done: 2, total: 5 }}
+          />
           <CountStrip current={3} total={6} icon="flame" invert label="flames out" />
           <View style={styles.row}>
             <AnswerTile label="18" index={0} />

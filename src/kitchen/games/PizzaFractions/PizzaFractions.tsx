@@ -161,13 +161,14 @@ export function PizzaFractions({ challenge, ageBand, onComplete, onEvent, compac
             ? `${challenge.cutInto} slices for ${among}. How many each?`
             : `Share among ${among} crew members`;
 
+  /* Every line names the gesture *and* the tap that always works instead. */
   const detail =
     phase === 'roll'
-      ? 'Swipe the rolling pin back and forth across the dough.'
+      ? 'Swipe the rolling pin across the dough — or tap it.'
       : phase === 'top'
         ? 'Drag a bowl onto the pizza — or tap a slice.'
         : phase === 'cut'
-          ? 'Swipe the cutter straight across the pizza.'
+          ? 'Swipe the cutter across the pizza — or tap it.'
           : phase === 'share'
             ? 'Drag a slice to a plate — or just tap the plate.'
             : undefined;

@@ -77,7 +77,7 @@ export function RecipeScale({ challenge, onComplete, onEvent, compact }: MiniGam
     phase === 'set'
       ? 'Drag a number up or down, or tap + and −.'
       : phase === 'stir'
-        ? 'Swirl your finger round the pot to stir it.'
+        ? 'Swirl your finger round the pot — or tap it.'
         : undefined;
 
   /**
@@ -498,7 +498,9 @@ const styles = StyleSheet.create({
   line: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.xs,
+    /* Tight gaps, because every pixel here belongs to the ingredient name:
+       "strawberries" was breaking across two lines in the middle of the word. */
+    gap: spacing.xxs,
     backgroundColor: roles.surface.card,
     borderRadius: radii.tile,
     paddingVertical: 6,
@@ -509,10 +511,13 @@ const styles = StyleSheet.create({
   },
   lineDone: { borderColor: palette.leafGreen, backgroundColor: palette.mint },
   lineText: { flex: 1, minWidth: 84 },
-  lineName: { fontSize: 16, lineHeight: 19 },
+  lineName: { fontSize: 15, lineHeight: 18 },
   lineEs: { fontSize: 12, lineHeight: 14 },
   lineWas: { fontSize: 11, lineHeight: 13 },
-  value: { minWidth: 56, height: 56, alignItems: 'center', justifyContent: 'center' },
+  /* 44 wide, not 56: the extra room went to the ingredient name, which was
+     breaking "mushrooms" across two lines mid-word. The drag target is still a
+     full 56 tall, and the two 56 × 56 steppers beside it do the same job. */
+  value: { minWidth: 40, height: 56, alignItems: 'center', justifyContent: 'center' },
   stepper: {
     width: 56,
     height: 56,

@@ -1,4 +1,3 @@
-export * from './PromptBanner';
 export * from './CountStrip';
 export * from './StarRow';
 export * from './AnswerTile';

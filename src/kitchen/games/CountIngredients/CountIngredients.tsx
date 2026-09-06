@@ -330,7 +330,7 @@ export function CountIngredients({ challenge, onComplete, onEvent, compact }: Mi
           ? 'Drag what the recipe asks for — no more, no less.'
           : blended
             ? undefined
-            : 'Swirl your finger round and round the jug.'
+            : 'Swirl your finger round the jug — or tap it.'
       }
       compact={compact}
       onReplay={phase === 'fill' ? readList : undefined}
