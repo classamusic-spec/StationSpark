@@ -157,6 +157,9 @@ const IGNORED = [
   /GL Driver Message/i,
   /\[react-native-skia\] Sk\w+\.\w+\(\) is deprecated/i,
   /WebGL/i,
+  // @react-three/fiber's own internals, not our scenes — nothing to fix here,
+  // and left unmuted it hides real warnings behind a permanent one
+  /THREE\.Clock: This module has been deprecated/i,
 ];
 const interesting = (text) => !IGNORED.some((re) => re.test(text));
 
@@ -1161,8 +1164,10 @@ async function runShift() {
   const row = { name: 'shift flow', ok: false, note: '', issues };
   try {
     await page.goto(`${base}/`, { waitUntil: 'domcontentloaded', timeout: 45000 });
-    await byLabel(page, 'Start your shift').first().waitFor({ state: 'attached', timeout: 30000 });
-    await tap(page, byLabel(page, 'Start your shift'), { after: 1600 });
+    /* the label carries the board summary too ("Start your shift. 3 calls
+       waiting"), so match on the prefix rather than the whole string */
+    await byLabel(page, 'Start your shift', false).first().waitFor({ state: 'attached', timeout: 30000 });
+    await tap(page, byLabel(page, 'Start your shift', false).first(), { after: 1600 });
 
     await page.getByText('Dispatch', { exact: true }).first().waitFor({ state: 'attached', timeout: 15000 });
     const slips = page.locator('[role="button"][aria-label*="."]');
@@ -1190,7 +1195,7 @@ async function runShift() {
     // QUIT must come back cleanly
     await tap(page, byLabel(page, 'Leave the mission'), { after: 500 });
     await tap(page, byLabel(page, 'Leave for now'), { after: 1600 });
-    const backOnBoard = (await page.getByText('Dispatch', { exact: true }).count()) > 0 || (await byLabel(page, 'Start your shift').count()) > 0 || (await byLabel(page, 'Continue your shift').count()) > 0;
+    const backOnBoard = (await page.getByText('Dispatch', { exact: true }).count()) > 0 || (await byLabel(page, 'Start your shift', false).count()) > 0 || (await byLabel(page, 'Continue your shift', false).count()) > 0;
     if (!backOnBoard) throw new Error('QUIT did not return to the board or the station');
 
     // a second play of the same mission must work
