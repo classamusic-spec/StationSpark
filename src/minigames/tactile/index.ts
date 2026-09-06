@@ -13,6 +13,7 @@ import { LadderBuilder } from './LadderBuilder/LadderBuilder';
 import { NumberLadder } from './NumberLadder/NumberLadder';
 import { RescuePets } from './RescuePets/RescuePets';
 import { BuildBarrier } from './BuildBarrier/BuildBarrier';
+import { TruckRun } from './TruckRun/TruckRun';
 
 export const tactileGames: Registry = {
   'hose-hero': {
@@ -78,6 +79,19 @@ export const tactileGames: Registry = {
       yard: 'training',
       seconds: 100,
       icon: 'cat',
+    },
+  },
+  'truck-run': {
+    component: TruckRun,
+    meta: {
+      kind: 'truck-run',
+      title: 'Truck Run',
+      titleEs: 'Ruta del Camión',
+      blurb: 'Steer round the cones, hit the ramps, and drive through the gate with the answer.',
+      subjects: ['math', 'logic', 'reading'],
+      yard: 'training',
+      seconds: 100,
+      icon: 'truck',
     },
   },
   'build-barrier': {
