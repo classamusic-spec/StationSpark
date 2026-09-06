@@ -48,7 +48,32 @@ export function TownBackdrop({
           actually reads instead of hiding behind the trees (critique #5) */}
       {skyline ? <TownSkyline mood={mood} bottom={hills + 26} height={116} opacity={evening ? 0.72 : 0.88} /> : null}
       {birds ? <Birds count={2} top={92} periodMs={20000} /> : null}
-      {trees ? <TreeLine bottom={hills - 46} height={96} count={7} tone={evening ? 'dark' : 'mid'} /> : null}
+      {/*
+        A treeline standing on a hill has to satisfy two things at once, and it
+        used to satisfy neither.
+
+        `Hills` draws over it, so the trees' feet are hidden only where the far
+        ridge is above them — and that ridge undulates between 0.32h and 0.86h
+        above the bottom. The trees were pinned at `hills - 46`, level with the
+        ridge's highest peaks, so everywhere but those peaks they stood on open
+        sky with their contact shadows beneath them: on the home screen, a row
+        of bare poles apparently reflected in a lake.
+
+        So root them below the ridge's *lowest* dip (0.3h) — and then size them
+        to clear its *highest* peak, or they simply vanish behind the hill,
+        which is what merely lowering them did on a tablet. At 0.52h the band
+        reaches ~0.95h: every tree is planted in green, and the canopies break
+        the ridge line by a different amount along its length, which is what
+        gives the horizon its depth.
+      */}
+      {trees ? (
+        <TreeLine
+          bottom={Math.round(hills * 0.3)}
+          height={Math.round(hills * 0.52)}
+          count={7}
+          tone={evening ? 'dark' : 'mid'}
+        />
+      ) : null}
       <Hills height={hills} mood={mood} />
     </View>
   );
