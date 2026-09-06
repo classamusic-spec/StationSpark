@@ -19,7 +19,6 @@ export const SHEEN = 'rgba(255,255,255,0.34)';
 
 export const ROAD = {
   tarmac: '#7C8AA6',
-  tarmacDeep: '#6E7B95',
   paint: 'rgba(255,255,255,0.62)',
   kerbFace: '#E7ECF7',
   kerbLip: '#BFCADE',
