@@ -67,10 +67,15 @@ const LockerGlyph = ({ color }: { color: string }) => {
   );
 };
 
+/**
+ * One name per place. "Progress" and "Badges" used to be two labels for
+ * `/badges`, and "Parents" and "For Grown-Ups" two labels for `/grownups`;
+ * a child cannot learn a map whose rooms are named twice.
+ */
 const TABS: { id: BottomTab; label: string; href: '/badges' | '/grownups' | '/locker'; glyph: (c: string) => React.ReactNode; color: string }[] = [
-  { id: 'progress', label: 'Progress', href: '/badges', glyph: (c) => <StarGlyph color={c} />, color: palette.safetyYellow },
-  { id: 'parents', label: 'Parents', href: '/grownups', glyph: (c) => <PeopleGlyph color={c} />, color: '#4FA3F7' },
+  { id: 'progress', label: 'Badges', href: '/badges', glyph: (c) => <StarGlyph color={c} />, color: palette.safetyYellow },
   { id: 'locker', label: 'Locker', href: '/locker', glyph: (c) => <LockerGlyph color={c} />, color: palette.leafGreen },
+  { id: 'parents', label: 'Grown-Ups', href: '/grownups', glyph: (c) => <PeopleGlyph color={c} />, color: '#4FA3F7' },
 ];
 
 /** The soft halo that breathes behind the active tab's icon. */

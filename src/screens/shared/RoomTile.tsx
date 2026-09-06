@@ -9,7 +9,7 @@ import { Text } from '@/ui';
 import { useLoop, usePulse } from '@/hooks';
 import { HIGHLIGHT, SHADE, SHADOW_FILL, SHADOW_OPACITY, shadowRy } from '@/world/tone';
 
-export type RoomId = 'dispatch' | 'map' | 'training' | 'kitchen' | 'garage' | 'badges';
+export type RoomId = 'dispatch' | 'map' | 'training' | 'kitchen' | 'garage' | 'badges' | 'locker';
 
 /* ── room icons: each one is alive ────────────────────────────────── */
 
@@ -227,6 +227,48 @@ function BadgesIcon({ size }: { size: number }) {
   );
 }
 
+/** The gear closet: two steel doors, one ajar with a helmet inside. */
+const LockerBody = memo(function LockerBody({ s }: { s: number }) {
+  return (
+    <Svg width={s} height={s} viewBox="0 0 48 48">
+      <Shadow rx={16} />
+      {/* the well behind the open door */}
+      <Rect x={5} y={6} width={38} height={36} rx={5} fill="#2E3C74" />
+      {/* left door, standing open — the helmet on its hook shows through */}
+      <Path d="M28 12 q 3.6 0 5.6 1.8 q 2 1.8 2 5.2 h -15.2 q 0 -3.4 2 -5.2 Q 24.4 12 28 12 z" fill={palette.engineRedDark} />
+      <Path d="M28 13 q 3 0 4.8 1.6 q 1.6 1.6 1.6 4.4 h -12.8 q 0 -2.8 1.6 -4.4 Q 25 13 28 13 z" fill={palette.engineRed} />
+      <Rect x={19.4} y={18.4} width={17.2} height={3.4} rx={1.7} fill={palette.engineRedDark} />
+      <Path d="M24 14.4 q 2 -0.6 4 -0.4 q -2.6 0.8 -3.4 2.4 z" fill={HIGHLIGHT} />
+      {/* right door, closed */}
+      <Rect x={24.4} y={5} width={18.6} height={37} rx={5} fill={SHADE} />
+      <Rect x={24.4} y={4} width={18.6} height={37} rx={5} fill="#C9D2E6" />
+      <Rect x={26.2} y={5.4} width={3.4} height={33} rx={1.7} fill={HIGHLIGHT} />
+      <Rect x={29} y={8} width={9} height={1.8} rx={0.9} fill="#9AA6C4" />
+      <Rect x={29} y={11.2} width={9} height={1.8} rx={0.9} fill="#9AA6C4" />
+      <Rect x={29} y={14.4} width={9} height={1.8} rx={0.9} fill="#9AA6C4" />
+      <Rect x={38.4} y={21} width={2} height={6} rx={1} fill={palette.white} opacity={0.9} />
+      {/* the frame */}
+      <Rect x={4} y={4} width={5.2} height={38} rx={2.6} fill="#C9D2E6" />
+      <Rect x={4} y={4} width={2} height={38} rx={1} fill={HIGHLIGHT} />
+      <Rect x={4} y={40.4} width={39} height={3.2} rx={1.6} fill="#9AA6C4" />
+    </Svg>
+  );
+});
+
+function LockerIcon({ size }: { size: number }) {
+  const glint = useLoop(3800);
+  const style = useAnimatedStyle(() => {
+    const p = glint.value;
+    return { opacity: p > 0.7 ? (1 - p) / 0.3 : p < 0.08 ? p / 0.08 : 1, transform: [{ translateX: (p * 1.9 - 0.5) * size }, { rotate: '18deg' }] };
+  });
+  return (
+    <View style={[{ width: size, height: size }, styles.clip]}>
+      <LockerBody s={size} />
+      <Animated.View style={[styles.abs, { top: -size * 0.2, width: size * 0.18, height: size * 1.4, backgroundColor: '#FFFFFF', opacity: 0 }, style]} pointerEvents="none" />
+    </View>
+  );
+}
+
 const ICONS: Record<RoomId, (p: { size: number }) => React.ReactElement> = {
   dispatch: DispatchIcon,
   map: MapIcon,
@@ -234,6 +276,7 @@ const ICONS: Record<RoomId, (p: { size: number }) => React.ReactElement> = {
   kitchen: KitchenIcon,
   garage: GarageIcon,
   badges: BadgesIcon,
+  locker: LockerIcon,
 };
 
 /* ── the tile ─────────────────────────────────────────────────────── */

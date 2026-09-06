@@ -10,7 +10,12 @@ import type { ToppingId, VocabWord } from '@/learning/types';
 
 const food = (id: string, en: string, es: string, icon: string): VocabWord => ({ id, en, es, icon, category: 'food' });
 
-/** tomate · queso · leche · agua · manzana · pan · huevo · harina · mantequilla · fresa · plátano · champiñón · pimiento · aceituna */
+/**
+ * tomate · queso · leche · agua · manzana · pan · huevo · harina · mantequilla ·
+ * fresa · plátano · champiñón · pimiento · aceituna
+ * …and the market half of the room: cebolla · zanahoria · papa · maíz · sandía ·
+ * limón · uva · cilantro · arroz · sal · miel · jugo · tortilla
+ */
 export const foodWords = {
   tomato: food('tomato', 'tomato', 'tomate', 'tomato'),
   cheese: food('cheese', 'cheese', 'queso', 'cheese'),
@@ -31,6 +36,20 @@ export const foodWords = {
   taco: food('taco', 'taco', 'taco', 'taco'),
   pizza: food('pizza', 'pizza', 'pizza', 'pizza'),
   soup: food('soup', 'soup', 'sopa', 'soup'),
+  /* ---- the pot, the jug and the market stall ---- */
+  onion: food('onion', 'onion', 'cebolla', 'onion'),
+  carrot: food('carrot', 'carrot', 'zanahoria', 'carrot'),
+  potato: food('potato', 'potato', 'papa', 'potato'),
+  corn: food('corn', 'corn', 'maíz', 'corn'),
+  rice: food('rice', 'rice', 'arroz', 'rice'),
+  lemon: food('lemon', 'lemon', 'limón', 'lemon'),
+  grape: food('grape', 'grape', 'uva', 'grape'),
+  watermelon: food('watermelon', 'watermelon', 'sandía', 'watermelon'),
+  cilantro: food('cilantro', 'cilantro', 'cilantro', 'cilantro'),
+  salt: food('salt', 'salt', 'sal', 'salt'),
+  honey: food('honey', 'honey', 'miel', 'honey'),
+  juice: food('juice', 'juice', 'jugo', 'juice'),
+  tortilla: food('tortilla', 'tortilla', 'tortilla', 'tortilla'),
 } as const satisfies Record<string, VocabWord>;
 
 export type FoodId = keyof typeof foodWords;
@@ -80,4 +99,11 @@ export const recipeGlyph: Record<string, string> = {
   smoothie: 'strawberry',
   soup: 'soup',
   bread: 'bread',
+  quesadillas: 'quesadilla',
+  'fruit-salad': 'grape',
+  lemonade: 'lemon',
+  'garden-salsa': 'tomato',
+  'veggie-caldo': 'carrot',
+  'agua-fresca': 'watermelon',
+  esquites: 'corn',
 };

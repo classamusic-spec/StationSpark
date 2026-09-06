@@ -1,7 +1,7 @@
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
-import { palette, radii, shadows, spacing } from '@/theme';
+import { palette, radii, roles, spacing } from '@/theme';
 import { Text } from '@/ui';
 import { useCountUp } from '@/hooks';
 import { mix } from '@/characters/rig/palettes';
@@ -41,7 +41,7 @@ export function StatTile({ value, label, color, glyph, delayMs = 0, wide = false
 
   if (wide) {
     return (
-      <Animated.View entering={FadeInDown.delay(delayMs).springify().damping(16)} style={[styles.tile, styles.row, shadows.soft]}>
+      <Animated.View entering={FadeInDown.delay(delayMs).springify().damping(16)} style={[styles.tile, styles.row]}>
         {glyphBox}
         <View style={styles.text}>
           <Text variant="h1" color={palette.navy} style={styles.number}>
@@ -56,7 +56,7 @@ export function StatTile({ value, label, color, glyph, delayMs = 0, wide = false
   }
 
   return (
-    <Animated.View entering={FadeInDown.delay(delayMs).springify().damping(16)} style={[styles.tile, styles.stack, shadows.soft]}>
+    <Animated.View entering={FadeInDown.delay(delayMs).springify().damping(16)} style={[styles.tile, styles.stack]}>
       <View style={styles.top}>
         {glyphBox}
         <Text variant="h1" color={palette.navy} style={styles.number}>
@@ -76,6 +76,9 @@ const styles = StyleSheet.create({
   tile: {
     backgroundColor: palette.white,
     borderRadius: radii.card,
+    /* a number you read, not a button you press: no lift, one hairline */
+    borderWidth: 1,
+    borderColor: roles.border.hairline,
     padding: spacing.sm,
     flexGrow: 1,
     flexBasis: '46%',

@@ -70,7 +70,8 @@ export function ProgressScreen() {
    *    hang side by side, then the badge wall and the shop run full width ── */
   const twoCol = layout.width >= 700;
   const maxWidth = twoCol ? Math.min(layout.width - spacing.lg * 2, 940) : layout.contentWidth;
-  const logoSize = twoCol ? 190 : Math.min(layout.s(150), 176);
+  /* The bottom bar already says where you are; the mark just needs to greet. */
+  const logoSize = twoCol ? 132 : Math.min(layout.s(104), 120);
   const logoHeight = logoSize * 0.86 + 23;
   const wallTop = insets.top + 6 + logoHeight + 14;
   const fullWidth = maxWidth - spacing.md * 2;
@@ -139,7 +140,9 @@ export function ProgressScreen() {
 
   const ranksBoard = (
     <Animated.View entering={FadeInDown.delay(stagger.card * 3).springify().damping(17)}>
-      <StationBoard title="Your Ranks" meta={`Level ${rank.level} of ${rank.levels}`} plain>
+      {/* The name badge above already carries the level and the XP bar, so this
+          board names only what comes next — one progress story, not two. */}
+      <StationBoard title="Your Ranks" meta={rank.nextName ? `Next: ${rank.nextName}` : 'Top rank!'} plain>
         <Text variant="small" color={palette.navySoft}>
           Every mission, recipe and practice climbs you one rung closer to Community Hero.
         </Text>
@@ -200,17 +203,19 @@ export function ProgressScreen() {
         {twoCol ? (
           <>
             <View style={styles.columns}>
-              <View style={styles.column}>{progressBoard}</View>
               <View style={styles.column}>{ranksBoard}</View>
+              <View style={styles.column}>{progressBoard}</View>
             </View>
             {badgesBoard}
             {shopBoard}
           </>
         ) : (
           <>
-            {progressBoard}
-            {badgesBoard}
+            {/* rank first, then the wall the screen is named for, then the
+                supporting numbers */}
             {ranksBoard}
+            {badgesBoard}
+            {progressBoard}
             {shopBoard}
           </>
         )}

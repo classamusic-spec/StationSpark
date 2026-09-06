@@ -366,6 +366,25 @@ export function validateChallenge(challenge: Challenge): string[] {
       break;
     }
 
+    case 'soup-pot': {
+      if (challenge.steps.length < 2) bad('a pot needs at least two things in it');
+      if (challenge.steps.some((s) => s.count < 1)) bad('every step must put something in');
+      if (uniqueCount(challenge.steps.map((s) => s.item.id)) !== challenge.steps.length) {
+        bad('the same ingredient twice, so the order is ambiguous');
+      }
+      if (challenge.steps.some((s) => s.item.en.trim().length === 0 || s.item.es.trim().length === 0)) {
+        bad('an ingredient is missing a translation');
+      }
+      if (uniqueCount(challenge.extras.map((e) => e.id)) !== challenge.extras.length) bad('duplicate extras');
+      const inPot = new Set(challenge.steps.map((s) => s.item.id));
+      if (challenge.extras.some((e) => inPot.has(e.id))) bad('an extra is also in the soup');
+      if (challenge.askTotal !== undefined) {
+        const total = challenge.steps.reduce((sum, s) => sum + s.count, 0);
+        if (challenge.askTotal !== total) bad('askTotal is not how many pieces go in the pot');
+      }
+      break;
+    }
+
     case 'recipe-scale': {
       if (challenge.serves < 1 || challenge.eating < 1) bad('serves and eating must be positive');
       if (challenge.lines.length === 0) bad('no ingredients to scale');

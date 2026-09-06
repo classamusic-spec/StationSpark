@@ -31,6 +31,7 @@ import { generateRescuePets } from './rescue-pets';
 import { generateRescueRoute } from './rescue-route';
 import { generateShapeBuilder } from './shape-builder';
 import { generateSignals } from './signals';
+import { generateSoupPot } from './soup-pot';
 import { generateSprayPattern } from './spray-pattern';
 import { generateVocabTap } from './vocab-tap';
 import { generateWaterTank } from './water-tank';
@@ -57,6 +58,7 @@ export * from './rescue-pets';
 export * from './rescue-route';
 export * from './shape-builder';
 export * from './signals';
+export * from './soup-pot';
 export * from './spray-pattern';
 export * from './vocab-tap';
 export * from './water-tank';
@@ -88,6 +90,7 @@ export const generators: { [K in ChallengeKind]: ChallengeGenerator<K> } = {
   'count-ingredients': generateCountIngredients,
   'divide-share': generateDivideShare,
   'recipe-scale': generateRecipeScale,
+  'soup-pot': generateSoupPot,
 };
 
 export const challengeKinds = Object.keys(generators) as ChallengeKind[];

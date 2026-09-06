@@ -389,6 +389,26 @@ export interface RecipeScaleChallenge {
   lines: { item: VocabWord; amount: number; scaled: number }[];
 }
 
+/**
+ * SOUP POT — the pot cooks in an ORDER, not a set.
+ *
+ * `count-ingredients` asks "is the right stuff in the bowl?" and does not care
+ * how you got there. A pot does: the onions go in before the potatoes, and you
+ * put in two of them before you move on. So `steps` is a sequence, and the
+ * child works through it one entry at a time.
+ */
+export interface SoupPotChallenge {
+  kind: 'soup-pot';
+  /** what goes in the pot, in the order the recipe says */
+  steps: { item: VocabWord; count: number }[];
+  /** food on the counter that belongs to some other dish */
+  extras: VocabWord[];
+  /** Captain Bea reads the order in Spanish first */
+  spokenEs?: boolean;
+  /** band C follow-up: "how many pieces went in altogether?" = the sum of the counts */
+  askTotal?: number;
+}
+
 export type Challenge =
   | HoseHeroChallenge
   | WaterTankChallenge
@@ -414,7 +434,8 @@ export type Challenge =
   | MeasurePourChallenge
   | CountIngredientsChallenge
   | DivideShareChallenge
-  | RecipeScaleChallenge;
+  | RecipeScaleChallenge
+  | SoupPotChallenge;
 
 export type ChallengeKind = Challenge['kind'];
 export type ChallengeOf<K extends ChallengeKind> = Extract<Challenge, { kind: K }>;
@@ -457,4 +478,5 @@ export const challengeSkills: Record<ChallengeKind, SkillTag[]> = {
   'count-ingredients': ['counting', 'vocabulary-es'],
   'divide-share': ['division'],
   'recipe-scale': ['multiplication', 'fraction-equivalent'],
+  'soup-pot': ['sequencing', 'counting', 'addition', 'vocabulary-es'],
 };

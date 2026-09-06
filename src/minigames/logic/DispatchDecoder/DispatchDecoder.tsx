@@ -1,14 +1,15 @@
 import React, { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
-import Animated, { FadeIn, FadeInDown, useAnimatedStyle, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
+import Animated, { FadeInDown, useAnimatedStyle, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
 import type { SceneId } from '@/learning/types';
 import type { MiniGameProps } from '@/minigames/types';
 import { useMiniGameSession } from '@/minigames/useMiniGameSession';
-import { hit, palette, radii, shadows, spacing } from '@/theme';
+import { hit, palette, radii, roles, spacing } from '@/theme';
+import { useShowTranslation } from '@/hooks';
 import { sfx } from '@/services/audio';
 import { haptics } from '@/services/haptics';
 import { speech } from '@/services/speech';
-import { AnswerTile, Button, SpeakerIcon, Text, TrayRow, VocabIcon } from '@/ui';
+import { AnswerTile, Text, TrayRow, VocabIcon } from '@/ui';
 import type { AnswerState } from '@/ui/kit/AnswerTile';
 
 import { Stage } from '@/world';
@@ -16,7 +17,7 @@ import { SceneCrew } from '@/world/scenes';
 import { GameFrame } from '../shared/GameFrame';
 import { useGameLayout } from '../shared/layout';
 import { useHintLadder } from '../shared/useHintLadder';
-import { RadioBody, SceneBuilding, radioLcdRect } from '../shared/art/Props';
+import { SceneBuilding } from '../shared/art/Props';
 import { sceneLabel } from '../shared/labels';
 
 const SCENE_IDS: SceneId[] = [
@@ -70,9 +71,12 @@ const TITLES = {
   sentence: 'Read the call',
 } as const;
 
+const HOW = 'Listen to the radio, then tap the answer.';
+
 export function DispatchDecoder({ challenge, ageBand, onComplete, onEvent, compact }: MiniGameProps<'dispatch-decoder'>) {
   const session = useMiniGameSession('dispatch-decoder', onComplete, onEvent);
   const layout = useGameLayout({ compact });
+  const showEs = useShowTranslation();
   const [state, dispatch] = useReducer(reducer, { phase: 'listening', picked: null, misses: 0 });
   const [chars, setChars] = useState(0);
   const hintLadder = useHintLadder(state.misses, session.hint);
@@ -95,11 +99,14 @@ export function DispatchDecoder({ challenge, ageBand, onComplete, onEvent, compa
     return () => clearInterval(id);
   }, [message]);
 
+  /*
+   * The call is SPOKEN here and PRINTED on the radio — once each. It used to be
+   * raised as a `say` event too, which drew a dialogue card underneath the
+   * radio repeating the passage word for word and covering the replay buttons.
+   */
   useEffect(() => {
     const t = setTimeout(() => speech.say(message, { speaker: 'bea' }), 380);
-    session.say('bea', message, challenge.messageEs);
     return () => clearTimeout(t);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [message]);
 
   const revealAll = useCallback(() => {
@@ -108,15 +115,16 @@ export function DispatchDecoder({ challenge, ageBand, onComplete, onEvent, compa
     sfx.play('tap-soft');
   }, [message.length]);
 
-  const replay = useCallback(
-    (lang: 'en' | 'es') => {
-      sfx.play('radio');
-      haptics.tap();
-      const text = lang === 'es' ? (challenge.messageEs ?? message) : message;
-      speech.say(text, { speaker: 'bea', lang });
-    },
-    [challenge.messageEs, message],
-  );
+  /** The task bar's hear-it-again: the call, then the Spanish if it is shown. */
+  const replay = useCallback(() => {
+    sfx.play('radio');
+    haptics.tap();
+    revealAll();
+    speech.say(message, { speaker: 'bea' });
+    if (showEs && challenge.messageEs) {
+      setTimeout(() => speech.say(challenge.messageEs ?? '', { speaker: 'bea', lang: 'es' }), 2200);
+    }
+  }, [challenge.messageEs, message, revealAll, showEs]);
 
   const choose = useCallback(
     (option: string) => {
@@ -144,11 +152,11 @@ export function DispatchDecoder({ challenge, ageBand, onComplete, onEvent, compa
 
   /* LCD text, with the key word underlined once the hint appears */
   const shown = message.slice(0, chars);
-  const glow = useSharedValue(0.75);
+  const glow = useSharedValue(0.8);
   useEffect(() => {
     glow.value = withRepeat(withTiming(1, { duration: 1400 }), -1, true);
   }, [glow]);
-  const lcdStyle = useAnimatedStyle(() => ({ opacity: glow.value }));
+  const lampStyle = useAnimatedStyle(() => ({ opacity: glow.value }));
 
   const lcdParts = useMemo(() => {
     if (hintLadder.level === 0) return null;
@@ -161,8 +169,8 @@ export function DispatchDecoder({ challenge, ageBand, onComplete, onEvent, compa
     };
   }, [challenge.correct, hintLadder.level, message]);
 
-  const radioWidth = Math.min(layout.boxWidth - spacing.md * 2, layout.s(320));
-  const lcd = radioLcdRect(radioWidth);
+  const panelWidth = Math.min(layout.boxWidth - spacing.md * 2, layout.s(360));
+  const lcdSize = layout.s(ageBand === 'A' ? 21 : 19);
 
   const tileState = (option: string): AnswerState => {
     if (state.phase === 'solved') return option === challenge.correct ? 'correct' : 'disabled';
@@ -179,12 +187,14 @@ export function DispatchDecoder({ challenge, ageBand, onComplete, onEvent, compa
         : `Read it again — the answer is “${challenge.correct}”.`;
 
   const scene = challenge.scene;
+  const stacked = challenge.mode === 'sentence';
 
   return (
     <GameFrame
       title={TITLES[challenge.mode]}
-      subtitle={ageBand === 'A' ? undefined : 'Listen to the radio, then tap the answer.'}
+      subtitle={HOW}
       compact={compact}
+      onReplay={replay}
       backdrop={
         <>
           <Stage variant="radio-room" groundHeight={158} />
@@ -193,104 +203,107 @@ export function DispatchDecoder({ challenge, ageBand, onComplete, onEvent, compa
       }
       hint={{ text: hintText, visible: hintLadder.showBubble, onDismiss: hintLadder.dismiss }}
       tray={
-        <View style={styles.tray}>
-          <TrayRow>
-            {challenge.options.map((option, i) => {
-              const sceneId = challenge.mode === 'location' ? asScene(option) : null;
-              return (
-                <AnswerTile
-                  key={option}
-                  index={i}
-                  state={tileState(option)}
-                  size={challenge.mode === 'sentence' ? 'md' : 'lg'}
-                  onPress={() => choose(option)}
-                  accessibilityLabel={option}
-                  label={challenge.mode === 'sentence' ? option : undefined}
-                >
-                  {challenge.mode === 'address' ? (
-                    <View style={styles.addressTile}>
-                      <SceneBuilding
-                        scene={scene ?? 'apartments'}
-                        size={layout.s(56)}
-                        tint={[palette.engineRed, palette.waterCyanDark, palette.leafGreen, palette.purple][i % 4]}
-                      />
-                      <View style={styles.plate}>
-                        <Text variant="h3">{option}</Text>
-                      </View>
+        <TrayRow style={styles.options}>
+          {challenge.options.map((option, i) => {
+            const sceneId = challenge.mode === 'location' ? asScene(option) : null;
+            return (
+              <AnswerTile
+                key={option}
+                index={i}
+                state={tileState(option)}
+                size={stacked ? 'sm' : 'lg'}
+                style={stacked ? styles.optionRow : undefined}
+                onPress={() => choose(option)}
+                accessibilityLabel={option}
+                label={stacked ? option : undefined}
+              >
+                {challenge.mode === 'address' ? (
+                  <View style={styles.addressTile}>
+                    <SceneBuilding
+                      scene={scene ?? 'apartments'}
+                      size={layout.s(56)}
+                      tint={[palette.engineRed, palette.waterCyanDark, palette.leafGreen, palette.purple][i % 4]}
+                    />
+                    <View style={styles.plate}>
+                      <Text variant="h3">{option}</Text>
                     </View>
-                  ) : challenge.mode === 'location' ? (
-                    <View style={styles.addressTile}>
-                      {sceneId ? (
-                        <SceneBuilding scene={sceneId} size={layout.s(56)} />
-                      ) : (
-                        <VocabIcon id={option.toLowerCase().replace(/\s+/g, '-')} size={layout.s(52)} />
-                      )}
-                      <Text variant="tiny" center numberOfLines={1}>
-                        {sceneId ? sceneLabel[sceneId].en : option}
-                      </Text>
-                    </View>
-                  ) : null}
-                </AnswerTile>
-              );
-            })}
-          </TrayRow>
-        </View>
+                  </View>
+                ) : challenge.mode === 'location' ? (
+                  <View style={styles.addressTile}>
+                    {sceneId ? (
+                      <SceneBuilding scene={sceneId} size={layout.s(56)} />
+                    ) : (
+                      <VocabIcon id={option.toLowerCase().replace(/\s+/g, '-')} size={layout.s(52)} />
+                    )}
+                    <Text variant="tiny" center numberOfLines={1}>
+                      {sceneId ? sceneLabel[sceneId].en : option}
+                    </Text>
+                  </View>
+                ) : null}
+              </AnswerTile>
+            );
+          })}
+        </TrayRow>
       }
     >
       <View style={styles.stage}>
-        <Pressable onPress={revealAll} accessibilityRole="button" accessibilityLabel="Show the whole message">
-          <View>
-            <RadioBody width={radioWidth} />
-            <Animated.View
-              style={[styles.lcd, { left: lcd.x, top: lcd.y, width: lcd.width, height: lcd.height }, lcdStyle]}
-              pointerEvents="none"
+        {/*
+         * ONE copy of the call. The radio chassis is drawn here rather than
+         * pulled from a fixed-aspect sprite so the display grows with the
+         * passage instead of squeezing it into a 78 px window.
+         */}
+        <Pressable
+          onPress={revealAll}
+          accessibilityRole="button"
+          accessibilityLabel="Show the whole message"
+          style={[styles.radio, { width: panelWidth }]}
+        >
+          <View style={styles.radioHead}>
+            <Animated.View style={[styles.lamp, lampStyle]} />
+            <Text variant="tiny" color={palette.slateLight}>
+              DISPATCH
+            </Text>
+            <View style={styles.grille}>
+              {[0, 1, 2, 3, 4, 5].map((d) => (
+                <View key={d} style={styles.grilleDot} />
+              ))}
+            </View>
+          </View>
+
+          <View style={styles.lcd}>
+            <Text
+              variant="bodyStrong"
+              color="#8CFFC0"
+              style={[styles.lcdText, { fontSize: lcdSize, lineHeight: Math.round(lcdSize * 1.42) }]}
             >
-              <Text variant="bodyStrong" color="#8CFFC0" style={[styles.lcdText, { fontSize: layout.s(17), lineHeight: layout.s(23) }]}>
-                {lcdParts ? (
-                  <>
-                    {lcdParts.before}
-                    <Text variant="bodyStrong" color={palette.safetyYellow} style={styles.lcdKey}>
-                      {lcdParts.key}
-                    </Text>
-                    {lcdParts.after}
-                  </>
-                ) : (
-                  shown
-                )}
-                {chars < message.length ? '▌' : ''}
-              </Text>
-            </Animated.View>
+              {lcdParts ? (
+                <>
+                  {lcdParts.before}
+                  <Text variant="bodyStrong" color={palette.safetyYellow} style={styles.lcdKey}>
+                    {lcdParts.key}
+                  </Text>
+                  {lcdParts.after}
+                </>
+              ) : (
+                shown
+              )}
+              {chars < message.length ? '▌' : ''}
+            </Text>
+
+            {showEs && challenge.messageEs ? (
+              <>
+                <View style={styles.lcdRule} />
+                <Text
+                  variant="small"
+                  color="#8FD8FF"
+                  style={{ fontSize: Math.round(lcdSize * 0.85), lineHeight: Math.round(lcdSize * 1.24) }}
+                >
+                  {challenge.messageEs}
+                </Text>
+              </>
+            ) : null}
           </View>
         </Pressable>
-
-        <View style={styles.replayRow}>
-          <Button
-            label="Play again"
-            tone="blue"
-            size="sm"
-            icon={<SpeakerIcon size={20} color={palette.white} />}
-            onPress={() => replay('en')}
-            sound="none"
-          />
-          {challenge.messageEs ? (
-            <Button
-              label="Español"
-              tone="purple"
-              size="sm"
-              icon={<SpeakerIcon size={20} color={palette.white} />}
-              onPress={() => replay('es')}
-              sound="none"
-            />
-          ) : null}
-        </View>
-
-        {challenge.messageEs && ageBand !== 'A' ? (
-          <Animated.View entering={FadeIn.delay(400)} style={styles.esCard}>
-            <Text variant="small" color={palette.purple} center>
-              {challenge.messageEs}
-            </Text>
-          </Animated.View>
-        ) : null}
 
         {state.phase === 'solved' ? (
           <Animated.View entering={FadeInDown.springify()} style={styles.stamp}>
@@ -305,36 +318,51 @@ export function DispatchDecoder({ challenge, ageBand, onComplete, onEvent, compa
 }
 
 const styles = StyleSheet.create({
-  stage: { alignItems: 'center', justifyContent: 'center', gap: spacing.sm },
-  lcd: { position: 'absolute', paddingHorizontal: 12, paddingVertical: 8, justifyContent: 'center' },
+  stage: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.sm },
+  radio: {
+    backgroundColor: palette.navy,
+    borderRadius: radii.panel,
+    padding: spacing.xs,
+    gap: 6,
+    ...roles.lift.interactive,
+  },
+  radioHead: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 6, paddingTop: 2 },
+  lamp: { width: 10, height: 10, borderRadius: 5, backgroundColor: palette.waterCyan },
+  grille: { flex: 1, flexDirection: 'row', justifyContent: 'flex-end', gap: 5 },
+  grilleDot: { width: 5, height: 5, borderRadius: 2.5, backgroundColor: palette.navySoft },
+  lcd: {
+    backgroundColor: '#0F3D2A',
+    borderRadius: radii.tile,
+    borderWidth: 3,
+    borderColor: palette.charcoalDark,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.sm,
+    minHeight: hit.big,
+    justifyContent: 'center',
+    gap: 6,
+  },
   lcdText: {
-    textShadowColor: 'rgba(140,255,192,0.75)',
+    textShadowColor: 'rgba(140,255,192,0.7)',
     textShadowOffset: { width: 0, height: 0 },
     textShadowRadius: 8,
   },
   lcdKey: { textDecorationLine: 'underline' },
-  replayRow: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.xs },
-  esCard: {
-    backgroundColor: palette.purpleSoft,
-    borderRadius: radii.card,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
-    maxWidth: 420,
-  },
+  lcdRule: { height: 2, borderRadius: 1, backgroundColor: 'rgba(140,255,192,0.28)' },
   stamp: {
-    backgroundColor: palette.mint,
+    backgroundColor: roles.state.successFill,
     borderRadius: radii.pill,
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.xs,
-    ...shadows.soft,
+    ...roles.lift.surface,
   },
-  tray: { minHeight: hit.big },
+  options: { rowGap: spacing.xs },
+  optionRow: { width: '100%' },
   addressTile: { alignItems: 'center', gap: 2 },
   plate: {
     backgroundColor: palette.white,
     borderRadius: radii.tag,
     paddingHorizontal: 10,
     paddingVertical: 2,
-    ...shadows.soft,
+    ...roles.lift.surface,
   },
 });
