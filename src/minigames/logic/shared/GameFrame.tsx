@@ -1,21 +1,28 @@
-import React, { useCallback, useState } from 'react';
-import { StyleSheet, View, type LayoutChangeEvent, type StyleProp, type ViewStyle } from 'react-native';
-import { spacing } from '@/theme';
-import { HintBubble, PromptBanner, Tray } from '@/ui';
+import React from 'react';
+import { StyleSheet, type StyleProp, type ViewStyle } from 'react-native';
+import { ActivityFrame } from '@/ui';
 import { DragArena } from './DragArena';
 
 export interface GameFrameProps {
+  /** the task — the one instruction, shown once in the TaskBar */
   title: string;
+  /** one quiet line of "how", kept in the same surface as the task */
   subtitle?: string;
   es?: string;
   compact?: boolean;
+  /** back out of the activity; the host passes this so there is only one bar */
+  onBack?: () => void;
+  /** hear the task again */
+  onReplay?: () => void;
+  progress?: { done: number; total: number };
   /** scene dressing drawn behind everything (a `<Stage variant=… />`) */
   backdrop?: React.ReactNode;
-  /** the play area — gets all the space between the banner and the tray */
+  /** the play area — gets all the space the chrome does not need */
   children: React.ReactNode;
   tray?: React.ReactNode;
   trayTone?: 'white' | 'glass' | 'cream';
   trayStyle?: StyleProp<ViewStyle>;
+  /** Captain Bea's bubble: hints and reactions only, never the task again */
   hint?: { text: string; es?: string; visible: boolean; onDismiss?: () => void };
   /** absolute layer above everything (AskQuestion, celebration) */
   overlay?: React.ReactNode;
@@ -23,16 +30,24 @@ export interface GameFrameProps {
 }
 
 /**
- * Shared shell for every logic mini-game: PromptBanner on top, play area in the
- * middle, Tray at the bottom, the hint bubble floating above the tray.
- * The whole frame is one drag arena so tray tokens and play-area slots share
- * a coordinate space.
+ * Shared shell for every logic mini-game.
+ *
+ * It is now a thin adapter over `ActivityFrame`, so logic games, tactile games
+ * and the kitchen all inherit the same top/play/controls structure — and the
+ * same tablet behaviour, where the tray becomes a rail beside a bigger play
+ * area instead of a wider strip beneath it.
+ *
+ * The whole frame stays one drag arena so tray tokens and play-area slots
+ * share a coordinate space.
  */
 export function GameFrame({
   title,
   subtitle,
   es,
   compact,
+  onBack,
+  onReplay,
+  progress,
   backdrop,
   children,
   tray,
@@ -42,46 +57,30 @@ export function GameFrame({
   overlay,
   bodyStyle,
 }: GameFrameProps) {
-  /**
-   * Blocking defect: the hint bubble sits at `bottom: 16` of the frame,
-   * so on six games it landed straight on top of the answer row. Measure the
-   * tray and lift the bubble clear of it — the child can always see and reach
-   * every answer while a hint is open.
-   */
-  const [trayH, setTrayH] = useState(0);
-  const onTrayLayout = useCallback((e: LayoutChangeEvent) => {
-    const h = e.nativeEvent.layout.height;
-    setTrayH((p) => (Math.abs(p - h) < 1 ? p : h));
-  }, []);
-
   return (
     <DragArena style={styles.root}>
-      {backdrop}
-      <View style={[styles.banner, compact && styles.bannerCompact]}>
-        <PromptBanner title={title} subtitle={subtitle} es={es} compact={compact} />
-      </View>
-      <View style={[styles.body, bodyStyle]}>{children}</View>
-      {tray ? (
-        <View onLayout={onTrayLayout}>
-          <Tray tone={trayTone} style={trayStyle}>
-            {tray}
-          </Tray>
-        </View>
-      ) : null}
-      {hint ? (
-        <View style={[styles.hintLane, { bottom: trayH }]} pointerEvents="box-none">
-          <HintBubble text={hint.text} es={hint.es} visible={hint.visible} onDismiss={hint.onDismiss} />
-        </View>
-      ) : null}
-      {overlay}
+      <ActivityFrame
+        task={title}
+        detail={subtitle}
+        es={es}
+        compact={compact}
+        onBack={onBack}
+        onReplay={onReplay}
+        progress={progress}
+        backdrop={backdrop}
+        controls={tray}
+        controlsTone={trayTone}
+        controlsStyle={trayStyle}
+        hint={hint}
+        overlay={overlay}
+        playStyle={bodyStyle}
+      >
+        {children}
+      </ActivityFrame>
     </DragArena>
   );
 }
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
-  banner: { paddingTop: spacing.xs, paddingBottom: spacing.sm },
-  bannerCompact: { paddingTop: 2, paddingBottom: spacing.xs },
-  body: { flex: 1, justifyContent: 'center' },
-  hintLane: { position: 'absolute', left: 0, right: 0, top: 0, zIndex: 40 },
 });

@@ -5,3 +5,4 @@ export * from './useBlinkState';
 export * from './useTypewriter';
 export * from './useCountUp';
 export * from './usePulse';
+export * from './useSpanishSupport';

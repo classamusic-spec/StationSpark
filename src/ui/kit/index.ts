@@ -23,3 +23,6 @@ export * from './ConfettiBurst';
 export * from './Toast';
 export * from './Toggle';
 export * from './SegmentedPills';
+export * from './TaskBar';
+export * from './ActivityFrame';
+export * from './activityChrome';

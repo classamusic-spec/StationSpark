@@ -20,11 +20,9 @@ import { palette, spacing } from '@/theme';
 import { sfx } from '@/services/audio';
 import { haptics } from '@/services/haptics';
 import { useGame } from '@/state/store';
-import { Button, RoundIconButton, ScreenFrame, Text, TopBar } from '@/ui';
-import { BackIcon } from '@/ui/icons';
+import { ActivityChromeProvider, Button, ScreenFrame, Text } from '@/ui';
 import { CelebrationOverlay } from '@/characters';
 import { MiniGameStage, type MinigameBeat } from '@/screens/Mission/MiniGameStage';
-import { StarCounter } from '@/screens/Mission/StarCounter';
 import { UnderConstructionCard } from '@/screens/Mission/UnderConstructionCard';
 
 /** XP for finishing a practice round — the same whatever the stars. */
@@ -85,30 +83,28 @@ export function TrainingPlayScreen({ kind }: { kind: string }) {
     setSeed(Math.floor(Math.random() * 1_000_000));
   }, []);
 
-  const chrome = (
-    <TopBar
-      left={
-        <RoundIconButton accessibilityLabel="Back to the Training Yard" onPress={backToYard}>
-          <BackIcon />
-        </RoundIconButton>
-      }
-      right={<StarCounter stars={result?.stars ?? 0} total={3} />}
-    />
-  );
+  /*
+   * No TopBar here any more. The activity's own TaskBar carries the back
+   * button, so the child gets one bar instead of two and the play area starts
+   * ~80 px higher.
+   */
+  const chromeValue = useMemo(() => ({ onBack: backToYard }), [backToYard]);
 
   return (
-    <ScreenFrame mood="day" chrome={chrome} safeTop={false} safeBottom={false}>
-      <View style={[styles.body, { paddingTop: insets.top + 8 + 56 + 8 }]}>
+    <ScreenFrame mood="day" safeTop={false} safeBottom={false}>
+      <View style={[styles.body, { paddingTop: insets.top + spacing.xs }]}>
         {beat ? (
-          <MiniGameStage
-            key={`${kind}-${seed}`}
-            beat={beat}
-            ageBand={ageBand}
-            scene="station-yard"
-            seed={seed}
-            compact
-            onComplete={onComplete}
-          />
+          <ActivityChromeProvider value={chromeValue}>
+            <MiniGameStage
+              key={`${kind}-${seed}`}
+              beat={beat}
+              ageBand={ageBand}
+              scene="station-yard"
+              seed={seed}
+              compact
+              onComplete={onComplete}
+            />
+          </ActivityChromeProvider>
         ) : (
           <UnderConstructionCard
             title="That station is being built"
