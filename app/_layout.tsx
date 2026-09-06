@@ -12,6 +12,7 @@ import { sfx } from '@/services/audio';
 import { haptics } from '@/services/haptics';
 import { speech } from '@/services/speech';
 import { useGame } from '@/state/store';
+import { AnimatedSplash } from '@/screens/Splash/AnimatedSplash';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
@@ -48,6 +49,8 @@ export default function RootLayout() {
   });
   const skiaReady = useSkiaWeb();
   const settings = useGame((s) => s.settings);
+  const [splashGone, setSplashGone] = useState(false);
+  const ready = fontsLoaded && skiaReady;
 
   useEffect(() => {
     sfx.setEnabled(settings.sfx);
@@ -55,25 +58,34 @@ export default function RootLayout() {
     speech.setEnabled(settings.voice);
   }, [settings.sfx, settings.haptics, settings.voice]);
 
+  /*
+   * Hand the native splash straight to our animated one: hide the OS splash on
+   * first paint so the child never sees the plain launch screen flash before
+   * the badge springs in.
+   */
   useEffect(() => {
-    if (fontsLoaded && skiaReady) SplashScreen.hideAsync().catch(() => {});
-  }, [fontsLoaded, skiaReady]);
-
-  if (!fontsLoaded || !skiaReady) {
-    return <View style={{ flex: 1, backgroundColor: palette.skyTop }} />;
-  }
+    SplashScreen.hideAsync().catch(() => {});
+  }, []);
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
         <StatusBar style="dark" />
-        <Stack
-          screenOptions={{
-            headerShown: false,
-            animation: 'fade',
-            contentStyle: { backgroundColor: palette.skyTop },
-          }}
-        />
+        {/* The app mounts only once fonts and Skia are ready — a Skia canvas
+            rendered before CanvasKit lands would warn — and the splash covers
+            the gap until then. */}
+        {ready ? (
+          <Stack
+            screenOptions={{
+              headerShown: false,
+              animation: 'fade',
+              contentStyle: { backgroundColor: palette.skyTop },
+            }}
+          />
+        ) : (
+          <View style={{ flex: 1, backgroundColor: palette.skyTop }} />
+        )}
+        {!splashGone ? <AnimatedSplash active={ready} onFinished={() => setSplashGone(true)} /> : null}
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );

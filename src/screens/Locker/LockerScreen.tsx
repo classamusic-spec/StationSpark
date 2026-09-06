@@ -14,7 +14,6 @@ import { palette, radii, shadows, spacing, stagger } from '@/theme';
 import { Button, Panel, ScreenFrame, Text, TopBar } from '@/ui';
 import { useGame } from '@/state/store';
 import { Rookie } from '@/characters/Rookie';
-import { CaptainBea } from '@/characters/CaptainBea';
 import { BottomBar, useScaledLayout } from '@/screens/shared';
 import { LockerWall, lockerRoomLayout } from './LockerWall';
 import { AgeBandCards } from './parts/AgeBandCards';
@@ -28,7 +27,6 @@ export { AvatarPickers } from './parts/AvatarPickers';
 export { NamePatch as NameTag } from './parts/NamePatch';
 
 const ROOKIE_ASPECT = 120 / 165;
-const PEPPER_ASPECT = 132 / 126;
 
 export function LockerScreen() {
   const router = useRouter();
@@ -50,7 +48,6 @@ export function LockerScreen() {
   const stageH = Math.round(Math.max(330, Math.min(layout.height * 0.44, 470)));
   const room = useMemo(() => lockerRoomLayout(layout.width, stageH), [layout.width, stageH]);
   const rookieSize = Math.round(Math.min(280, stageH * 0.7));
-  const pepperSize = Math.round(Math.min(96, stageH * 0.24));
 
   return (
     <ScreenFrame
@@ -66,13 +63,10 @@ export function LockerScreen() {
         />
       }
     >
-      {/* the room stage: Rookie in front of the open locker, Captain Bea approving */}
+      {/* the room stage: Rookie alone in front of their open locker */}
       <View style={[styles.stage, { height: stageH - insets.top }]} pointerEvents="none">
         <View style={[styles.actor, { left: room.rookieX - (rookieSize * ROOKIE_ASPECT) / 2, bottom: 4 }]}>
           <Rookie size={rookieSize} avatar={profile.avatar} pose="wave" emotion="proud" />
-        </View>
-        <View style={[styles.actor, { left: room.benchX - (pepperSize * PEPPER_ASPECT) / 2 + 4, bottom: stageH - room.benchTop - 3 }]}>
-          <CaptainBea size={pepperSize * 1.25} emotion="proud" pose="stand" bobPhase={0.7} />
         </View>
       </View>
 
