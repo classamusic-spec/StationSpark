@@ -1,11 +1,11 @@
 import React from 'react';
 import { Pressable, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
-import { hit, palette, radii, shadows, spacing, stagger, type SubjectId } from '@/theme';
+import { hit, palette, radii, roles, shadows, spacing, stagger, type SubjectId } from '@/theme';
 import { useFeedbackAnim } from '@/hooks';
 import { Text } from '../Text';
-import { SubjectPill } from '../SubjectPill';
-import { ChevronRightIcon, LockIcon } from '../icons';
+import { SubjectLine, subjectSentence } from '../SubjectPill';
+import { ChevronRightIcon } from '../icons';
 import { Chip } from './Chip';
 
 export interface RecipeCardProps {
@@ -18,7 +18,14 @@ export interface RecipeCardProps {
   art?: React.ReactNode;
   /** "Cooked 3 times" */
   meta?: string;
-  locked?: boolean;
+  /**
+   * Further up the shelf than the child has reached. A LOOK, NOT A GATE: the
+   * card still opens. `src/kitchen/progress.ts` has always promised that every
+   * recipe stays playable, and this card was quietly breaking the promise —
+   * `disabled` on the press meant a child with nothing cooked could open two
+   * recipes out of thirteen and got a padlock on the rest.
+   */
+  resting?: boolean;
   cooked?: boolean;
   onPress?: () => void;
   index?: number;
@@ -31,11 +38,11 @@ export interface RecipeCardProps {
  * The tab carries the dish name; the card body holds the blurb, the subjects
  * it practises and whatever the kitchen wants to show inside.
  */
-export function RecipeCard({ title, titleEs, blurb, subjects, art, meta, locked = false, cooked = false, onPress, index = 0, children, style }: RecipeCardProps) {
+export function RecipeCard({ title, titleEs, blurb, subjects, art, meta, resting = false, cooked = false, onPress, index = 0, children, style }: RecipeCardProps) {
   const { style: anim, press } = useFeedbackAnim();
 
   const content = (
-    <View style={[styles.card, shadows.card, locked && styles.locked]}>
+    <View style={[styles.card, shadows.card, resting && styles.resting]}>
       {/* red header tab */}
       <View style={styles.tabRow}>
         <View style={styles.tab}>
@@ -44,7 +51,6 @@ export function RecipeCard({ title, titleEs, blurb, subjects, art, meta, locked 
           </Text>
         </View>
         {cooked ? <Chip label="Cooked" tone="green" glyph="check" /> : null}
-        {locked ? <Chip label="Locked" tone="cream" /> : null}
       </View>
 
       {/* ruled index-card body */}
@@ -57,27 +63,27 @@ export function RecipeCard({ title, titleEs, blurb, subjects, art, meta, locked 
             </Text>
           ) : null}
           {blurb ? (
-            <Text variant="body" color={palette.navySoft} numberOfLines={3}>
+            <Text variant="body" color={roles.ink.secondary} numberOfLines={2}>
               {blurb}
             </Text>
           ) : null}
-          {subjects && subjects.length ? (
-            <View style={styles.pills}>
-              {subjects.map((s) => (
-                <SubjectPill key={s} subject={s} small />
-              ))}
+          {(subjects && subjects.length) || meta ? (
+            <View style={styles.foot}>
+              {subjects && subjects.length ? <SubjectLine subjects={subjects} /> : null}
+              {meta ? (
+                <Text variant="tiny" color={roles.ink.muted}>
+                  {meta}
+                </Text>
+              ) : null}
             </View>
-          ) : null}
-          {meta ? (
-            <Text variant="tiny" color={palette.navyMuted}>
-              {meta}
-            </Text>
           ) : null}
         </View>
         {onPress ? (
           <View style={styles.go}>
-            <View style={[styles.chevron, locked && styles.chevronLocked]}>
-              {locked ? <LockIcon size={24} color={palette.white} /> : <ChevronRightIcon size={28} />}
+            {/* always a chevron: the card always opens, so it must never wear
+                a padlock */}
+            <View style={styles.chevron}>
+              <ChevronRightIcon size={28} />
             </View>
           </View>
         ) : null}
@@ -100,9 +106,8 @@ export function RecipeCard({ title, titleEs, blurb, subjects, art, meta, locked 
       {onPress ? (
         <Pressable
           accessibilityRole="button"
-          accessibilityState={{ disabled: locked }}
-          accessibilityLabel={`${title}. ${blurb ?? ''}`}
-          disabled={locked}
+          accessibilityLabel={`${title}. ${blurb ?? ''}${subjects?.length ? ` Practises ${subjectSentence(subjects)}.` : ''}`}
+          accessibilityHint={resting ? 'Further up the shelf, but you can cook it now if you like.' : undefined}
           onPressIn={() => press(true)}
           onPressOut={() => press(false)}
           onPress={onPress}
@@ -129,7 +134,9 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: palette.creamDeep,
   },
-  locked: { opacity: 0.7 },
+  /* "you have not got here yet", not "you may not" — it must still read as
+     something a child is allowed to touch */
+  resting: { opacity: 0.86 },
   tabRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginTop: -spacing.xs - 2, marginLeft: -2 },
   tab: {
     backgroundColor: palette.engineRed,
@@ -147,7 +154,7 @@ const styles = StyleSheet.create({
   body: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, zIndex: 1 },
   art: { width: 64, alignItems: 'center' },
   text: { flex: 1, gap: 3 },
-  pills: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 2 },
+  foot: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.xs, marginTop: 2 },
   go: { width: hit.min, alignItems: 'flex-end' },
   chevron: {
     width: hit.min,
@@ -159,7 +166,6 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: 'rgba(255,255,255,0.35)',
   },
-  chevronLocked: { backgroundColor: palette.lockedGrey },
   extra: { zIndex: 1, gap: spacing.xs },
   rules: { ...StyleSheet.absoluteFill, top: 74, paddingHorizontal: spacing.sm, gap: 26, opacity: 0.5 },
   rule: { height: 2, backgroundColor: palette.tan, borderRadius: 1 },

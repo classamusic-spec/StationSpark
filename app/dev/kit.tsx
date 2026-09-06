@@ -498,7 +498,7 @@ export default function KitGallery() {
             cooked
             onPress={() => setModal(true)}
           />
-          <RecipeCard title="Firehouse Pizza" titleEs="Pizza del Cuartel" blurb="Half cheese, half veggie. Cut it fairly!" subjects={['math', 'cooking', 'spanish']} art={<VocabIcon id="pizza" size={56} />} locked onPress={() => undefined} index={1} />
+          <RecipeCard title="Firehouse Pizza" titleEs="Pizza del Cuartel" blurb="Half cheese, half veggie. Cut it fairly!" subjects={['math', 'cooking', 'spanish']} art={<VocabIcon id="pizza" size={56} />} resting onPress={() => undefined} index={1} />
           <StationBoard title="Your Badges" meta="3 of 12 earned">
             {badges.slice(0, 8).map((b, i) => (
               <View key={b.id} style={styles.boardTile}>

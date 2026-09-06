@@ -84,7 +84,7 @@ export function KitchenScreen() {
               blurb={recipe.blurb}
               subjects={recipe.subjects}
               cooked={state === 'cooked'}
-              locked={state === 'resting'}
+              resting={state === 'resting'}
               meta={`${recipe.steps.length} steps · +${recipe.xp} XP`}
               art={<VocabIcon id={recipeGlyph[recipe.id] ?? 'soup'} size={62} />}
               onPress={() => {
