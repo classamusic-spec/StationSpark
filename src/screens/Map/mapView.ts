@@ -43,6 +43,19 @@ export const clampTo = (v: number, lo: number, hi: number): number => {
   return Math.max(lo, Math.min(hi, v));
 };
 
+/**
+ * The window onto the town: its size, plus how much floating chrome (the view
+ * toggle and the big CTA on a phone) stands over its foot. The map runs under
+ * that chrome, but the whole-town view has to clear it — otherwise the last
+ * row of the plan is "visible" behind a button a child cannot see through.
+ */
+export interface MapFrame {
+  w: number;
+  h: number;
+  /** px of chrome floating over the bottom of the map */
+  foot: number;
+}
+
 export interface MapScales {
   /** the whole town in the frame — the furthest out we ever go */
   min: number;
@@ -57,30 +70,43 @@ export interface MapScales {
 /**
  * The four scales the camera lives between.
  *
- * `min` frames the whole town (so a child can always see where they are),
- * `home` is close enough that a building reads as a building *and* the town
- * covers the viewport rather than floating in it, and `max` is a couple of
- * steps closer for small hands that want to be sure of a pin.
+ * `min` frames the whole town clear of the chrome (so a child can always see
+ * where they are), `home` is close enough that a building reads as a building
+ * *and* the town covers the viewport rather than floating in it, and `max` is a
+ * couple of steps closer for small hands that want to be sure of a pin.
  */
-export function mapScales(vpW: number, vpH: number): MapScales {
-  if (vpW <= 0 || vpH <= 0) return { min: 1, home: 1, max: 1, label: LABEL_RATIO };
-  const fit = Math.min(vpW / CONTENT_W, vpH / CONTENT_H);
-  const cover = Math.max(vpW / CONTENT_W, vpH / CONTENT_H);
+export function mapScales(frame: MapFrame): MapScales {
+  if (frame.w <= 0 || frame.h <= 0) return { min: 1, home: 1, max: 1, label: LABEL_RATIO };
+  const clear = Math.max(1, frame.h - frame.foot);
+  const fit = Math.min(frame.w / CONTENT_W, clear / CONTENT_H);
+  const cover = Math.max(frame.w / CONTENT_W, frame.h / CONTENT_H);
   const home = Math.max(fit, Math.min(Math.max(cover, READABLE), HOME_MAX));
   const max = Math.max(home, Math.min(ZOOM_CEILING, Math.max(home * 2, fit * 3)));
   return { min: fit, home, max, label: home * LABEL_RATIO };
 }
 
+export interface PanRange {
+  /** half the travel available on each axis */
+  x: number;
+  y: number;
+  /** where the middle of that travel sits (the town rides above the chrome) */
+  cy: number;
+}
+
 /**
  * How far the camera may travel before the town would leave the frame.
- * Zero on an axis the town does not fill — there it stays centred, so the
- * map can never be flung off into empty sky.
+ * Zero on an axis the town does not fill — there it stays put, so the map can
+ * never be flung off into empty sky. When the town is shorter than the frame
+ * it sits *above* the foot chrome rather than centred behind it.
  */
-export function panBounds(scale: number, vpW: number, vpH: number): { x: number; y: number } {
+export function panBounds(scale: number, frame: MapFrame): PanRange {
   'worklet';
+  const overH = CONTENT_H * scale - frame.h;
+  const slack = Math.max(0, -overH / 2);
   return {
-    x: Math.max(0, (CONTENT_W * scale - vpW) / 2),
-    y: Math.max(0, (CONTENT_H * scale - vpH) / 2),
+    x: Math.max(0, (CONTENT_W * scale - frame.w) / 2),
+    y: Math.max(0, overH / 2),
+    cy: -Math.min(frame.foot / 2, slack),
   };
 }
 
@@ -93,16 +119,22 @@ export function frameOn(
   ux: number,
   uy: number,
   scale: number,
-  vpW: number,
-  vpH: number,
+  frame: MapFrame,
   ax = 0.5,
   ay = 0.45,
 ): { tx: number; ty: number } {
   'worklet';
-  const b = panBounds(scale, vpW, vpH);
-  const wantX = ax * vpW - vpW / 2 - (ux * MAP_UNIT - CONTENT_W / 2) * scale;
-  const wantY = ay * vpH - vpH / 2 - (uy * MAP_UNIT - CONTENT_H / 2) * scale;
-  return { tx: clampTo(wantX, -b.x, b.x), ty: clampTo(wantY, -b.y, b.y) };
+  const b = panBounds(scale, frame);
+  const wantX = ax * frame.w - frame.w / 2 - (ux * MAP_UNIT - CONTENT_W / 2) * scale;
+  const wantY = ay * frame.h - frame.h / 2 - (uy * MAP_UNIT - CONTENT_H / 2) * scale;
+  return { tx: clampTo(wantX, -b.x, b.x), ty: clampTo(wantY, b.cy - b.y, b.cy + b.y) };
+}
+
+/** The camera's resting place for the whole-town view. */
+export function wholeTown(scale: number, frame: MapFrame): { tx: number; ty: number } {
+  'worklet';
+  const b = panBounds(scale, frame);
+  return { tx: 0, ty: b.cy };
 }
 
 /** Screen position of a plan point under the current camera. */

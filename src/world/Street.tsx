@@ -93,7 +93,7 @@ export const Street = memo(function Street({ width, pave = 26, road, crossing = 
   /** y of the top of the asphalt */
   const kerbY = pave;
   /** the lane markings sit high, so the CTA below them has clean ground */
-  const laneY = kerbY + Math.min(22, road * 0.12);
+  const laneY = kerbY + Math.min(18, road * 0.1);
   const laneH = Math.max(5, Math.round(road * 0.032));
   const dash = Math.max(26, w * 0.075);
   const gap = dash * 0.78;

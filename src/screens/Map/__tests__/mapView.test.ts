@@ -13,45 +13,55 @@ import {
   panBounds,
   screenX,
   screenY,
+  wholeTown,
 } from '../mapView';
 
-const PHONE = { w: 390, h: 844 };
-const TABLET = { w: 676, h: 768 };
-const DESKTOP = { w: 845, h: 800 };
+/** a phone carries the view toggle and the big CTA over the foot of the map */
+const PHONE = { w: 390, h: 762, foot: 166 };
+/** a wide window moves both into the rail, so nothing floats over the town */
+const TABLET = { w: 676, h: 686, foot: 0 };
+const DESKTOP = { w: 845, h: 718, foot: 0 };
 const VIEWPORTS = [PHONE, TABLET, DESKTOP];
 
 const allOpen = () => true;
 
 describe('map camera scales', () => {
   it.each(VIEWPORTS)('orders min ≤ home ≤ max at %o', (vp) => {
-    const s = mapScales(vp.w, vp.h);
+    const s = mapScales(vp);
     expect(s.min).toBeLessThanOrEqual(s.home);
     expect(s.home).toBeLessThanOrEqual(s.max);
     expect(s.min).toBeGreaterThan(0);
   });
 
-  it.each(VIEWPORTS)('puts the whole town in the frame at min zoom at %o', (vp) => {
-    const { min } = mapScales(vp.w, vp.h);
+  it.each(VIEWPORTS)('puts the whole town clear of the chrome at min zoom at %o', (vp) => {
+    const { min } = mapScales(vp);
     expect(CONTENT_W * min).toBeLessThanOrEqual(vp.w + 0.001);
-    expect(CONTENT_H * min).toBeLessThanOrEqual(vp.h + 0.001);
-    /* and it is the *largest* such scale — one axis touches the frame */
-    const touches = CONTENT_W * min >= vp.w - 0.001 || CONTENT_H * min >= vp.h - 0.001;
+    expect(CONTENT_H * min).toBeLessThanOrEqual(vp.h - vp.foot + 0.001);
+    /* and it is the *largest* such scale — one axis touches the clear area */
+    const touches = CONTENT_W * min >= vp.w - 0.001 || CONTENT_H * min >= vp.h - vp.foot - 0.001;
     expect(touches).toBe(true);
   });
 
+  it.each(VIEWPORTS)('rests the whole-town view above the foot chrome at %o', (vp) => {
+    const { min } = mapScales(vp);
+    const { ty } = wholeTown(min, vp);
+    expect(screenY(0, min, ty, vp.h)).toBeGreaterThanOrEqual(-0.001);
+    expect(screenY(MAP_VB.h, min, ty, vp.h)).toBeLessThanOrEqual(vp.h - vp.foot + 0.001);
+  });
+
   it.each(VIEWPORTS)('opens close enough that a building reads as a building at %o', (vp) => {
-    const { home } = mapScales(vp.w, vp.h);
+    const { home } = mapScales(vp);
     /* the fire station's block is 85 plan units wide */
     expect(85 * MAP_UNIT * home).toBeGreaterThanOrEqual(160);
   });
 
   it.each(VIEWPORTS)('covers the viewport at the opening scale at %o', (vp) => {
-    const { home } = mapScales(vp.w, vp.h);
+    const { home } = mapScales(vp);
     expect(Math.max(CONTENT_W * home, CONTENT_H * home)).toBeGreaterThanOrEqual(Math.max(vp.w, vp.h) - 0.001);
   });
 
   it('degrades safely before the viewport has been measured', () => {
-    const s = mapScales(0, 0);
+    const s = mapScales({ w: 0, h: 0, foot: 0 });
     expect(s.min).toBe(1);
     expect(s.home).toBe(1);
   });
@@ -59,15 +69,17 @@ describe('map camera scales', () => {
 
 describe('pan bounds', () => {
   it('pins an axis the town does not fill', () => {
-    const b = panBounds(0.2, 390, 844);
+    const b = panBounds(0.2, { w: 390, h: 844, foot: 0 });
     expect(b.x).toBe(0);
     expect(b.y).toBe(0);
   });
 
   it('never lets an edge of the town come inside the frame', () => {
     const vp = PHONE;
-    const { home } = mapScales(vp.w, vp.h);
-    const b = panBounds(home, vp.w, vp.h);
+    const { home } = mapScales(vp);
+    const b = panBounds(home, vp);
+    /* at the working scale the town covers the frame, so it never drifts */
+    expect(b.cy).toBeCloseTo(0, 10);
     for (const tx of [-b.x, 0, b.x]) {
       expect(screenX(0, home, tx, vp.w)).toBeLessThanOrEqual(0.001);
       expect(screenX(MAP_VB.w, home, tx, vp.w)).toBeGreaterThanOrEqual(vp.w - 0.001);
@@ -81,8 +93,8 @@ describe('pan bounds', () => {
 
 describe('framing', () => {
   it.each(VIEWPORTS)('keeps the fire station on screen when the map opens at %o', (vp) => {
-    const { home } = mapScales(vp.w, vp.h);
-    const { tx, ty } = frameOn(HOME_FOCUS.x, HOME_FOCUS.y, home, vp.w, vp.h, HOME_FOCUS.ax, HOME_FOCUS.ay);
+    const { home } = mapScales(vp);
+    const { tx, ty } = frameOn(HOME_FOCUS.x, HOME_FOCUS.y, home, vp, HOME_FOCUS.ax, HOME_FOCUS.ay);
     const station = MAP_PLACES.find((p) => p.id === 'station');
     expect(station).toBeDefined();
     const x = screenX(station?.x ?? 0, home, tx, vp.w);
@@ -94,12 +106,12 @@ describe('framing', () => {
   });
 
   it.each(VIEWPORTS)('clamps a framing request that would show empty sky at %o', (vp) => {
-    const { home } = mapScales(vp.w, vp.h);
-    const b = panBounds(home, vp.w, vp.h);
+    const { home } = mapScales(vp);
+    const b = panBounds(home, vp);
     /* ask to centre on the very corner of the plan */
-    const { tx, ty } = frameOn(0, 0, home, vp.w, vp.h);
+    const { tx, ty } = frameOn(0, 0, home, vp);
     expect(Math.abs(tx)).toBeLessThanOrEqual(b.x + 0.001);
-    expect(Math.abs(ty)).toBeLessThanOrEqual(b.y + 0.001);
+    expect(Math.abs(ty - b.cy)).toBeLessThanOrEqual(b.y + 0.001);
   });
 });
 
@@ -122,7 +134,7 @@ describe('pin layout', () => {
   });
 
   it.each(VIEWPORTS)('never overlaps two name pills in a row at %o', (vp) => {
-    const { home } = mapScales(vp.w, vp.h);
+    const { home } = mapScales(vp);
     const unitPx = MAP_UNIT * home * LABEL_RATIO;
     const boxes = layoutPins(unitPx, vp.w < 560, allOpen, true);
     for (const row of rowsOf(boxes, unitPx).values()) {
@@ -138,7 +150,7 @@ describe('pin layout', () => {
   });
 
   it.each(VIEWPORTS)('keeps every name pill inside the town at %o', (vp) => {
-    const { home } = mapScales(vp.w, vp.h);
+    const { home } = mapScales(vp);
     const unitPx = MAP_UNIT * home * LABEL_RATIO;
     const townW = MAP_VB.w * unitPx;
     for (const b of layoutPins(unitPx, vp.w < 560, allOpen, true)) {
@@ -149,7 +161,7 @@ describe('pin layout', () => {
   });
 
   it.each(VIEWPORTS)('never overlaps two markers at whole-town range at %o', (vp) => {
-    const { min } = mapScales(vp.w, vp.h);
+    const { min } = mapScales(vp);
     const unitPx = MAP_UNIT * min;
     const boxes = layoutPins(unitPx, vp.w < 560, allOpen, false);
     for (const b of boxes) expect(b.variant).toBe('marker');

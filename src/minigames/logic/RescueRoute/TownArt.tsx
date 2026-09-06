@@ -21,8 +21,8 @@ export const ROAD = {
   tarmac: '#7C8AA6',
   tarmacDeep: '#6E7B95',
   paint: 'rgba(255,255,255,0.62)',
-  kerbFace: '#EDF1F8',
-  kerbLip: '#C8D2E4',
+  kerbFace: '#E7ECF7',
+  kerbLip: '#BFCADE',
   frame: '#E2E8F3',
   grass: palette.grass,
   grassLip: palette.grassDark,
@@ -207,10 +207,7 @@ export function Building({
       {s.roofStyle === 'gable' ? (
         <Path d={`M${x - w * 0.06} ${bodyY + 1} L${x + w / 2} ${y} L${x + w * 1.06} ${bodyY + 1} Z`} fill={s.roof} />
       ) : tower ? (
-        <G>
-          <Path d={`M${x - w * 0.04} ${bodyY + 1} L${x + w / 2} ${y} L${x + w * 1.04} ${bodyY + 1} Z`} fill={s.roof} />
-          <Rect x={x + w * 0.3} y={bodyY + roofH * 0.12} width={w * 0.4} height={roofH * 0.3} rx={r} fill={s.trim} opacity={0.5} />
-        </G>
+        <Path d={`M${x - w * 0.04} ${bodyY + 1} L${x + w / 2} ${y - roofH * 0.18} L${x + w * 1.04} ${bodyY + 1} Z`} fill={s.roof} />
       ) : (
         <G>
           <Rect x={x - w * 0.05} y={y} width={w * 1.1} height={roofH} rx={r * 0.8} fill={s.roof} />
@@ -291,21 +288,31 @@ export function Tree({ cx, cy, r }: { cx: number; cy: number; r: number }) {
   );
 }
 
-/** A park block: grass, a path and a couple of trees. */
+/** A park block: grass, a straight path, a pond and a tree or two. */
 export function Park({ x, y, w, h }: { x: number; y: number; w: number; h: number }) {
-  const r = Math.min(w, h) * 0.24;
+  const r = Math.min(w, h * 0.6) * 0.34;
+  const tall = h > w * 1.15;
   return (
     <G>
-      <Path
-        d={`M${x + w * 0.08} ${y + h * 0.78} Q${x + w * 0.5} ${y + h * 0.5} ${x + w * 0.92} ${y + h * 0.8}`}
-        stroke="rgba(255,255,255,0.5)"
-        strokeWidth={Math.max(3, h * 0.09)}
-        strokeLinecap="round"
-        fill="none"
+      {/* the path runs along the block, never curving into a face */}
+      <Rect
+        x={tall ? x + w * 0.44 : x}
+        y={tall ? y : y + h * 0.72}
+        width={tall ? w * 0.12 : w}
+        height={tall ? h : h * 0.13}
+        rx={Math.min(w, h) * 0.06}
+        fill="rgba(255,255,255,0.42)"
       />
-      <Ellipse cx={x + w * 0.72} cy={y + h * 0.38} rx={w * 0.16} ry={h * 0.11} fill={palette.waterCyanLight} />
-      <Tree cx={x + w * 0.3} cy={y + h * 0.38} r={r} />
-      {w > h * 1.3 ? <Tree cx={x + w * 0.72} cy={y + h * 0.68} r={r * 0.8} /> : null}
+      <Ellipse
+        cx={x + (tall ? w * 0.28 : w * 0.76)}
+        cy={y + (tall ? h * 0.74 : h * 0.34)}
+        rx={w * (tall ? 0.2 : 0.17)}
+        ry={h * (tall ? 0.1 : 0.16)}
+        fill={palette.waterCyanLight}
+      />
+      <Tree cx={x + (tall ? w * 0.26 : w * 0.24)} cy={y + (tall ? h * 0.26 : h * 0.36)} r={r} />
+      {tall ? <Tree cx={x + w * 0.76} cy={y + h * 0.5} r={r * 0.78} /> : null}
+      {!tall && w > h * 1.4 ? <Tree cx={x + w * 0.5} cy={y + h * 0.4} r={r * 0.78} /> : null}
     </G>
   );
 }

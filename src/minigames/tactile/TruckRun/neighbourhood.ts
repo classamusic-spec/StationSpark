@@ -50,6 +50,8 @@ const PLOTS = [
 /** The gap between the plots — a garden normally, a side street on a junction. */
 const GAP_AT = 16;
 const GAP_LEN = 8;
+/** How long the hedge across a front garden is — the gap it fills. */
+export const GARDEN_LENGTH = GAP_LEN;
 /** How far a side street runs away from the main road before the fog takes it. */
 export const SIDE_STREET_LENGTH = 24;
 /** Stripes in a zebra crossing, and how wide one is. */
@@ -173,7 +175,7 @@ export const BUILDINGS: Record<BuildingId, BuildingSpec> = {
   apartments: {
     depth: 8,
     frontage: 12.4,
-    height: 10.5,
+    height: 12,
     roof: 'flat',
     roofHeight: 0.8,
     ...walls('#FDEBCF'),
@@ -331,7 +333,7 @@ const RIGHT_ROW: readonly BuildingId[] = [
 /* Street furniture                                                     */
 /* ------------------------------------------------------------------ */
 
-export type FurnitureKind = 'lamp' | 'hydrant' | 'tree' | 'bench' | 'planter' | 'car' | 'van' | 'postbox';
+export type FurnitureKind = 'lamp' | 'hydrant' | 'tree' | 'bench' | 'planter' | 'car' | 'van' | 'postbox' | 'hedge';
 
 export interface StreetProp {
   id: string;
@@ -470,6 +472,20 @@ export function streetView(distance: number, depth: number, options: StreetOptio
 
     /* ---- the gap: a side street, or gardens ----------------------- */
     const gapMid = start + GAP_AT + GAP_LEN / 2;
+    if (!junction && gapMid > -8 && gapMid < depth + 8) {
+      /* a front garden between two plots, hedged so the street has a line
+         rather than a hole with the fields showing through it */
+      for (const side of [-1, 1] as const) {
+        furniture.push({
+          id: `g${block}:${side}`,
+          kind: 'hedge',
+          side,
+          x: side * (BUILD_LINE - 0.6),
+          ahead: gapMid,
+          turn: 0,
+        });
+      }
+    }
     if (junction) {
       if (gapMid > -8 && gapMid < depth + 8) {
         junctions.push({ id: `j${block}`, ahead: gapMid, width: GAP_LEN });
@@ -512,7 +528,7 @@ export function streetView(distance: number, depth: number, options: StreetOptio
           id: `c${block}:${offset}`,
           kind: roll % 5 === 0 ? 'van' : 'car',
           side,
-          x: side * (ROAD_HALF + 1.25),
+          x: side * (ROAD_HALF + 1.55),
           ahead,
           turn: 0,
         });

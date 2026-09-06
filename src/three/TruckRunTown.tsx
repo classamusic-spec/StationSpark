@@ -57,6 +57,7 @@ const FURNITURE_CAP: Record<FurnitureKind, number> = {
   car: 8,
   van: 6,
   postbox: 4,
+  hedge: 6,
 };
 const CROSSING_CAP = CROSSING_BARS * 3;
 const SIDE_STREET_CAP = 6;

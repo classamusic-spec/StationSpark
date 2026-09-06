@@ -270,14 +270,14 @@ export const CityBoard = memo(function CityBoard({
             />
             <Path
               d={trace}
-              stroke={palette.safetyYellow}
+              stroke={palette.waterCyanLight}
               strokeWidth={Math.max(3, cell * 0.09)}
               strokeLinecap="round"
               strokeLinejoin="round"
               strokeDasharray={`${cell * 0.2} ${cell * 0.16}`}
               fill="none"
             />
-            {last ? <Circle cx={cx(last.col)} cy={cy(last.row)} r={cell * 0.07} fill={palette.safetyYellow} /> : null}
+            {last ? <Circle cx={cx(last.col)} cy={cy(last.row)} r={cell * 0.075} fill={palette.waterCyanLight} /> : null}
           </G>
         ) : null}
 
@@ -302,9 +302,11 @@ export const CityBoard = memo(function CityBoard({
       {challenge.streetNames?.map((street) => {
         let run = 0;
         while (run < cols && plan.isRoad({ row: street.row, col: run })) run += 1;
-        if (run < 2 || cell < 44) return null;
+        /* the engine is parked on its own street: start the name past it */
+        const from = challenge.start.row === street.row ? challenge.start.col + 1 : 0;
+        if (run - from < 2 || cell < 44) return null;
         const size = Math.max(8, Math.min(cell * 0.15, 15));
-        const runsTo = run * cell - swell;
+        const runsTo = (run - from) * cell - swell;
         return (
           <Text
             key={street.row}
@@ -315,7 +317,7 @@ export const CityBoard = memo(function CityBoard({
               styles.street,
               {
                 top: py(street.row) + cell * 0.23,
-                left: margin + cell * 0.14,
+                left: margin + (from + 0.14) * cell,
                 width: Math.max(cell * 0.5, runsTo - cell * 0.14),
                 fontSize: size,
                 lineHeight: size * 1.2,

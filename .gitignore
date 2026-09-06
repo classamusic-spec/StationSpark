@@ -53,7 +53,10 @@ yarn-error.*
 /coverage
 /screenshots
 
-# QA harness output
+# QA harness output — including the throwaway web builds an agent exports to
+# drive a screen in a browser. These are 18 MB of Metro output apiece.
+/*-dist/
+/.*-dist/
 /tools/qa/out
 /tools/qa/.tmp
 /tools/qa/out2

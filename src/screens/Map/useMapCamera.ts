@@ -13,7 +13,16 @@ import {
 } from 'react-native-reanimated';
 import { springs } from '@/theme';
 import { useReducedMotion } from '@/hooks';
-import { HOME_FOCUS, clampTo, frameOn, mapScales, panBounds, type MapScales } from './mapView';
+import {
+  HOME_FOCUS,
+  clampTo,
+  frameOn,
+  mapScales,
+  panBounds,
+  wholeTown,
+  type MapFrame,
+  type MapScales,
+} from './mapView';
 
 /**
  * How long a glide lasts. 0.994 stops a flick in about half a second, which
@@ -65,9 +74,10 @@ const DRAG_GRACE_MS = 260;
  * Zoom is a bonus, never a requirement: at the opening scale everything is
  * reachable by dragging alone, which is what small hands can actually do.
  */
-export function useMapCamera(vpW: number, vpH: number): MapCamera {
+export function useMapCamera(vpW: number, vpH: number, foot: number): MapCamera {
   const reduced = useReducedMotion();
-  const scales = useMemo(() => mapScales(vpW, vpH), [vpH, vpW]);
+  const frame = useMemo((): MapFrame => ({ w: vpW, h: vpH, foot }), [foot, vpH, vpW]);
+  const scales = useMemo(() => mapScales(frame), [frame]);
   const { min: minScale, home: homeScale, max: maxScale, label: labelScale } = scales;
 
   const scale = useSharedValue(1);
@@ -132,43 +142,44 @@ export function useMapCamera(vpW: number, vpH: number): MapCamera {
 
   const focus = useCallback(
     (ux: number, uy: number, atLeast = homeScale, ay = 0.42) => {
-      if (vpW <= 0 || vpH <= 0) return;
+      if (frame.w <= 0 || frame.h <= 0) return;
       const s = clampTo(Math.max(scale.value, atLeast), minScale, maxScale);
-      const { tx: nx, ty: ny } = frameOn(ux, uy, s, vpW, vpH, 0.5, ay);
+      const { tx: nx, ty: ny } = frameOn(ux, uy, s, frame, 0.5, ay);
       settle(s, nx, ny);
     },
-    [homeScale, maxScale, minScale, scale, settle, vpH, vpW],
+    [frame, homeScale, maxScale, minScale, scale, settle],
   );
 
   const showAll = useCallback(() => {
-    if (vpW <= 0 || vpH <= 0) return;
-    settle(minScale, 0, 0);
-  }, [minScale, settle, vpH, vpW]);
+    if (frame.w <= 0 || frame.h <= 0) return;
+    const { tx: nx, ty: ny } = wholeTown(minScale, frame);
+    settle(minScale, nx, ny);
+  }, [frame, minScale, settle]);
 
   const showHome = useCallback(() => {
-    if (vpW <= 0 || vpH <= 0) return;
-    const { tx: nx, ty: ny } = frameOn(HOME_FOCUS.x, HOME_FOCUS.y, homeScale, vpW, vpH, HOME_FOCUS.ax, HOME_FOCUS.ay);
+    if (frame.w <= 0 || frame.h <= 0) return;
+    const { tx: nx, ty: ny } = frameOn(HOME_FOCUS.x, HOME_FOCUS.y, homeScale, frame, HOME_FOCUS.ax, HOME_FOCUS.ay);
     settle(homeScale, nx, ny);
-  }, [homeScale, settle, vpH, vpW]);
+  }, [frame, homeScale, settle]);
 
   /* First measure frames the town; later ones (rotation, a resized window)
      keep where we were looking but re-clamp it into the new frame. */
   useEffect(() => {
-    if (vpW <= 0 || vpH <= 0) return;
+    if (frame.w <= 0 || frame.h <= 0) return;
     if (!framed.current) {
       framed.current = true;
-      const { tx: nx, ty: ny } = frameOn(HOME_FOCUS.x, HOME_FOCUS.y, homeScale, vpW, vpH, HOME_FOCUS.ax, HOME_FOCUS.ay);
+      const { tx: nx, ty: ny } = frameOn(HOME_FOCUS.x, HOME_FOCUS.y, homeScale, frame, HOME_FOCUS.ax, HOME_FOCUS.ay);
       scale.value = homeScale;
       tx.value = nx;
       ty.value = ny;
       return;
     }
     const s = clampTo(scale.value, minScale, maxScale);
-    const b = panBounds(s, vpW, vpH);
+    const b = panBounds(s, frame);
     scale.value = s;
     tx.value = clampTo(tx.value, -b.x, b.x);
-    ty.value = clampTo(ty.value, -b.y, b.y);
-  }, [homeScale, maxScale, minScale, scale, tx, ty, vpH, vpW]);
+    ty.value = clampTo(ty.value, b.cy - b.y, b.cy + b.y);
+  }, [frame, homeScale, maxScale, minScale, scale, tx, ty]);
 
   /* ── gestures ────────────────────────────────────────────────────── */
 
@@ -185,16 +196,16 @@ export function useMapCamera(vpW: number, vpH: number): MapCamera {
       })
       .onUpdate((e) => {
         dragging.value = 1;
-        const b = panBounds(scale.value, vpW, vpH);
+        const b = panBounds(scale.value, frame);
         tx.value = clampTo(startX.value + e.translationX, -b.x, b.x);
-        ty.value = clampTo(startY.value + e.translationY, -b.y, b.y);
+        ty.value = clampTo(startY.value + e.translationY, b.cy - b.y, b.cy + b.y);
       })
       .onEnd((e) => {
-        const b = panBounds(scale.value, vpW, vpH);
+        const b = panBounds(scale.value, frame);
         if (reduced) {
           /* still movable, just without the drift */
           tx.value = withTiming(clampTo(tx.value, -b.x, b.x), { duration: 120 });
-          ty.value = withTiming(clampTo(ty.value, -b.y, b.y), { duration: 120 });
+          ty.value = withTiming(clampTo(ty.value, b.cy - b.y, b.cy + b.y), { duration: 120 });
           return;
         }
         tx.value =
@@ -203,8 +214,8 @@ export function useMapCamera(vpW: number, vpH: number): MapCamera {
             : withSpring(0, springs.gentle);
         ty.value =
           b.y > 0
-            ? withDecay({ velocity: e.velocityY, clamp: [-b.y, b.y], deceleration: DECELERATION })
-            : withSpring(0, springs.gentle);
+            ? withDecay({ velocity: e.velocityY, clamp: [b.cy - b.y, b.cy + b.y], deceleration: DECELERATION })
+            : withSpring(b.cy, springs.gentle);
       })
       .onFinalize(() => {
         /*
@@ -231,17 +242,17 @@ export function useMapCamera(vpW: number, vpH: number): MapCamera {
         dragging.value = 1;
         const s = clampTo(startScale.value * e.scale, minScale, maxScale);
         const k = s / startScale.value;
-        const ax = focalX.value - vpW / 2;
-        const ay = focalY.value - vpH / 2;
-        const b = panBounds(s, vpW, vpH);
+        const ax = focalX.value - frame.w / 2;
+        const ay = focalY.value - frame.h / 2;
+        const b = panBounds(s, frame);
         scale.value = s;
         tx.value = clampTo(ax - (ax - startX.value) * k, -b.x, b.x);
-        ty.value = clampTo(ay - (ay - startY.value) * k, -b.y, b.y);
+        ty.value = clampTo(ay - (ay - startY.value) * k, b.cy - b.y, b.cy + b.y);
       })
       .onEnd(() => {
-        const b = panBounds(scale.value, vpW, vpH);
+        const b = panBounds(scale.value, frame);
         tx.value = withSpring(clampTo(tx.value, -b.x, b.x), springs.gentle);
-        ty.value = withSpring(clampTo(ty.value, -b.y, b.y), springs.gentle);
+        ty.value = withSpring(clampTo(ty.value, b.cy - b.y, b.cy + b.y), springs.gentle);
       })
       .onFinalize(() => {
         dragging.value = withDelay(DRAG_GRACE_MS, withTiming(0, { duration: 1 }));
@@ -257,34 +268,18 @@ export function useMapCamera(vpW: number, vpH: number): MapCamera {
         const to =
           from > homeScale * NEAR_ENOUGH ? homeScale : clampTo(homeScale * DOUBLE_TAP_STEP, minScale, maxScale);
         const k = to / from;
-        const ax = e.x - vpW / 2;
-        const ay = e.y - vpH / 2;
-        const b = panBounds(to, vpW, vpH);
+        const ax = e.x - frame.w / 2;
+        const ay = e.y - frame.h / 2;
+        const b = panBounds(to, frame);
         cancelAnimation(tx);
         cancelAnimation(ty);
         scale.value = withTiming(to, { duration: reduced ? 140 : 220 });
         tx.value = withSpring(clampTo(ax - (ax - tx.value) * k, -b.x, b.x), springs.gentle);
-        ty.value = withSpring(clampTo(ay - (ay - ty.value) * k, -b.y, b.y), springs.gentle);
+        ty.value = withSpring(clampTo(ay - (ay - ty.value) * k, b.cy - b.y, b.cy + b.y), springs.gentle);
       });
 
     return Gesture.Race(doubleTap, Gesture.Simultaneous(pan, pinch));
-  }, [
-    focalX,
-    focalY,
-    homeScale,
-    maxScale,
-    minScale,
-    dragging,
-    reduced,
-    scale,
-    startScale,
-    startX,
-    startY,
-    tx,
-    ty,
-    vpH,
-    vpW,
-  ]);
+  }, [dragging, focalX, focalY, frame, homeScale, maxScale, minScale, reduced, scale, startScale, startX, startY, tx, ty]);
 
   const wasDragged = useCallback(() => dragging.value > 0.5, [dragging]);
 

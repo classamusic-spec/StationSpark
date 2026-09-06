@@ -4,7 +4,7 @@ import Animated, { FadeInDown, useAnimatedStyle, useSharedValue, withSequence, w
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { GestureDetector } from 'react-native-gesture-handler';
 import { useRouter, type Href } from 'expo-router';
-import { radii, roles, spacing, springs } from '@/theme';
+import { hit, radii, roles, spacing, springs } from '@/theme';
 import { Button, ChevronRightIcon, Panel, ScreenFrame, Text, TopBar } from '@/ui';
 import { sfx } from '@/services/audio';
 import { haptics } from '@/services/haptics';
@@ -31,6 +31,14 @@ const railWidth = (w: number) => Math.round(Math.max(320, Math.min(460, w * 0.34
 
 /** Below this the name pills shrink so three neighbours still fit in a row. */
 const COMPACT_BELOW = 560;
+
+/**
+ * How much chrome floats over the foot of the map on a phone: the view toggle,
+ * the gap, the big CTA and the padding round them. The town runs *under* it,
+ * but the whole-town view has to clear it — a row of the plan hidden behind a
+ * button is not "the whole town".
+ */
+const FOOT_ROOM = spacing.sm * 2 + hit.min + spacing.xs + hit.big + 6;
 
 /** How wide the parked engine is, in plan units. */
 const TRUCK_UNITS = 64;
@@ -69,6 +77,7 @@ export function MapScreen() {
   const { far, framedWhole, focus, gesture, scale, scales, showAll, showHome, tx, ty, wasDragged } = useMapCamera(
     viewport.w,
     viewport.h,
+    side ? 0 : FOOT_ROOM,
   );
 
   useEffect(

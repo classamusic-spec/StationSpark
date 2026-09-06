@@ -22,6 +22,7 @@ import { palette } from '@/theme';
 import {
   BUILDINGS,
   CROSSING_BAR_W,
+  GARDEN_LENGTH,
   type BuildingId,
   type BuildingSpec,
   type FurnitureKind,
@@ -353,6 +354,14 @@ const furniture: Record<FurnitureKind, () => THREE.BufferGeometry> = {
       { geo: new THREE.SphereGeometry(0.66, 9, 6), color: palette.leafGreen, at: [0, 0.95, 0] },
       { geo: new THREE.SphereGeometry(0.4, 8, 6), color: palette.grassDark, at: [0.3, 1.15, 0.2] },
     ]),
+  /* the clipped hedge along a front garden — it closes the gap between two
+     plots so the street reads as a street and not as a row of loose boxes */
+  hedge: () =>
+    mergeParts([
+      { geo: box(1.2, 1.25, GARDEN_LENGTH), color: palette.leafGreenDark, at: [-0.6, 0.62, 0] },
+      { geo: box(1.32, 0.3, GARDEN_LENGTH + 0.1), color: palette.leafGreen, at: [-0.6, 1.2, 0] },
+      { geo: box(0.35, 0.55, GARDEN_LENGTH + 0.3), color: palette.grass, at: [-1.15, 0.28, 0] },
+    ]),
   postbox: () =>
     mergeParts([
       { geo: cyl(0.34, 1.5, 10), color: palette.engineRed, at: [0, 0.75, 0] },
@@ -366,16 +375,19 @@ const furniture: Record<FurnitureKind, () => THREE.BufferGeometry> = {
 /** A car at the kerb — nose down the road, never in a lane the truck can use. */
 function parkedCar(body: string, dark: string, tall = false): THREE.BufferGeometry {
   const h = tall ? 1.7 : 1.05;
+  /* 1.75 across and parked 1.55 out from the kerb: a clear road unit of white
+     tarmac between it and the outside driving lane, so it can never read as a
+     hazard the child has to dodge */
   return mergeParts([
-    { geo: box(1.9, h, 4.3), color: body, at: [0, h / 2 + 0.32, 0] },
-    { geo: box(1.62, tall ? 0.7 : 0.85, tall ? 2 : 2.1), color: dark, at: [0, h + 0.72, tall ? -0.9 : -0.15] },
-    { geo: box(1.5, tall ? 0.42 : 0.5, tall ? 1.7 : 1.8), color: palette.navy, at: [0, h + 0.78, tall ? -0.9 : -0.15] },
-    { geo: box(1.96, 0.22, 0.6), color: palette.slateLight, at: [0, 0.68, 2.1] },
-    { geo: box(1.96, 0.22, 0.6), color: palette.slateLight, at: [0, 0.68, -2.1] },
-    { geo: cyl(0.42, 0.3, 10), color: palette.charcoalDark, at: [0.86, 0.42, 1.35], rot: [0, 0, Math.PI / 2] },
-    { geo: cyl(0.42, 0.3, 10), color: palette.charcoalDark, at: [-0.86, 0.42, 1.35], rot: [0, 0, Math.PI / 2] },
-    { geo: cyl(0.42, 0.3, 10), color: palette.charcoalDark, at: [0.86, 0.42, -1.35], rot: [0, 0, Math.PI / 2] },
-    { geo: cyl(0.42, 0.3, 10), color: palette.charcoalDark, at: [-0.86, 0.42, -1.35], rot: [0, 0, Math.PI / 2] },
+    { geo: box(1.75, h, 4.3), color: body, at: [0, h / 2 + 0.32, 0] },
+    { geo: box(1.5, tall ? 0.7 : 0.85, tall ? 2 : 2.1), color: dark, at: [0, h + 0.72, tall ? -0.9 : -0.15] },
+    { geo: box(1.38, tall ? 0.42 : 0.5, tall ? 1.7 : 1.8), color: palette.navy, at: [0, h + 0.78, tall ? -0.9 : -0.15] },
+    { geo: box(1.8, 0.22, 0.6), color: palette.slateLight, at: [0, 0.68, 2.1] },
+    { geo: box(1.8, 0.22, 0.6), color: palette.slateLight, at: [0, 0.68, -2.1] },
+    { geo: cyl(0.42, 0.3, 10), color: palette.charcoalDark, at: [0.78, 0.42, 1.35], rot: [0, 0, Math.PI / 2] },
+    { geo: cyl(0.42, 0.3, 10), color: palette.charcoalDark, at: [-0.78, 0.42, 1.35], rot: [0, 0, Math.PI / 2] },
+    { geo: cyl(0.42, 0.3, 10), color: palette.charcoalDark, at: [0.78, 0.42, -1.35], rot: [0, 0, Math.PI / 2] },
+    { geo: cyl(0.42, 0.3, 10), color: palette.charcoalDark, at: [-0.78, 0.42, -1.35], rot: [0, 0, Math.PI / 2] },
   ]);
 }
 

@@ -354,7 +354,9 @@ export function RescueRoute({ challenge, ageBand, onComplete, onEvent, compact }
 
       if (isForward && (step.outcome === 'blocked' || step.outcome === 'off-map')) {
         /* a gentle nose-in against the kerb, then back: never a crash */
-        nudge.value = withSequence(withTiming(-cell * 0.2, { duration: 160 }), withSpring(0, springs.bounce));
+        nudge.value = reduceMotion
+          ? withSequence(withTiming(-cell * 0.12, { duration: 120 }), withTiming(0, { duration: 120 }))
+          : withSequence(withTiming(-cell * 0.2, { duration: 160 }), withSpring(0, springs.bounce));
         sfx.play('bump');
         haptics.thud();
         sfx.stopLoop('engine');
@@ -401,7 +403,7 @@ export function RescueRoute({ challenge, ageBand, onComplete, onEvent, compact }
   /* the truck's own headlights already show the next cell when the tape is
      empty, so the road chevron only appears once a programme is being built */
   const aheadCell = useMemo(() => {
-    if (!editing || state.program.length === 0) return null;
+    if (!editing || state.program.length === 0 || trace.reached) return null;
     const next = stepForward(trace.end.pos, trace.end.heading);
     return plan.isRoad(next) && !samePos(next, trace.end.pos) ? next : null;
   }, [editing, plan, state.program.length, trace]);

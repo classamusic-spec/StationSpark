@@ -160,8 +160,8 @@ export function FirehouseScreen() {
    * edge to edge, and on a tablet it grows until the sky above it is a band
    * rather than a field. Everything else hangs off `facadeLayout`: the apron's
    * own height sets the depth of the footpath, so the ground plane is
-   * continuous from the building's foot to the kerb, and the apron's splayed
-   * front edge becomes the dropped kerb the engines roll down.
+   * continuous from the building's foot to the kerb, and the apron's gathered
+   * front edge tells `Street` where to drop the kerb the engines roll down.
    */
   const scene = useMemo(() => {
     const W = stage.w;
@@ -170,12 +170,16 @@ export function FirehouseScreen() {
     const ratio = FACADE_VB.w / FACADE_VB.h;
 
     /* the road band: the CTA lives on it, so it is never thinner than that */
-    const road = Math.round(clamp(H * 0.23, CTA_BLOCK + CTA_AIR + insets.bottom, 260 + insets.bottom));
+    const wanted = Math.round(clamp(H * 0.23, CTA_BLOCK + CTA_AIR + insets.bottom, 260 + insets.bottom));
     const sideGap = Math.round(clamp(W * 0.028, 8, 44));
-    const fitH = H - road - TOP_MIN;
-    const width = Math.max(240, Math.min(W - sideGap * 2, fitH * ratio, 760));
+    /* ≥ 260 keeps the six doors above the 56 px tap target on a small phone */
+    const width = clamp(Math.min(W - sideGap * 2, (H - wanted - TOP_MIN) * ratio, 760), 260, 760);
     const station = facadeLayout(width);
     const left = (W - width) / 2;
+    /* on a short window the road gives way before the roof does */
+    const road = Math.round(
+      Math.max(CTA_BLOCK + 30 + insets.bottom, Math.min(wanted, H - TOP_MIN - KERB - station.height)),
+    );
 
     /* the footpath is exactly as deep as the apron, so they read as one plane */
     const pave = Math.max(16, Math.round(station.apronHeight) - KERB);

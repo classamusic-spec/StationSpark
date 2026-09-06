@@ -28,6 +28,7 @@ import {
   BUILD_LINE,
   CROSSING_BARS,
   CROSSING_BAR_W,
+  GARDEN_LENGTH,
   SIDE_STREET_LENGTH,
   streetView,
   type BuildingId,
@@ -39,17 +40,18 @@ import {
 import { CAMERA, ROAD_HALF, projectX, type Projected, type RoadView } from './projection';
 
 /** How far down the street the SVG town is drawn. */
-export const TOWN_DEPTH_2D = 56;
+export const TOWN_DEPTH_2D = 72;
 /** Past this, a building is massing only — the haze is eating it anyway. */
 const DETAIL_DEPTH = 30;
 /**
- * Nearer than this and a building is beside the cab rather than in front of it:
- * its wall fills the screen edge, and a shop sign drawn on it would be a
- * dinner-plate of colour across the road. Massing only.
+ * A building whose near end is behind this is level with the cab: `streetView`
+ * has already culled everything further back, and the camera sits 13 units
+ * behind the truck, so a wall is never closer than a few units and the
+ * projection never degenerates.
  */
-const NEAR_DETAIL = 2.5;
+const NEAR_DETAIL = -6;
 /** Furniture this close is level with the cab — off the edge, and enormous. */
-const NEAR_PROP = 3;
+const NEAR_PROP = 6;
 /** Road units between the bars of a zebra crossing (matches the 3D town). */
 const CROSSING_PITCH = 1.7;
 /** How close to the camera the pavement is modelled. */
@@ -130,6 +132,18 @@ function onWall(vp: RoadView, xi: number, z: number, y: number, w: number, h: nu
     ry: Math.max(0.5, (h / 2) * scale),
     scale,
   };
+}
+
+/**
+ * A *solid* standing against the wall — a column, a cupola, a chimney.
+ *
+ * The counterpart to `onWall`: a round column looks the same width from every
+ * angle and a cupola is a box with real depth, so neither is squeezed the way
+ * paint on the wall is. Only where it sits along the road is projected.
+ */
+function standing(vp: RoadView, xi: number, z: number, y: number, w: number, h: number) {
+  const at = projectX(vp, xi, z, y);
+  return { cx: at.x, cy: at.y, rx: (w / 2) * at.scale, ry: (h / 2) * at.scale, scale: at.scale };
 }
 
 /** Windows, awning, door and the one motif that names the shop. */
@@ -223,7 +237,10 @@ function Front({ vp, spec, s, n, f, xi }: { vp: RoadView; spec: BuildingSpec; s:
     case 'books':
       plate('s1', mid, spec.height - 0.9, spec.frontage * 0.5, 0.72, spec.trim, 0.16);
       for (const dz of [-spec.frontage * 0.22, 0, spec.frontage * 0.22]) {
-        plate(`c${dz}`, mid + dz, spec.height / 2, 0.68, spec.height, palette.cream, 0);
+        const col = standing(vp, xi, mid + dz, spec.height / 2, 0.68, spec.height);
+        bits.push(
+          <Rect key={`c${dz}`} x={col.cx - col.rx} y={col.cy - col.ry} width={col.rx * 2} height={col.ry * 2} fill={palette.cream} />,
+        );
       }
       break;
     case 'stall': {
@@ -235,16 +252,20 @@ function Front({ vp, spec, s, n, f, xi }: { vp: RoadView; spec: BuildingSpec; s:
       break;
     }
     case 'bell': {
+      /* the belfry is a little box with a roof on it, not paint on a wall */
       const cupY = spec.height + spec.roofHeight + 0.8;
-      const cup = plate('s1', mid, cupY, 2, 1.5, palette.creamDeep, 0);
+      const cup = standing(vp, xi, mid, cupY, 2, 1.5);
       bits.push(
         <Path
           key="s2"
-          d={`M${cup.cx - cup.rx * 1.2} ${cup.cy - cup.ry} L${cup.cx} ${cup.cy - cup.ry * 2.4} L${cup.cx + cup.rx * 1.2} ${cup.cy - cup.ry} Z`}
+          d={`M${cup.cx - cup.rx * 1.3} ${cup.cy - cup.ry} L${cup.cx} ${cup.cy - cup.ry - 1.2 * cup.scale} L${cup.cx + cup.rx * 1.3} ${cup.cy - cup.ry} Z`}
           fill={spec.roofDark}
         />,
       );
-      disc('s3', mid, cupY, 0.5, palette.safetyYellow);
+      bits.push(
+        <Rect key="s1" x={cup.cx - cup.rx} y={cup.cy - cup.ry} width={cup.rx * 2} height={cup.ry * 2} fill={palette.creamDeep} />,
+      );
+      bits.push(<Circle key="s3" cx={cup.cx} cy={cup.cy + cup.ry * 0.2} r={0.5 * cup.scale} fill={palette.safetyYellow} />);
       break;
     }
     case 'helmet':
@@ -356,6 +377,16 @@ const Furniture = memo(function Furniture({ vp, item }: { vp: RoadView; item: St
         </G>
       );
     }
+    case 'hedge': {
+      const body = onWall(vp, item.x, item.ahead, 0.62, GARDEN_LENGTH, 1.25);
+      const top = onWall(vp, item.x, item.ahead, 1.2, GARDEN_LENGTH, 0.3);
+      return (
+        <G>
+          <Rect x={body.cx - body.rx} y={body.cy - body.ry} width={body.rx * 2} height={body.ry * 2} fill={palette.leafGreenDark} />
+          <Rect x={top.cx - top.rx} y={top.cy - top.ry} width={top.rx * 2} height={top.ry * 2} fill={palette.leafGreen} />
+        </G>
+      );
+    }
     case 'bench': {
       /* a bench runs *along* the road, so its length foreshortens like a wall */
       const seat = onWall(vp, item.x, item.ahead, 0.65, 2.2, 0.22);
@@ -430,8 +461,17 @@ export const TownPavements = memo(function TownPavements({ vp }: { vp: RoadView 
   );
 });
 
-/** Side streets and zebra crossings: paint on the tarmac at every crossroads. */
-export const TownJunctions = memo(function TownJunctions({ vp, street }: TownLayerProps) {
+/**
+ * The mouth of each side street, cut through the pavement.
+ *
+ * It stops just past the building line rather than running to the horizon the
+ * way the 3D one does: with no depth buffer, a plane stretching twenty units
+ * sideways paints a grey rule straight across every building it passes behind.
+ * Ending it in line with the houses reads as a road going on between them, and
+ * cannot cross anything.
+ */
+export const TownSideStreets = memo(function TownSideStreets({ vp, street }: TownLayerProps) {
+  const reach = Math.min(SIDE_STREET_LENGTH, BUILD_LINE - ROAD_HALF + 4);
   return (
     <G>
       {street.junctions.map((j) => (
@@ -441,13 +481,25 @@ export const TownJunctions = memo(function TownJunctions({ vp, street }: TownLay
               key={`m${s}`}
               d={quad(
                 projectX(vp, s * ROAD_HALF, j.ahead - j.width / 2, 0.17),
-                projectX(vp, s * (ROAD_HALF + SIDE_STREET_LENGTH), j.ahead - j.width / 2, 0.17),
-                projectX(vp, s * (ROAD_HALF + SIDE_STREET_LENGTH), j.ahead + j.width / 2, 0.17),
+                projectX(vp, s * (ROAD_HALF + reach), j.ahead - j.width / 2, 0.17),
+                projectX(vp, s * (ROAD_HALF + reach), j.ahead + j.width / 2, 0.17),
                 projectX(vp, s * ROAD_HALF, j.ahead + j.width / 2, 0.17),
               )}
               fill="#6E778F"
             />
           ))}
+        </G>
+      ))}
+    </G>
+  );
+});
+
+/** The zebra crossing painted on the main road at every crossroads. */
+export const TownCrossings = memo(function TownCrossings({ vp, street }: TownLayerProps) {
+  return (
+    <G>
+      {street.junctions.map((j) => (
+        <G key={j.id}>
           {Array.from({ length: CROSSING_BARS }, (_, i) => {
             const at = j.ahead + (i - (CROSSING_BARS - 1) / 2) * CROSSING_PITCH;
             const half = ROAD_HALF - 0.45;

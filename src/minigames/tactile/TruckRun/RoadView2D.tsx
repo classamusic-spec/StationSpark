@@ -19,7 +19,7 @@ import { lampColors, truckTones } from '@/three/palette3d';
 import type { RunFrame, VisibleItem } from './run';
 import { CAMERA, ROAD_HALF, horizonY, project, roadView, type RoadView } from './projection';
 import { destinationFor, streetSeed } from './neighbourhood';
-import { TownArrival, TownBuildings, TownFurniture, TownJunctions, TownPavements, townFrame } from './TownView2D';
+import { TownArrival, TownBuildings, TownCrossings, TownFurniture, TownPavements, TownSideStreets, townFrame } from './TownView2D';
 
 /** How high above the tarmac the gate banner hangs, in road units. */
 export const GATE_BANNER_Y = 2.9;
@@ -286,15 +286,18 @@ export const RoadView2D = memo(function RoadView2D({ frame, truck, width, height
             <Stop offset="0" stopColor={palette.grass} />
             <Stop offset="1" stopColor={palette.grassDark} />
           </LinearGradient>
+          {/* the distance fades *into* the haze and out of it again — a hard
+              top edge would cut a straight line across every roof that stands
+              above the horizon */}
           <LinearGradient id="truckRunHaze" x1="0" y1="0" x2="0" y2="1">
-            <Stop offset="0" stopColor={palette.skyBottom} stopOpacity={0.62} />
+            <Stop offset="0" stopColor={palette.skyBottom} stopOpacity={0} />
+            <Stop offset="0.34" stopColor={palette.skyBottom} stopOpacity={0.85} />
             <Stop offset="1" stopColor={palette.skyBottom} stopOpacity={0} />
           </LinearGradient>
         </Defs>
 
         {/* the rest of the town, stepping along the horizon behind the street */}
-        <Path d={skylinePath(width, hy, Math.max(18, height * 0.055))} fill={palette.navySoft} opacity={0.24} />
-        <Path d={skylinePath(width, hy, Math.max(12, height * 0.036), 0.4)} fill={palette.navy} opacity={0.16} />
+        <Path d={skylinePath(width, hy, Math.max(10, height * 0.03))} fill={palette.navySoft} opacity={0.16} />
 
         {/* the ground the whole neighbourhood stands on */}
         <Rect x={0} y={hy} width={width} height={height - hy} fill="url(#truckRunGround)" />
@@ -302,6 +305,7 @@ export const RoadView2D = memo(function RoadView2D({ frame, truck, width, height
         {/* Spark City itself, behind the pavements */}
         <TownBuildings vp={vp} street={street} />
         <TownPavements vp={vp} />
+        <TownSideStreets vp={vp} street={street} />
 
         {/* tarmac */}
         <Path
@@ -323,14 +327,14 @@ export const RoadView2D = memo(function RoadView2D({ frame, truck, width, height
             />
           );
         })}
-        {/* side streets and their crossings, painted on the tarmac */}
-        <TownJunctions vp={vp} street={street} />
+        {/* the zebra crossing at each crossroads, painted on the tarmac */}
+        <TownCrossings vp={vp} street={street} />
         {laneStripes(vp, frame.distance, 120)}
         {/* lamps, trees, hydrants and parked cars stand in front of the walls */}
         <TownFurniture vp={vp} street={street} />
         <TownArrival vp={vp} street={street} />
         {/* the haze the distance fades into — the SVG twin of the 3D fog */}
-        <Rect x={0} y={hy - height * 0.035} width={width} height={height * 0.09} fill="url(#truckRunHaze)" />
+        <Rect x={0} y={hy - height * 0.075} width={width} height={height * 0.17} fill="url(#truckRunHaze)" />
 
         {/* everything on the road, far things first */}
         {frame.items.map((item) => {
