@@ -1165,8 +1165,12 @@ async function runShift() {
   try {
     await page.goto(`${base}/`, { waitUntil: 'domcontentloaded', timeout: 45000 });
     /* the label carries the board summary too ("Start your shift. 3 calls
-       waiting"), so match on the prefix rather than the whole string */
-    await byLabel(page, 'Start your shift', false).first().waitFor({ state: 'attached', timeout: 30000 });
+       waiting"), so match on the prefix rather than the whole string.
+       Wait for VISIBLE, not merely attached: the button is in the DOM ~600 ms
+       in, but Reanimated's entering animation renders it `visibility: hidden`
+       until it plays, and a forced click on a hidden element hit-tests through
+       to the background and silently does nothing. */
+    await byLabel(page, 'Start your shift', false).first().waitFor({ state: 'visible', timeout: 30000 });
     await tap(page, byLabel(page, 'Start your shift', false).first(), { after: 1600 });
 
     await page.getByText('Dispatch', { exact: true }).first().waitFor({ state: 'attached', timeout: 15000 });
