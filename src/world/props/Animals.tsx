@@ -572,9 +572,21 @@ function Duckling({ blink, mood, pose }: RigProps) {
 
 /* ── turtle ───────────────────────────────────────────────────────── */
 
-const TURTLE_SKIN = palette.grass;
-const TURTLE_SHELL = palette.leafGreen;
-const TURTLE_SCUTE = palette.leafGreenDark;
+/*
+ * THE TURTLE'S VALUE.
+ *
+ * The shell used to be `leafGreen` on `grass` skin — a green animal sitting on
+ * a green canopy in Rescue Pets, where it all but disappeared. A real turtle's
+ * carapace is keratin, not leaf, so it is now warm brown: dark enough and far
+ * enough round the wheel to separate from any foliage it is ever rescued off,
+ * with a paler `wood` rim for the marginal scutes and the plastron and a lit
+ * centre in each plate. The skin stays green — it is what makes it a turtle —
+ * but one value step down, so head and shell do not compete.
+ */
+const TURTLE_SKIN = palette.grassDark;
+const TURTLE_SHELL = palette.woodDark;
+const TURTLE_SCUTE = '#7A4F26';
+const TURTLE_RIM = palette.wood;
 
 const TurtleShell = memo(function TurtleShell({ held }: { held: boolean }) {
   return (
@@ -593,14 +605,22 @@ const TurtleShell = memo(function TurtleShell({ held }: { held: boolean }) {
       <Path d="M74 74h13v13a6.5 6.5 0 0 1-13 0z" fill={TURTLE_SKIN} />
       <Path d="M76.6 86.2h8.4M76.4 89.8h8.8" stroke={SHADE} strokeWidth={1.5} strokeLinecap="round" fill="none" />
       <Path d="M86 72c7.6 1 11.6 4.6 11 9.4-4-0.2-8-2-11-4.6z" fill={TURTLE_SKIN} />
-      {/* the shell: a rim of marginal scutes, then an opaque dome over it */}
-      <Path d="M26 76c0 8 14.4 12.6 32 12.6S90 84 90 76c0-4-14.4-6.4-32-6.4S26 72 26 76z" fill={TURTLE_SCUTE} />
+      {/* the shell: a paler rim of marginal scutes (the plastron edge), then an
+          opaque dome over it */}
+      <Path d="M26 76c0 8 14.4 12.6 32 12.6S90 84 90 76c0-4-14.4-6.4-32-6.4S26 72 26 76z" fill={TURTLE_RIM} />
       <Path d="M30.4 81c2.6 1.4 5.8 2.4 9.4 3.2M46.6 85.2c3.2 0.4 6.6 0.6 10 0.6M63 85.6c3.6-0.2 7-0.6 10.2-1.2M79 82.8c3-1 5.6-2.1 7.6-3.4" stroke={SHADE_DEEP} strokeWidth={1.3} strokeLinecap="round" opacity={0.45} fill="none" />
       <Path d="M32 79C32 60 43.6 47 58 47s26 13 26 32z" fill={TURTLE_SHELL} />
       <Rim cx={58} cy={66} rx={26} ry={17} tone="light" />
       <Path
         d={`${hex(46, 56.6, 5.4)}${hex(58, 53.4, 5.8)}${hex(70, 56.6, 5.4)}${hex(41, 68.6, 6)}${hex(53, 70.2, 6.6)}${hex(65, 70.2, 6.6)}${hex(77, 68.6, 6)}`}
         fill={TURTLE_SCUTE}
+      />
+      {/* the lit crown of each plate — shell is keratin, and keratin has a
+          growth ring, which is what makes seven hexagons read as a carapace */}
+      <Path
+        d={`${hex(45.4, 55.8, 3)}${hex(57.4, 52.6, 3.2)}${hex(69.4, 55.8, 3)}${hex(40.4, 67.6, 3.3)}${hex(52.4, 69.2, 3.7)}${hex(64.4, 69.2, 3.7)}${hex(76.4, 67.6, 3.3)}`}
+        fill={TURTLE_RIM}
+        opacity={0.5}
       />
       <Rim cx={58} cy={66} rx={26} ry={17} tone="softShade" />
     </G>
