@@ -148,7 +148,7 @@ function bakeryArt(detail: boolean) {
         <G>
           {/* the pavement in front of the shop: a chalked menu, the morning
               delivery, the baker's bike and the regulars */}
-          <Chalkboard x={258} y={272} s={1.5} />
+          <Chalkboard x={250} y={276} s={1.25} />
           <Planter x={36} y={262} s={1.2} />
           <Bicycle x={206} y={280} s={1.25} tone="#3E8FBF" />
           <Crate x={72} y={278} s={1.15} fruit={['#E3A960', '#D69B52']} />
@@ -550,6 +550,7 @@ export const petShop: SceneDef = {
 export const library: SceneDef = {
   height: LIB_H,
   ground: 'paving',
+  spill: 0.95,
   art: libraryArt,
   sway: { x: 60, y: 90, kind: 'banner' },
 };

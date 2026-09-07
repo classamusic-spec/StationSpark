@@ -200,7 +200,7 @@ export function WordBuilder({ challenge, ageBand, onComplete, onEvent, compact }
     sfx.play('correct');
     haptics.celebrate();
     glow.value = withSequence(withTiming(1, timings.base), withSpring(0.45, springs.gentle));
-    setTimeout(() => speech.sayWord({ en: word.en, es: word.es }, lang), 380);
+    speech.later(() => speech.sayWord({ en: word.en, es: word.es }, lang), 380);
     setTimeout(finish, 2200);
   }, [finish, glow, lang, session, word.en, word.es]);
 

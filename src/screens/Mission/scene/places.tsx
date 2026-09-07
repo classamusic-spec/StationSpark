@@ -625,7 +625,7 @@ function stationYardArt(detail: boolean) {
             <Ellipse cx={-5} cy={-57} rx={4.4} ry={2.4} fill={HIGHLIGHT} />
           </G>
           {/* the coiled hose and the helmet left out after the last shout */}
-          <G x={236} y={276} scale={0.95}>
+          <G x={204} y={288} scale={1} >
             <Contact cx={0} cy={3} rx={22} />
             <Ellipse cx={0} cy={-6} rx={21} ry={10} fill={palette.gold} />
             <Ellipse cx={0} cy={-9} rx={21} ry={10} fill={palette.safetyYellow} />
@@ -634,20 +634,20 @@ function stationYardArt(detail: boolean) {
             <Ellipse cx={-8} cy={-15} rx={7} ry={2.6} fill={HIGHLIGHT} />
             <Rect x={14} y={-13} width={14} height={7} rx={3.5} fill={palette.slate} />
           </G>
-          <G x={86} y={278} scale={0.92}>
+          <G x={78} y={276} scale={0.95}>
             <Contact cx={0} cy={2} rx={19} />
             <Path d="M -16 0 q -3 -20 16 -20 q 19 0 16 20 z" fill={palette.engineRed} />
             <Path d="M -16 0 q -3 -20 16 -20 l 0 20 z" fill={HIGHLIGHT} />
             <Path d="M -20 0 h 40 l -3 5 h -34 z" fill={palette.engineRedDark} />
             <Path d="M -7 -13 l 7 -8 l 7 8 z" fill={palette.safetyYellow} />
           </G>
-          <Bollard x={112} y={258} h={30} s={1.3} />
-          <Bollard x={188} y={258} h={30} s={1.3} />
-          <Cone x={214} y={272} h={26} s={1.2} />
-          <Drain x={162} y={282} s={1} />
-          <Planter x={30} y={274} s={1.1} />
-          <Planter x={274} y={250} s={0.95} />
-          <Pigeon x={128} y={282} s={1} facing={-1} />
+          <Bollard x={24} y={250} h={28} s={1.2} />
+          <Bollard x={276} y={250} h={28} s={1.2} />
+          <Cone x={232} y={268} h={26} s={1.2} />
+          <Drain x={172} y={300} s={1.05} />
+          <Planter x={56} y={260} s={1.05} />
+          <Planter x={254} y={252} s={0.95} />
+          <Pigeon x={132} y={296} s={1.05} facing={-1} />
         </G>
       ) : null}
     </G>
@@ -659,6 +659,9 @@ function stationYardArt(detail: boolean) {
 export const school: SceneDef = {
   height: SCHOOL_H,
   ground: 'paving',
+  /* a freestanding civic building reads as an object, so it keeps its ends;
+     a shop in a terrace may run off both edges of the frame */
+  spill: 0.93,
   art: schoolArt,
   sway: { x: 278, y: 16, kind: 'flag' },
 };
@@ -667,6 +670,7 @@ export const park: SceneDef = {
   height: PARK_H,
   ground: 'grass',
   mid: 'trees',
+  spill: 0.96,
   art: parkArt,
   sway: { x: 150, y: 70, kind: 'banner' },
 };
@@ -691,6 +695,8 @@ export const apartments: SceneDef = {
 export const stationYard: SceneDef = {
   height: YARD_H,
   ground: 'apron',
+  /* the child has to recognise the whole firehouse, so it never loses its ends */
+  spill: 0.9,
   art: stationYardArt,
   sway: { x: 278, y: 36, kind: 'flag' },
 };

@@ -94,7 +94,7 @@ export function GearSort({ challenge, ageBand, onComplete, onEvent, compact }: M
     sfx.play('tap-soft');
     haptics.tap();
     speech.say(spokenLine, { speaker: 'bea' });
-    if (showEs) setTimeout(() => speech.say(prompt.es, { speaker: 'bea', lang: 'es' }), 1600);
+    if (showEs) speech.later(() => speech.say(prompt.es, { speaker: 'bea', lang: 'es' }), 1600);
   }, [prompt.es, showEs, spokenLine]);
 
   const done = challenge.items.length - remaining.length;

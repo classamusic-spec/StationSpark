@@ -110,7 +110,7 @@ export function PitchedRoof({
     <G>
       <Path d={`M ${x - over} ${y} L ${apex} ${y - rise} L ${x + w + over} ${y} Z`} fill={tone} />
       <Path d={`M ${x - over} ${y} L ${apex} ${y - rise} L ${apex} ${y} Z`} fill={HIGHLIGHT} />
-      {tiles ? <Path d={courses} fill={SHADE_SOFT} /> : null}
+      {tiles ? <Path d={courses} fill={SHADE} opacity={0.55} /> : null}
       <Path d={`M ${apex - 4} ${y - rise} l 4 -5 l 4 5 z`} fill={toneDark} />
       <Rect x={x - over - 3} y={y - 5} width={w + over * 2 + 6} height={11} rx={5} fill={toneDark} />
       <Rect x={x - over - 3} y={y - 5} width={w + over * 2 + 6} height={3.4} rx={1.7} fill={HIGHLIGHT} />

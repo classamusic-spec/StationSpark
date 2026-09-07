@@ -81,7 +81,7 @@ export function VocabTap({ challenge, ageBand, onComplete, onEvent, compact }: M
         session.learnedWord(word.es);
         sfx.play('correct');
         haptics.success();
-        setTimeout(() => speech.say(word[other], { speaker: 'bea', lang: other }), 500);
+        speech.later(() => speech.say(word[other], { speaker: 'bea', lang: other }), 500);
         if (!done.current) {
           done.current = true;
           setTimeout(() => session.complete(), 1600);

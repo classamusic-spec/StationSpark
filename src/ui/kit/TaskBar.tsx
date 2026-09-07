@@ -76,7 +76,7 @@ export function TaskBar({ task, es, detail, onBack, onReplay, progress, compact,
        cutting the English off mid-word. */
     speech.say(task, {
       speaker: 'bea',
-      onDone: spoken ? () => setTimeout(() => speech.say(spoken, { speaker: 'bea', lang: 'es' }), 250) : undefined,
+      onDone: spoken ? () => speech.later(() => speech.say(spoken, { speaker: 'bea', lang: 'es' }), 250) : undefined,
     });
   }, [task, spoken]);
   const replay = onReplay === null ? undefined : (onReplay ?? chrome.onReplay ?? sayTask);
