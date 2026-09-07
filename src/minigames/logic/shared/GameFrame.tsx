@@ -1,5 +1,5 @@
 import React from 'react';
-import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
+import { StyleSheet, type StyleProp, type ViewStyle } from 'react-native';
 import { ActivityFrame } from '@/ui';
 import { DragArena } from './DragArena';
 
@@ -86,13 +86,10 @@ export function GameFrame({
         hint={hint}
         overlay={overlay}
         playStyle={bodyStyle}
+        /* promoted into ActivityFrame — the collision was never logic-only */
+        playOverlay={playOverlay}
       >
         {children}
-        {playOverlay ? (
-          <View style={styles.playOverlay} pointerEvents="box-none">
-            {playOverlay}
-          </View>
-        ) : null}
       </ActivityFrame>
     </DragArena>
   );
@@ -100,6 +97,4 @@ export function GameFrame({
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
-  /* under the task bar (zIndex 100) so the way out is never covered */
-  playOverlay: { position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, zIndex: 80 },
 });

@@ -26,8 +26,24 @@ export interface ActivityFrameProps {
   controlsStyle?: StyleProp<ViewStyle>;
   /** Captain Bea's bubble — hints and reactions only, never the task again */
   hint?: { text: string; es?: string; visible: boolean; onDismiss?: () => void };
-  /** absolute layer above everything (a question card, a celebration) */
+  /**
+   * Absolute layer above EVERYTHING — the frame, the controls, the lot.
+   * Right for a celebration, which has earned the whole screen.
+   */
   overlay?: React.ReactNode;
+  /**
+   * Absolute layer over the PLAY AREA only, leaving the controls visible.
+   *
+   * A question card is almost always a question *about what is in the tray* —
+   * "we already packed 1 axe, how many more?" — and `overlay` was covering the
+   * ×3 ×4 ×3 row it was asking about. A child was being asked to count things
+   * the card had just hidden.
+   *
+   * This started life inside the logic games' `GameFrame`, but the collision is
+   * not theirs: any activity whose overlay asks about its own controls has it.
+   * So it lives here, where all 27 can reach it.
+   */
+  playOverlay?: React.ReactNode;
   compact?: boolean;
   playStyle?: StyleProp<ViewStyle>;
 }
@@ -60,6 +76,7 @@ export function ActivityFrame({
   controlsStyle,
   hint,
   overlay,
+  playOverlay,
   compact,
   playStyle,
 }: ActivityFrameProps) {
@@ -79,6 +96,13 @@ export function ActivityFrame({
       {controls}
     </Tray>
   );
+  /* under the task bar (zIndex 100), so the way out is never covered */
+  const playLayer = playOverlay ? (
+    <View style={styles.playOverlay} pointerEvents="box-none">
+      {playOverlay}
+    </View>
+  ) : null;
+
   const controlSurface = controls ? (
     <View onLayout={side ? undefined : onControlsLayout} style={side ? styles.rail : undefined}>
       {/* in a rail the tray fills the column instead of floating in it */}
@@ -122,12 +146,18 @@ export function ActivityFrame({
 
       {side ? (
         <View style={styles.splitBody}>
-          <View style={[styles.play, playStyle]}>{children}</View>
+          <View style={[styles.play, playStyle]}>
+            {children}
+            {playLayer}
+          </View>
           {controlSurface}
         </View>
       ) : (
         <>
-          <View style={[styles.play, playStyle]}>{children}</View>
+          <View style={[styles.play, playStyle]}>
+            {children}
+            {playLayer}
+          </View>
           {controlSurface}
         </>
       )}
@@ -168,6 +198,7 @@ const styles = StyleSheet.create({
   splitBody: { flex: 1, flexDirection: 'row', alignItems: 'stretch', gap: spacing.sm, paddingHorizontal: spacing.sm },
   play: { flex: 1, justifyContent: 'flex-end', paddingTop: activity.playGutter },
   rail: { width: activity.sidePanelWidth },
+  playOverlay: { position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, zIndex: 80 },
   hintLane: { position: 'absolute', left: 0, right: 0, zIndex: 20 },
   /* stop at the play column's edge: the rail is not the bubble's to cover */
   hintLaneSide: {

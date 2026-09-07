@@ -584,9 +584,12 @@ function Duckling({ blink, mood, pose }: RigProps) {
  * but one value step down, so head and shell do not compete.
  */
 const TURTLE_SKIN = palette.grassDark;
-const TURTLE_SHELL = palette.woodDark;
-const TURTLE_SCUTE = '#7A4F26';
-const TURTLE_RIM = palette.wood;
+/* olive, not `wood`: brown alone sat on the same note as the branch the
+   turtles are rescued off, so the shell is pulled towards the yellow-greens —
+   far enough from the canopy to read, far enough from the bark to separate */
+const TURTLE_SHELL = '#8E7A3C';
+const TURTLE_SCUTE = '#695A2A';
+const TURTLE_RIM = '#C2A85E';
 
 const TurtleShell = memo(function TurtleShell({ held }: { held: boolean }) {
   return (

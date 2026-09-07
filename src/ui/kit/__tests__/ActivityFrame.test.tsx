@@ -22,15 +22,16 @@ import { atWindowWidth, byTestID, contains, drawnBefore, type JsonNode, nodeMatc
 const PLAY = 'play-area';
 const CONTROLS = 'controls';
 const HINT = 'Try the blue hydrant';
+const CARD = 'question-card';
 
 const TABLET = activity.sideLayoutMinWidth;
 const PHONE = 390;
 
 async function frame(
   width: number,
-  opts: { controls?: boolean; hint?: boolean; progress?: boolean } = {},
+  opts: { controls?: boolean; hint?: boolean; progress?: boolean; overlay?: 'full' | 'play' } = {},
 ) {
-  const { controls = true, hint = false, progress = false } = opts;
+  const { controls = true, hint = false, progress = false, overlay } = opts;
   atWindowWidth(width);
   await renderKit(
     <ActivityFrame
@@ -38,6 +39,8 @@ async function frame(
       controls={controls ? <View testID={CONTROLS} /> : undefined}
       hint={hint ? { text: HINT, visible: true } : undefined}
       progress={progress ? { done: 2, total: 5 } : undefined}
+      overlay={overlay === 'full' ? <View testID={CARD} /> : undefined}
+      playOverlay={overlay === 'play' ? <View testID={CARD} /> : undefined}
     >
       <View testID={PLAY} />
     </ActivityFrame>,
@@ -186,6 +189,34 @@ describe('how far through', () => {
   it('draws no step counter for an activity that has no steps', async () => {
     await frame(TABLET);
     expect(screen.queryByLabelText(STEPS)).toBeNull();
+  });
+});
+
+describe('a question card must not hide what it is asking about', () => {
+  it('keeps a play overlay inside the play area, off the controls', async () => {
+    await frame(PHONE, { overlay: 'play' });
+
+    /*
+     * "We already packed 1 axe — how many more do we need?" was drawn over the
+     * whole frame, covering the ×3 ×4 ×3 row of packed items it was asking the
+     * child to count. A question about the tray belongs in the play area.
+     */
+    const playWrap = ancestorsOf(PLAY).at(-1) as JsonNode;
+    expect(pathTo(playWrap, byTestID(CARD))).not.toBeNull();
+    expect(contains(tree(), byTestID(CARD), byTestID(CONTROLS))).toBe(false);
+    expect(drawnBefore(tree(), byTestID(CARD), byTestID(CONTROLS))).toBe(true);
+  });
+
+  it('still lets a full overlay take the whole frame', async () => {
+    await frame(PHONE, { overlay: 'full' });
+
+    // a celebration has earned the screen: drawn last, over the controls too
+    expect(drawnBefore(tree(), byTestID(CONTROLS), byTestID(CARD))).toBe(true);
+  });
+
+  it('draws neither layer when the activity has no overlay', async () => {
+    await frame(PHONE);
+    expect(screen.queryByTestId(CARD)).toBeNull();
   });
 });
 

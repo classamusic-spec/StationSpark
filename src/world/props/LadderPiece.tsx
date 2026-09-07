@@ -107,8 +107,11 @@ export function LadderPiece({ units, unitPx, width = 68, tone = 'yellow', showLa
    * the piece minus a margin, never wider than half its width, and the type
    * steps down with it so a small badge is still legible rather than clipped.
    */
-  const badge = Math.round(Math.max(17, Math.min(labelSize === 'lg' ? 38 : 28, height - 8, width * 0.52)));
+  const badge = Math.round(Math.max(16, Math.min(labelSize === 'lg' ? 38 : 28, height - 8, width * 0.52)));
   const badgeText: 'h2' | 'buttonSmall' | 'tiny' = badge >= 32 ? 'h2' : badge >= 23 ? 'buttonSmall' : 'tiny';
+  /* a 1-unit piece is shorter than any legible badge, so on those the badge
+     steps off centre and stands beside the ladder instead of on top of it */
+  const badgeShift = height < badge + 8 ? Math.round(width * 0.24) : 0;
 
   return (
     <View style={[styles.wrap, { width, height }]}>
@@ -136,6 +139,7 @@ export function LadderPiece({ units, unitPx, width = 68, tone = 'yellow', showLa
               borderRadius: badge / 2,
               borderWidth: Math.max(1.5, badge * 0.08),
               paddingHorizontal: badge * 0.16,
+              transform: [{ translateX: badgeShift }],
             },
           ]}
         >
