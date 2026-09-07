@@ -21,8 +21,8 @@ import { HIGHLIGHT, SHADE } from './parts';
 
 /** Each ornament's own box. The pivot is at (w / 2, 0). */
 const ORNAMENT: Record<SwayKind, { w: number; h: number }> = {
-  sign: { w: 46, h: 42 },
-  slice: { w: 46, h: 42 },
+  sign: { w: 38, h: 42 },
+  slice: { w: 38, h: 42 },
   cage: { w: 34, h: 42 },
   banner: { w: 44, h: 48 },
   scale: { w: 42, h: 36 },

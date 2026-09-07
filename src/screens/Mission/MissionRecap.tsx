@@ -5,13 +5,18 @@
  *
  * Nothing here is a score. It is a list of things they can now do.
  *
- * Two layout faults lived here and are fixed. The screen used to add its own
+ * Three layout faults lived here and are fixed. The screen used to add its own
  * `insets.top + 96` on top of the chrome offset the runner had already applied,
- * which opened ~200 px of raw sky above the card; and the "Next" pill was
- * absolutely pinned to the bottom, so on a phone it sat *over* the last rows of
- * the card and the new-words line was unreadable behind it. The CTA is in the
- * flow now — `space-between` puts it at the foot when there is room and pushes
- * it down when there is not, and it can never cover a word.
+ * which opened ~200 px of raw sky above the card; the "Next" pill was absolutely
+ * pinned to the bottom, so on a phone it sat *over* the last rows of the card
+ * and the new-words line was unreadable behind it; and a big mission ticks
+ * seventeen skills, one per line, which ran nine hundred pixels down a phone —
+ * the child had to scroll past a receipt to find the way on, and Captain Bea's
+ * line about it was off the bottom of the screen.
+ *
+ * So the ticks stop at a screenful and the rest are counted, and "Next" is a
+ * sibling of the scroller rather than a layer over it: always on screen, and
+ * incapable of covering a word.
  *
  * The list is the content, so it is what the extra width on a tablet buys:
  * past a reading column's worth of room the skills run in two columns instead
@@ -64,6 +69,12 @@ export const skillLabels: Record<SkillTag, string> = {
   teamwork: 'Teamwork',
 };
 
+/** one ticked line, and everything on the recap that is not one */
+const TICK_ROW = 34;
+const RECAP_FURNITURE = 660;
+
+const clamp = (n: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, n));
+
 function SkillRow({ label, index, half }: { label: string; index: number; half: boolean }) {
   return (
     <Animated.View
@@ -90,15 +101,42 @@ export interface MissionRecapProps {
 
 export function MissionRecap({ mission, results, onNext }: MissionRecapProps) {
   const insets = useSafeAreaInsets();
-  const { contentWidth } = useScaledLayout();
+  const { contentWidth, height } = useScaledLayout();
   /** a reading column this wide fits two ticked skills side by side */
   const twoUp = contentWidth >= 460;
+
+  /**
+   * A big mission touches seventeen skill tags, and one green tick per tag ran
+   * nine hundred pixels down a phone: the child had to scroll past a receipt to
+   * find "Next", and Captain Bea's line about it was off the bottom of the
+   * screen. A proud list is one you can take in — so the ticks stop at a
+   * screenful and the rest are counted, which is also what Bea already says out
+   * loud ("you practised 17 things today").
+   *
+   * `TICK_ROW` is one ticked line and `RECAP_FURNITURE` is everything on the
+   * screen that is not one — the mission chrome, the heading, the subject pills,
+   * the new-words line, Captain Bea and the "Next" pill — so the list takes the
+   * rows the screen in hand actually has (its safe area included) and no more,
+   * and the whole proud beat lands on one screen with nothing to scroll for.
+   *
+   * The budget is in ROWS, not ticks: a landscape tablet is the shortest screen
+   * the game runs on, so twelve ticks fitted its two columns but pushed Captain
+   * Bea off the bottom. Two columns buy twice the *list*, not twice the height —
+   * which is the same bargain the rest of the app makes with a tablet.
+   */
+  const room = height - insets.top - insets.bottom;
+  const tickRows = clamp(Math.floor((room - RECAP_FURNITURE) / TICK_ROW), 4, 10);
+  const maxTicks = tickRows * (twoUp ? 2 : 1);
 
   const skills = useMemo(() => {
     const seen = new Set<SkillTag>();
     for (const r of results) for (const s of r.skills) seen.add(s);
     return Array.from(seen);
   }, [results]);
+  const ticks = useMemo(
+    () => (skills.length > 0 ? skills.map((s) => skillLabels[s] ?? s) : ['Helping the community']),
+    [skills],
+  );
 
   const words = useMemo(() => {
     const seen = new Set<string>();
@@ -118,74 +156,107 @@ export function MissionRecap({ mission, results, onNext }: MissionRecapProps) {
   }, [line]);
 
   return (
-    <ScrollView
-      contentContainerStyle={[styles.scroll, { paddingBottom: Math.max(insets.bottom, spacing.md) }]}
-      showsVerticalScrollIndicator={false}
-    >
-      <View style={[styles.stack, { width: contentWidth }]}>
-        <Animated.View entering={FadeInDown.springify().damping(16)}>
-          <Panel tone="white" radius="panel" style={styles.card}>
-            <Text variant="display" center>
-              You used:
-            </Text>
+    <View style={styles.root}>
+      <ScrollView
+        style={styles.scroller}
+        contentContainerStyle={styles.scroll}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={[styles.stack, { width: contentWidth }]}>
+          <Animated.View entering={FadeInDown.springify().damping(16)}>
+            <Panel tone="white" radius="panel" style={styles.card}>
+              <Text variant="display" center>
+                You used:
+              </Text>
 
-            <View style={styles.pills}>
-              {mission.subjects.map((s, i) => (
-                <Animated.View
-                  key={s}
-                  entering={FadeInUp.delay(120 + i * stagger.tile)
-                    .springify()
-                    .damping(13)}
-                >
-                  <SubjectPill subject={s} />
+              <View style={styles.pills}>
+                {mission.subjects.map((s, i) => (
+                  <Animated.View
+                    key={s}
+                    entering={FadeInUp.delay(120 + i * stagger.tile)
+                      .springify()
+                      .damping(13)}
+                  >
+                    <SubjectPill subject={s} />
+                  </Animated.View>
+                ))}
+              </View>
+
+              <View style={styles.skills}>
+                {ticks.slice(0, maxTicks).map((label, i) => (
+                  <SkillRow key={label} label={label} index={i} half={twoUp} />
+                ))}
+              </View>
+              {ticks.length > maxTicks ? (
+                <Animated.View entering={FadeInUp.delay(300 + maxTicks * stagger.tile).springify()}>
+                  <Text variant="small" color={palette.navyMuted} center>
+                    {`…and ${ticks.length - maxTicks} more`}
+                  </Text>
                 </Animated.View>
-              ))}
+              ) : null}
+
+              {words.length > 0 ? (
+                <Animated.View entering={FadeInUp.delay(560).springify()} style={styles.words}>
+                  <Text variant="tiny" color={palette.navyMuted}>
+                    NEW WORDS
+                  </Text>
+                  <Text variant="bodyStrong" color={palette.purple}>
+                    {words.join(' · ')}
+                  </Text>
+                </Animated.View>
+              ) : null}
+            </Panel>
+          </Animated.View>
+
+          <Animated.View
+            entering={FadeInUp.delay(420).springify().damping(15)}
+            style={styles.beaconRow}
+          >
+            <CharacterPortrait id="bea" emotion="proud" size={72} />
+            <View style={[styles.bubble, shadows.card]}>
+              <Text variant="tiny" color={palette.navyMuted}>
+                Captain Bea
+              </Text>
+              <Text variant="bodyStrong">{line}</Text>
             </View>
+          </Animated.View>
+        </View>
+      </ScrollView>
 
-            <View style={styles.skills}>
-              {(skills.length > 0 ? skills.map((s) => skillLabels[s] ?? s) : ['Helping the community']).map((label, i) => (
-                <SkillRow key={label} label={label} index={i} half={twoUp} />
-              ))}
-            </View>
-
-            {words.length > 0 ? (
-              <Animated.View entering={FadeInUp.delay(560).springify()} style={styles.words}>
-                <Text variant="tiny" color={palette.navyMuted}>
-                  NEW WORDS
-                </Text>
-                <Text variant="bodyStrong" color={palette.purple}>
-                  {words.join(' · ')}
-                </Text>
-              </Animated.View>
-            ) : null}
-          </Panel>
-        </Animated.View>
-
-        <Animated.View entering={FadeInUp.delay(420).springify().damping(15)} style={styles.beaconRow}>
-          <CharacterPortrait id="bea" emotion="proud" size={72} />
-          <View style={[styles.bubble, shadows.card]}>
-            <Text variant="tiny" color={palette.navyMuted}>
-              Captain Bea
-            </Text>
-            <Text variant="bodyStrong">{line}</Text>
-          </View>
-        </Animated.View>
-      </View>
-
-      <Animated.View entering={FadeInUp.delay(560).springify().damping(15)} style={[styles.stack, { width: contentWidth }]}>
-        <Button label="Next" tone="green" size="xl" block iconRight={<ChevronRightIcon size={26} />} onPress={onNext} />
+      {/* Outside the scroller, always on screen. Seventeen ticked skills push
+          "Next" a long way down a phone, and a child should never have to go
+          looking for the way on from a celebration. It is a sibling of the
+          scroller, not pinned over it, so it can never cover a word either —
+          which is how it used to hide the new-words line. */}
+      <Animated.View
+        entering={FadeInUp.delay(560).springify().damping(15)}
+        style={[
+          styles.cta,
+          { width: contentWidth, paddingBottom: Math.max(insets.bottom, spacing.md) },
+        ]}
+      >
+        <Button
+          label="Next"
+          tone="green"
+          size="xl"
+          block
+          iconRight={<ChevronRightIcon size={26} />}
+          onPress={onNext}
+        />
       </Animated.View>
-    </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  root: { flex: 1, alignItems: 'center' },
+  scroller: { alignSelf: 'stretch' },
   scroll: {
     flexGrow: 1,
     alignItems: 'center',
-    justifyContent: 'space-between',
+    justifyContent: 'center',
     paddingTop: spacing.sm,
-    gap: spacing.md,
+    paddingBottom: spacing.sm,
   },
   /* The gutter lives *inside* the capped width, never outside it. `contentWidth`
      is `min(window, 520)`, so on a phone it IS the window: pad the scroller and
@@ -193,9 +264,16 @@ const styles = StyleSheet.create({
      which is how the recap and the reward card ended up with their corners cut
      off and their buttons touching the bezel. */
   stack: { gap: spacing.md, paddingHorizontal: spacing.md },
+  cta: { paddingHorizontal: spacing.md, paddingTop: spacing.sm },
   card: { gap: spacing.sm },
   pills: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, justifyContent: 'center' },
-  skills: { flexDirection: 'row', flexWrap: 'wrap', columnGap: spacing.xs, rowGap: 8, marginTop: spacing.xs },
+  skills: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    columnGap: spacing.xs,
+    rowGap: 8,
+    marginTop: spacing.xs,
+  },
   skill: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
   skillFull: { width: '100%' },
   skillHalf: { width: '48%' },

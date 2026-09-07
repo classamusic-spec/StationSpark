@@ -16,6 +16,7 @@ import { rp, rowOf } from './frame';
 import type { SceneDef } from './types';
 import {
   ArchWindow,
+  Awning,
   BaseShadow,
   Bench,
   Bicycle,
@@ -25,11 +26,9 @@ import {
   Cat,
   Cone,
   Contact,
-  Crate,
   GLASS,
   HIGHLIGHT,
   HippedRoof,
-  LampPost,
   Parapet,
   Pigeon,
   PitchedRoof,
@@ -137,22 +136,22 @@ function schoolArt(detail: boolean) {
             <Path d={rowOf(4, 46, 226, 3.4, 18, 16)} fill={palette.slate} />
             <Rect x={44} y={224} width={56} height={4} rx={2} fill={palette.slateLight} />
           </G>
-          <Bicycle x={64} y={244} s={0.85} tone={palette.engineRed} basket={false} />
-          <Bicycle x={96} y={246} s={0.8} tone="#3E8FBF" />
-          <Planter x={104} y={236} s={0.9} />
-          <Planter x={196} y={236} s={0.9} />
-          <Bin x={252} y={244} s={0.85} />
+          <Bicycle x={70} y={248} s={1.15} tone={palette.engineRed} basket={false} />
+          <Planter x={116} y={244} s={1} />
+          <Planter x={190} y={244} s={1} />
+          <Bin x={258} y={260} s={1.05} />
           {/* a ball left on the yard, and a chalked hopscotch */}
-          <Circle cx={224} cy={240} r={7.4} fill={palette.safetyYellow} />
-          <Path d="M 217 240 h 15" stroke={palette.engineRed} strokeWidth={2} />
-          <Contact cx={224} cy={248} rx={8} />
+          <Circle cx={214} cy={280} r={10} fill={palette.safetyYellow} />
+          <Path d="M 204 280 h 20" stroke={palette.engineRed} strokeWidth={2.6} />
+          <Contact cx={214} cy={291} rx={10} />
+          {/* the hopscotch chalked on the yard */}
           <Path
-            d={rp(146, 234, 16, 12) + rp(146, 248, 16, 12) + rp(164, 234, 16, 12) + rp(164, 248, 16, 12)}
+            d={rp(126, 244, 22, 16) + rp(126, 263, 22, 17) + rp(150, 244, 22, 16) + rp(150, 263, 22, 17) + rp(138, 283, 22, 18)}
             fill={palette.white}
-            opacity={0.4}
+            opacity={0.62}
           />
-          <Pigeon x={124} y={250} s={0.85} />
-          <Puddle x={286} y={248} rx={16} />
+          <Pigeon x={104} y={288} s={1} />
+          <Puddle x={272} y={300} rx={20} />
         </G>
       ) : null}
     </G>
@@ -169,16 +168,19 @@ function parkArt(detail: boolean) {
   const stone = '#E3DCC8';
   return (
     <G>
-      {/* the trees stand behind the gate */}
-      <Tree x={54} y={200} s={1.5} back="#2F7F46" front="#3E9A55" />
-      <Tree x={248} y={202} s={1.35} back="#2F7F46" front="#4CAF50" />
+      {/* The trees flank the gate rather than hiding behind its piers, where all
+          a child saw was a trunk with its canopy cut off. */}
+      <Tree x={38} y={206} s={1.7} back="#2F7F46" front="#3E9A55" />
+      <Tree x={266} y={208} s={1.5} back="#2F7F46" front="#4CAF50" />
 
-      {/* the bandstand in the middle distance */}
+      {/* the bandstand in the middle distance. Its roof is copper, not green:
+          a green roof in front of a green tree line is an invisible roof. */}
       <G>
         <Contact cx={150} cy={200} rx={62} />
-        <Path d="M 96 108 L 150 74 L 204 108 Z" fill="#3E8F58" />
+        <Path d="M 96 108 L 150 74 L 204 108 Z" fill="#C4776A" />
         <Path d="M 96 108 L 150 74 L 150 108 Z" fill={HIGHLIGHT} />
-        <Path d={rowOf(3, 100, 90, 100, 2.6, 7)} fill={SHADE_SOFT} />
+        <Path d={rowOf(3, 100, 90, 100, 2.6, 7)} fill={SHADE} />
+        <Rect x={94} y={104} width={112} height={6} rx={3} fill="#9E5748" />
         <Circle cx={150} cy={70} r={5} fill={palette.gold} />
         <Rect x={92} y={104} width={116} height={9} rx={4} fill={palette.cream} />
         <Rect x={92} y={104} width={116} height={3} rx={1.5} fill={HIGHLIGHT} />
@@ -241,12 +243,18 @@ function parkArt(detail: boolean) {
 
       {detail ? (
         <G>
-          <Bench x={140} y={228} s={1} />
-          <Bin x={186} y={228} s={0.85} />
-          <LampPost x={30} y={222} h={72} s={0.95} />
-          <Pigeon x={116} y={232} s={0.9} />
-          <Pigeon x={128} y={236} s={0.8} facing={-1} />
-          <Cat x={266} y={228} s={0.85} facing={-1} />
+          <Bench x={70} y={252} s={1.25} />
+          <Bin x={268} y={256} s={1.05} />
+          <Pigeon x={128} y={244} s={1} />
+          <Pigeon x={142} y={250} s={0.9} facing={-1} />
+          <Cat x={210} y={264} s={1.15} facing={-1} />
+          {/* clipped borders closing the two front corners, so the near grass
+              is framed rather than empty */}
+          <Hedge x={-30} y={276} w={130} h={32} />
+          <Hedge x={206} y={282} w={136} h={28} />
+          <Circle cx={22} cy={266} r={5} fill={palette.pink} />
+          <Circle cx={54} cy={262} r={5} fill={palette.safetyYellow} />
+          <Circle cx={262} cy={270} r={5} fill={palette.purple} />
         </G>
       ) : null}
     </G>
@@ -280,7 +288,7 @@ function clockTowerArt(detail: boolean) {
       <Path d="M 208 60 L 220 74 L 220 288 L 208 288 Z" fill={SHADE} />
       <Rect x={92} y={56} width={116} height={232} rx={5} fill={stone} />
       <Rect x={92} y={56} width={20} height={232} fill="rgba(255,255,255,0.2)" />
-      <Path d={rowOf(11, 92, 178, 116, 2.4, 10)} fill={SHADE_SOFT} />
+      <Path d={rowOf(11, 92, 178, 116, 2.4, 10) + rowOf(5, 92, 120, 116, 2.4, 12)} fill={SHADE_SOFT} />
 
       {/* spire + weather vane */}
       <PitchedRoof x={92} y={56} w={116} rise={48} over={12} tone="#4F7FD6" toneDark="#3A5FA8" />
@@ -332,25 +340,25 @@ function clockTowerArt(detail: boolean) {
       {/* the cat that everyone came for, up on the clock-stage ledge */}
       <Cat x={230} y={196} s={1.05} facing={-1} />
       {/* the bracket the tower lantern swings from */}
-      <SignBracket x={94} y={218} reach={-18} drop={8} />
+      <SignBracket x={92} y={200} reach={-16} drop={7} />
 
       {detail ? (
         <G>
           {/* the ladder someone leaned against the tower, and the yard below */}
           <G>
-            <Path d="M 236 300 L 254 214 M 248 300 L 266 214" stroke={palette.wood} strokeWidth={4.4} strokeLinecap="round" />
+            <Path d="M 222 306 L 240 214 M 234 306 L 252 214" stroke={palette.wood} strokeWidth={4.4} strokeLinecap="round" />
             <Path
-              d={rp(238, 288, 13, 3) + rp(241, 268, 13, 3) + rp(244, 248, 13, 3) + rp(247, 228, 13, 3)}
+              d={rp(224, 292, 13, 3) + rp(227, 270, 13, 3) + rp(230, 248, 13, 3) + rp(233, 226, 13, 3)}
               fill={palette.woodDark}
             />
-            <Contact cx={244} cy={302} rx={16} />
+            <Contact cx={230} cy={308} rx={16} />
           </G>
-          <Bench x={56} y={302} s={0.95} />
-          <Planter x={200} y={302} s={0.95} />
-          <Bin x={106} y={304} s={0.8} />
-          <Pigeon x={80} y={240} s={0.85} />
-          <Pigeon x={276} y={306} s={0.85} facing={-1} />
-          <Puddle x={150} y={312} rx={20} />
+          <Bench x={74} y={312} s={1.05} />
+          <Planter x={196} y={318} s={1.05} />
+          <Bin x={116} y={330} s={0.95} />
+          <Pigeon x={86} y={240} s={0.85} />
+          <Pigeon x={172} y={340} s={0.95} facing={-1} />
+          <Puddle x={144} y={352} rx={22} />
         </G>
       ) : null}
     </G>
@@ -434,9 +442,7 @@ function apartmentsArt(detail: boolean) {
       <Rect x={-2} y={222} width={304} height={36} rx={5} fill="#C08A5E" />
       <Rect x={-2} y={222} width={304} height={5} rx={2.5} fill="#9E6A36" />
       <SignBoard x={116} y={158} w={70} h={18} label="No. 12" ink="#7A4A24" size={11} />
-      <Rect x={124} y={178} width={54} height={11} rx={5} fill={palette.engineRedDark} />
-      <Path d="M 120 189 h 62 l -6 12 h -50 z" fill={palette.engineRed} />
-      <Path d="M 120 189 h 62 l -1 3 h -60 z" fill={HIGHLIGHT} />
+      <Awning x={124} y={182} w={54} h={15} bands={5} stripe={palette.engineRed} alt={palette.cream} proj={5} />
       <ShopDoor x={128} y={200} w={46} h={34} wood="#6B4A2C" woodDark="#4A2E1A" glass={GLASS} step={false} />
       <Steps x={122} y={258} w={58} n={4} rise={6} tone="#DCE3F2" />
       <Railing x={110} y={236} w={16} h={30} />
@@ -451,14 +457,13 @@ function apartmentsArt(detail: boolean) {
             <Rect x={10} y={236} width={60} height={5} rx={2.5} fill={HIGHLIGHT} />
             <Path d={rowOf(4, 16, 244, 48, 2.6, 6)} fill={SHADE} />
           </G>
-          <Bin x={92} y={266} s={0.85} />
-          <Bicycle x={228} y={268} s={0.95} tone="#3E8FBF" />
-          <Bicycle x={262} y={270} s={0.85} tone={palette.engineRed} basket={false} />
-          <Railing x={210} y={270} w={70} h={20} tone={palette.slate} />
-          <Planter x={196} y={262} s={0.9} />
+          <Bin x={96} y={286} s={1.05} />
+          <Railing x={214} y={278} w={72} h={22} tone={palette.slate} />
+          <Bicycle x={244} y={280} s={1.15} tone="#3E8FBF" />
+          <Planter x={188} y={272} s={1} />
           <Cat x={74} y={236} s={0.8} />
-          <Puddle x={150} y={276} rx={20} />
-          <Pigeon x={116} y={272} s={0.85} />
+          <Puddle x={146} y={300} rx={24} />
+          <Pigeon x={126} y={288} s={1} />
         </G>
       ) : null}
     </G>
@@ -521,8 +526,10 @@ function stationYardArt(detail: boolean) {
       {/* main hipped roof over its red eaves band */}
       <HippedRoof x={16} y={72} w={268} rise={34} inset={40} over={10} tone={palette.engineRed} toneLight={palette.engineRedLight} toneDark={palette.engineRedDark} />
       {/* chimney, as on the home screen */}
-      <Rect x={38} y={46} width={20} height={30} rx={3} fill="#C96A3A" />
-      <Rect x={34} y={40} width={28} height={9} rx={4} fill="#A2512A" />
+      <Rect x={40} y={22} width={22} height={54} rx={3} fill="#C96A3A" />
+      <Rect x={40} y={22} width={7} height={54} fill={HIGHLIGHT} />
+      <Rect x={36} y={16} width={30} height={10} rx={4.5} fill="#A2512A" />
+      <Rect x={36} y={16} width={30} height={3} rx={1.5} fill={HIGHLIGHT} />
 
       {/* the bell gable, standing proud of the ridge */}
       <G>
@@ -611,7 +618,7 @@ function stationYardArt(detail: boolean) {
         <G>
           {/* the yard dressing, all of it standing on the apron and spread down
               it rather than lined up along the wall like a shelf */}
-          <G x={38} y={252} scale={0.86}>
+          <G x={64} y={292} scale={1.1}>
             <Contact cx={0} cy={2} rx={20} />
             <Rect x={-17} y={-8} width={34} height={9} rx={4} fill={palette.engineRedDark} />
             <Rect x={-12} y={-44} width={24} height={37} rx={9} fill={palette.engineRed} />
@@ -625,7 +632,7 @@ function stationYardArt(detail: boolean) {
             <Ellipse cx={-5} cy={-57} rx={4.4} ry={2.4} fill={HIGHLIGHT} />
           </G>
           {/* the coiled hose and the helmet left out after the last shout */}
-          <G x={204} y={288} scale={1} >
+          <G x={238} y={296} scale={1.05}>
             <Contact cx={0} cy={3} rx={22} />
             <Ellipse cx={0} cy={-6} rx={21} ry={10} fill={palette.gold} />
             <Ellipse cx={0} cy={-9} rx={21} ry={10} fill={palette.safetyYellow} />
@@ -634,20 +641,20 @@ function stationYardArt(detail: boolean) {
             <Ellipse cx={-8} cy={-15} rx={7} ry={2.6} fill={HIGHLIGHT} />
             <Rect x={14} y={-13} width={14} height={7} rx={3.5} fill={palette.slate} />
           </G>
-          <G x={78} y={276} scale={0.95}>
+          <G x={226} y={318} scale={0.95}>
             <Contact cx={0} cy={2} rx={19} />
             <Path d="M -16 0 q -3 -20 16 -20 q 19 0 16 20 z" fill={palette.engineRed} />
             <Path d="M -16 0 q -3 -20 16 -20 l 0 20 z" fill={HIGHLIGHT} />
             <Path d="M -20 0 h 40 l -3 5 h -34 z" fill={palette.engineRedDark} />
             <Path d="M -7 -13 l 7 -8 l 7 8 z" fill={palette.safetyYellow} />
           </G>
-          <Bollard x={24} y={250} h={28} s={1.2} />
-          <Bollard x={276} y={250} h={28} s={1.2} />
-          <Cone x={232} y={268} h={26} s={1.2} />
-          <Drain x={172} y={300} s={1.05} />
-          <Planter x={56} y={260} s={1.05} />
-          <Planter x={254} y={252} s={0.95} />
-          <Pigeon x={132} y={296} s={1.05} facing={-1} />
+          <Bollard x={14} y={288} h={28} s={1.25} />
+          <Bollard x={286} y={288} h={28} s={1.25} />
+          <Cone x={84} y={320} h={26} s={1.15} />
+          <Drain x={168} y={322} s={1.15} />
+          <Planter x={26} y={252} s={0.95} />
+          <Planter x={274} y={252} s={0.95} />
+          <Pigeon x={140} y={312} s={1} facing={-1} />
         </G>
       ) : null}
     </G>
@@ -682,7 +689,7 @@ export const clockTower: SceneDef = {
      capped by the width of the low walls either side, which crop happily */
   spill: 1.42,
   art: clockTowerArt,
-  sway: { x: 76, y: 214, kind: 'lantern' },
+  sway: { x: 76, y: 196, kind: 'lantern' },
 };
 
 export const apartments: SceneDef = {

@@ -142,7 +142,7 @@ function bakeryArt(detail: boolean) {
       </G>
       {/* the arm the hanging loaf-sign turns on — without it the sign is a card
           floating beside the shop instead of something hung off its wall */}
-      <SignBracket x={254} y={154} reach={24} drop={8} />
+      <SignBracket x={246} y={154} reach={24} drop={8} />
 
       {detail ? (
         <G>
@@ -226,25 +226,26 @@ function pizzaArt(detail: boolean) {
       <Rect x={24} y={218} width={152} height={10} rx={4} fill="#D9C3A6" />
 
       <ShopDoor x={192} y={156} w={54} h={72} wood="#8A5A32" woodDark="#6B4325" glass={GLASS_WARM} />
+      <SignBracket x={246} y={142} reach={24} drop={8} />
 
       {detail ? (
         <G>
           {/* a pavement table, laid */}
           <G>
-            <Contact cx={272} cy={242} rx={30} />
-            <Rect x={244} y={216} width={56} height={7} rx={3.5} fill={palette.cream} />
-            <Path d="M 244 223 l 6 8 h 44 l 6 -8 z" fill="#E9584A" opacity={0.85} />
-            <Rect x={269} y={222} width={6} height={20} rx={3} fill={palette.woodDark} />
-            <Rect x={258} y={240} width={28} height={4} rx={2} fill={palette.woodDark} />
-            <Circle cx={264} cy={212} r={5} fill="#F0C971" />
-            <Rect x={282} y={208} width={8} height={10} rx={2} fill={palette.white} />
+            <Contact cx={246} cy={272} rx={34} />
+            <Rect x={214} y={242} width={64} height={8} rx={4} fill={palette.cream} />
+            <Path d="M 214 250 l 7 9 h 50 l 7 -9 z" fill="#E9584A" opacity={0.85} />
+            <Rect x={242} y={249} width={7} height={23} rx={3.5} fill={palette.woodDark} />
+            <Rect x={230} y={269} width={32} height={5} rx={2.5} fill={palette.woodDark} />
+            <Circle cx={234} cy={237} r={6} fill="#F0C971" />
+            <Rect x={256} y={232} width={9} height={11} rx={2.5} fill={palette.white} />
           </G>
-          <CrateStack x={18} y={244} s={0.9} />
-          <Planter x={214} y={242} s={0.95} />
-          <Bicycle x={116} y={246} s={0.95} tone="#3E8F58" />
-          <Bin x={62} y={244} s={0.85} />
-          <Pigeon x={160} y={248} s={0.85} facing={-1} />
-          <Puddle x={200} y={252} rx={14} />
+          <CrateStack x={32} y={258} s={1.1} />
+          <Planter x={186} y={252} s={1} />
+          <Bicycle x={110} y={272} s={1.15} tone="#3E8F58" />
+          <Bin x={68} y={286} s={1} />
+          <Pigeon x={146} y={292} s={1} facing={-1} />
+          <Puddle x={278} y={298} rx={20} />
         </G>
       ) : null}
     </G>
@@ -266,7 +267,9 @@ function petShopArt(detail: boolean) {
 
       <Rect x={26} y={48} width={246} height={168} rx={6} fill={wall} />
       <Rect x={26} y={48} width={38} height={168} fill="rgba(255,255,255,0.2)" />
-      <Path d={rowOf(3, 30, 66, 238, 3, 26)} fill={SHADE_SOFT} />
+      <Path d={rowOf(2, 30, 96, 238, 3, 42)} fill={SHADE} opacity={0.4} />
+      <WindowGrid rows={1} cols={1} x={44} y={62} w={44} h={30} dx={0} dy={0} glass={GLASS} frame={palette.cream} mullions={[1, 1]} />
+      <WindowGrid rows={1} cols={1} x={212} y={62} w={44} h={30} dx={0} dy={0} glass={GLASS} frame={palette.cream} mullions={[1, 1]} lit={0} />
       <Rect x={26} y={200} width={246} height={16} rx={4} fill="#BFCBD8" />
       <Rect x={26} y={200} width={246} height={4} rx={2} fill={HIGHLIGHT} />
       <Parapet x={26} y={48} w={246} tone="#3FBFAE" toneDark="#2A8A7F" />
@@ -318,6 +321,7 @@ function petShopArt(detail: boolean) {
 
       <ShopDoor x={196} y={142} w={52} h={74} wood="#4E8A80" woodDark="#356A61" glass="#CFF0FA" />
       <DoorBell x={222} y={136} s={0.9} />
+      <SignBracket x={250} y={120} reach={22} drop={8} />
 
       {detail ? (
         <G>
@@ -331,12 +335,12 @@ function petShopArt(detail: boolean) {
             d={rp(60, 232, 4, 3) + rp(66, 236, 4, 3) + rp(74, 231, 4, 3) + rp(82, 236, 4, 3) + rp(90, 232, 4, 3)}
             fill="rgba(31,42,90,0.10)"
           />
-          <CrateStack x={24} y={232} s={0.9} />
-          <Planter x={264} y={232} s={0.95} />
-          <Cat x={126} y={230} s={0.9} tone="#B9BFD4" />
-          <Bin x={228} y={230} s={0.8} tone="#4E8A80" />
-          <Pigeon x={98} y={236} s={0.85} />
-          <Puddle x={44} y={240} rx={14} />
+          <CrateStack x={30} y={252} s={1} />
+          <Planter x={262} y={252} s={1} />
+          <Cat x={122} y={262} s={1.2} tone="#F0A24A" />
+          <Bin x={228} y={262} s={1} tone="#4E8A80" />
+          <Pigeon x={86} y={276} s={1} />
+          <Puddle x={54} y={288} rx={20} />
         </G>
       ) : null}
     </G>
@@ -415,8 +419,8 @@ function libraryArt(detail: boolean) {
       ))}
 
       <Steps x={112} y={218} w={78} n={4} rise={5.6} tone="#E4E7F0" />
-      <Railing x={70} y={196} w={34} h={16} />
-      <Railing x={196} y={196} w={34} h={16} />
+      <Railing x={86} y={218} w={22} h={26} />
+      <Railing x={192} y={218} w={22} h={26} />
 
       {detail ? (
         <G>
@@ -428,12 +432,12 @@ function libraryArt(detail: boolean) {
             <Rect x={241} y={199} width={22} height={5} rx={2.5} fill={SHADE_DEEP} />
             <Rect x={240} y={210} width={24} height={4} rx={2} fill={palette.cream} opacity={0.7} />
           </G>
-          <Bench x={54} y={228} s={0.95} />
-          <Planter x={214} y={228} s={0.95} />
-          <Bicycle x={106} y={232} s={0.9} tone="#8E76C0" />
+          <Bench x={48} y={252} s={1.25} />
+          <Planter x={224} y={244} s={1.1} />
+          <Bicycle x={92} y={276} s={1.15} tone="#8E76C0" />
           <Pigeon x={150} y={22} s={0.9} />
-          <Pigeon x={196} y={236} s={0.85} facing={-1} />
-          <Puddle x={276} y={240} rx={15} />
+          <Pigeon x={186} y={280} s={1} facing={-1} />
+          <Puddle x={262} y={288} rx={20} />
         </G>
       ) : null}
     </G>
@@ -460,7 +464,23 @@ function marketArt(detail: boolean) {
       <Rect x={8} y={44} width={284} height={166} rx={6} fill={hall} />
       <Rect x={8} y={44} width={38} height={166} fill="rgba(255,255,255,0.18)" />
       <Parapet x={8} y={44} w={284} tone="#C4776A" toneDark="#9E5748" />
-      <Path d={rowOf(5, 12, 62, 276, 3, 22)} fill={SHADE_SOFT} />
+      {/* the hall's own architecture. Without it the top 40 % of the scene was
+          one tan rectangle — the exact "wall" the whole pass exists to fix. */}
+      <G>
+        <Path d="M 96 44 L 150 14 L 204 44 Z" fill="#C4776A" />
+        <Path d="M 96 44 L 150 14 L 150 44 Z" fill={HIGHLIGHT} />
+        <Rect x={90} y={40} width={120} height={10} rx={5} fill="#9E5748" />
+        <Rect x={90} y={40} width={120} height={3} rx={1.5} fill={HIGHLIGHT} />
+        <Circle cx={150} cy={38} r={11} fill={palette.cream} />
+        <Circle cx={150} cy={38} r={11} fill="none" stroke={palette.tanDark} strokeWidth={3} />
+        <Path d="M 150 38 L 150 31 M 150 38 L 155 41" stroke={palette.navy} strokeWidth={2.2} strokeLinecap="round" />
+      </G>
+      {/* clerestory windows down the hall, batched with their reveals */}
+      <WindowGrid rows={1} cols={2} x={26} y={58} w={40} h={26} dx={44} dy={0} glass={GLASS} frame={palette.cream} mullions={[1, 0]} />
+      <WindowGrid rows={1} cols={2} x={190} y={58} w={40} h={26} dx={44} dy={0} glass={GLASS} frame={palette.cream} mullions={[1, 0]} lit={0} />
+      <Path d={rowOf(5, 12, 96, 276, 3, 22)} fill={SHADE_SOFT} />
+      <Rect x={8} y={104} width={284} height={7} rx={3} fill="#C9AE93" />
+      <Rect x={8} y={104} width={284} height={2.4} rx={1.2} fill={HIGHLIGHT} />
       {[0, 1, 2, 3].map((i) => {
         const ax = 26 + i * 70;
         return (
@@ -472,7 +492,7 @@ function marketArt(detail: boolean) {
         );
       })}
       <Rect x={8} y={176} width={284} height={12} rx={4} fill="#C9AE93" />
-      <SignBoard x={96} y={78} w={108} h={24} label="MARKET" ink="#9E5748" size={15} />
+      <SignBoard x={114} y={58} w={72} h={26} label="MARKET" ink="#9E5748" size={13} />
 
       {/* three stalls with scalloped canopies */}
       {stalls.map((s, i) => (
@@ -513,11 +533,11 @@ function marketArt(detail: boolean) {
             <Path d="M 2 216 q -2 -22 14 -24 q 16 2 14 24 z" fill="#E4D3AE" />
             <Path d="M 10 194 q 6 -6 12 0 q -6 4 -12 0 z" fill="#CBB68C" />
           </G>
-          <Cat x={150} y={216} s={0.85} facing={-1} />
-          <Pigeon x={112} y={218} s={0.85} />
-          <Pigeon x={200} y={220} s={0.8} facing={-1} />
-          <Chalkboard x={244} y={220} s={0.95} />
-          <Puddle x={62} y={224} rx={16} />
+          <Cat x={92} y={258} s={1.05} facing={1} />
+          <Pigeon x={132} y={278} s={1.05} />
+          <Pigeon x={186} y={252} s={0.95} facing={-1} />
+          <Chalkboard x={236} y={256} s={1.15} />
+          <Puddle x={60} y={282} rx={22} />
         </G>
       ) : null}
     </G>
@@ -530,21 +550,21 @@ export const bakery: SceneDef = {
   height: BAKERY_H,
   ground: 'paving',
   art: bakeryArt,
-  sway: { x: 278, y: 150, kind: 'sign' },
+  sway: { x: 270, y: 150, kind: 'sign' },
 };
 
 export const pizza: SceneDef = {
   height: PIZZA_H,
   ground: 'paving',
   art: pizzaArt,
-  sway: { x: 278, y: 138, kind: 'slice' },
+  sway: { x: 270, y: 138, kind: 'slice' },
 };
 
 export const petShop: SceneDef = {
   height: PET_H,
   ground: 'paving',
   art: petShopArt,
-  sway: { x: 278, y: 116, kind: 'cage' },
+  sway: { x: 272, y: 116, kind: 'cage' },
 };
 
 export const library: SceneDef = {

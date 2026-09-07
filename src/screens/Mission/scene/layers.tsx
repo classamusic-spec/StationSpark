@@ -214,7 +214,7 @@ export function MidTerrace({
   const unit = Math.max(54, f.bw * 0.32);
   let x = -unit * 0.35;
   let i = 0;
-  while (x < f.w + 8 && i < 12) {
+  while (x < f.w + 8 && i < 10) {
     const bw = unit * (0.8 + vary(i, seed + 2) * 0.5);
     /* The neighbours give the hero its scale, so they may not out-rank it:
        most sit below its eaves and only the odd one shoulders past. A terrace
@@ -325,6 +325,13 @@ export function TreeLine({ f, back, front, haze, fade = 0.3, opacity = 0.95 }: {
 
 export type GroundKind = 'paving' | 'grass' | 'apron';
 
+/**
+ * How far below its ground line a scene may stand its dressing, in design
+ * units. The pavement is guaranteed to be at least this deep, so a crate
+ * authored at `height + 70` is on the pavement in every frame it is drawn in.
+ */
+export const DRESSING_DEPTH = 78;
+
 /** A band of diagonal road hatching, batched into one path. */
 function hatch(w: number, y: number, hgt: number, tw: number, step: number): string {
   let d = '';
@@ -336,12 +343,22 @@ function hatch(w: number, y: number, hgt: number, tw: number, step: number): str
 
 /** Where the pavement gives way to the road — shared by the ground and its furniture. */
 /**
- * Where the pavement gives way to the road. Most of the near plane is
- * *pavement*, because that is the part with joints, furniture and the shop's
- * own dressing on it; the road is the strip beyond the kerb that closes the
- * picture, and a road given half the near plane is simply a hole in it.
+ * Where the pavement gives way to the road.
+ *
+ * Most of the near plane is *pavement*: that is the part carrying joints,
+ * furniture and the place's own dressing, and a road handed half of it is
+ * simply a hole in the picture. The floor of `DRESSING_DEPTH × k` is what
+ * keeps a scene honest across aspect ratios — a scene's crates and puddles are
+ * authored in design units below its ground line, so on a short landscape
+ * panel a pavement measured only as a fraction of the frame would end above
+ * them and stand the bakery's bicycle in the middle of the road.
  */
-export const roadLine = (f: SceneFrame): number => f.gy + Math.max(38 * f.s, (f.h - f.gy) * 0.62);
+export const roadLine = (f: SceneFrame): number =>
+  f.gy +
+  Math.min(
+    Math.max((f.h - f.gy) * 0.62, DRESSING_DEPTH * f.k),
+    Math.max(38 * f.s, f.h - f.gy - 24 * f.s),
+  );
 
 /**
  * THE NEAR GROUND PLANE.
@@ -359,7 +376,9 @@ export function GroundPlane({ f, near, lip, kind = 'paving' }: { f: SceneFrame; 
   const { w, h, gy, s } = f;
   const edge = `M 0 ${gy + 7 * s} Q ${w / 2} ${gy - 5 * s} ${w} ${gy + 7 * s}`;
   const roadY = Math.min(roadLine(f), h - 6 * s);
-  const hasRoad = kind !== 'grass' && roadY < h - 10 * s;
+  /* a road thinner than a kerb is a stripe, not a road: on a short panel the
+     near plane is simply all pavement */
+  const hasRoad = kind !== 'grass' && roadY < h - Math.max(12 * s, h * 0.055);
   const kerbH = Math.max(5, 9 * s);
   const tarmac = mix(near, palette.charcoal, 0.46);
   const front = hasRoad ? roadY : h;
@@ -396,7 +415,14 @@ export function GroundPlane({ f, near, lip, kind = 'paving' }: { f: SceneFrame; 
     <G>
       <Path d={`${edge} L ${w} ${h} L 0 ${h} Z`} fill={surface} />
       <Path d={`${edge} L ${w} ${gy + 15 * s} Q ${w / 2} ${gy + 3 * s} 0 ${gy + 15 * s} Z`} fill={surfaceLip} />
-      <Path d={joints + courses} fill={SHADE_SOFT} />
+      {/* each slab lit along its far edge and shaded along its near one: a joint
+          drawn as a single dark line is a scratch, a joint drawn as a bevel is
+          a paving slab, and that is the difference between a grey area and a
+          surface the eye believes it could walk on */}
+      <Path d={joints + courses} fill="rgba(255,255,255,0.5)" />
+      <G y={1.7 * s}>
+        <Path d={joints + courses} fill={SHADE_SOFT} />
+      </G>
       {apron ? (
         /* the two guide lines the engines line up on, receding with the surface */
         <Path
@@ -449,6 +475,14 @@ function NearLamp({ f, x, base }: { f: SceneFrame; x: number; base: number }) {
   const armR = 22 * s;
   return (
     <G>
+      {/* the shadow it throws down-right, because the light is top-left. A long
+          cast shadow is the cheapest thing that turns an empty pavement into a
+          lit one, and it costs a single path. */}
+      <Path
+        d={`M ${x - 7 * s} ${base} L ${x + 7 * s} ${base} L ${x + 78 * s} ${base + 40 * s} L ${x + 52 * s} ${base + 42 * s} Z`}
+        fill={palette.navy}
+        opacity={0.075}
+      />
       <Ellipse cx={x} cy={base - 2 * s} rx={19 * s} ry={4.6 * s} fill={palette.navy} opacity={0.16} />
       <Rect x={x - 11 * s} y={base - 16 * s} width={22 * s} height={16 * s} rx={6} fill={palette.charcoal} />
       <Rect x={x - 11 * s} y={base - 16 * s} width={7 * s} height={16 * s} rx={4} fill={HILITE} />
@@ -472,6 +506,7 @@ function NearHydrant({ f, x, base }: { f: SceneFrame; x: number; base: number })
   const u = Math.max(0.5, f.s) * 1.5;
   return (
     <G x={x} y={base} scale={u}>
+      <Path d="M -12 0 L 12 0 L 62 26 L 30 28 Z" fill={palette.navy} opacity={0.075} />
       <Ellipse cx={0} cy={0} rx={17} ry={4} fill={palette.navy} opacity={0.16} />
       <Rect x={-15} y={-7} width={30} height={8} rx={3.4} fill={palette.engineRedDark} />
       <Rect x={-15} y={-7} width={30} height={2.6} rx={1.3} fill={HILITE} />

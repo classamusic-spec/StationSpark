@@ -15,10 +15,18 @@
  * `Stage.tsx`): sky furniture → far hills and the distant town → the mid
  * terrace → the near ground plane with its soft lip and its dressing. Each
  * plane is one value step darker and crisper than the one behind it and only
- * the near plane carries a saturated hue. The place itself is drawn in
- * `scene/` at three scales — mass, features, dressing — so there is something
- * to look at whether the art is 98 px wide on a dispatch slip or 1024 px wide
- * behind a line of dialogue.
+ * the near plane carries a saturated hue. The terrace is washed a third of the
+ * way back into the sky (`fade`), because neighbours drawn at full strength
+ * out-rank the building the scene is *about* and turn the hero into a shed in
+ * its own picture. The near plane earns its share of the frame instead of
+ * being a grey lake: bevelled paving joints that converge on the horizon, a
+ * kerb with a lit top edge, tarmac a full value step below the pavement, and
+ * furniture at the two side edges — where a dialogue card across the middle of
+ * the screen can never land on it.
+ *
+ * The place itself is drawn in `scene/` at three scales — mass, features,
+ * dressing — so there is something to look at whether the art is 98 px wide on
+ * a dispatch slip or 1024 px wide behind a line of dialogue.
  *
  * `<SceneThumb/>` is the same art at card size with the fine dressing and the
  * distant town dropped, so a slip and its mission always look like one place.
