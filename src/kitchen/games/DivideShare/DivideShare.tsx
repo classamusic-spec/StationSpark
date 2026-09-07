@@ -31,7 +31,7 @@ import {
   TeaTowel,
 } from '../../parts/KitchenRoom';
 import { useSwing } from '../../parts/motion';
-import { PlateArt } from '../../parts/FoodBits';
+import { FigureShadow, FoodOnSurface, PlateArt } from '../../parts/FoodBits';
 import { ChefKnife, EquationStrip, ServingTray } from '../../parts/SceneBits';
 import { pluralEn } from '../../spanish';
 import { answerOptions, equationText, nextPlate, shareState } from '../../shareMath';
@@ -397,7 +397,7 @@ export function DivideShare({ challenge, ageBand, onComplete, onEvent, compact }
                       style={at(s, startX + col * (item + 5), tray.y + 14 + row * (item + 6), item, item)}
                       pointerEvents="none"
                     >
-                      <VocabIcon id={challenge.item.icon} size={item * s} />
+                      <FoodOnSurface id={challenge.item.icon} size={item * s} />
                     </Animated.View>
                   );
                 })}
@@ -640,6 +640,9 @@ function PlateSpot({
             The slot has a fixed height so a shorter character (a seated neighbour, say) does not
             pull his whole plate card out of the row. */}
         <View style={[styles.figureSlot, { height: figure * s }]}>
+          {/* the crew stand ON the table: a figure with no ground under it
+              reads as a sticker pinned to the splashback */}
+          <FigureShadow width={figure * 0.72 * s} style={[styles.figureGround, { bottom: figure * 0.02 * s }]} />
           <CrewFigure
             id={crew.id}
             npc={crew.npc}
@@ -706,6 +709,7 @@ const styles = StyleSheet.create({
   answerWrap: { flexDirection: 'row', justifyContent: 'center', gap: spacing.xs, flexWrap: 'nowrap' },
   plateCol: { alignItems: 'center' },
   figureSlot: { alignItems: 'center', justifyContent: 'flex-end' },
+  figureGround: { position: 'absolute', alignSelf: 'center' },
   plateHit: { alignItems: 'center', justifyContent: 'center', padding: 3, borderWidth: 3, borderColor: 'transparent' },
   plateGlow: { borderColor: palette.safetyYellow, backgroundColor: 'rgba(255,199,44,0.2)' },
   plateItems: { position: 'absolute', flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', maxWidth: '70%' },

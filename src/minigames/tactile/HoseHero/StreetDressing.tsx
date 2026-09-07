@@ -14,7 +14,7 @@
  */
 import React, { memo } from 'react';
 import { StyleSheet } from 'react-native';
-import Svg, { Ellipse, G, Path, Rect } from 'react-native-svg';
+import Svg, { Defs, Ellipse, G, LinearGradient, Path, Rect, Stop } from 'react-native-svg';
 import { palette } from '@/theme';
 import type { FacadeLayout } from '@/world/props';
 import { HILITE, HILITE_SOFT, SHADE, SHADE_DEEP, SHADE_SOFT } from '../shared';
@@ -45,6 +45,9 @@ function block(x: number, w: number, top: number, gy: number, wall: string, roof
       <Path d={`M ${x + front} ${top + 8} L ${x + w} ${top + 18} L ${x + w} ${gy} L ${x + front} ${gy} Z`} fill={SHADE} />
       <Rect x={x} y={top + 8} width={front} height={gy - top - 8} rx={6} fill={wall} />
       <Rect x={x} y={top + 8} width={front * 0.14} height={gy - top - 8} fill={HILITE_SOFT} />
+      {/* the same daylight wash the shop in front of them carries: without it a
+          neighbour is a flat swatch and the block behind the fire has no depth */}
+      <Rect x={x} y={top + 8} width={front} height={gy - top - 8} rx={6} fill="url(#ss-neighbour-sky)" />
       <Rect x={x - 7} y={top} width={w + 12} height={15} rx={7} fill={roof} />
       <Rect x={x - 7} y={top + 10} width={w + 12} height={6} rx={3} fill={SHADE} />
       <Rect x={x - 3} y={top + 1} width={w * 0.46} height={4} rx={2} fill={HILITE} />
@@ -75,6 +78,13 @@ export const NeighbourBlock = memo(function NeighbourBlock({
   const top = Math.max(4, roof.y - u * 1.6);
   return (
     <Svg width={width} height={height} style={StyleSheet.absoluteFill} pointerEvents="none">
+      <Defs>
+        <LinearGradient id="ss-neighbour-sky" x1="0" y1="0" x2="0" y2="1">
+          <Stop offset="0" stopColor="#FFFFFF" stopOpacity={0.26} />
+          <Stop offset="0.45" stopColor="#FFFFFF" stopOpacity={0.02} />
+          <Stop offset="1" stopColor="#1F2A5A" stopOpacity={0.12} />
+        </LinearGradient>
+      </Defs>
       <G opacity={0.52}>
         {block(-26, Math.max(70, box.x + box.w * 0.3 + 26), top + u * 0.5, groundY, '#CBD6EA', '#8E9BBE', 'nl', true)}
         {block(box.x + box.w * 0.7, Math.max(70, width - box.x - box.w * 0.7 + 26), top, groundY, '#D6DCEC', '#98A4C4', 'nr', false)}

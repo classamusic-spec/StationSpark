@@ -496,6 +496,9 @@ export function KitchenWindow({ s, x, y, w }: { s: number; x: number; y: number;
         <Rect x={72} y={52} width={34} height={5} rx={2.5} fill={palette.engineRedLight} />
         <Circle cx={80} cy={67} r={5} fill={palette.charcoal} />
         <Circle cx={99} cy={67} r={5} fill={palette.charcoal} />
+        {/* the streak of sky the glass itself reflects back */}
+        <Path d="M12 83L54 5h17L29 83z" fill="rgba(255,255,255,0.18)" />
+        <Path d="M40 83L74 20h8L48 83z" fill="rgba(255,255,255,0.12)" />
         {/* mullions */}
         <Rect x={57} y={5} width={6} height={78} fill="#E8CFA3" />
         <Rect x={5} y={41} width={110} height={6} fill="#E8CFA3" />

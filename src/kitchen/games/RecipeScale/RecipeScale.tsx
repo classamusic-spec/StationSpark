@@ -19,11 +19,11 @@ import { Text } from '@/ui/Text';
 import { Button } from '@/ui/Button';
 import { ActivityFrame } from '@/ui/kit/ActivityFrame';
 import { GrownUpChip } from '@/ui/kit/Chip';
-import { VocabIcon } from '@/ui/kit/VocabIcon';
 
 import { CrewFigure } from '@/world/scenes';
 import { POT_ASPECT, StockPot } from '../../parts/Cookware';
 import { FluidStage, at, type FluidBox } from '../../parts/Stage';
+import { FoodThumb } from '../../parts/FoodBits';
 import { RecipeCardFrame } from '../../parts/RecipeCardFrame';
 import {
   ContactPatch,
@@ -490,7 +490,9 @@ function ScaleLine({
     <Animated.View entering={FadeInDown.delay(index * 70).springify()}>
       <Animated.View style={fb.style}>
         <View style={[styles.line, correct && styles.lineDone]}>
-          <VocabIcon id={icon} size={34} />
+          {/* the ingredient is a THING with a dish under it, not a sticker in
+              a list — this row is the whole picture on a Recipe Scale screen */}
+          <FoodThumb id={icon} size={46} />
           {/* BLOCKING DEFECT FIX: six labels were truncated ("mushr…",
               "champiñ…", "tomate · …"). Names now wrap onto two lines and the
               "was N" note sits on its own line — the layout gives, not the word.

@@ -1,7 +1,61 @@
 import React from 'react';
-import Svg, { Circle, Ellipse, G, Line, Path, Rect } from 'react-native-svg';
+import { StyleSheet, View } from 'react-native';
+import Svg, { Circle, Defs, Ellipse, G, Line, LinearGradient, Path, Rect, Stop } from 'react-native-svg';
 import type { SceneId } from '@/learning/types';
 import { palette } from '@/theme';
+
+/* ================================================================= */
+/* Paper                                                              */
+/* ================================================================= */
+
+/**
+ * THE SURFACE OF A SHEET OF PAPER.
+ *
+ * A white rounded rectangle is a shape. Paper is a material: it has a tooth,
+ * it takes the light unevenly across its face, it lifts very slightly away
+ * from whatever it is pinned to on the shaded side, and a school sheet has a
+ * margin rule and feint lines printed on it. Drop this over any card and the
+ * card stops being a swatch — one absolutely-positioned SVG, stretched to fit,
+ * that never takes a touch.
+ */
+export function PaperGrain({
+  ruled = true,
+  margin = true,
+  rules = [30, 70],
+}: {
+  ruled?: boolean;
+  margin?: boolean;
+  rules?: number[];
+}) {
+  return (
+    <View style={StyleSheet.absoluteFill} pointerEvents="none">
+      <Svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none">
+        <Defs>
+          <LinearGradient id="ppLight" x1="0" y1="0" x2="1" y2="1">
+            <Stop offset="0" stopColor="#FFFFFF" stopOpacity={0.55} />
+            <Stop offset="0.5" stopColor="#FFFFFF" stopOpacity={0} />
+            <Stop offset="1" stopColor={palette.navy} stopOpacity={0.075} />
+          </LinearGradient>
+        </Defs>
+        {/*
+          * The unevenness of the stock. A diagonal hatch was tried here and it
+          * came out as visible stripes — at this scale a "tooth" is a pattern,
+          * not a texture. What reads instead is what paper actually does: it
+          * takes the light in soft patches, warmer where the sheet lifts.
+          */}
+        <Ellipse cx={26} cy={22} rx={40} ry={30} fill={palette.white} opacity={0.5} />
+        <Ellipse cx={82} cy={78} rx={34} ry={26} fill={palette.navy} opacity={0.035} />
+        {ruled
+          ? rules.map((t) => (
+              <Rect key={t} x={6} y={t} width={88} height={0.9} fill={palette.creamDeep} />
+            ))
+          : null}
+        {margin ? <Rect x={11} y={0} width={0.9} height={100} fill={palette.pinkSoft} /> : null}
+        <Rect x={0} y={0} width={100} height={100} fill="url(#ppLight)" />
+      </Svg>
+    </View>
+  );
+}
 
 const SHADE = 'rgba(31,42,90,0.14)';
 const SHEEN = 'rgba(255,255,255,0.32)';
@@ -43,9 +97,30 @@ export function TruckSide({ width, bay = true }: { width: number; bay?: boolean 
       <Ellipse cx={86} cy={207} rx={30} ry={5} fill="rgba(31,42,90,0.22)" />
       <Ellipse cx={286} cy={207} rx={30} ry={5} fill="rgba(31,42,90,0.22)" />
 
-      {/* body */}
-      <Rect x={4} y={26} width={352} height={148} rx={20} fill={palette.engineRed} />
+      {/*
+       * BODYWORK. A single flat red rectangle is the largest sticker in the
+       * game. Real appliance paint is gloss over a curved panel: it lifts to
+       * near-white where the sky reflects off the shoulder, holds the brand red
+       * across the flank, and drops away into the shadow under the sill — with
+       * one long specular running the length of the body.
+       */}
+      <Defs>
+        <LinearGradient id="tkBody" x1="0" y1="0" x2="0" y2="1">
+          <Stop offset="0" stopColor="#FF6E5F" />
+          <Stop offset="0.22" stopColor={palette.engineRed} />
+          <Stop offset="0.78" stopColor={palette.engineRed} />
+          <Stop offset="1" stopColor={palette.engineRedDark} />
+        </LinearGradient>
+        <LinearGradient id="tkSpec" x1="0" y1="0" x2="1" y2="0">
+          <Stop offset="0" stopColor="#FFFFFF" stopOpacity={0} />
+          <Stop offset="0.3" stopColor="#FFFFFF" stopOpacity={0.5} />
+          <Stop offset="0.8" stopColor="#FFFFFF" stopOpacity={0.28} />
+          <Stop offset="1" stopColor="#FFFFFF" stopOpacity={0} />
+        </LinearGradient>
+      </Defs>
+      <Rect x={4} y={26} width={352} height={148} rx={20} fill="url(#tkBody)" />
       <Rect x={4} y={26} width={352} height={12} rx={6} fill={SHEEN} />
+      <Rect x={16} y={40} width={328} height={5} rx={2.5} fill="url(#tkSpec)" />
       <Rect x={4} y={150} width={352} height={24} fill={palette.engineRedDark} opacity={0.45} />
 
       {/* roof ladder rack */}
@@ -209,17 +284,32 @@ export function Hydrant({ width, tone = 'red', wet }: { width: number; tone?: 'r
   const edge = tone === 'red' ? palette.engineRedDark : palette.gold;
   return (
     <Svg width={width} height={height} viewBox={`0 0 ${HYDRANT_VIEW.w} ${HYDRANT_VIEW.h}`}>
+      {/* a hydrant is a painted iron casting: round in the light, dark down
+          its shaded flank, with one wet-looking specular on the barrel */}
+      <Defs>
+        <LinearGradient id={`hyd${tone}`} x1="0" y1="0" x2="1" y2="0">
+          <Stop offset="0" stopColor="#FFFFFF" stopOpacity={0.34} />
+          <Stop offset="0.32" stopColor="#FFFFFF" stopOpacity={0.05} />
+          <Stop offset="0.72" stopColor={edge} stopOpacity={0.1} />
+          <Stop offset="1" stopColor={edge} stopOpacity={0.55} />
+        </LinearGradient>
+      </Defs>
       <Ellipse cx={48} cy={122} rx={34} ry={7} fill="rgba(31,42,90,0.14)" />
       <Rect x={12} y={110} width={72} height={14} rx={7} fill={edge} />
       <Rect x={22} y={34} width={52} height={78} rx={20} fill={face} />
-      <Rect x={28} y={40} width={12} height={62} rx={6} fill={SHEEN} />
+      <Rect x={22} y={34} width={52} height={78} rx={20} fill={`url(#hyd${tone})`} />
+      <Rect x={28} y={40} width={9} height={62} rx={4.5} fill={SHEEN} />
+      <Rect x={30} y={44} width={4} height={40} rx={2} fill="rgba(255,255,255,0.6)" />
       <Rect x={4} y={58} width={22} height={18} rx={9} fill={edge} />
       <Rect x={70} y={58} width={22} height={18} rx={9} fill={edge} />
       <Circle cx={11} cy={67} r={5} fill={palette.slateLight} />
       <Circle cx={85} cy={67} r={5} fill={palette.slateLight} />
       <Rect x={16} y={24} width={64} height={14} rx={7} fill={edge} />
+      <Rect x={20} y={25} width={40} height={4} rx={2} fill="rgba(255,255,255,0.34)" />
       <Path d="M34 24c0-8 6-14 14-14s14 6 14 14z" fill={face} />
+      <Path d="M36 22c0-7 5-11 9-11l-2 11z" fill="rgba(255,255,255,0.4)" />
       <Circle cx={48} cy={12} r={7} fill={edge} />
+      <Circle cx={45.6} cy={10} r={2.4} fill="rgba(255,255,255,0.45)" />
       {wet ? <Circle cx={48} cy={70} r={30} fill="rgba(166,228,255,0.35)" /> : null}
     </Svg>
   );

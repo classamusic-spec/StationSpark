@@ -970,15 +970,31 @@ export const StoreRoom = memo(function StoreRoom({
     <SceneLayer box={box}>
       <Defs>
         <LinearGradient id="srWall" x1="0" y1="0" x2="0" y2="1">
-          <Stop offset="0" stopColor="#F5E9D0" />
-          <Stop offset="1" stopColor="#E9D7B4" />
+          <Stop offset="0" stopColor="#FCF3E1" />
+          <Stop offset="0.42" stopColor="#F1E2C2" />
+          <Stop offset="1" stopColor="#DCC69C" />
+        </LinearGradient>
+        {/*
+         * The store room is lit by one high window on the left. This is the
+         * shaft of it across the boarding — the thing that turns the biggest
+         * flat surface in the game into a wall that a light is falling on.
+         */}
+        <LinearGradient id="srShaft" x1="0" y1="0" x2="1" y2="1">
+          <Stop offset="0" stopColor="#FFFFFF" stopOpacity={0.34} />
+          <Stop offset="0.55" stopColor="#FFFFFF" stopOpacity={0.08} />
+          <Stop offset="1" stopColor="#FFFFFF" stopOpacity={0} />
         </LinearGradient>
       </Defs>
 
       <Rect x={0} y={0} width={w} height={floorTop + 4} fill="url(#srWall)" />
+      {/* the boarding: a shadow line and the lit edge of the plank above it */}
       {Array.from({ length: 7 }, (_, i) => (
-        <Rect key={`pl${i}`} x={0} y={(floorTop / 7) * (i + 1) - 2} width={w} height={2.4} rx={1.2} fill={SHADE_SOFT} />
+        <G key={`pl${i}`}>
+          <Rect x={0} y={(floorTop / 7) * (i + 1) - 2} width={w} height={2.4} rx={1.2} fill={SHADE_SOFT} />
+          <Rect x={0} y={(floorTop / 7) * (i + 1) + 0.4} width={w} height={1.6} rx={0.8} fill={HILITE_SOFT} />
+        </G>
       ))}
+      <Path d={`M 0 0 L ${w * 0.62} 0 L ${w * 0.14} ${floorTop} L 0 ${floorTop} z`} fill="url(#srShaft)" />
 
       {/* pegboard of gear */}
       <G>
@@ -1289,12 +1305,14 @@ export const ClockTower = memo(function ClockTower({
        * ledge that sheds water. Two paths, and the shaft stops being a sheet.
        */}
       <Path
-        d={[0.2, 0.36, 0.58, 0.78].map((f) => {
+        d={[0.14, 0.3, 0.52, 0.68, 0.86].map((f, i) => {
           const sx = tx + towerW * f;
-          const sw = towerW * 0.05;
-          return `M ${sx.toFixed(1)} ${(capY + 16 * s).toFixed(1)} h ${sw.toFixed(1)} v ${((h - capY) * 0.5).toFixed(1)} h ${(-sw).toFixed(1)} z `;
+          const sw = towerW * (i % 2 ? 0.02 : 0.03);
+          const len = (h - capY) * (i % 2 ? 0.34 : 0.5);
+          /* wide where the water leaves the cornice, tapering to nothing */
+          return `M ${sx.toFixed(1)} ${(capY + 14 * s).toFixed(1)} h ${sw.toFixed(1)} L ${(sx + sw * 0.35).toFixed(1)} ${(capY + 14 * s + len).toFixed(1)} L ${(sx + sw * 0.2).toFixed(1)} ${(capY + 14 * s + len).toFixed(1)} z `;
         }).join('')}
-        fill="rgba(31,42,90,0.045)"
+        fill="rgba(31,42,90,0.05)"
       />
 
       {/* --- the dial housing --- */}
@@ -1413,8 +1431,15 @@ export const TrainingYard = memo(function TrainingYard({ box }: { box: PlayBox }
           <Stop offset="1" stopColor="#C6E7FF" />
         </LinearGradient>
         <LinearGradient id="tyWall" x1="0" y1="0" x2="0" y2="1">
-          <Stop offset="0" stopColor="#E8DFC9" />
-          <Stop offset="1" stopColor="#D5C9AC" />
+          <Stop offset="0" stopColor="#EFE6D0" />
+          <Stop offset="0.4" stopColor="#E1D6BB" />
+          <Stop offset="1" stopColor="#C7B99A" />
+        </LinearGradient>
+        {/* sun over the yard wall, falling in from the left */}
+        <LinearGradient id="tySun" x1="0" y1="0" x2="1" y2="0.6">
+          <Stop offset="0" stopColor="#FFF3D6" stopOpacity={0.4} />
+          <Stop offset="0.5" stopColor="#FFF3D6" stopOpacity={0.1} />
+          <Stop offset="1" stopColor="#FFF3D6" stopOpacity={0} />
         </LinearGradient>
       </Defs>
 
@@ -1439,8 +1464,11 @@ export const TrainingYard = memo(function TrainingYard({ box }: { box: PlayBox }
       </G>
       {/* the yard wall */}
       <Rect x={0} y={wallTop} width={w} height={groundTop - wallTop + 6} fill="url(#tyWall)" />
+      <Rect x={0} y={wallTop} width={w} height={groundTop - wallTop + 6} fill="url(#tySun)" />
       <Rect x={0} y={wallTop} width={w} height={10 * s} rx={5 * s} fill="#C6B896" />
-      <Rect x={0} y={wallTop + 10 * s} width={w} height={4 * s} fill={SHADE_SOFT} />
+      <Rect x={0} y={wallTop} width={w} height={3.4 * s} rx={1.7 * s} fill={HILITE} />
+      {/* the coping throws its own line down the wall */}
+      <Rect x={0} y={wallTop + 10 * s} width={w} height={6 * s} fill={SHADE_SOFT} />
       {/* block courses */}
       {Array.from({ length: Math.max(3, Math.round((groundTop - wallTop) / (34 * s))) }, (_, r) => (
         <G key={`bc${r}`}>
@@ -1645,6 +1673,11 @@ export const Classroom = memo(function Classroom({ box }: { box: PlayBox }) {
           <Stop offset="0" stopColor="#F6EEDC" />
           <Stop offset="1" stopColor="#EADCC0" />
         </LinearGradient>
+        {/* the chalk that never quite comes off the foot of a board */}
+        <LinearGradient id="clDust" x1="0" y1="0" x2="0" y2="1">
+          <Stop offset="0" stopColor="#FFFFFF" stopOpacity={0} />
+          <Stop offset="1" stopColor="#FFFFFF" stopOpacity={0.13} />
+        </LinearGradient>
       </Defs>
       <Rect x={0} y={0} width={w} height={m.deskTop + 4} fill="url(#clWall)" />
 
@@ -1752,21 +1785,12 @@ export const Classroom = memo(function Classroom({ box }: { box: PlayBox }) {
         {/* chalk dust: settled along the ledge, and hanging in the air over it
             — the material that says slate rather than dark paint */}
         <Rect x={m.boardX} y={m.boardY + m.boardH - 5} width={m.boardW} height={5} fill={palette.white} opacity={0.11} />
-        <Ellipse
-          cx={m.boardX + m.boardW * 0.5}
-          cy={m.boardY + m.boardH}
-          rx={m.boardW * 0.48}
-          ry={Math.max(8, m.boardH * 0.12)}
-          fill={palette.white}
-          opacity={0.07}
-        />
-        <Ellipse
-          cx={m.boardX + m.boardW * 0.18}
-          cy={m.boardY + m.boardH * 0.9}
-          rx={m.boardW * 0.16}
-          ry={Math.max(6, m.boardH * 0.07)}
-          fill={palette.white}
-          opacity={0.06}
+        <Rect
+          x={m.boardX}
+          y={m.boardY + m.boardH * 0.82}
+          width={m.boardW}
+          height={m.boardH * 0.18}
+          fill="url(#clDust)"
         />
         {/* chalk ledge with chalk and an eraser */}
         <Rect x={m.boardX - 10 * s} y={m.boardY + m.boardH + 4 * s} width={m.boardW + 20 * s} height={9 * s} rx={4 * s} fill="#A2743F" />

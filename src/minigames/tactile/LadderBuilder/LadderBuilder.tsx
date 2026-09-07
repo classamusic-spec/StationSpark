@@ -18,6 +18,7 @@ import {
   GROUND_OVERLAP,
   PlayGround,
   TownFacade,
+  WallLedge,
   bestNextPiece,
   comboKey,
   equationText,
@@ -370,15 +371,11 @@ export function LadderBuilder({ challenge, ageBand, onComplete, onEvent, compact
             ) : null,
           )}
 
-          {/* the ledge the animal waits on */}
-          <View
-            style={[styles.ledge, { left: geo.stackX - 10, top: geo.ledgeY - 10, width: geo.gaugeX + geo.gaugeW + 26 - geo.stackX }]}
-            pointerEvents="none"
-          />
-          <View
-            style={[styles.ledgeLip, { left: geo.stackX - 10, top: geo.ledgeY - 10, width: geo.gaugeX + geo.gaugeW + 26 - geo.stackX }]}
-            pointerEvents="none"
-          />
+          {/* the ledge the animal waits on — timber on iron brackets, with its
+              own shadow on the wall, not a brown bar pasted over the brick */}
+          <View style={[styles.ledge, { left: geo.stackX - 10, top: geo.ledgeY - 10 }]} pointerEvents="none">
+            <WallLedge width={geo.gaugeX + geo.gaugeW + 26 - geo.stackX} />
+          </View>
           {!animalOnShoulder ? (
             <View style={[styles.animal, { left: geo.stackX + 2, top: geo.ledgeY - stage.s(66) }]} pointerEvents="none">
               <Animal id={challenge.animal} size={stage.s(66)} mood="help" />
@@ -462,8 +459,7 @@ const styles = StyleSheet.create({
     minWidth: 22,
     alignItems: 'center',
   },
-  ledge: { position: 'absolute', height: 15, borderRadius: 7, backgroundColor: palette.woodDark, ...shadows.soft },
-  ledgeLip: { position: 'absolute', height: 6, borderRadius: 3, backgroundColor: palette.wood },
+  ledge: { position: 'absolute' },
   animal: { position: 'absolute' },
   ground: {
     position: 'absolute',

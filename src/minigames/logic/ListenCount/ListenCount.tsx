@@ -232,7 +232,7 @@ export function ListenCount({ challenge, ageBand, onComplete, onEvent, compact }
                     hitSlop={6}
                   >
                     <Animated.View entering={ZoomIn.delay(i * 45).springify().damping(14)} style={styles.shelfItem}>
-                      <VocabIcon id={challenge.item.id} size={itemSize} />
+                      <VocabIcon id={challenge.item.icon} size={itemSize} />
                     </Animated.View>
                   </Pressable>
                 ),
@@ -257,7 +257,7 @@ export function ListenCount({ challenge, ageBand, onComplete, onEvent, compact }
                 accessibilityLabel={`Take one ${challenge.item.es} out`}
               >
                 <Animated.View entering={ZoomIn.springify().damping(11)}>
-                  <VocabIcon id={challenge.item.id} size={itemSize * 0.62} />
+                  <VocabIcon id={challenge.item.icon} size={itemSize * 0.62} />
                 </Animated.View>
               </Pressable>
             ))}

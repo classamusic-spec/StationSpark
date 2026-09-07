@@ -12,6 +12,7 @@ import { speech } from '@/services/speech';
 import { ActivityFrame, AnswerTile, Button, CheckIcon, Text, TrayRow, VocabIcon } from '@/ui';
 
 import { POT_ASPECT, StockPot } from '../../parts/Cookware';
+import { FoodThumb } from '../../parts/FoodBits';
 import { FluidStage, at, type FluidBox } from '../../parts/Stage';
 import {
   Canister,
@@ -498,7 +499,7 @@ function CounterTile({
           disabled && styles.tileOff,
         ]}
       >
-        <VocabIcon id={word.icon} size={44} />
+        <FoodThumb id={word.icon} size={52} />
         <Text variant="tiny" center numberOfLines={1} style={styles.tileLabel}>
           {word.en}
         </Text>
@@ -576,12 +577,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: 2,
     borderRadius: radii.card,
     borderWidth: 3,
+    /* the house 3D pressable: a face standing on a darker edge, so a tile a
+       child can pick up sits UP off the tray instead of lying flat on it */
+    borderBottomWidth: 7,
     borderColor: roles.border.draggable,
+    borderBottomColor: 'rgba(31,42,90,0.16)',
     backgroundColor: roles.surface.card,
   },
   tileLabel: { fontSize: 12, lineHeight: 15, letterSpacing: 0 },
   tileHint: { borderColor: palette.safetyYellow, ...shadows.glowGold },
-  tilePressed: { transform: [{ scale: 0.96 }] },
+  tilePressed: { transform: [{ scale: 0.96 }, { translateY: 2 }], borderBottomWidth: 4 },
   tileOff: { opacity: 0.5 },
 
   askLayer: {

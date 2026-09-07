@@ -163,12 +163,6 @@ export function PieceArt({ shape, w, h, rotation, color, ghost }: PieceArtProps)
  */
 export function BlueprintSheet({ size }: { size: number }) {
   const lines = [10, 20, 30, 40, 50, 60, 70, 80, 90];
-  /* the tooth of the paper: one path of hairline diagonals, barely there —
-     it is what stops the field reading as a screen of solid ink */
-  const tooth = Array.from({ length: 26 }, (_, i) => {
-    const o = i * 8 - 100;
-    return `M ${o} 100 L ${o + 100} 0 l 0.9 0 L ${o + 0.9} 100 z `;
-  }).join('');
   return (
     <Svg width={size} height={size} viewBox="0 0 100 100">
       <Defs>
@@ -187,7 +181,10 @@ export function BlueprintSheet({ size }: { size: number }) {
       <Rect x={0} y={0} width={100} height={100} rx={4} fill={palette.navySoft} />
       <Rect x={0} y={0} width={100} height={100} rx={4} fill={palette.navy} opacity={0.25} />
       <Rect x={0} y={0} width={100} height={100} rx={4} fill="url(#bpLamp)" />
-      <Path d={tooth} fill="#FFFFFF" opacity={0.035} />
+      {/* the unevenness of cheap stock: two soft patches, not a hatch — a
+          drawn hatch at this size reads as stripes printed on the plan */}
+      <Ellipse cx={30} cy={26} rx={38} ry={30} fill="#FFFFFF" opacity={0.05} />
+      <Ellipse cx={76} cy={72} rx={32} ry={26} fill={palette.navy} opacity={0.07} />
       {/* the print */}
       {lines.map((v) => (
         <G key={v}>

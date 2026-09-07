@@ -15,7 +15,7 @@ import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from '
 import { Pressable, StyleSheet, View } from 'react-native';
 import Animated, { runOnJS, useAnimatedStyle, useSharedValue, withSequence, withTiming } from 'react-native-reanimated';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
-import Svg, { Defs, LinearGradient, Path, Rect, Stop } from 'react-native-svg';
+import Svg, { Defs, LinearGradient, Path, RadialGradient, Rect, Stop } from 'react-native-svg';
 import type { TruckRunProp } from '@/learning/types';
 import type { MiniGameProps } from '@/minigames/types';
 import { useMiniGameSession } from '@/minigames/useMiniGameSession';
@@ -373,9 +373,15 @@ export function TruckRun({ challenge, ageBand, onComplete, onEvent, compact }: M
             scene={challenge.scene}
           />
           <GateLabels frame={frame} width={box.w} height={box.h} />
-          {/* the near tarmac falls into shade at the bottom of the frame: it
-              closes the composition and stops the last strip of road reading
-              as a flat grey slab with nothing happening in it */}
+          {/* THE LIGHT ON THE STREET.
+              The sky draws a sun in the upper right and the road under it got
+              nothing from it: tarmac, kerbs and buildings were shaded purely
+              by their own flat fills, which is what makes a 3D scene read as
+              coloured cardboard. Three screen-space passes tie it together —
+              the sun's wash spilling down the road it lights, the near tarmac
+              falling into the shade the child is standing in, and a soft
+              close on the frame. All scenery, all `pointerEvents` none, and
+              four nodes for the whole drive. */}
           <Svg width={box.w} height={box.h} style={StyleSheet.absoluteFill} pointerEvents="none">
             <Defs>
               <LinearGradient id="ss-run-near" x1="0" y1="0" x2="0" y2="1">
@@ -383,8 +389,19 @@ export function TruckRun({ challenge, ageBand, onComplete, onEvent, compact }: M
                 <Stop offset="0.55" stopColor={palette.navy} stopOpacity={0.08} />
                 <Stop offset="1" stopColor={palette.navy} stopOpacity={0.24} />
               </LinearGradient>
+              <RadialGradient id="ss-run-sun" cx="0.82" cy="0.3" r="0.72">
+                <Stop offset="0" stopColor="#FFE9A8" stopOpacity={0.3} />
+                <Stop offset="0.42" stopColor="#FFDE6A" stopOpacity={0.09} />
+                <Stop offset="1" stopColor="#FFDE6A" stopOpacity={0} />
+              </RadialGradient>
+              <RadialGradient id="ss-run-close" cx="0.5" cy="0.46" r="0.72">
+                <Stop offset="0.6" stopColor={palette.navy} stopOpacity={0} />
+                <Stop offset="1" stopColor={palette.navy} stopOpacity={0.16} />
+              </RadialGradient>
             </Defs>
+            <Rect x={0} y={0} width={box.w} height={box.h} fill="url(#ss-run-sun)" />
             <Rect x={0} y={box.h * 0.68} width={box.w} height={box.h * 0.32} fill="url(#ss-run-near)" />
+            <Rect x={0} y={0} width={box.w} height={box.h} fill="url(#ss-run-close)" />
           </Svg>
           <GestureDetector gesture={gesture}>
             <Animated.View

@@ -18,6 +18,7 @@ import { useCaptainLine } from '../shared/speak';
 import { useHintLadder } from '../shared/useHintLadder';
 import { SignalGlyph, signalName } from '../shared/art/Glyphs';
 import { RadioRoom, RoomWash, clamp, radioRoomMetrics, usePlayBox } from '../shared/art/Scene';
+import { PaperGrain } from '../shared/art/Props';
 
 const SIGNAL_SFX: Record<SignalId, SfxName> = {
   bell: 'bell',
@@ -276,6 +277,9 @@ export function Signals({ challenge, ageBand, onComplete, onEvent, compact }: Mi
         >
         {/* the call sheet: a real clipboard on the desk, not cards in the sky */}
         <View style={[styles.clipboard, { width: sheetWidth }]}>
+          {/* the form is paper: it takes the room's light across its face and
+              lifts off the board in the shaded corner */}
+          <PaperGrain ruled={false} margin={false} />
           <View style={styles.clip} />
           <View style={styles.clipInner} />
           {/* the sheet's own printed head: a red index tab and two rules, so
@@ -425,6 +429,7 @@ const styles = StyleSheet.create({
   clipboard: {
     backgroundColor: palette.creamDeep,
     borderRadius: radii.panel,
+    overflow: 'hidden',
     paddingHorizontal: spacing.md,
     paddingTop: spacing.lg,
     paddingBottom: spacing.md,

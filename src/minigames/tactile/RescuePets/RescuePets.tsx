@@ -18,7 +18,7 @@ import { Chip, Text } from '@/ui';
 import { sfx } from '@/services/audio';
 import { haptics } from '@/services/haptics';
 import { speech } from '@/services/speech';
-import Svg, { Ellipse, G, Path, Rect } from 'react-native-svg';
+import Svg, { Defs, Ellipse, G, Path, RadialGradient, Rect, Stop } from 'react-native-svg';
 import { Rookie } from '@/characters';
 import { ContactShadow, Stage } from '@/world';
 
@@ -162,12 +162,25 @@ function Stranded({ id, size, x, y, phase, basket, enabled, onRescue, onPickUp }
   return (
     <>
       <Animated.View
-        style={[styles.perchShadow, { left: x, top: y + size * ANIMAL_FOOT - size * 0.06, width: size, height: size * 0.14 }, shadowStyle]}
+        style={[styles.perchShadow, { left: x - size * 0.22, top: y - size * 0.16, width: size * 1.44, height: size * 1.38 }, shadowStyle]}
         pointerEvents="none"
       >
-        <Svg width="100%" height="100%" viewBox="0 0 100 14">
-          <Ellipse cx={52} cy={7} rx={33} ry={5.4} fill={palette.navy} opacity={0.2} />
-          <Ellipse cx={52} cy={7} rx={20} ry={3.4} fill={palette.navy} opacity={0.16} />
+        <Svg width="100%" height="100%" viewBox="0 0 144 138">
+          <Defs>
+            {/* SUN THROUGH THE LEAVES. A green turtle on a green canopy is
+                invisible at 40 px, and so, nearly, is a cream kitten. Every
+                stranded animal sits in its own pool of light, which separates
+                it from the leaf mass whatever colour it is — the illustrator's
+                answer to a busy background, not a UI glow. */}
+            <RadialGradient id="ss-perch-halo" cx="0.5" cy="0.46" r="0.5">
+              <Stop offset="0" stopColor="#FFFFFF" stopOpacity={0.5} />
+              <Stop offset="0.52" stopColor="#FFF6E5" stopOpacity={0.26} />
+              <Stop offset="1" stopColor="#FFF6E5" stopOpacity={0} />
+            </RadialGradient>
+          </Defs>
+          <Ellipse cx={72} cy={64} rx={72} ry={64} fill="url(#ss-perch-halo)" />
+          <Ellipse cx={75} cy={109} rx={33} ry={5.4} fill={palette.navy} opacity={0.2} />
+          <Ellipse cx={75} cy={109} rx={20} ry={3.4} fill={palette.navy} opacity={0.16} />
         </Svg>
       </Animated.View>
       <GestureDetector gesture={gesture}>

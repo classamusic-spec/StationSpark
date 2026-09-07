@@ -2,12 +2,9 @@
  * The five places: school, park, clock tower, apartments and the station yard.
  *
  * `station-yard` is the one that has to read as the *same building* as the
- * Firehouse home screen, so it is drawn in `StationFacade`'s design language
- * rather than copied from it: red hipped roof over a red eaves band, a bell
- * gable with a brass bell in an arched niche, a cream wall with recessed room
- * panels, the STATION SPARK name board in its tan frame, two red roller
- * shutters carrying cream ENGINE plates, a brown base course, and the apron
- * with its yellow guide dashes and its yard dressing.
+ * Firehouse home screen, so it is not drawn "in the same language" — it is
+ * `StationFacade`'s own geometry, mapped unit for unit across the frontage.
+ * See the note over `stationYardArt`.
  */
 import React from 'react';
 import { Circle, Ellipse, G, Path, Rect, Text as SvgText } from 'react-native-svg';
@@ -475,13 +472,42 @@ function apartmentsArt(detail: boolean) {
 /* STATION YARD — the same firehouse as the home screen                */
 /* ================================================================== */
 
-const YARD_H = 248;
+/**
+ * THIS IS THE BUILDING ON THE HOME SCREEN, SEEN FROM THE STREET.
+ *
+ * `src/world/StationFacade.tsx` draws the firehouse the child lives in, in a
+ * 360 × 548 design box. Everything below is that drawing's own geometry mapped
+ * into this scene: the building is given x 18…282 of the 300-unit box, so every
+ * horizontal is `fx(x_facade) = 18 + x_facade × 0.73333` — and the *widths* are
+ * therefore the façade's, unit for unit. A bell gable 47 % of the frontage with
+ * the round tower window on the left and the vent on the right; the shallow red
+ * hip on its red eaves band; the STATION SPARK board straddling that band; a
+ * 3 × 2 grid of recessed room openings with a pilaster between each column; the
+ * deep brown base course carrying two ENGINE shutters with the hose-reel pier
+ * between them; the lamp housings over each bay; and the apron with the tyre
+ * marks rolling out of both doors.
+ *
+ * The y ladder is compressed — a scene box is nothing like 548 tall next to its
+ * width — so the wall and the base band are shorter than the façade's. That is
+ * the one liberty taken: what a five-year-old recognises is the feature set and
+ * its proportions across the frontage, and those are the façade's exactly.
+ */
+
+const YARD_H = 282;
+
+/** a façade x (0…360) in this scene's units */
+const fx = (x: number): number => 18 + x * 0.73333;
+
+/** the façade's own wall foot, in scene units */
+const FOOT = 264;
+/** top of the base course — the brown band the bays sit in */
+const BASE = 216;
 
 /** A red roller shutter with its reveal, slats, window band and ENGINE plate. */
 function BayDoor({ x, y, w, h, label }: { x: number; y: number; w: number; h: number; label: string }) {
   const r = 3.4;
-  const fx = x + r;
-  const fy = y + r;
+  const dx = x + r;
+  const dy = y + r;
   const fw = w - r * 2;
   const fh = h - r;
   return (
@@ -489,172 +515,236 @@ function BayDoor({ x, y, w, h, label }: { x: number; y: number; w: number; h: nu
       <Rect x={x - 4} y={y - 6} width={w + 8} height={h + 6} rx={6} fill="#8E3A22" />
       <Rect x={x - 4} y={y - 6} width={w + 8} height={4} rx={2} fill="#B15A2E" />
       <Rect x={x} y={y} width={w} height={h} rx={4} fill="#4A2214" />
-      <Rect x={fx} y={fy} width={fw} height={fh} rx={3.4} fill={palette.engineRed} />
-      <Rect x={fx} y={fy} width={fw} height={fh * 0.2} rx={3.4} fill={palette.engineRedLight} opacity={0.5} />
-      <Rect x={fx} y={fy} width={fw} height={4} rx={2} fill={SHADE_DEEP} />
-      <Rect x={fx} y={fy} width={3.4} height={fh} rx={1.7} fill={SHADE} />
-      <Path d={rowOf(4, fx + 6, fy + fh * 0.16, (fw - 12) / 4 - 4, fh * 0.26, (fw - 12) / 4)} fill="#204A86" />
-      <Path d={rowOf(4, fx + 6, fy + fh * 0.16, (fw - 12) / 4 - 4, fh * 0.13, (fw - 12) / 4)} fill="#3C6FB4" />
-      <Path d={rp(fx + 2, fy + fh * 0.52, fw - 4, 2) + rp(fx + 2, fy + fh * 0.66, fw - 4, 2) + rp(fx + 2, fy + fh * 0.8, fw - 4, 2)} fill={palette.engineRedDark} opacity={0.7} />
-      <Rect x={fx + fw * 0.24} y={fy + fh * 0.56} width={fw * 0.52} height={11} rx={4} fill={palette.cream} />
-      <Rect x={fx + fw * 0.24} y={fy + fh * 0.56 + 8} width={fw * 0.52} height={3} rx={1.5} fill={SHADE} />
+      <Rect x={dx} y={dy} width={fw} height={fh} rx={3.4} fill={palette.engineRed} />
+      <Rect x={dx} y={dy} width={fw} height={fh * 0.2} rx={3.4} fill={palette.engineRedLight} opacity={0.5} />
+      <Rect x={dx} y={dy} width={fw} height={4} rx={2} fill={SHADE_DEEP} />
+      <Rect x={dx} y={dy} width={3.4} height={fh} rx={1.7} fill={SHADE} />
+      <Path d={rowOf(4, dx + 6, dy + fh * 0.16, (fw - 12) / 4 - 4, fh * 0.26, (fw - 12) / 4)} fill="#204A86" />
+      <Path d={rowOf(4, dx + 6, dy + fh * 0.16, (fw - 12) / 4 - 4, fh * 0.13, (fw - 12) / 4)} fill="#3C6FB4" />
+      <Path d={rp(dx + 2, dy + fh * 0.52, fw - 4, 2) + rp(dx + 2, dy + fh * 0.66, fw - 4, 2) + rp(dx + 2, dy + fh * 0.8, fw - 4, 2)} fill={palette.engineRedDark} opacity={0.7} />
+      <Rect x={dx + fw * 0.24} y={dy + fh * 0.56} width={fw * 0.52} height={10} rx={4} fill={palette.cream} />
+      <Rect x={dx + fw * 0.24} y={dy + fh * 0.56 + 7.2} width={fw * 0.52} height={2.8} rx={1.4} fill={SHADE} />
       <SvgText
-        x={fx + fw * 0.5}
-        y={fy + fh * 0.56 + 8.4}
+        x={dx + fw * 0.5}
+        y={dy + fh * 0.56 + 7.6}
         fontFamily={fontFamily.display}
-        fontSize={8}
+        fontSize={7.4}
         fontWeight="700"
         fill={palette.navy}
         textAnchor="middle"
-        letterSpacing={0.6}
+        letterSpacing={0.5}
       >
         {label}
       </SvgText>
-      <Rect x={fx + fw * 0.36} y={fy + fh - 6} width={fw * 0.28} height={3} rx={1.5} fill={palette.safetyYellow} />
+      <Rect x={dx + fw * 0.36} y={dy + fh - 5} width={fw * 0.28} height={2.6} rx={1.3} fill={palette.safetyYellow} />
+    </G>
+  );
+}
+
+/**
+ * The 3 × 2 grid of recessed room openings, batched. On the home screen these
+ * wells hold the six room tiles the child taps; from the street they are the
+ * crew rooms' windows, in the same wells, on the same grid, with the façade's
+ * tan reveal, its lit lintel and its `#F3DCAF` sill.
+ */
+function RoomGrid() {
+  /* GRID in StationFacade: x 30, w 300, 3 × 2, gap 9 → tiles 94 wide */
+  const cols = [fx(30), fx(133), fx(236)];
+  const rows = [150, 181];
+  const tw = 94 * 0.73333;
+  const th = 25;
+  let reveal = '';
+  let lintel = '';
+  let pane = '';
+  let top = '';
+  let shine = '';
+  let bars = '';
+  let sill = '';
+  let sillShade = '';
+  for (const ry of rows) {
+    for (const cx of cols) {
+      reveal += `M ${(cx - 3).toFixed(1)} ${(ry - 3).toFixed(1)} h ${tw + 6} v ${th + 11} a 8 8 0 0 1 -8 8 h ${-(tw + 6 - 16)} a 8 8 0 0 1 -8 -8 z`;
+      lintel += rp(cx - 3, ry - 3, tw + 6, 4.6);
+      pane += rp(cx, ry, tw, th);
+      top += rp(cx, ry, tw, th * 0.34);
+      shine += `M ${(cx + 4).toFixed(1)} ${(ry + th - 3).toFixed(1)} L ${(cx + tw * 0.44).toFixed(1)} ${(ry + 3).toFixed(1)} L ${(cx + tw * 0.58).toFixed(1)} ${(ry + 3).toFixed(1)} L ${(cx + 4 + tw * 0.14).toFixed(1)} ${(ry + th - 3).toFixed(1)} Z`;
+      bars += rp(cx + tw / 2 - 1.1, ry, 2.2, th) + rp(cx, ry + th / 2 - 1.1, tw, 2.2);
+      sill += rp(cx - 5, ry + th + 2, tw + 10, 4);
+      sillShade += rp(cx - 5, ry + th + 5.2, tw + 10, 2.6);
+    }
+  }
+  return (
+    <G>
+      <Path d={reveal} fill="#E4C48E" />
+      <Path d={lintel} fill={SHADE} />
+      <Path d={pane} fill="#204A86" />
+      <Path d={top} fill="#3C6FB4" />
+      {/* one room is lit, the way one always is in a station that never closes */}
+      <Rect x={cols[1] ?? 0} y={rows[0] ?? 0} width={tw} height={th} rx={0} fill="#F0C463" />
+      <Rect x={cols[1] ?? 0} y={rows[0] ?? 0} width={tw} height={th * 0.34} fill="#FFDF9A" />
+      <Path d={shine} fill={palette.white} opacity={0.18} />
+      <Path d={bars} fill="#E4C48E" opacity={0.9} />
+      <Path d={sill} fill="#F3DCAF" />
+      <Path d={sillShade} fill={SHADE} />
     </G>
   );
 }
 
 function stationYardArt(detail: boolean) {
   const wall = '#F8E2B6';
+  const wallX = fx(14);
+  const wallW = fx(346) - fx(14);
+  const baseX = fx(6);
+  const baseW = fx(354) - fx(6);
+  /* the hip's four courses, thin at the ridge and opening out to the eaves */
+  let tiles = '';
+  for (let i = 1; i <= 4; i += 1) {
+    const t = i / 5;
+    tiles += rp(fx(34) - 23.5 * t, 92 + 32 * t - 1, fx(326) - fx(34) + 47 * t, 2);
+  }
   return (
     <G>
-      {/* the right-hand return, receding away */}
-      <Path d="M 278 74 L 292 88 L 292 220 L 278 220 Z" fill={palette.tanDark} />
-      <Path d="M 278 74 L 292 88 L 292 220 L 278 220 Z" fill={SHADE} />
+      {/* the right-hand return, receding away (façade x 332 → 352) */}
+      <Path d={`M ${fx(332)} 136 L ${fx(360)} 148 L ${fx(360)} ${FOOT} L ${fx(332)} ${FOOT} Z`} fill={palette.tanDark} />
+      <Path d={`M ${fx(332)} 136 L ${fx(360)} 148 L ${fx(360)} ${FOOT} L ${fx(332)} ${FOOT} Z`} fill={SHADE} />
 
-      {/* main hipped roof over its red eaves band */}
-      <HippedRoof x={16} y={72} w={268} rise={34} inset={40} over={10} tone={palette.engineRed} toneLight={palette.engineRedLight} toneDark={palette.engineRedDark} />
-      {/* chimney, as on the home screen */}
-      <Rect x={40} y={22} width={22} height={54} rx={3} fill="#C96A3A" />
-      <Rect x={40} y={22} width={7} height={54} fill={HIGHLIGHT} />
-      <Rect x={36} y={16} width={30} height={10} rx={4.5} fill="#A2512A" />
-      <Rect x={36} y={16} width={30} height={3} rx={1.5} fill={HIGHLIGHT} />
-
-      {/* the bell gable, standing proud of the ridge */}
+      {/* ── the bell gable, standing proud of the ridge ──────────────── */}
       <G>
-        <Rect x={116} y={40} width={68} height={38} fill={wall} />
-        <Rect x={116} y={40} width={12} height={38} fill={SHEEN} />
-        <PitchedRoof x={116} y={40} w={68} rise={30} over={11} tone={palette.engineRed} toneDark={palette.engineRedDark} tiles={false} />
-        <Path d="M 137 74 L 137 60 A 13 13 0 0 1 163 60 L 163 74 Z" fill="#B5652F" />
-        <Path d="M 140 74 L 140 61 A 10 10 0 0 1 160 61 L 160 74 Z" fill="#8E4A20" />
-        {/* the bell itself */}
-        <Path d="M 143 68 q 0 -12 7 -12 q 7 0 7 12 z" fill={palette.safetyYellow} />
-        <Path d="M 143 68 q 0 -12 7 -12 l 0 12 z" fill={HIGHLIGHT} />
-        <Rect x={141} y={68} width={18} height={3.4} rx={1.7} fill={palette.gold} />
-        <Circle cx={150} cy={73} r={2.4} fill={palette.gold} />
-        <Circle cx={126} cy={58} r={6} fill={palette.tanDark} />
-        <Circle cx={174} cy={58} r={6} fill={palette.tanDark} />
-        <Circle cx={174} cy={58} r={4} fill={palette.charcoal} opacity={0.5} />
+        <Path d={`M ${fx(96)} 48 L ${fx(180)} 6 L ${fx(264)} 48 Z`} fill={palette.engineRed} />
+        <Path d={`M ${fx(180)} 6 L ${fx(264)} 48 L ${fx(180)} 48 Z`} fill={SHADE} />
+        <Rect x={fx(92)} y={43} width={fx(268) - fx(92)} height={11} rx={4.5} fill={palette.engineRedDark} />
+        <Rect x={fx(92)} y={43} width={fx(268) - fx(92)} height={3.4} rx={1.7} fill={palette.engineRedLight} opacity={0.6} />
+        <Rect x={fx(116)} y={52} width={fx(244) - fx(116)} height={46} fill={wall} />
+        <Rect x={fx(116)} y={52} width={11} height={46} fill={SHEEN} />
+        <Rect x={fx(116)} y={52} width={fx(244) - fx(116)} height={5} fill={palette.tanDark} opacity={0.5} />
+        {/* the arched niche, and the brass bell hanging in it */}
+        <Path d={`M ${fx(156)} 98 L ${fx(156)} 79 A 17.6 17.6 0 0 1 ${fx(204)} 79 L ${fx(204)} 98 Z`} fill="#B5652F" />
+        <Path d={`M ${fx(160)} 98 L ${fx(160)} 80 A 14.7 14.7 0 0 1 ${fx(200)} 80 L ${fx(200)} 98 Z`} fill="#8E4A20" />
+        <Path d="M 139.5 88 q 0 -22 10.5 -22 q 10.5 0 10.5 22 z" fill={palette.safetyYellow} />
+        <Path d="M 139.5 88 q 0 -22 10.5 -22 l 0 22 z" fill={HIGHLIGHT} />
+        <Rect x={136} y={87} width={28} height={4} rx={2} fill={palette.gold} />
+        <Circle cx={150} cy={63} r={3.4} fill={palette.gold} />
+        {/* the round tower window (the cat's) and the vent opposite it */}
+        <Circle cx={fx(134)} cy={75} r={11.7} fill={palette.tanDark} />
+        <Circle cx={fx(134)} cy={75} r={8.6} fill="#8FCBEF" />
+        <Path d="M 109 79 L 118 68 L 122 68 L 113 79 Z" fill={palette.white} opacity={0.35} />
+        <Circle cx={fx(226)} cy={75} r={8.1} fill={palette.tanDark} />
+        <Circle cx={fx(226)} cy={75} r={5.9} fill={palette.charcoal} opacity={0.5} />
       </G>
 
-      {/* wall, soffit shadow and inner panel */}
-      <Rect x={16} y={76} width={268} height={138} rx={5} fill={wall} />
-      <Rect x={24} y={84} width={252} height={122} rx={8} fill={palette.creamDeep} />
-      <Rect x={16} y={76} width={268} height={12} fill={SHADE_SOFT} />
-      <Rect x={24} y={88} width={252} height={3.4} rx={1.7} fill={HIGHLIGHT} />
+      {/* the chimney, left of the gable, as on the home screen */}
+      <Rect x={fx(38)} y={55} width={fx(62) - fx(38)} height={41} rx={3} fill="#C96A3A" />
+      <Rect x={fx(38)} y={55} width={6} height={41} fill={HIGHLIGHT} />
+      <Rect x={fx(34)} y={49} width={fx(66) - fx(34)} height={8} rx={3.5} fill="#A2512A" />
+      <Rect x={fx(34)} y={49} width={fx(66) - fx(34)} height={2.6} rx={1.3} fill={HIGHLIGHT} />
 
-      {/* the STATION SPARK name board, in its tan frame */}
-      <SignBoard x={54} y={86} w={192} h={28} label="STATION SPARK" ink={palette.navy} size={15} />
+      {/* the flag mast, bracketed to the gable wall (its flag is the sway) */}
+      <Rect x={fx(282)} y={18} width={4} height={90} rx={2} fill={palette.slateLight} />
+      <Rect x={fx(282)} y={18} width={1.6} height={90} fill={HIGHLIGHT} />
+      <Circle cx={fx(282) + 2} cy={17} r={3.2} fill={palette.gold} />
+      <Rect x={fx(282) - 4} y={100} width={12} height={9} rx={3} fill={palette.charcoal} />
 
-      {/* the crew-room windows across the first floor */}
-      {[0, 1, 2].map((i) => {
-        const px = 34 + i * 80;
-        return (
-          <G key={`rm${i}`}>
-            <Rect x={px - 4} y={120} width={72} height={36} rx={11} fill="#E4C48E" />
-            <Rect x={px - 4} y={120} width={72} height={4.4} rx={2.2} fill={HIGHLIGHT} />
-            <Rect x={px} y={124} width={64} height={28} rx={8} fill="#204A86" />
-            <Rect x={px} y={124} width={64} height={10} rx={8} fill="#3C6FB4" />
-            <Path d={`M ${px + 4} 150 L ${px + 26} 128 L ${px + 36} 128 L ${px + 14} 150 Z`} fill={palette.white} opacity={0.18} />
-            <Path d={rp(px + 31, 124, 2.4, 28) + rp(px, 136, 64, 2.4)} fill="#E4C48E" opacity={0.85} />
-            <Rect x={px - 7} y={154} width={78} height={5} rx={2.5} fill="#F3DCAF" />
-            <Rect x={px - 7} y={158} width={78} height={3} rx={1.5} fill={SHADE} />
-          </G>
-        );
-      })}
+      {/* ── the main hip, over its red eaves band ───────────────────── */}
+      <HippedRoof x={fx(8)} y={124} w={fx(352) - fx(8)} rise={32} inset={fx(34) - fx(8)} over={fx(8) - fx(2)} tone={palette.engineRed} toneLight={palette.engineRedLight} toneDark={palette.engineRedDark} />
+      <Path d={tiles} fill={SHADE} opacity={0.26} />
 
-      {/* THE BAYS. On the home screen the engine doors are the biggest thing on
-          the building — that is what makes it a fire station rather than a
-          house with a bell. So the base course is deep and the shutters are
-          nearly twice the height of a window, with the pier and its hose reel
-          between them. */}
-      <Rect x={6} y={158} width={288} height={62} rx={6} fill="#C96A3A" />
-      <Rect x={6} y={158} width={288} height={7} rx={3.5} fill="#A2512A" />
-      <Rect x={6} y={163} width={288} height={3.4} rx={1.7} fill={HIGHLIGHT} />
-      <Path d={rowOf(8, 12, 172, 30, 2.4, 35)} fill="#B15A2E" opacity={0.5} />
-      <BayDoor x={22} y={166} w={110} h={54} label="ENGINE 1" />
-      <BayDoor x={168} y={166} w={110} h={54} label="ENGINE 2" />
-      {/* the hose reel on the pier between the bays */}
+      {/* ── the wall: cream, with the value fall the façade's gradient has ── */}
+      <Rect x={wallX} y={130} width={wallW} height={86} rx={5} fill={wall} />
+      <Rect x={wallX} y={174} width={wallW} height={42} fill={SHADE_SOFT} />
+      <Rect x={fx(24)} y={136} width={fx(336) - fx(24)} height={74} rx={9} fill={palette.creamDeep} />
+      <Rect x={wallX} y={130} width={wallW} height={9} fill={SHADE_SOFT} />
+      <Rect x={fx(24)} y={139} width={fx(336) - fx(24)} height={3} rx={1.5} fill={HIGHLIGHT} />
+
+      {/* the pilasters between the three room bays */}
+      <Path d={rp(fx(125), 144, 3.7, 64) + rp(fx(230), 144, 3.7, 64)} fill={palette.tanDark} opacity={0.45} />
+      <RoomGrid />
+
+      {/* the STATION SPARK board, straddling the eaves band */}
+      <SignBoard x={fx(64)} y={112} w={fx(296) - fx(64)} h={26} label="STATION SPARK" ink={palette.navy} size={15} />
+
+      {/* ── the base course and the two bays ────────────────────────── */}
+      <Rect x={baseX} y={BASE} width={baseW} height={FOOT - BASE} rx={7} fill="#C96A3A" />
+      <Rect x={baseX} y={BASE} width={baseW} height={5.5} rx={2.75} fill="#A2512A" />
+      <Rect x={baseX} y={BASE + 4} width={baseW} height={2.6} rx={1.3} fill={HIGHLIGHT} />
+      <Path d={rowOf(8, fx(12), 224, 27.9, 2.4, 31.5)} fill="#B15A2E" opacity={0.55} />
+      <BayDoor x={fx(30)} y={226} w={130 * 0.73333} h={36} label="ENGINE 1" />
+      <BayDoor x={fx(200)} y={226} w={130 * 0.73333} h={36} label="ENGINE 2" />
+
+      {/* the hose reel on the pier between them, on its backing plate */}
       <G>
-        <Rect x={136} y={162} width={28} height={58} rx={7} fill={SHADE_DEEP} />
-        <Rect x={138} y={164} width={24} height={54} rx={6} fill={palette.creamDeep} />
-        <Rect x={138} y={164} width={24} height={4} rx={2} fill={HIGHLIGHT} />
-        <Circle cx={150} cy={192} r={11} fill={palette.charcoal} />
-        <Circle cx={150} cy={191} r={9} fill={palette.engineRed} />
-        <Circle cx={150} cy={191} r={5.4} fill={palette.engineRedDark} />
-        <Circle cx={150} cy={191} r={2.6} fill={palette.slateLight} />
-        <Rect x={142} y={206} width={16} height={6} rx={3} fill={palette.slate} />
+        <Rect x={fx(163)} y={226} width={fx(197) - fx(163)} height={28} rx={7} fill={SHADE_DEEP} />
+        <Rect x={fx(163) + 1.6} y={227.6} width={fx(197) - fx(163) - 3.2} height={24.8} rx={5.6} fill={palette.creamDeep} />
+        <Rect x={fx(163) + 1.6} y={227.6} width={fx(197) - fx(163) - 3.2} height={3.4} rx={1.7} fill={HIGHLIGHT} />
+        <Circle cx={fx(180)} cy={237} r={9.5} fill={palette.charcoal} />
+        <Circle cx={fx(180)} cy={236.4} r={8} fill={palette.engineRed} />
+        <Circle cx={fx(180)} cy={236.4} r={5.4} fill={palette.engineRedDark} />
+        <Circle cx={fx(180)} cy={236.4} r={3.2} fill={palette.slateLight} />
+        <Path d={`M ${fx(180) + 6.4} 241 q 3.6 5 0.8 8.4`} stroke={palette.safetyYellow} strokeWidth={2.2} fill="none" strokeLinecap="round" />
       </G>
-      {/* lamp housings over each bay */}
-      <Rect x={66} y={159} width={22} height={7} rx={3.5} fill={palette.charcoal} />
-      <Rect x={212} y={159} width={22} height={7} rx={3.5} fill={palette.charcoal} />
-      <Ellipse cx={77} cy={170} rx={18} ry={10} fill={palette.safetyYellow} opacity={0.16} />
-      <Ellipse cx={223} cy={170} rx={18} ry={10} fill={palette.safetyYellow} opacity={0.16} />
 
-      {/* the threshold the engines cross. The apron itself is the near ground
-          plane (see GroundPlane's 'apron' kind), so there is one forecourt from
-          the bay doors to the kerb rather than two greys meeting at a seam. */}
-      <Path d="M -20 220 L 320 220 L 320 240 L -20 240 Z" fill="#EDF1F8" />
-      <Rect x={-20} y={220} width={340} height={9} fill={SHADE_SOFT} />
-      <BaseShadow cx={150} y={224} rx={146} />
+      {/* the lamp housings above each bay, and the pools they throw */}
+      <Rect x={fx(82)} y={217.6} width={fx(108) - fx(82)} height={6} rx={3} fill={palette.charcoal} />
+      <Rect x={fx(252)} y={217.6} width={fx(278) - fx(252)} height={6} rx={3} fill={palette.charcoal} />
+      <Ellipse cx={fx(95)} cy={230} rx={16} ry={9} fill={palette.safetyYellow} opacity={0.16} />
+      <Ellipse cx={fx(265)} cy={230} rx={16} ry={9} fill={palette.safetyYellow} opacity={0.16} />
 
-      {/* the flag mast (its flag is the swaying element) */}
-      <Rect x={276} y={34} width={4.4} height={188} rx={2.2} fill={palette.slateLight} />
-      <Rect x={276} y={34} width={1.8} height={188} fill={HIGHLIGHT} />
-      <Circle cx={278.2} cy={32} r={3.4} fill={palette.gold} />
+      {/* ── the threshold the engines cross ─────────────────────────── */}
+      {/* the apron itself is the near ground plane (GroundPlane's 'apron'
+          kind), so there is one forecourt from the bay doors to the kerb */}
+      <Path d={`M -20 ${FOOT} L 320 ${FOOT} L 320 ${FOOT + 14} L -20 ${FOOT + 14} Z`} fill="#EDF1F8" />
+      <Rect x={-20} y={FOOT} width={340} height={9} fill={SHADE_SOFT} />
+      <BaseShadow cx={150} y={FOOT + 4} rx={140} />
+      {/* the tyre marks rolling out of both bays, exactly where the façade's do */}
+      <G opacity={0.3}>
+        <Path d="M 66.4 268 Q 62 300 54.7 330" stroke={SHADE} strokeWidth={4.4} fill="none" strokeLinecap="round" />
+        <Path d="M 110.4 268 Q 110.4 300 109 330" stroke={SHADE} strokeWidth={4.4} fill="none" strokeLinecap="round" />
+        <Path d="M 189.6 268 Q 189.6 300 191.1 330" stroke={SHADE} strokeWidth={4.4} fill="none" strokeLinecap="round" />
+        <Path d="M 233.6 268 Q 239 300 245.3 330" stroke={SHADE} strokeWidth={4.4} fill="none" strokeLinecap="round" />
+      </G>
 
       {detail ? (
         <G>
-          {/* the yard dressing, all of it standing on the apron and spread down
-              it rather than lined up along the wall like a shelf */}
-          <G x={64} y={292} scale={1.1}>
-            <Contact cx={0} cy={2} rx={20} />
-            <Rect x={-17} y={-8} width={34} height={9} rx={4} fill={palette.engineRedDark} />
-            <Rect x={-12} y={-44} width={24} height={37} rx={9} fill={palette.engineRed} />
-            <Rect x={3} y={-41} width={8} height={31} rx={4} fill={SHADE} />
-            <Rect x={-11} y={-41} width={5} height={31} rx={2.5} fill={HIGHLIGHT} />
-            <Rect x={-20} y={-36} width={9} height={11} rx={4.5} fill={palette.engineRedDark} />
-            <Rect x={11} y={-36} width={9} height={11} rx={4.5} fill={palette.engineRedDark} />
-            <Rect x={-15} y={-52} width={30} height={9} rx={4.5} fill={palette.engineRedDark} />
-            <Path d="M -11 -52 q 0 -11 11 -11 q 11 0 11 11 z" fill={palette.engineRed} />
-            <Circle cx={0} cy={-64} r={4.4} fill={palette.gold} />
-            <Ellipse cx={-5} cy={-57} rx={4.4} ry={2.4} fill={HIGHLIGHT} />
+          {/* the yard dressing, standing on the apron and spread down it
+              rather than lined up along the wall like a shelf */}
+          <Planter x={30} y={298} s={0.95} />
+          <Planter x={270} y={298} s={0.95} />
+          {/* the station hydrant */}
+          <G x={86} y={330} scale={1.15}>
+            <Contact cx={0} cy={2} rx={19} />
+            <Rect x={-16} y={-8} width={32} height={9} rx={4} fill={palette.engineRedDark} />
+            <Rect x={-11} y={-42} width={22} height={35} rx={8} fill={palette.engineRed} />
+            <Rect x={3} y={-39} width={7} height={29} rx={3.5} fill={SHADE} />
+            <Rect x={-10} y={-39} width={4.6} height={29} rx={2.3} fill={HIGHLIGHT} />
+            <Rect x={-19} y={-34} width={8.4} height={10} rx={4.2} fill={palette.engineRedDark} />
+            <Rect x={10.6} y={-34} width={8.4} height={10} rx={4.2} fill={palette.engineRedDark} />
+            <Rect x={-14} y={-49} width={28} height={8.4} rx={4.2} fill={palette.engineRedDark} />
+            <Path d="M -10 -49 q 0 -10 10 -10 q 10 0 10 10 z" fill={palette.engineRed} />
+            <Circle cx={0} cy={-60} r={4.2} fill={palette.gold} />
+            <Ellipse cx={-4.6} cy={-53} rx={4.2} ry={2.2} fill={HIGHLIGHT} />
           </G>
           {/* the coiled hose and the helmet left out after the last shout */}
-          <G x={238} y={296} scale={1.05}>
-            <Contact cx={0} cy={3} rx={22} />
-            <Ellipse cx={0} cy={-6} rx={21} ry={10} fill={palette.gold} />
-            <Ellipse cx={0} cy={-9} rx={21} ry={10} fill={palette.safetyYellow} />
-            <Ellipse cx={0} cy={-9} rx={13} ry={6.4} fill={palette.goldDark} />
-            <Ellipse cx={0} cy={-11} rx={13} ry={6.4} fill="#FFD766" />
-            <Ellipse cx={-8} cy={-15} rx={7} ry={2.6} fill={HIGHLIGHT} />
-            <Rect x={14} y={-13} width={14} height={7} rx={3.5} fill={palette.slate} />
+          <G x={122} y={338} scale={1}>
+            <Contact cx={0} cy={3} rx={21} />
+            <Ellipse cx={0} cy={-6} rx={20} ry={9.6} fill={palette.gold} />
+            <Ellipse cx={0} cy={-9} rx={20} ry={9.6} fill={palette.safetyYellow} />
+            <Ellipse cx={0} cy={-9} rx={12.4} ry={6} fill={palette.goldDark} />
+            <Ellipse cx={0} cy={-11} rx={12.4} ry={6} fill="#FFD766" />
+            <Ellipse cx={-7.6} cy={-14.6} rx={6.6} ry={2.4} fill={HIGHLIGHT} />
+            <Rect x={13} y={-12.4} width={13} height={6.6} rx={3.3} fill={palette.slate} />
           </G>
-          <G x={226} y={318} scale={0.95}>
+          <G x={248} y={346} scale={0.95}>
             <Contact cx={0} cy={2} rx={19} />
             <Path d="M -16 0 q -3 -20 16 -20 q 19 0 16 20 z" fill={palette.engineRed} />
             <Path d="M -16 0 q -3 -20 16 -20 l 0 20 z" fill={HIGHLIGHT} />
             <Path d="M -20 0 h 40 l -3 5 h -34 z" fill={palette.engineRedDark} />
             <Path d="M -7 -13 l 7 -8 l 7 8 z" fill={palette.safetyYellow} />
           </G>
-          <Bollard x={14} y={288} h={28} s={1.25} />
-          <Bollard x={286} y={288} h={28} s={1.25} />
-          <Cone x={84} y={320} h={26} s={1.15} />
-          <Drain x={168} y={322} s={1.15} />
-          <Planter x={26} y={252} s={0.95} />
-          <Planter x={274} y={252} s={0.95} />
-          <Pigeon x={140} y={312} s={1} facing={-1} />
+          {/* the two bollards the façade guards its crossover with */}
+          <Bollard x={fx(172)} y={322} h={24} s={1.05} />
+          <Bollard x={fx(200)} y={322} h={24} s={1.05} />
+          <Cone x={fx(276)} y={344} h={26} s={1.1} />
+          <Drain x={fx(236)} y={326} s={1.1} />
+          <Pigeon x={fx(120)} y={356} s={1} facing={-1} />
         </G>
       ) : null}
     </G>
@@ -705,5 +795,6 @@ export const stationYard: SceneDef = {
   /* the child has to recognise the whole firehouse, so it never loses its ends */
   spill: 0.9,
   art: stationYardArt,
-  sway: { x: 278, y: 36, kind: 'flag' },
+  /* the flag flies from the mast bracketed to the gable wall, façade x 282 */
+  sway: { x: 227, y: 20, kind: 'flag' },
 };

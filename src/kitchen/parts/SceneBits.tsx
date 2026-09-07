@@ -220,16 +220,42 @@ export function ServingTray({ width, height }: { width: number; height: number }
   const rim = Math.max(9, Math.min(16, height * 0.12));
   return (
     <Svg width={width} height={height + 12} viewBox={`0 0 ${width} ${height + 12}`}>
+      <Defs>
+        <LinearGradient id="trRim" x1="0.1" y1="0" x2="0.6" y2="1">
+          <Stop offset="0" stopColor="#DBA268" />
+          <Stop offset="0.5" stopColor={palette.wood} />
+          <Stop offset="1" stopColor="#A9743C" />
+        </LinearGradient>
+        {/* the board inside the rim: light lands top-left, the rim shades the
+            far side — without it the tray was a flat cream slab holding
+            stickers */}
+        <LinearGradient id="trFace" x1="0.12" y1="0" x2="0.7" y2="1">
+          <Stop offset="0" stopColor="#FFF3D8" />
+          <Stop offset="0.55" stopColor="#F5E0B9" />
+          <Stop offset="1" stopColor="#E7CB9C" />
+        </LinearGradient>
+        <LinearGradient id="trInner" x1="0" y1="0" x2="0" y2="1">
+          <Stop offset="0" stopColor="#8C5824" stopOpacity={0.22} />
+          <Stop offset="1" stopColor="#8C5824" stopOpacity={0} />
+        </LinearGradient>
+      </Defs>
       {/* what the tray lays on the counter */}
       <Ellipse cx={width / 2 + 4} cy={height + 5} rx={width * 0.46} ry={7} fill="rgba(31,42,90,0.07)" />
-      <Ellipse cx={width / 2 + 2} cy={height + 2} rx={width * 0.42} ry={5} fill="rgba(31,42,90,0.13)" />
+      <Ellipse cx={width / 2 + 2} cy={height + 2} rx={width * 0.42} ry={5} fill="rgba(31,42,90,0.15)" />
       {/* the rim, and its return under the front edge */}
-      <Rect x={0} y={6} width={width} height={height} rx={r} fill="#9E6A36" />
-      <Rect x={0} y={0} width={width} height={height} rx={r} fill={palette.wood} />
+      <Rect x={0} y={6} width={width} height={height} rx={r} fill="#8A5A28" />
+      <Rect x={0} y={0} width={width} height={height} rx={r} fill="url(#trRim)" />
       <Rect x={0} y={0} width={width} height={height * 0.16} rx={r * 0.5} fill="rgba(255,255,255,0.34)" />
-      {/* the surface */}
-      <Rect x={rim} y={rim * 0.8} width={width - rim * 2} height={height - rim * 1.8} rx={r * 0.62} fill="#F7E3BE" />
-      <Rect x={rim} y={rim * 0.8} width={width - rim * 2} height={rim * 0.5} rx={r * 0.3} fill="rgba(31,42,90,0.08)" />
+      {/* the surface, and the shadow the rim drops onto it */}
+      <Rect x={rim} y={rim * 0.8} width={width - rim * 2} height={height - rim * 1.8} rx={r * 0.62} fill="url(#trFace)" />
+      <Rect
+        x={rim}
+        y={rim * 0.8}
+        width={width - rim * 2}
+        height={Math.min(rim * 1.6, (height - rim * 1.8) * 0.5)}
+        rx={r * 0.3}
+        fill="url(#trInner)"
+      />
       <Rect
         x={rim + 3}
         y={rim * 0.8 + 3}

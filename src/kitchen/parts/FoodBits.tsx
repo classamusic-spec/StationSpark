@@ -38,6 +38,80 @@ export function BlueBowl({ size, word, glyphId }: { size: number; word?: VocabWo
 }
 
 /* ------------------------------------------------------------------ */
+/* One ingredient, standing on something                                 */
+/* ------------------------------------------------------------------ */
+
+/**
+ * A piece of food ON A DISH.
+ *
+ * The word-bank art is a sticker: correct for a flash card, weightless in a
+ * kitchen. Everywhere a child reads an ingredient off a list or picks one off a
+ * counter, the sticker gets a shallow cream dish to stand in — a lit rim, a
+ * shaded well, and two contact shadows under it — so the thing being counted
+ * has somewhere to *be*. That is the whole difference between an icon and an
+ * object, and it costs one small drawing.
+ */
+export function FoodThumb({ id, size }: { id: string; size: number }) {
+  return (
+    <View style={{ width: size, height: size }}>
+      <Svg width={size} height={size} viewBox="0 0 100 100" style={StyleSheet.absoluteFill}>
+        <Defs>
+          <LinearGradient id="fbDish" x1="0.15" y1="0" x2="0.7" y2="1">
+            <Stop offset="0" stopColor="#FFFDF6" />
+            <Stop offset="1" stopColor="#EFDDBC" />
+          </LinearGradient>
+        </Defs>
+        {/* what the dish lays on whatever it is standing on */}
+        <Ellipse cx={52} cy={90} rx={38} ry={7} fill="rgba(31,42,90,0.06)" />
+        <Ellipse cx={50} cy={88} rx={30} ry={5} fill="rgba(31,42,90,0.15)" />
+        {/* the dish: its underside, its face, and the well the food sits in */}
+        <Ellipse cx={50} cy={83} rx={39} ry={12} fill="#D9BE92" />
+        <Ellipse cx={50} cy={79} rx={39} ry={12} fill="url(#fbDish)" />
+        <Ellipse cx={50} cy={79} rx={27} ry={7.5} fill="#F3E2C4" />
+        <Path d="M13 76a39 12 0 0 1 30 -9 39 12 0 0 0 -25 11z" fill="rgba(255,255,255,0.9)" />
+        <Path d="M87 82a39 12 0 0 1 -26 9 39 12 0 0 0 21 -11z" fill="rgba(31,42,90,0.08)" />
+      </Svg>
+      <View style={[styles.thumbFood, { bottom: size * 0.2 }]} pointerEvents="none">
+        <VocabIcon id={id} size={size * 0.82} noShadow />
+      </View>
+    </View>
+  );
+}
+
+/**
+ * A piece of food resting on a surface it is already part of — a tray, a
+ * board, a table. No dish: just the two-part contact shadow that says the thing
+ * is lying on wood and not floating in front of it. The sheet's own hairline
+ * ellipse is too light to do that job at the size a tray of eight is drawn.
+ */
+export function FoodOnSurface({ id, size }: { id: string; size: number }) {
+  return (
+    <View style={{ width: size, height: size }}>
+      <Svg width={size} height={size} viewBox="0 0 100 100" style={StyleSheet.absoluteFill}>
+        <Ellipse cx={53} cy={91} rx={34} ry={6} fill="rgba(31,42,90,0.07)" />
+        <Ellipse cx={51} cy={90} rx={25} ry={4.4} fill="rgba(31,42,90,0.17)" />
+      </Svg>
+      <VocabIcon id={id} size={size} noShadow />
+    </View>
+  );
+}
+
+/**
+ * The navy ellipse a figure standing on the table owes the table. `CrewFigure`
+ * draws a person, not a scene, so the ground under one is the scene's job.
+ */
+export function FigureShadow({ width, style }: { width: number; style?: StyleProp<ViewStyle> }) {
+  return (
+    <View style={[{ width, height: width * 0.3 }, style]} pointerEvents="none">
+      <Svg width={width} height={width * 0.3} viewBox="0 0 100 30">
+        <Ellipse cx={51} cy={17} rx={44} ry={9} fill="rgba(31,42,90,0.06)" />
+        <Ellipse cx={50} cy={16} rx={33} ry={6} fill="rgba(31,42,90,0.16)" />
+      </Svg>
+    </View>
+  );
+}
+
+/* ------------------------------------------------------------------ */
 /* Tan side rack + its cream cells (straight from the reference)         */
 /* ------------------------------------------------------------------ */
 
@@ -250,6 +324,7 @@ export function PlateArt({ size }: { size: number }) {
 
 const styles = StyleSheet.create({
   center: { alignItems: 'center', justifyContent: 'center' },
+  thumbFood: { position: 'absolute', left: 0, right: 0, alignItems: 'center' },
   cell: {
     backgroundColor: palette.panel,
     borderRadius: radii.tile,

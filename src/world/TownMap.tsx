@@ -125,9 +125,50 @@ const SHADE_SOFT = 'rgba(31,42,90,0.08)';
 const HI = 'rgba(255,255,255,0.32)';
 const GLASS = '#3A5FA8';
 
-/** The navy contact ellipse every building stands on (consistency rule #3). */
+/**
+ * WHAT A BUILDING STANDS ON.
+ *
+ * A contact ellipse alone says "this object touches the ground"; it does not
+ * say where the sun is, so a town made of them reads as stickers laid on felt.
+ * The light in this world comes from the top left, so every building also
+ * throws a soft, wider shadow down and to the *right* — one extra node each,
+ * and the single cheapest thing that turns a plan into a place.
+ */
 function ground(cx: number, cy: number, rx: number) {
-  return <Ellipse cx={cx} cy={cy} rx={rx} ry={Math.max(3, rx * 0.16)} fill={palette.navy} opacity={0.12} />;
+  return (
+    <G>
+      <Ellipse
+        cx={cx + rx * 0.2}
+        cy={cy + rx * 0.075}
+        rx={rx * 1.04}
+        ry={Math.max(3.4, rx * 0.2)}
+        fill={palette.navy}
+        opacity={0.07}
+      />
+      <Ellipse cx={cx} cy={cy} rx={rx} ry={Math.max(3, rx * 0.16)} fill={palette.navy} opacity={0.12} />
+    </G>
+  );
+}
+
+/**
+ * TILE COURSES DOWN A ROOF, batched into one path.
+ *
+ * A flat red triangle with one shaded half is a sticker. The same triangle with
+ * four courses running parallel to its eaves is a roof — and at map scale that
+ * is the whole difference between a plan and an illustration. Works for a
+ * gable (`ridgeL === ridgeR`) and for a hip (the ridge is a segment).
+ */
+function roofTiles(ridgeL: number, ridgeR: number, eaveL: number, eaveR: number, yRidge: number, yEave: number, n = 4): string {
+  const th = Math.max(0.9, (yEave - yRidge) / (n * 4.5));
+  let d = '';
+  for (let i = 1; i <= n; i += 1) {
+    const t = i / (n + 1);
+    const x0 = ridgeL + (eaveL - ridgeL) * t;
+    const x1 = ridgeR + (eaveR - ridgeR) * t;
+    const y = yRidge + (yEave - yRidge) * t;
+    d += `M ${x0.toFixed(1)} ${y.toFixed(1)} H ${x1.toFixed(1)} V ${(y + th).toFixed(1)} H ${x0.toFixed(1)} Z`;
+  }
+  return d;
 }
 
 /** A window with real mullions and a sill — never a bare blue square. */
@@ -197,10 +238,32 @@ function plate(x: number, y: number, w: number, h: number, ink: string) {
 /* Roads + greenery                                                    */
 /* ------------------------------------------------------------------ */
 
+/**
+ * THE MOWN BANDS.
+ *
+ * A single green gradient over a 360 × 600 board is 60 % of the map's area
+ * doing nothing, and no amount of detail on the buildings fixes a dead field
+ * behind them. These are the diagonal stripes a groundskeeper leaves: one
+ * batched path, drawn under everything, at an angle no road runs at so it
+ * never lines up with the grid and reads as banding.
+ */
+const MOWN = (() => {
+  let d = '';
+  for (let i = -4; i < 12; i += 1) {
+    const x = i * 64;
+    d += `M ${x} -10 L ${x + 31} -10 L ${x + 31 + 210} 610 L ${x + 210} 610 Z`;
+  }
+  return d;
+})();
+
 /** Asphalt, not lavender: a dark edge, a neutral grey surface, white dashes. */
 function Road({ d, width = 22 }: { d: string; width?: number }) {
   return (
     <G>
+      {/* the verge, and the shadow the kerb drops into it: without them the
+          tarmac is painted on the grass rather than laid in it */}
+      <Path d={d} stroke="#6FB755" strokeWidth={width + 15} strokeLinecap="round" fill="none" opacity={0.55} />
+      <Path d={d} stroke={palette.navy} strokeWidth={width + 9} strokeLinecap="round" fill="none" opacity={0.07} />
       <Path d={d} stroke="#7E879F" strokeWidth={width + 5} strokeLinecap="round" fill="none" />
       <Path d={d} stroke="#9AA3B8" strokeWidth={width} strokeLinecap="round" fill="none" />
       <Path d={d} stroke="#A7B0C4" strokeWidth={width * 0.45} strokeLinecap="round" fill="none" opacity={0.5} />
@@ -242,6 +305,7 @@ function Trees({ pts }: { pts: readonly [number, number, number][] }) {
     <G>
       {pts.map(([x, y, s], i) => (
         <G key={i}>
+          <Ellipse cx={x + s * 0.32} cy={y + s * 0.96} rx={s * 0.66} ry={s * 0.2} fill={palette.navy} opacity={0.07} />
           <Ellipse cx={x} cy={y + s * 0.92} rx={s * 0.6} ry={s * 0.16} fill={palette.navy} opacity={0.12} />
           <Rect x={x - s * 0.11} y={y + s * 0.3} width={s * 0.22} height={s * 0.62} rx={s * 0.11} fill={palette.woodDark} />
           <Rect x={x - s * 0.11} y={y + s * 0.3} width={s * 0.08} height={s * 0.62} fill={HI} />
@@ -281,6 +345,7 @@ function FireStation() {
       {/* gable roof + cornice */}
       <Path d="M 8 68 L 58 30 L 108 68 Z" fill={palette.engineRed} />
       <Path d="M 58 30 L 108 68 L 58 68 Z" fill={SHADE} />
+      <Path d={roofTiles(58, 58, 8, 108, 30, 68)} fill={SHADE} opacity={0.45} />
       <Rect x={6} y={64} width={104} height={9} rx={4.5} fill={palette.engineRedDark} />
       <Rect x={10} y={73} width={96} height={3.4} rx={1.7} fill={SHADE_SOFT} />
       {/* bell gable with a flame emblem */}
@@ -323,6 +388,7 @@ function School() {
       {/* hipped roof */}
       <Path d="M 118 74 L 140 46 L 196 46 L 218 74 Z" fill="#C7473B" />
       <Path d="M 196 46 L 218 74 L 168 74 L 168 46 Z" fill={SHADE} />
+      <Path d={roofTiles(140, 196, 118, 218, 46, 74)} fill={SHADE} opacity={0.45} />
       <Rect x={116} y={70} width={104} height={8} rx={4} fill="#A83A30" />
       {/* bell cupola */}
       <Rect x={158} y={30} width={20} height={16} rx={3} fill={palette.creamDeep} />
@@ -355,6 +421,7 @@ function ClockTower() {
       <Rect x={265} y={54} width={7} height={76} fill={SHADE} />
       <Path d="M 230 58 L 254 26 L 278 58 Z" fill="#4B6FB5" />
       <Path d="M 254 26 L 278 58 L 254 58 Z" fill={SHADE} />
+      <Path d={roofTiles(254, 254, 230, 278, 26, 58, 3)} fill={SHADE} opacity={0.4} />
       <Rect x={228} y={54} width={52} height={7} rx={3.5} fill="#33478A" />
       {/* cornice bands */}
       <Rect x={233} y={86} width={42} height={4} rx={2} fill="#DCC79F" />
@@ -386,6 +453,7 @@ function Bakery() {
       <Rect x={96} y={212} width={12} height={54} fill={SHADE} />
       <Path d="M 10 216 L 62 186 L 114 216 Z" fill="#C44B3F" />
       <Path d="M 62 186 L 114 216 L 62 216 Z" fill={SHADE} />
+      <Path d={roofTiles(62, 62, 10, 114, 186, 216)} fill={SHADE} opacity={0.45} />
       <Rect x={8} y={212} width={108} height={8} rx={4} fill="#A83A30" />
       {/* the loaf sign, tucked into the gable */}
       <Ellipse cx={62} cy={206} rx={17} ry={9} fill="#C98C34" />
@@ -504,6 +572,7 @@ function PetShop() {
       <Rect x={85} y={356} width={11} height={48} fill={SHADE} />
       <Path d="M 10 360 L 56 332 L 102 360 Z" fill={palette.waterCyanDark} />
       <Path d="M 56 332 L 102 360 L 56 360 Z" fill={SHADE} />
+      <Path d={roofTiles(56, 56, 10, 102, 332, 360)} fill={SHADE} opacity={0.45} />
       <Rect x={8} y={356} width={96} height={7} rx={3.5} fill="#1789C4" />
       {/* paw badge in the gable */}
       <Circle cx={56} cy={346} r={8.5} fill={palette.white} />
@@ -544,6 +613,7 @@ function Pizza() {
       <Rect x={189} y={356} width={11} height={48} fill={SHADE} />
       <Path d="M 106 360 L 156 330 L 206 360 Z" fill="#2E9E52" />
       <Path d="M 156 330 L 206 360 L 156 360 Z" fill={SHADE} />
+      <Path d={roofTiles(156, 156, 106, 206, 330, 360)} fill={SHADE} opacity={0.45} />
       <Rect x={104} y={356} width={104} height={7} rx={3.5} fill="#1F7C3C" />
       {/* pizza badge — the same signage motif as the pet shop's paw disc */}
       <Circle cx={156} cy={346} r={8.5} fill={palette.white} />
@@ -582,6 +652,7 @@ function Homes() {
       <Rect x={x + w * 0.84} y={y + h * 0.36} width={w * 0.16} height={h * 0.64} fill={SHADE} />
       <Path d={`M ${x - 4} ${y + h * 0.38} L ${x + w / 2} ${y} L ${x + w + 4} ${y + h * 0.38} Z`} fill={roof} />
       <Path d={`M ${x + w / 2} ${y} L ${x + w + 4} ${y + h * 0.38} L ${x + w / 2} ${y + h * 0.38} Z`} fill={SHADE} />
+      <Path d={roofTiles(x + w / 2, x + w / 2, x - 4, x + w + 4, y, y + h * 0.38, 3)} fill={SHADE} opacity={0.4} />
       <Rect x={x - 5} y={y + h * 0.34} width={w + 10} height={5} rx={2.5} fill={roofDark} />
       {win(x + w * 0.14, y + h * 0.5, w * 0.26, h * 0.24)}
       <Rect x={x + w * 0.56} y={y + h * 0.52} width={w * 0.26} height={h * 0.48} rx={2} fill="#8E5A26" />
@@ -765,15 +836,23 @@ const MapArt = memo(function MapArt({ width, height }: { width: number; height: 
 
       {/* ground */}
       <Rect x={0} y={0} width={MAP_VB.w} height={MAP_VB.h} fill="url(#mapGrass)" />
+      <Path d={MOWN} fill={palette.white} opacity={0.075} />
       {/* soft meadow patches */}
       <Ellipse cx={58} cy={392} rx={54} ry={30} fill="#B4E693" opacity={0.5} />
       <Ellipse cx={242} cy={430} rx={42} ry={30} fill="#B4E693" opacity={0.45} />
+      <Ellipse cx={196} cy={236} rx={48} ry={26} fill="#B4E693" opacity={0.4} />
+      <Ellipse cx={64} cy={512} rx={44} ry={24} fill="#79C25C" opacity={0.35} />
+      <Ellipse cx={168} cy={112} rx={52} ry={26} fill="#B4E693" opacity={0.35} />
       {/* the construction site's sand lot, inside its block */}
       <Ellipse cx={180} cy={520} rx={40} ry={34} fill="#E9CE9A" />
       {/* distant hills behind the top haze */}
       <Path d="M -10 62 q 46 -34 96 -6 q 40 -30 92 -2 q 44 -26 96 0 q 40 -22 96 4 L 370 0 L -10 0 Z" fill="#8FCF87" opacity={0.55} />
 
       {/* ── river ─────────────────────────────────────────────────── */}
+      {/* the bank it has cut, and the sand at the waterline: a stroke of cyan
+          straight onto grass is a ribbon, not a river */}
+      <Path d={RIVER_D} stroke="#63AE4C" strokeWidth={44} fill="none" strokeLinecap="round" opacity={0.55} />
+      <Path d={RIVER_D} stroke="#DDCB9C" strokeWidth={34} fill="none" strokeLinecap="round" opacity={0.75} />
       <Path d={RIVER_D} stroke="#7FD3F7" strokeWidth={30} fill="none" strokeLinecap="round" />
       <Path d={RIVER_D} stroke="url(#mapRiver)" strokeWidth={23} fill="none" strokeLinecap="round" />
       <Path d={RIVER_D} stroke="#FFFFFF" strokeWidth={3} strokeDasharray="14 30" fill="none" opacity={0.35} strokeLinecap="round" />

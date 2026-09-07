@@ -727,7 +727,7 @@ function PantryBasket({
         >
           {/* the produce sits INSIDE the basket: back of the basket, then the
               food, then the front rim drawn over it */}
-          <BasketBack size={size * s} />
+          <BasketBack size={size * s} tone={index} />
           <View style={[styles.basketPile, { top: size * 0.14 * s }]} pointerEvents="none">
             <View style={styles.basketRow}>
               <View style={{ marginRight: -size * 0.05 * s }}>
@@ -741,43 +741,67 @@ function PantryBasket({
               <VocabIcon id={basket.word.icon} size={size * 0.44 * s} noShadow />
             </View>
           </View>
-          <BasketFront size={size * s} />
+          <BasketFront size={size * s} tone={index} />
         </Animated.View>
       </GestureDetector>
     </Animated.View>
   );
 }
 
+/**
+ * Willow is not one colour. A shelf of identical baskets reads as one basket
+ * stamped five times, so each is woven from one of three tones — and each has a
+ * lit top-left, a shaded lower-right and a floor that falls into shadow, rather
+ * than the single flat tan they all shared.
+ */
+const WICKER = [
+  { back: '#B87C41', rim: '#8C5C2C', well: '#7A4E24', lip: '#C08B4E', face: '#E3B078', faceDark: '#B27B3E' },
+  { back: '#A9702F', rim: '#7E5022', well: '#6B421B', lip: '#B27B3E', face: '#D29B5F', faceDark: '#9E6A31' },
+  { back: '#C48A4C', rim: '#96612C', well: '#845527', lip: '#CB9553', face: '#EDBE8A', faceDark: '#BB8348' },
+] as const;
+const wickerAt = (tone: number) => WICKER[((tone % WICKER.length) + WICKER.length) % WICKER.length] ?? WICKER[0];
+
 /** The back of the woven basket — the bowl and the far side of the rim. */
-function BasketBack({ size }: { size: number }) {
+function BasketBack({ size, tone = 0 }: { size: number; tone?: number }) {
+  const t = wickerAt(tone);
   return (
     <Svg width={size} height={size} viewBox="0 0 100 100" style={StyleSheet.absoluteFill}>
-      <Ellipse cx={50} cy={95} rx={36} ry={5} fill="rgba(31,42,90,0.12)" />
-      <Path d="M14 56h72l-7 32a8 8 0 0 1-8 7H29a8 8 0 0 1-8-7z" fill="#B87C41" />
-      <Ellipse cx={50} cy={56} rx={36} ry={9} fill="#8C5C2C" />
-      <Ellipse cx={50} cy={57} rx={31} ry={6} fill="#7A4E24" />
+      <Ellipse cx={51} cy={96} rx={40} ry={6} fill="rgba(31,42,90,0.06)" />
+      <Ellipse cx={50} cy={95} rx={33} ry={4.5} fill="rgba(31,42,90,0.17)" />
+      <Path d="M14 56h72l-7 32a8 8 0 0 1-8 7H29a8 8 0 0 1-8-7z" fill={t.back} />
+      <Ellipse cx={50} cy={56} rx={36} ry={9} fill={t.rim} />
+      <Ellipse cx={50} cy={57} rx={31} ry={6} fill={t.well} />
     </Svg>
   );
 }
 
 /** The front of the basket: the near rim, the weave and the lit edge. */
-function BasketFront({ size }: { size: number }) {
+function BasketFront({ size, tone = 0 }: { size: number; tone?: number }) {
+  const t = wickerAt(tone);
+  const grad = `ciBask${((tone % WICKER.length) + WICKER.length) % WICKER.length}`;
   return (
     <Svg width={size} height={size} viewBox="0 0 100 100" style={StyleSheet.absoluteFill}>
-      <Path d="M14 62c4 6 18 10 36 10s32-4 36-10l-7 26a8 8 0 0 1-8 7H29a8 8 0 0 1-8-7z" fill="#DCA76B" />
+      <Defs>
+        <LinearGradient id={grad} x1="0.15" y1="0" x2="0.7" y2="1">
+          <Stop offset="0" stopColor={t.face} />
+          <Stop offset="1" stopColor={t.faceDark} />
+        </LinearGradient>
+      </Defs>
+      <Path d="M14 62c4 6 18 10 36 10s32-4 36-10l-7 26a8 8 0 0 1-8 7H29a8 8 0 0 1-8-7z" fill={`url(#${grad})`} />
       {[0, 1, 2].map((i) => (
         <Path
           key={`weave${i}`}
           d={`M${23 + i * 2} ${74 + i * 7} h${54 - i * 4}`}
-          stroke="#C08B4E"
+          stroke={t.lip}
           strokeWidth={3}
           strokeLinecap="round"
         />
       ))}
       <Path d="M22 68c3 2 7 3 10 4l3 23h-7z" fill="rgba(255,255,255,0.34)" />
-      <Path d="M72 70l-3 25h6l4-22z" fill="rgba(31,42,90,0.10)" />
-      <Path d="M14 56c0 5 16 9 36 9s36-4 36-9v6c0 5-16 9-36 9s-36-4-36-9z" fill="#C08B4E" />
+      <Path d="M72 70l-3 25h6l4-22z" fill="rgba(31,42,90,0.14)" />
+      <Path d="M14 56c0 5 16 9 36 9s36-4 36-9v6c0 5-16 9-36 9s-36-4-36-9z" fill={t.lip} />
       <Path d="M15 56a36 6 0 0 1 22-5c-10 1-18 2-21 6z" fill="rgba(255,255,255,0.40)" />
+      <Path d="M84 60a36 6 0 0 1 -18 8c8-2 14-4 17-8z" fill="rgba(31,42,90,0.12)" />
     </Svg>
   );
 }
@@ -813,9 +837,23 @@ function BlenderArt({ width, fill, blended, whirl }: { width: number; fill: numb
           <Stop offset="0" stopColor="#4B5573" />
           <Stop offset="1" stopColor="#2A3149" />
         </LinearGradient>
+        {/* the glass: cool, and darkest where the wall turns away at the
+            silhouette. It used to be near-white on a cream wall, so the hero
+            object of this game had almost no edge at all. */}
+        <LinearGradient id="ciGlass" x1="0" y1="0" x2="1" y2="0">
+          <Stop offset="0" stopColor="#A9B8D4" />
+          <Stop offset="0.2" stopColor="#DCE5F3" />
+          <Stop offset="0.74" stopColor="#CBD6E9" />
+          <Stop offset="1" stopColor="#A3B2CE" />
+        </LinearGradient>
+        <LinearGradient id="ciDepth" x1="0" y1="0" x2="0" y2="1">
+          <Stop offset="0" stopColor="#1F2A5A" stopOpacity={0} />
+          <Stop offset="1" stopColor="#1F2A5A" stopOpacity={0.22} />
+        </LinearGradient>
       </Defs>
 
-      <Ellipse cx={74} cy={193} rx={54} ry={7} fill="rgba(31,42,90,0.16)" />
+      <Ellipse cx={76} cy={195} rx={62} ry={8} fill="rgba(31,42,90,0.07)" />
+      <Ellipse cx={74} cy={193} rx={52} ry={6} fill="rgba(31,42,90,0.2)" />
 
       {/* motor base */}
       <Path d="M24 146h100a10 10 0 0 1 10 10v24a10 10 0 0 1-10 10H24a10 10 0 0 1-10-10v-24a10 10 0 0 1 10-10z" fill="url(#ciBase)" />
@@ -833,9 +871,11 @@ function BlenderArt({ width, fill, blended, whirl }: { width: number; fill: numb
       ))}
 
       {/* the jug — real value in the glass, so it is not a white void */}
-      <Path d="M32 40h84l-9 100H41z" fill="#AEBED9" />
-      <Path d="M40 40h68l-7 100H47z" fill="#D8E3F3" />
-      <Path d="M44 108h60l-3 32H47z" fill="rgba(31,42,90,0.06)" />
+      <Path d="M32 40h84l-9 100H41z" fill="#8FA0C0" />
+      <Path d="M36 40h76l-8 100H44z" fill="url(#ciGlass)" />
+      {/* the far wall, seen through the near one */}
+      <Ellipse cx={74} cy={46} rx={35} ry={6} fill="rgba(31,42,90,0.12)" />
+      <Path d="M45 132h58l-1 8H46z" fill="rgba(31,42,90,0.14)" />
 
       {/* contents, filling the tapered jug from the bottom up */}
       {fill > 0 ? (
@@ -843,6 +883,11 @@ function BlenderArt({ width, fill, blended, whirl }: { width: number; fill: numb
           <Path
             d={`M${leftAt(top)} ${top} L${rightAt(top)} ${top} L${rightAt(140)} 140 L${leftAt(140)} 140 Z`}
             fill={contents}
+          />
+          {/* the deep end of what is in there is the dark end */}
+          <Path
+            d={`M${leftAt(top)} ${top} L${rightAt(top)} ${top} L${rightAt(140)} 140 L${leftAt(140)} 140 Z`}
+            fill="url(#ciDepth)"
           />
           <Ellipse cx={74} cy={top} rx={(rightAt(top) - leftAt(top)) / 2} ry={5} fill="rgba(255,255,255,0.38)" />
         </>
@@ -872,14 +917,18 @@ function BlenderArt({ width, fill, blended, whirl }: { width: number; fill: numb
       <Path d="M112 58q30 6 30 32t-30 34" fill="none" stroke={palette.white} strokeWidth={10} strokeLinecap="round" />
       <Path d="M114 64q22 6 23 26" fill="none" stroke="rgba(255,255,255,0.9)" strokeWidth={4} strokeLinecap="round" />
 
-      {/* glass edge, lit side and spout */}
-      <Path d="M32 40h84l-9 100H41z" fill="none" stroke={palette.white} strokeWidth={5} />
+      {/* glass edge: bright where the light strikes it, cool where it turns
+          away — a white outline all the way round is what flattened it */}
+      <Path d="M32 40L41 140" fill="none" stroke="rgba(255,255,255,0.9)" strokeWidth={5} strokeLinecap="round" />
+      <Path d="M116 40L107 140" fill="none" stroke="rgba(255,255,255,0.4)" strokeWidth={4} strokeLinecap="round" />
+      <Path d="M41 140h66" fill="none" stroke="rgba(31,42,90,0.16)" strokeWidth={4} strokeLinecap="round" />
       <Path d="M40 50q5 12 4 30" fill="none" stroke="rgba(255,255,255,0.9)" strokeWidth={7} strokeLinecap="round" />
-      <Path d="M26 40h16l-4 12z" fill={palette.white} />
+      <Path d="M26 40h16l-4 12z" fill="#E7EDF7" />
 
       {/* lid */}
-      <Rect x={26} y={26} width={96} height={16} rx={8} fill={palette.white} />
-      <Rect x={26} y={26} width={96} height={6} rx={3} fill="#F0F3FA" />
+      <Rect x={26} y={26} width={96} height={16} rx={8} fill="#C3CEE4" />
+      <Rect x={26} y={25} width={96} height={13} rx={6.5} fill={palette.white} />
+      <Rect x={32} y={27} width={40} height={4} rx={2} fill="rgba(255,255,255,0.95)" />
       <Rect x={58} y={12} width={32} height={16} rx={8} fill={palette.slateLight} />
       <Rect x={64} y={16} width={14} height={4} rx={2} fill="rgba(255,255,255,0.8)" />
     </Svg>

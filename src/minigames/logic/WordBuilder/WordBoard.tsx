@@ -3,20 +3,19 @@ import { StyleSheet, View } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
 import { palette, radii, shadows, spacing } from '@/theme';
 import { Text } from '@/ui';
+import { PaperGrain } from '../shared/art/Props';
 
 /* ================================================================= */
 /* The word board (the classroom board in the station's ready room)   */
 /* ================================================================= */
 
-/** Faint ruled lines behind the word — the board feels like real paper. */
+/**
+ * The writing sheet the word is spelt on. Five ruled lines on a flat cream
+ * rectangle read as a swatch with stripes; the sheet now carries its tooth and
+ * the light falling across it as well, so it reads as paper pinned to a board.
+ */
 export function BoardRules() {
-  return (
-    <View style={StyleSheet.absoluteFill} pointerEvents="none">
-      {['16%', '34%', '52%', '70%', '88%'].map((top) => (
-        <View key={top} style={[styles.rule, { top: top as unknown as number }]} />
-      ))}
-    </View>
-  );
+  return <PaperGrain margin={false} rules={[16, 34, 52, 70, 88]} />;
 }
 
 /** The pinned picture card at the top of the board. */
@@ -84,7 +83,6 @@ export function LetterSlotGhost({ size }: { size: number }) {
 }
 
 const styles = StyleSheet.create({
-  rule: { position: 'absolute', left: 12, right: 12, height: 2, backgroundColor: palette.creamDeep, borderRadius: 1 },
   card: {
     alignItems: 'center',
     justifyContent: 'center',

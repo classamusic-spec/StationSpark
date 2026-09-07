@@ -26,6 +26,45 @@ import { CONTACT, HILITE, HILITE_SOFT, SHADE, SHADE_DEEP, SHADE_SOFT } from './t
 
 export type FacadeTone = 'brick' | 'cream' | 'stone';
 
+/**
+ * THE LEDGE AN ANIMAL WAITS ON.
+ *
+ * Both ladder games used to put the stranded animal on a brown rounded
+ * rectangle — a flat plank pasted on a flat wall, with nothing under it and no
+ * light on it. This is the same board drawn as timber bolted to a building: a
+ * shadow thrown on the wall below it, a lit top face, an end grain, two saw
+ * marks and the iron brackets holding it up.
+ */
+export const WallLedge = memo(function WallLedge({ width, thickness = 15 }: { width: number; thickness?: number }) {
+  const t = Math.max(9, thickness);
+  const h = t + t * 1.5;
+  const b = t * 0.8;
+  return (
+    <Svg width={width} height={h} pointerEvents="none">
+      {/* what the board throws on the wall under it */}
+      <Rect x={t * 0.4} y={t * 0.9} width={Math.max(0, width - t * 0.4)} height={t * 0.72} rx={t * 0.3} fill={SHADE_DEEP} opacity={0.5} />
+      {/* the brackets, before the board, so the board sits on them */}
+      {[0.18, 0.82].map((f) => (
+        <Path
+          key={f}
+          d={`M ${width * f - b * 0.5} ${t * 0.9} h ${b} l ${-b * 0.5} ${b * 1.5} z`}
+          fill={palette.charcoal}
+        />
+      ))}
+      {/* the board: body, lit top face, front edge */}
+      <Rect x={0} y={0} width={width} height={t} rx={t * 0.42} fill={palette.woodDark} />
+      <Rect x={0} y={0} width={width} height={t * 0.42} rx={t * 0.21} fill={palette.wood} />
+      <Rect x={t * 0.3} y={t * 0.06} width={Math.max(0, width - t * 0.6)} height={t * 0.16} rx={t * 0.08} fill={HILITE} />
+      <Rect x={0} y={t * 0.74} width={width} height={t * 0.26} rx={t * 0.13} fill={SHADE} />
+      {/* two saw marks along the grain */}
+      <Rect x={width * 0.16} y={t * 0.5} width={width * 0.3} height={Math.max(1, t * 0.07)} rx={t * 0.04} fill={SHADE} opacity={0.7} />
+      <Rect x={width * 0.58} y={t * 0.62} width={width * 0.24} height={Math.max(1, t * 0.06)} rx={t * 0.03} fill={SHADE} opacity={0.55} />
+      {/* the cut end, so the plank has a thickness a child can see */}
+      <Rect x={width - t * 0.34} y={0} width={t * 0.34} height={t} rx={t * 0.17} fill={SHADE_DEEP} opacity={0.45} />
+    </Svg>
+  );
+});
+
 const tones: Record<FacadeTone, { wallA: string; wallB: string; trim: string; roof: string; course: string }> = {
   brick: { wallA: '#E9B48F', wallB: '#CE9068', trim: palette.creamDeep, roof: palette.engineRed, course: 'rgba(158,106,54,0.22)' },
   cream: { wallA: '#FFF3DC', wallB: '#EBD4AA', trim: palette.white, roof: palette.engineRed, course: 'rgba(158,106,54,0.14)' },

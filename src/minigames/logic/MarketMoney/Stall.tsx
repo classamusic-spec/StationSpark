@@ -53,14 +53,16 @@ export function StallFront({ width }: { width: number }) {
       {/* back wall of the stall — warm tan planks so the cream awning reads */}
       <Rect x={16} y={30} width={308} height={140} rx={10} fill={palette.tanDark} />
       <Rect x={16} y={30} width={308} height={134} rx={10} fill={palette.tan} />
-      {/* boarding, with the grain running along each plank rather than four
-          ruled lines — the difference between a plank and a stripe */}
+      {/* boarding: a shadow line under each plank, the lit edge of the plank
+          below it, and one long bowed grain figure running the full length —
+          the difference between a plank and a stripe */}
       {[58, 84, 110, 136].map((y, i) => (
         <G key={y}>
           <Rect x={20} y={y} width={300} height={2.4} rx={1.2} fill="rgba(158,106,54,0.30)" />
+          <Rect x={20} y={y + 2.6} width={300} height={1.4} rx={0.7} fill="rgba(255,255,255,0.34)" />
           <Path
-            d={`M ${28 + i * 9} ${y - 13} Q 170 ${y - 13 + (i % 2 ? 5 : -5)} ${306 - i * 7} ${y - 12} Q 170 ${y - 11 + (i % 2 ? 5 : -5)} ${28 + i * 9} ${y - 11} z`}
-            fill="rgba(158,106,54,0.2)"
+            d={`M 26 ${y - 14} Q 170 ${y - 14 + (i % 2 ? 4 : -4)} 314 ${y - 13} Q 170 ${y - 12 + (i % 2 ? 4 : -4)} 26 ${y - 12} z`}
+            fill="rgba(158,106,54,0.16)"
           />
         </G>
       ))}

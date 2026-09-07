@@ -16,6 +16,7 @@ import { useGameLayout } from '../shared/layout';
 import { useHintLadder } from '../shared/useHintLadder';
 import { SparkleBurst } from '../shared/art/Glyphs';
 import { Classroom, RoomWash, classroomMetrics, clamp, usePlayBox } from '../shared/art/Scene';
+import { PaperGrain } from '../shared/art/Props';
 
 interface State {
   phase: 'listening' | 'solved';
@@ -160,11 +161,9 @@ export function VocabTap({ challenge, ageBand, onComplete, onEvent, compact }: M
               <View style={styles.pin} />
               <View style={styles.pin} />
             </View>
-            {/* the card is index paper: a red margin rule and two feint lines,
-                so a big white rectangle reads as something written on */}
-            <View style={styles.cardMargin} pointerEvents="none" />
-            <View style={[styles.cardRule, { top: '30%' }]} pointerEvents="none" />
-            <View style={[styles.cardRule, { top: '70%' }]} pointerEvents="none" />
+            {/* the card is index paper: a margin rule, two feint lines, the
+                tooth of the stock and the light falling across it */}
+            <PaperGrain />
             {state.phase === 'solved' ? (
               <Animated.View entering={ZoomIn.springify()} style={styles.sparkle} pointerEvents="none">
                 <SparkleBurst size={layout.s(90)} />
@@ -221,8 +220,6 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     ...shadows.card,
   },
-  cardMargin: { position: 'absolute', left: '11%', top: 0, bottom: 0, width: 2.4, backgroundColor: palette.pinkSoft },
-  cardRule: { position: 'absolute', left: '6%', right: '6%', height: 2, backgroundColor: palette.creamDeep },
   pins: { position: 'absolute', top: -7, left: 0, right: 0, flexDirection: 'row', justifyContent: 'space-evenly' },
   pin: { width: 14, height: 14, borderRadius: 7, backgroundColor: palette.engineRed },
   sparkle: { position: 'absolute', top: -18, right: -18 },

@@ -17,6 +17,7 @@ import {
   GROUND_OVERLAP,
   PlayGround,
   TownFacade,
+  WallLedge,
   clampNum,
   minJumps,
   useHintLadder,
@@ -404,11 +405,7 @@ export function NumberLadder({ challenge, ageBand, onComplete, onEvent, compact 
               on the wall, with the flag beside it — so the thing the child is
               climbing to is an object in the world and not a decal. */}
           <View style={[styles.sill, { left: geo.ladderX + geo.ladderW - stage.s(6), top: sillY, width: sillW }]} pointerEvents="none">
-            <Svg width={sillW} height={stage.s(16)} viewBox={`0 0 ${sillW} 16`}>
-              <Rect x={0} y={3} width={sillW} height={9} rx={4} fill={palette.woodDark} />
-              <Rect x={0} y={3} width={sillW} height={3.6} rx={1.8} fill={palette.wood} />
-              <Rect x={0} y={11} width={sillW} height={3} rx={1.5} fill="rgba(31,42,90,0.22)" />
-            </Svg>
+            <WallLedge width={sillW} thickness={stage.s(13)} />
           </View>
           <View style={[styles.flag, { left: geo.ladderX + geo.ladderW + petSize + stage.s(2), top: sillY - flagH }]} pointerEvents="none">
             <Svg width={flagH * 0.62} height={flagH} viewBox="0 0 40 64">
@@ -418,7 +415,7 @@ export function NumberLadder({ challenge, ageBand, onComplete, onEvent, compact 
               <Path d="M9 5h29l-2.4 3H9z" fill="rgba(255,255,255,0.32)" />
             </Svg>
           </View>
-          <View style={[styles.flagPet, { left: geo.ladderX + geo.ladderW + stage.s(2), top: sillY - petSize + stage.s(3) }]} pointerEvents="none">
+          <View style={[styles.flagPet, { left: geo.ladderX + geo.ladderW + stage.s(2), top: sillY - petSize * 0.93 + stage.s(2) }]} pointerEvents="none">
             <Animal id="kitten" size={petSize} mood={state.phase === 'done' ? 'happy' : 'help'} />
           </View>
 
