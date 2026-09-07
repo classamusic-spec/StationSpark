@@ -4,7 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { activity, spacing } from '@/theme';
 import { HintBubble } from './HintBubble';
 import { TaskBar } from './TaskBar';
-import { Tray } from './Tray';
+import { Tray, TrayRail } from './Tray';
 
 export interface ActivityFrameProps {
   /** the one instruction, owned by the TaskBar and repeated nowhere else */
@@ -74,11 +74,15 @@ export function ActivityFrame({
     setControlsH((p) => (Math.abs(p - h) < 1 ? p : h));
   }, []);
 
+  const trayNode = (
+    <Tray tone={controlsTone} style={controlsStyle}>
+      {controls}
+    </Tray>
+  );
   const controlSurface = controls ? (
     <View onLayout={side ? undefined : onControlsLayout} style={side ? styles.rail : undefined}>
-      <Tray tone={controlsTone} style={controlsStyle}>
-        {controls}
-      </Tray>
+      {/* in a rail the tray fills the column instead of floating in it */}
+      {side ? <TrayRail>{trayNode}</TrayRail> : trayNode}
     </View>
   ) : null;
 
@@ -143,7 +147,7 @@ const styles = StyleSheet.create({
   root: { flex: 1 },
   splitBody: { flex: 1, flexDirection: 'row', alignItems: 'stretch', gap: spacing.sm, paddingHorizontal: spacing.sm },
   play: { flex: 1, justifyContent: 'flex-end', paddingTop: activity.playGutter },
-  rail: { width: activity.sidePanelWidth, justifyContent: 'center' },
+  rail: { width: activity.sidePanelWidth },
   hintLane: { position: 'absolute', left: 0, right: 0, zIndex: 20 },
   /* stop at the play column's edge: the rail is not the bubble's to cover */
   hintLaneSide: {

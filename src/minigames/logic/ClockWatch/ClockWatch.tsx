@@ -269,18 +269,42 @@ export function ClockWatch({ challenge, onComplete, onEvent, compact }: MiniGame
             </View>
           </View>
 
-          <View style={styles.controls}>
-            <Button label={`−${step}`} tone="white" size="md" onPress={() => nudgeBy(-1)} disabled={state.solved} />
-            <Button
-              label="Done"
-              tone="green"
-              size="md"
-              icon={<CheckIcon size={22} />}
-              onPress={check}
-              disabled={state.solved}
-            />
-            <Button label={`+${step}`} tone="white" size="md" onPress={() => nudgeBy(1)} disabled={state.solved} />
-          </View>
+          {/*
+            − Done + in one row is 310 px of button, and a tablet's rail is
+            288 px wide inside its padding: the two nudges were sliced in half
+            down their outside edges. On the rail the nudges pair up and Done
+            takes the row under them; a phone keeps the original single row,
+            where Done sitting between − and + is the point.
+          */}
+          {sideRail ? (
+            <View style={styles.controlsRail}>
+              <View style={styles.nudgeRow}>
+                <Button label={`−${step}`} tone="white" size="md" onPress={() => nudgeBy(-1)} disabled={state.solved} />
+                <Button label={`+${step}`} tone="white" size="md" onPress={() => nudgeBy(1)} disabled={state.solved} />
+              </View>
+              <Button
+                label="Done"
+                tone="green"
+                size="md"
+                icon={<CheckIcon size={22} />}
+                onPress={check}
+                disabled={state.solved}
+              />
+            </View>
+          ) : (
+            <View style={styles.controls}>
+              <Button label={`−${step}`} tone="white" size="md" onPress={() => nudgeBy(-1)} disabled={state.solved} />
+              <Button
+                label="Done"
+                tone="green"
+                size="md"
+                icon={<CheckIcon size={22} />}
+                onPress={check}
+                disabled={state.solved}
+              />
+              <Button label={`+${step}`} tone="white" size="md" onPress={() => nudgeBy(1)} disabled={state.solved} />
+            </View>
+          )}
         </View>
       }
     >
@@ -445,5 +469,9 @@ const styles = StyleSheet.create({
     paddingVertical: 3,
     minHeight: 26,
   },
-  controls: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: spacing.sm, minHeight: hit.min },
+  /* wrap is the safety net: if a label ever grows (a three-digit step, a
+     translated "Done"), the row folds instead of slicing a button in half */
+  controls: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: spacing.sm, minHeight: hit.min, flexWrap: 'wrap' },
+  controlsRail: { alignItems: 'center', gap: spacing.sm },
+  nudgeRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
 });

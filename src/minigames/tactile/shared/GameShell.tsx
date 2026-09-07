@@ -1,7 +1,7 @@
 import React, { useCallback, useState } from 'react';
 import { StyleSheet, View, useWindowDimensions, type LayoutChangeEvent } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { TaskBar } from '@/ui';
+import { TaskBar, TrayRail } from '@/ui';
 import { activity, spacing } from '@/theme';
 import { CaptainHint } from './CaptainHint';
 import type { HintText } from './useHintLadder';
@@ -92,7 +92,7 @@ export function GameShell({
         <View style={styles.stage} onLayout={onStageLayout}>
           {children}
         </View>
-        {side && tray ? <View style={styles.rail}>{tray}</View> : null}
+        {side && tray ? <View style={styles.rail}><TrayRail>{tray}</TrayRail></View> : null}
       </View>
 
       {footer ? (
@@ -119,7 +119,7 @@ const styles = StyleSheet.create({
   top: { alignItems: 'stretch', gap: spacing.xs, paddingHorizontal: spacing.xs },
   stageWrap: { flex: 1 },
   splitBody: { flex: 1, flexDirection: 'row', gap: spacing.sm, paddingHorizontal: spacing.sm },
-  rail: { width: activity.sidePanelWidth, justifyContent: 'center' },
+  rail: { width: activity.sidePanelWidth },
   stage: { flex: 1, overflow: 'hidden' },
   footer: { alignItems: 'center', paddingTop: spacing.xs },
   hintLane: { position: 'absolute', left: 0, right: 0, top: 0, zIndex: 40 },

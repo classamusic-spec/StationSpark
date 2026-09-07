@@ -10,17 +10,24 @@ import { Text } from './Text';
 export type ButtonTone = 'red' | 'green' | 'yellow' | 'blue' | 'white' | 'navy' | 'purple';
 export type ButtonSize = 'sm' | 'md' | 'lg' | 'xl';
 
-const tones: Record<ButtonTone, { face: string; edge: string; text: string }> = {
+const tones: Record<ButtonTone, { face: string; edge: string; text: string; border?: string }> = {
   red: { face: palette.engineRed, edge: palette.engineRedDark, text: palette.white },
   green: { face: palette.leafGreen, edge: palette.leafGreenDark, text: palette.white },
   yellow: { face: palette.safetyYellow, edge: palette.goldDark, text: palette.navy },
   blue: { face: palette.waterCyan, edge: palette.waterCyanDark, text: palette.white },
-  white: { face: palette.white, edge: palette.slateLight, text: palette.navy },
+  /*
+   * The one tone that needs an outline. Every other face is a colour, so the
+   * darker edge under it reads as depth; a white face on a white tray shows
+   * nothing but that edge, and the button comes out as a shadow shaped like the
+   * bottom of a bowl. Clock Watch's − and + were the clearest case, but it was
+   * every white button on every white surface in the app.
+   */
+  white: { face: palette.white, edge: palette.slateLight, text: palette.navy, border: palette.slateLight },
   navy: { face: palette.navySoft, edge: palette.navy, text: palette.white },
   purple: { face: palette.purple, edge: '#6F52D9', text: palette.white },
 };
 
-const DISABLED_TONE = { face: '#DCE1EE', edge: '#BAC2D8', text: palette.navyMuted } as const;
+const DISABLED_TONE = { face: '#DCE1EE', edge: '#BAC2D8', text: palette.navyMuted, border: undefined } as const;
 
 const sizes: Record<ButtonSize, { h: number; px: number; edge: number; variant: 'buttonSmall' | 'button' }> = {
   sm: { h: 48, px: 18, edge: 4, variant: 'buttonSmall' },
@@ -105,6 +112,7 @@ export function Button({
           style={[
             styles.face,
             { backgroundColor: t.face, height: s.h, paddingHorizontal: s.px, borderRadius: radii.pill },
+            t.border ? { borderWidth: 2, borderColor: t.border } : null,
             faceStyle,
           ]}
         >
