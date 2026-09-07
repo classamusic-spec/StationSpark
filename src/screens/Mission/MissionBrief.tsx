@@ -17,16 +17,16 @@
  *     those beats carry). Nothing on this screen is invented.
  *
  *   phone / portrait               tablet landscape
- *   ┌────────────────┐             ┌────────────┬───────────────┐
- *   │   storefront   │             │            │  cream card   │
- *   │    + Rosa      │             │ storefront │  who · where  │
- *   ├────────────────┤             │  + Rosa    │  jobs · time  │
- *   │  cream card    │             │            │  practising   │
- *   │  who · where   │             │            │ ┌───────────┐ │
- *   │  jobs · time   │             │            │ │ Get Ready │ │
- *   │  practising    │             ├────────────┴───────────────┤
- *   ├────────────────┤             │ ▒▒▒▒▒▒ pavement ▒▒▒▒▒▒▒▒▒▒ │
- *   │ ▒▒ pavement ▒▒ │             └────────────────────────────┘
+ *   ┌────────────────┐             ┌────────────────────────────┐
+ *   │   storefront   │             │        storefront          │
+ *   │    + Rosa      │             │      (the whole screen)    │
+ *   ├────────────────┤             │                ┌─────────┐ │
+ *   │  cream card    │             │                │  cream  │ │
+ *   │  who · where   │             │        ┌───┐   │  card   │ │
+ *   │  jobs · time   │             │        │Rosa│  │         │ │
+ *   │  practising    │             │        └───┘   ├─────────┤ │
+ *   ├────────────────┤             │  ▒▒ pavement ▒▒│Get Ready│ │
+ *   │ ▒▒ pavement ▒▒ │             └────────────────┴─────────┘
  *   │ [ Get Ready! ] │
  *   └────────────────┘
  *
@@ -34,6 +34,16 @@
  * `contentWidth` and the width it does not need goes to the picture, which is
  * the one thing on the screen that genuinely wants to be big (see the header of
  * `src/screens/shared/useScaledLayout.ts`).
+ *
+ * Landscape used to be two columns inside a margin, and it reproduced the very
+ * fault this screen was rebuilt to kill: the picture was a rounded panel that
+ * stopped on a computed horizon, so the bottom ~37 % of a 1024 × 768 tablet was
+ * one flat invented plane with a small figure marooned on it, there was raw sky
+ * above the card, and the card floated with a hole between it and the pill.
+ * There is no invented ground in landscape now — the storefront IS the screen,
+ * edge to edge, and the brief is a cream sheet standing in the lower corner of
+ * that street with the neighbour out in front of the shop. Any room left over
+ * is *scene*, which is the only kind of empty a backdrop is allowed to be.
  *
  * One headline, not three. There used to be a white "Mission Brief" pill
  * floating on the sky above an h2 tagline above a body line — a five-year-old
@@ -55,7 +65,7 @@ import { challengeSkills } from '@/learning/types';
 import { recipeById } from '@/content/recipes';
 import { beatsForBand } from '@/machines/missionMachine';
 import { useGame } from '@/state/store';
-import { hit, palette, radii, roles, shadows, spacing } from '@/theme';
+import { hit, palette, radii, roles, spacing } from '@/theme';
 import { speech } from '@/services/speech';
 import { Button, Panel, Text } from '@/ui';
 import { ChevronRightIcon } from '@/ui/icons';
@@ -65,6 +75,7 @@ import { CharacterPortrait, Npc, type NpcVariant } from '@/characters';
 import { useScaledLayout } from '@/screens/shared';
 import { skillLabels } from './MissionRecap';
 import { SceneHero, sceneStyles } from './SceneHero';
+import { darker, mix, roadLine, sceneDefs, sceneFrame } from './scene';
 
 /** Who is standing outside, waiting for the crew. */
 const SCENE_NPC: Record<SceneId, NpcVariant> = {
@@ -79,6 +90,12 @@ const SCENE_NPC: Record<SceneId, NpcVariant> = {
   market: 'rosa',
   'station-yard': 'okafor',
 };
+
+/**
+ * "Ana & Luis is waiting." Some missions are called in by a pair, and this is a
+ * reading game — the one printed sentence about who needs us has to parse.
+ */
+const waitingLine = (npcName: string) => `${npcName} ${/\s(?:&|and)\s|,/.test(npcName) ? 'are' : 'is'} waiting`;
 
 /** the storefront never gets smaller than this, whatever the copy does */
 const MIN_HERO = 196;
@@ -95,6 +112,24 @@ const CTA_HEIGHT = 85;
  */
 const HERO_ASPECT = { min: 0.5, max: 1.1 } as const;
 
+/**
+ * How high above the bottom of a scene box the neighbour's feet belong.
+ *
+ * A flat percentage put them out in the middle of the tarmac: the kerb sits at a
+ * different height in every box, because `SceneHero` composes for the aspect it
+ * is given. `sceneFrame` + `roadLine` are the very two functions it composes
+ * with, so this is the picture's own kerb rather than a number that happened to
+ * look right for one storefront, and the figure stands on the pavement in front
+ * of the shop in every scene and at every size.
+ */
+function pavementInset(scene: SceneId, w: number, h: number): number {
+  const def = sceneDefs[scene] ?? sceneDefs.bakery;
+  const f = sceneFrame(w, h, def.height, true, true, def.spill);
+  const kerb = Math.min(roadLine(f), h - 6 * f.s);
+  /* a step back from the edge, so nobody is drawn balancing on the kerbstone */
+  return Math.max(0, Math.round(h - kerb + 5 * f.s));
+}
+
 function AddressPin({ size = 18 }: { size?: number }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24">
@@ -105,59 +140,41 @@ function AddressPin({ size = 18 }: { size?: number }) {
 }
 
 /**
- * THE GROUND THE BRIEF STANDS ON.
+ * THE GROUND THE BRIEF STANDS ON (portrait only).
  *
  * The storefront's own pavement, carried on down to the bottom edge of the
  * screen in the scene's own colours, so the foot of the brief is a near plane
  * with paving seams and a soft contact shadow rather than a band of raw sky.
  *
- * Stacked, `sky` is 0 and the band picks the pavement up exactly where the
- * picture put it down — deliberately with no kerb lip, because a second edge
- * across the same pavement reads as a step. Side by side, `sky` is the height
- * of the sky above the horizon and the band draws the whole plate: sky, a flat
- * far bank, the lip, and the near ground the picture and the pill stand on.
+ * It picks the pavement up exactly where the picture put it down, and
+ * deliberately draws no kerb lip of its own: a second edge across the same
+ * pavement reads as a step. Landscape has no band at all — see the header.
  */
-function GroundBand({ scene, width, height, sky = 0 }: { scene: SceneId; width: number; height: number; sky?: number }) {
+function GroundBand({ scene, width, height }: { scene: SceneId; width: number; height: number }) {
   const s = sceneStyles[scene] ?? sceneStyles.bakery;
   const w = Math.max(1, Math.round(width));
   const h = Math.max(1, Math.round(height));
-  const gy = Math.round(Math.min(Math.max(sky, 0), h));
 
   /* every repeated shape in one Path — the shape budget in Stage.tsx */
   const seams = useMemo(() => {
+    let d = `M 0 ${Math.round(h * 0.46)} L ${w} ${Math.round(h * 0.46)} `;
     const step = Math.max(84, Math.round(w / 5));
-    let d = `M 0 ${Math.round(gy + (h - gy) * 0.46)} L ${w} ${Math.round(gy + (h - gy) * 0.46)} `;
-    for (let x = step; x < w; x += step) d += `M ${x} ${gy} L ${x} ${h} `;
+    for (let x = step; x < w; x += step) d += `M ${x} 0 L ${x} ${h} `;
     return d;
-  }, [gy, h, w]);
+  }, [h, w]);
 
   return (
     <Svg width={w} height={h} style={styles.ground} pointerEvents="none">
       <Defs>
-        <LinearGradient id="briefSky" x1="0" y1="0" x2="0" y2="1">
-          <Stop offset="0" stopColor={s.sky[0]} />
-          <Stop offset="1" stopColor={s.sky[1]} />
-        </LinearGradient>
         <LinearGradient id="briefGround" x1="0" y1="0" x2="0" y2="1">
           <Stop offset="0" stopColor={s.ground} />
           <Stop offset="1" stopColor={s.groundShade} />
         </LinearGradient>
       </Defs>
-      {gy > 0 ? (
-        <>
-          <Rect x={0} y={0} width={w} height={gy} fill="url(#briefSky)" />
-          {/* the far bank: palest, flattest layer, so the horizon is never a hard line */}
-          <Rect x={0} y={gy - 30} width={w} height={30} fill={s.far?.[1] ?? s.sky[1]} opacity={0.55} />
-        </>
-      ) : null}
-      <Rect x={0} y={gy} width={w} height={h - gy} fill="url(#briefGround)" />
-      {/* the kerb: what is behind drops onto the plane the child stands on. A
-          bare colour change here reads as a seam; an edge reads as a street. */}
-      <Rect x={0} y={gy} width={w} height={3} fill="rgba(31,42,90,0.14)" />
-      <Rect x={0} y={gy + 3} width={w} height={5} fill={s.lip ?? s.ground} />
+      <Rect x={0} y={0} width={w} height={h} fill="url(#briefGround)" />
       <Path d={seams} stroke="rgba(31,42,90,0.06)" strokeWidth={2} fill="none" />
       {/* the card's contact shadow, pooling on the pavement under its lower edge */}
-      {gy > 0 ? null : <Ellipse cx={w / 2} cy={10} rx={w * 0.44} ry={16} fill={palette.navy} opacity={0.07} />}
+      <Ellipse cx={w / 2} cy={10} rx={w * 0.44} ry={16} fill={palette.navy} opacity={0.07} />
     </Svg>
   );
 }
@@ -199,8 +216,16 @@ export function MissionBrief({ mission, onStart }: MissionBriefProps) {
   const wide = layout.landscape && width >= 720;
   /** a short phone drops the practice chips rather than pushing the CTA off */
   const dense = height < 740;
-  /** and a narrow one keeps them to a single row, so the picture keeps its share */
-  const chipCount = contentWidth >= 460 ? 4 : 2;
+  /**
+   * Landscape: the storefront is the whole screen and the brief is a sheet
+   * standing in the lower corner of it. The reading column is still capped at
+   * `contentWidth` — the extra width goes to the picture, not to the paragraph.
+   */
+  const colW = Math.min(contentWidth, Math.round(width * 0.46));
+  /** the card the copy actually has to fit inside, either way */
+  const cardW = wide ? colW : contentWidth;
+  /** as many skills as fit on ONE line with their tail, so nothing is orphaned */
+  const chipCount = cardW >= 440 ? 3 : 2;
   const npc = SCENE_NPC[mission.scene] ?? 'rosa';
   const style = sceneStyles[mission.scene] ?? sceneStyles.bakery;
   const place = style.name;
@@ -241,15 +266,8 @@ export function MissionBrief({ mission, onStart }: MissionBriefProps) {
       width * HERO_ASPECT.max,
     ),
   );
-  /**
-   * Side by side: the reading column is capped and the picture takes the rest.
-   * The panel stops on the horizon and the neighbour steps out of it onto the
-   * near pavement, so the foreground has a subject instead of being the widest
-   * empty plane on the screen.
-   */
-  const colW = Math.min(contentWidth, Math.round(width * 0.46));
-  const horizon = Math.round(height * 0.62);
-  const panelH = Math.round(Math.max(200, Math.min(horizon - spacing.lg + 12, height - footPad - spacing.lg * 2)));
+  /** the neighbour stands out on the near pavement, in front of the shop */
+  const npcSize = Math.round(Math.min(height * 0.3, (width - colW) * 0.4, 260));
 
   useEffect(() => {
     const t = setTimeout(() => speech.say(mission.brief, { speaker: 'bea' }), 600);
@@ -273,7 +291,7 @@ export function MissionBrief({ mission, onStart }: MissionBriefProps) {
         <CharacterPortrait id="npc" npc={npc} emotion="worried" size={48} />
         <View style={styles.whoText}>
           <Text variant="bodyStrong" numberOfLines={1}>
-            {mission.npcName ? `${mission.npcName} is waiting` : `The ${place} needs us`}
+            {mission.npcName ? waitingLine(mission.npcName) : `The ${place} needs us`}
           </Text>
           <View style={styles.whoAddress}>
             <AddressPin />
@@ -304,10 +322,13 @@ export function MissionBrief({ mission, onStart }: MissionBriefProps) {
                 </Text>
               </View>
             ))}
+            {/* the tail is plain muted text, not a fourth chip: as a chip it
+                reads as one more thing you will practise, and when the row
+                wraps it lands underneath on its own looking orphaned */}
             {plan.skills.length > chipCount ? (
-              <View style={styles.chip}>
-                <Text variant="tiny" color={roles.ink.muted}>{`+${plan.skills.length - chipCount}`}</Text>
-              </View>
+              <Text variant="tiny" color={roles.ink.muted} style={styles.chipTail}>
+                {`+${plan.skills.length - chipCount} more`}
+              </Text>
             ) : null}
           </View>
         </View>
@@ -329,30 +350,35 @@ export function MissionBrief({ mission, onStart }: MissionBriefProps) {
     </Animated.View>
   );
 
-  /* ---- side by side: the width goes to the picture, not to the chrome ---- */
+  /* ---- landscape: the street is the screen, the brief stands in it ---- */
   if (wide) {
     return (
       <View style={[styles.root, { backgroundColor: sky }]}>
-        <GroundBand scene={mission.scene} width={width} height={height} sky={Math.round(height * 0.62)} />
-        <View style={[styles.wideRow, { paddingBottom: footPad + spacing.lg }]}>
-          <View style={styles.wideHero}>
-            <Animated.View entering={FadeIn.duration(360)} style={[styles.heroPanel, shadows.card, { height: panelH }]}>
-              <SceneHero scene={mission.scene} radius={radii.panel} style={styles.fill} />
-            </Animated.View>
-            <View style={styles.wideNpc} pointerEvents="none">
-              <Npc variant={npc} size={Math.round(Math.min(panelH * 0.44, height * 0.28))} emotion="worried" pose="wave" />
-            </View>
-          </View>
+        {/* edge to edge, so every pixel the card does not use is the place
+            itself: sky, terrace, pavement and road, never a flat plate */}
+        <Animated.View entering={FadeIn.duration(360)} style={StyleSheet.absoluteFill}>
+          <SceneHero scene={mission.scene} radius={0} bleed style={styles.fill} />
+        </Animated.View>
+        <View style={[styles.wideNpc, { bottom: pavementInset(mission.scene, width, height) }]} pointerEvents="none">
+          <Npc variant={npc} size={npcSize} emotion="worried" pose="wave" />
+        </View>
 
-          {/* the pill lives outside the scroller: on a short landscape phone the
-              card is taller than the column, and a "Get Ready!" a child has to
-              scroll to find is a dead end by another name */}
-          <View style={[styles.wideCol, { width: colW }]}>
-            <ScrollView contentContainerStyle={styles.wideColInner} showsVerticalScrollIndicator={false}>
-              <Animated.View entering={FadeInUp.delay(120).springify().damping(16)}>{card}</Animated.View>
-            </ScrollView>
-            {cta}
-          </View>
+        {/* The sheet hangs from the foot of the column rather than floating in
+            the middle of it, so the slack is one open piece of street above the
+            headline instead of a hole between the card and the pill. The pill
+            stays outside the scroller: on a short landscape phone the card is
+            taller than the column, and a "Get Ready!" a child has to scroll to
+            find is a dead end by another name. */}
+        <View
+          style={[
+            styles.wideCol,
+            { width: colW, top: insets.top + spacing.sm, bottom: footPad + spacing.md, right: spacing.lg },
+          ]}
+        >
+          <ScrollView contentContainerStyle={styles.wideColInner} showsVerticalScrollIndicator={false}>
+            <Animated.View entering={FadeInUp.delay(120).springify().damping(16)}>{card}</Animated.View>
+          </ScrollView>
+          {cta}
         </View>
       </View>
     );
@@ -363,7 +389,7 @@ export function MissionBrief({ mission, onStart }: MissionBriefProps) {
     <View style={[styles.root, { backgroundColor: sky }]}>
       <Animated.View entering={FadeIn.duration(360)} style={{ height: heroH }}>
         <SceneHero scene={mission.scene} radius={0} bleed style={styles.fill} />
-        <View style={[styles.npc, { bottom: Math.round(heroH * 0.06) }]} pointerEvents="none">
+        <View style={[styles.npc, { bottom: pavementInset(mission.scene, width, heroH) }]} pointerEvents="none">
           <Npc variant={npc} size={Math.round(Math.min(heroH * 0.36, width * 0.32))} emotion="worried" pose="wave" />
         </View>
       </Animated.View>
@@ -438,15 +464,15 @@ const styles = StyleSheet.create({
   practise: { alignItems: 'center', gap: 6 },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, justifyContent: 'center' },
   chip: { backgroundColor: palette.white, borderRadius: radii.tag, paddingHorizontal: 10, paddingVertical: 5 },
+  chipTail: { alignSelf: 'center', paddingVertical: 5 },
 
-  /* side-by-side */
-  wideRow: { flex: 1, flexDirection: 'row', alignItems: 'stretch', gap: spacing.lg, paddingHorizontal: spacing.lg, paddingTop: spacing.lg },
-  wideHero: { flex: 1 },
-  heroPanel: { position: 'absolute', left: 0, right: 0, top: 0, overflow: 'hidden', borderRadius: radii.panel },
-  /* the neighbour steps out of the picture and stands on the near pavement */
-  wideNpc: { position: 'absolute', left: '8%', bottom: 0 },
-  /* a fixed reading column: without this the column's own flexGrow eats the
-     space meant for the picture, which is the tablet mistake in miniature */
-  wideCol: { flexGrow: 0, flexShrink: 0, justifyContent: 'center', gap: spacing.md },
-  wideColInner: { justifyContent: 'center', flexGrow: 1, paddingVertical: spacing.xs },
+  /* landscape */
+  /* the neighbour stands out on the near pavement, in front of the shop */
+  wideNpc: { position: 'absolute', left: '5%' },
+  /* a fixed reading column pinned to the foot of the street. Absolute, so its
+     own flexGrow can never eat the width meant for the picture — that is the
+     tablet mistake in miniature (see useScaledLayout's header). */
+  wideCol: { position: 'absolute', gap: spacing.md },
+  /* bottom-aligned: the slack ends up as open street above the sheet */
+  wideColInner: { justifyContent: 'flex-end', flexGrow: 1, paddingVertical: spacing.xs },
 });

@@ -16,6 +16,7 @@ import { rp, rowOf } from './frame';
 import type { SceneDef } from './types';
 import {
   ArchWindow,
+  BaseShadow,
   Bench,
   Bicycle,
   Bin,
@@ -41,6 +42,7 @@ import {
   SHEEN,
   ShopDoor,
   SignBoard,
+  SignBracket,
   Steps,
   Tree,
   Hedge,
@@ -59,7 +61,7 @@ function schoolArt(detail: boolean) {
   const trim = palette.cream;
   return (
     <G>
-      <Contact cx={150} cy={227} rx={150} />
+      <BaseShadow cx={150} y={227} rx={150} />
       <Path d={`M 280 76 L 292 88 L 292 224 L 280 224 Z`} fill={wall} />
       <Path d={`M 280 76 L 292 88 L 292 224 L 280 224 Z`} fill={SHADE} />
 
@@ -262,7 +264,7 @@ function clockTowerArt(detail: boolean) {
   const stoneDeep = '#D9D0B8';
   return (
     <G>
-      <Contact cx={150} cy={303} rx={132} />
+      <BaseShadow cx={150} y={303} rx={132} />
       {/* the low walls the tower stands between */}
       <Rect x={-10} y={246} width={112} height={54} rx={5} fill={stoneDeep} />
       <Rect x={198} y={246} width={112} height={54} rx={5} fill={stoneDeep} />
@@ -329,6 +331,8 @@ function clockTowerArt(detail: boolean) {
 
       {/* the cat that everyone came for, up on the clock-stage ledge */}
       <Cat x={230} y={196} s={1.05} facing={-1} />
+      {/* the bracket the tower lantern swings from */}
+      <SignBracket x={94} y={218} reach={-18} drop={8} />
 
       {detail ? (
         <G>
@@ -377,7 +381,7 @@ function apartmentsArt(detail: boolean) {
   ];
   return (
     <G>
-      <Contact cx={150} cy={261} rx={150} />
+      <BaseShadow cx={150} y={261} rx={150} />
       {blocks.map((b, i) => {
         const win1 = b.top + 26;
         const balc = b.top + 62;
@@ -510,10 +514,9 @@ function stationYardArt(detail: boolean) {
   const wall = '#F8E2B6';
   return (
     <G>
-      <Contact cx={150} cy={251} rx={150} />
       {/* the right-hand return, receding away */}
-      <Path d="M 278 74 L 292 88 L 292 214 L 278 214 Z" fill={palette.tanDark} />
-      <Path d="M 278 74 L 292 88 L 292 214 L 278 214 Z" fill={SHADE} />
+      <Path d="M 278 74 L 292 88 L 292 220 L 278 220 Z" fill={palette.tanDark} />
+      <Path d="M 278 74 L 292 88 L 292 220 L 278 220 Z" fill={SHADE} />
 
       {/* main hipped roof over its red eaves band */}
       <HippedRoof x={16} y={72} w={268} rise={34} inset={40} over={10} tone={palette.engineRed} toneLight={palette.engineRedLight} toneDark={palette.engineRedDark} />
@@ -547,58 +550,73 @@ function stationYardArt(detail: boolean) {
       {/* the STATION SPARK name board, in its tan frame */}
       <SignBoard x={54} y={86} w={192} h={28} label="STATION SPARK" ink={palette.navy} size={15} />
 
-      {/* three recessed room panels, as on the façade's room grid */}
+      {/* the crew-room windows across the first floor */}
       {[0, 1, 2].map((i) => {
         const px = 34 + i * 80;
         return (
           <G key={`rm${i}`}>
-            <Rect x={px - 3} y={122} width={70} height={38} rx={12} fill="#E4C48E" />
-            <Rect x={px - 3} y={122} width={70} height={5} rx={2.5} fill={SHADE} />
-            <Rect x={px} y={126} width={64} height={30} rx={9} fill="#204A86" />
-            <Rect x={px} y={126} width={64} height={12} rx={9} fill="#3C6FB4" />
-            <Path d={`M ${px + 4} 154 L ${px + 28} 130 L ${px + 38} 130 L ${px + 14} 154 Z`} fill={palette.white} opacity={0.16} />
-            <Path d={rp(px + 31, 126, 2.4, 30) + rp(px, 139, 64, 2.4)} fill="#E4C48E" opacity={0.85} />
-            <Rect x={px - 5} y={158} width={74} height={4.4} rx={2.2} fill="#F3DCAF" />
+            <Rect x={px - 4} y={120} width={72} height={36} rx={11} fill="#E4C48E" />
+            <Rect x={px - 4} y={120} width={72} height={4.4} rx={2.2} fill={HIGHLIGHT} />
+            <Rect x={px} y={124} width={64} height={28} rx={8} fill="#204A86" />
+            <Rect x={px} y={124} width={64} height={10} rx={8} fill="#3C6FB4" />
+            <Path d={`M ${px + 4} 150 L ${px + 26} 128 L ${px + 36} 128 L ${px + 14} 150 Z`} fill={palette.white} opacity={0.18} />
+            <Path d={rp(px + 31, 124, 2.4, 28) + rp(px, 136, 64, 2.4)} fill="#E4C48E" opacity={0.85} />
+            <Rect x={px - 7} y={154} width={78} height={5} rx={2.5} fill="#F3DCAF" />
+            <Rect x={px - 7} y={158} width={78} height={3} rx={1.5} fill={SHADE} />
           </G>
         );
       })}
 
-      {/* the brown base course, and the bays cut into it */}
-      <Rect x={8} y={160} width={284} height={54} rx={6} fill="#C96A3A" />
-      <Rect x={8} y={160} width={284} height={6} rx={3} fill="#A2512A" />
-      <Path d={rowOf(8, 14, 170, 30, 2.4, 35)} fill="#B15A2E" opacity={0.55} />
-      <BayDoor x={26} y={170} w={104} h={44} label="ENGINE 1" />
-      <BayDoor x={170} y={170} w={104} h={44} label="ENGINE 2" />
+      {/* THE BAYS. On the home screen the engine doors are the biggest thing on
+          the building — that is what makes it a fire station rather than a
+          house with a bell. So the base course is deep and the shutters are
+          nearly twice the height of a window, with the pier and its hose reel
+          between them. */}
+      <Rect x={6} y={158} width={288} height={62} rx={6} fill="#C96A3A" />
+      <Rect x={6} y={158} width={288} height={7} rx={3.5} fill="#A2512A" />
+      <Rect x={6} y={163} width={288} height={3.4} rx={1.7} fill={HIGHLIGHT} />
+      <Path d={rowOf(8, 12, 172, 30, 2.4, 35)} fill="#B15A2E" opacity={0.5} />
+      <BayDoor x={22} y={166} w={110} h={54} label="ENGINE 1" />
+      <BayDoor x={168} y={166} w={110} h={54} label="ENGINE 2" />
       {/* the hose reel on the pier between the bays */}
       <G>
-        <Rect x={137} y={166} width={26} height={48} rx={7} fill={SHADE_DEEP} />
-        <Rect x={139} y={168} width={22} height={44} rx={6} fill={palette.creamDeep} />
-        <Rect x={139} y={168} width={22} height={4} rx={2} fill={HIGHLIGHT} />
-        <Circle cx={150} cy={192} r={10} fill={palette.charcoal} />
-        <Circle cx={150} cy={191} r={8} fill={palette.engineRed} />
-        <Circle cx={150} cy={191} r={5} fill={palette.engineRedDark} />
+        <Rect x={136} y={162} width={28} height={58} rx={7} fill={SHADE_DEEP} />
+        <Rect x={138} y={164} width={24} height={54} rx={6} fill={palette.creamDeep} />
+        <Rect x={138} y={164} width={24} height={4} rx={2} fill={HIGHLIGHT} />
+        <Circle cx={150} cy={192} r={11} fill={palette.charcoal} />
+        <Circle cx={150} cy={191} r={9} fill={palette.engineRed} />
+        <Circle cx={150} cy={191} r={5.4} fill={palette.engineRedDark} />
         <Circle cx={150} cy={191} r={2.6} fill={palette.slateLight} />
+        <Rect x={142} y={206} width={16} height={6} rx={3} fill={palette.slate} />
       </G>
       {/* lamp housings over each bay */}
-      <Rect x={68} y={161} width={20} height={6} rx={3} fill={palette.charcoal} />
-      <Rect x={212} y={161} width={20} height={6} rx={3} fill={palette.charcoal} />
-      <Ellipse cx={78} cy={170} rx={16} ry={9} fill={palette.safetyYellow} opacity={0.15} />
-      <Ellipse cx={222} cy={170} rx={16} ry={9} fill={palette.safetyYellow} opacity={0.15} />
+      <Rect x={66} y={159} width={22} height={7} rx={3.5} fill={palette.charcoal} />
+      <Rect x={212} y={159} width={22} height={7} rx={3.5} fill={palette.charcoal} />
+      <Ellipse cx={77} cy={170} rx={18} ry={10} fill={palette.safetyYellow} opacity={0.16} />
+      <Ellipse cx={223} cy={170} rx={18} ry={10} fill={palette.safetyYellow} opacity={0.16} />
 
-      {/* the apron the engines roll out onto */}
-      <Path d="M 8 214 L 292 214 Q 288 228 274 248 L 26 248 Q 12 228 8 214 Z" fill="#BAC1D6" />
-      <Path d="M 8 214 L 292 214 Q 293 218 293 221 L 7 221 Q 7 218 8 214 Z" fill="#EDF1F8" />
-      <Rect x={4} y={214} width={292} height={12} fill={SHADE_SOFT} />
+      {/* the apron the engines roll out onto — it runs *past* the ground line,
+          so the forecourt joins the near plane instead of stopping at a seam */}
+      <Path d="M 6 220 L 294 220 Q 300 244 322 286 L -22 286 Q 0 244 6 220 Z" fill="#BAC1D6" />
+      <Path d="M 6 220 L 294 220 Q 295 224 296 228 L 4 228 Q 5 224 6 220 Z" fill="#EDF1F8" />
+      <Rect x={2} y={220} width={296} height={11} fill={SHADE_SOFT} />
+      <BaseShadow cx={150} y={224} rx={146} />
+      <Path
+        d={rp(146, 236, 8, 13) + rp(146, 256, 8, 15) + rp(146, 279, 8, 17)}
+        fill={palette.safetyYellow}
+        opacity={0.85}
+      />
 
       {/* the flag mast (its flag is the swaying element) */}
-      <Rect x={276} y={34} width={4.4} height={182} rx={2.2} fill={palette.slateLight} />
-      <Rect x={276} y={34} width={1.8} height={182} fill={HIGHLIGHT} />
+      <Rect x={276} y={34} width={4.4} height={188} rx={2.2} fill={palette.slateLight} />
+      <Rect x={276} y={34} width={1.8} height={188} fill={HIGHLIGHT} />
       <Circle cx={278.2} cy={32} r={3.4} fill={palette.gold} />
 
       {detail ? (
         <G>
-          {/* the yard dressing, all of it standing on the apron */}
-          <G x={48} y={246} scale={0.62}>
+          {/* the yard dressing, all of it standing on the apron and spread down
+              it rather than lined up along the wall like a shelf */}
+          <G x={38} y={252} scale={0.86}>
             <Contact cx={0} cy={2} rx={20} />
             <Rect x={-17} y={-8} width={34} height={9} rx={4} fill={palette.engineRedDark} />
             <Rect x={-12} y={-44} width={24} height={37} rx={9} fill={palette.engineRed} />
@@ -611,7 +629,8 @@ function stationYardArt(detail: boolean) {
             <Circle cx={0} cy={-64} r={4.4} fill={palette.gold} />
             <Ellipse cx={-5} cy={-57} rx={4.4} ry={2.4} fill={HIGHLIGHT} />
           </G>
-          <G x={86} y={246} scale={0.62}>
+          {/* the coiled hose and the helmet left out after the last shout */}
+          <G x={236} y={276} scale={0.95}>
             <Contact cx={0} cy={3} rx={22} />
             <Ellipse cx={0} cy={-6} rx={21} ry={10} fill={palette.gold} />
             <Ellipse cx={0} cy={-9} rx={21} ry={10} fill={palette.safetyYellow} />
@@ -620,16 +639,20 @@ function stationYardArt(detail: boolean) {
             <Ellipse cx={-8} cy={-15} rx={7} ry={2.6} fill={HIGHLIGHT} />
             <Rect x={14} y={-13} width={14} height={7} rx={3.5} fill={palette.slate} />
           </G>
-          {/* the yellow guide dashes the engines line up on */}
-          <Path d={rp(147, 220, 6, 9) + rp(147, 234, 6, 9)} fill={palette.safetyYellow} opacity={0.9} />
-          <Bollard x={118} y={246} h={16} />
-          <Bollard x={182} y={246} h={16} />
-          <Cone x={216} y={246} h={17} />
-          <Drain x={252} y={238} s={0.72} />
-          <Planter x={14} y={250} s={0.8} />
-          <Planter x={286} y={250} s={0.8} />
-          <Crate x={244} y={248} s={0.62} />
-          <Pigeon x={200} y={250} s={0.75} facing={-1} />
+          <G x={86} y={278} scale={0.92}>
+            <Contact cx={0} cy={2} rx={19} />
+            <Path d="M -16 0 q -3 -20 16 -20 q 19 0 16 20 z" fill={palette.engineRed} />
+            <Path d="M -16 0 q -3 -20 16 -20 l 0 20 z" fill={HIGHLIGHT} />
+            <Path d="M -20 0 h 40 l -3 5 h -34 z" fill={palette.engineRedDark} />
+            <Path d="M -7 -13 l 7 -8 l 7 8 z" fill={palette.safetyYellow} />
+          </G>
+          <Bollard x={112} y={258} h={30} s={1.3} />
+          <Bollard x={188} y={258} h={30} s={1.3} />
+          <Cone x={214} y={272} h={26} s={1.2} />
+          <Drain x={162} y={282} s={1} />
+          <Planter x={30} y={274} s={1.1} />
+          <Planter x={274} y={250} s={0.95} />
+          <Pigeon x={128} y={282} s={1} facing={-1} />
         </G>
       ) : null}
     </G>
@@ -648,6 +671,7 @@ export const school: SceneDef = {
 export const park: SceneDef = {
   height: PARK_H,
   ground: 'grass',
+  mid: 'trees',
   art: parkArt,
   sway: { x: 150, y: 70, kind: 'banner' },
 };
@@ -659,14 +683,14 @@ export const clockTower: SceneDef = {
      capped by the width of the low walls either side, which crop happily */
   spill: 1.42,
   art: clockTowerArt,
-  sway: { x: 84, y: 198, kind: 'bell' },
+  sway: { x: 76, y: 214, kind: 'lantern' },
 };
 
 export const apartments: SceneDef = {
   height: APTS_H,
   ground: 'paving',
   art: apartmentsArt,
-  sway: { x: 52, y: 90, kind: 'laundry' },
+  sway: { x: 52, y: 128, kind: 'laundry' },
 };
 
 export const stationYard: SceneDef = {

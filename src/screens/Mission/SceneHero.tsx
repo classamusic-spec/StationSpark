@@ -38,6 +38,7 @@ import {
   SceneLife,
   SkyFurniture,
   StaticSway,
+  TreeLine,
   darker,
   lighter,
   mix,
@@ -199,11 +200,16 @@ const SceneArt = memo(function SceneArt({ scene, w, h, compact, bleed }: { scene
 
       {/* far distance */}
       <Hills f={f} y={Math.max(4, f.gy - 150 * f.s)} amp={58 * f.s} tint={hillTint} seed={def.height % 7} opacity={0.8} />
-      {compact ? null : <FarSkyline f={f} baseY={f.gy + 2} tint={far[0]} light={far[1]} seed={2} opacity={0.5} />}
+      {compact ? null : <FarSkyline f={f} baseY={f.gy + 2} tint={far[0]} light={far[1]} seed={2} opacity={0.42} />}
       <Haze f={f} gradientId={`shaze-${scene}`} />
 
-      {/* middle distance */}
-      <MidTerrace f={f} seed={4} opacity={0.88} />
+      {/* middle distance — washed a third of the way back into the sky, so the
+          neighbours frame the hero building instead of competing with it */}
+      {def.mid === 'trees' ? (
+        <TreeLine f={f} back="#3E8F58" front="#5BAE68" haze={s.sky[1]} fade={0.3} />
+      ) : (
+        <MidTerrace f={f} seed={4} opacity={0.94} haze={s.sky[1]} fade={0.34} tints={def.terrace} />
+      )}
 
       {/* near ground, then the place itself */}
       <GroundPlane f={f} near={s.ground} lip={lip} kind={def.ground} />

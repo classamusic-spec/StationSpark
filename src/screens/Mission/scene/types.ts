@@ -23,4 +23,12 @@ export interface SceneDef {
    * either side of it instead of being capped by the box's width.
    */
   spill?: number;
+  /**
+   * What fills the middle distance. A terrace of shops for anywhere in town;
+   * a tree line for the park, where a row of shopfronts behind the gate said
+   * the wrong thing about where the child was standing.
+   */
+  mid?: 'terrace' | 'trees';
+  /** override the mid-terrace's wall and roof tints (before the haze wash) */
+  terrace?: { walls?: readonly string[]; roofs?: readonly string[] };
 }

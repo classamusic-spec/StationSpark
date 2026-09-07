@@ -172,7 +172,7 @@ export function MissionRecap({ mission, results, onNext }: MissionRecapProps) {
         </Animated.View>
       </View>
 
-      <Animated.View entering={FadeInUp.delay(560).springify().damping(15)} style={{ width: contentWidth }}>
+      <Animated.View entering={FadeInUp.delay(560).springify().damping(15)} style={[styles.stack, { width: contentWidth }]}>
         <Button label="Next" tone="green" size="xl" block iconRight={<ChevronRightIcon size={26} />} onPress={onNext} />
       </Animated.View>
     </ScrollView>
@@ -184,11 +184,15 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: spacing.md,
     paddingTop: spacing.sm,
     gap: spacing.md,
   },
-  stack: { gap: spacing.md },
+  /* The gutter lives *inside* the capped width, never outside it. `contentWidth`
+     is `min(window, 520)`, so on a phone it IS the window: pad the scroller and
+     the card is centred at full window width and clipped by both screen edges,
+     which is how the recap and the reward card ended up with their corners cut
+     off and their buttons touching the bezel. */
+  stack: { gap: spacing.md, paddingHorizontal: spacing.md },
   card: { gap: spacing.sm },
   pills: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, justifyContent: 'center' },
   skills: { flexDirection: 'row', flexWrap: 'wrap', columnGap: spacing.xs, rowGap: 8, marginTop: spacing.xs },

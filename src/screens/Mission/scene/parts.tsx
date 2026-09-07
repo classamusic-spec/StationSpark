@@ -29,6 +29,46 @@ export function Contact({ cx, cy, rx, o = SHADOW_OPACITY }: { cx: number; cy: nu
   return <Ellipse cx={cx} cy={cy} rx={rx} ry={Math.max(1.4, rx * 0.22)} fill={SHADOW_FILL} opacity={o} />;
 }
 
+/**
+ * THE SHADOW A BUILDING CASTS — not the same shape as the shadow a crate
+ * casts. `Contact`'s `ry = rx × 0.22` is right for a bin; on a 150-unit-wide
+ * façade it draws a 66-unit grey lens that arcs halfway down the pavement and
+ * reads as a smudge on the lens. A wall's shadow is a low, wide band hugging
+ * its base and thrown a little to the right, because the light is top-left.
+ */
+export function BaseShadow({ cx, y, rx }: { cx: number; y: number; rx: number }) {
+  return (
+    <G>
+      <Ellipse cx={cx + rx * 0.05} cy={y} rx={rx} ry={Math.max(3, rx * 0.062)} fill={SHADOW_FILL} opacity={0.13} />
+      <Ellipse cx={cx + rx * 0.08} cy={y - 1} rx={rx * 0.82} ry={Math.max(2, rx * 0.034)} fill={SHADOW_FILL} opacity={0.1} />
+    </G>
+  );
+}
+
+/**
+ * A wall bracket for a hanging shop sign. Without it the swaying ornament is a
+ * card floating in mid-air beside the building; with it the sign is *hung* —
+ * and the bracket is where the eye reads the pivot the sway turns about.
+ */
+export function SignBracket({ x, y, reach = 26, drop = 8 }: { x: number; y: number; reach?: number; drop?: number }) {
+  const armX = Math.min(x, x + reach);
+  const armW = Math.abs(reach);
+  return (
+    <G>
+      <Rect x={x - 4} y={y - drop - 5} width={8} height={drop + 14} rx={3} fill={palette.charcoalDark} />
+      <Rect x={x - 4} y={y - drop - 5} width={3} height={drop + 14} rx={1.5} fill={HIGHLIGHT} />
+      <Rect x={armX} y={y - drop} width={armW} height={5} rx={2.5} fill={palette.charcoal} />
+      <Rect x={armX} y={y - drop} width={armW} height={2} rx={1} fill={HIGHLIGHT} />
+      <Path
+        d={`M ${x} ${y - drop + 5} L ${x + reach * 0.6} ${y - drop + 5} L ${x} ${y - drop + 5 + armW * 0.52} Z`}
+        fill={palette.charcoal}
+        opacity={0.7}
+      />
+      <Circle cx={x + reach} cy={y - drop + 4} r={2.6} fill={palette.charcoalDark} />
+    </G>
+  );
+}
+
 /* ------------------------------------------------------------------ */
 /* Roofs                                                                */
 /* ------------------------------------------------------------------ */

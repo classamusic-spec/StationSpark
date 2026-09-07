@@ -24,16 +24,18 @@ export function MissionRoute({ id }: { id: string }) {
     return (
       <ScreenFrame backdrop={<SceneHero scene="station-yard" radius={0} style={StyleSheet.absoluteFill} />} chrome={<TopBar />}>
         <View style={styles.wrap}>
-          <Panel tone="white" radius="panel" style={[styles.card, { width: contentWidth }]}>
-            <CharacterPortrait id="bea" emotion="think" size={80} />
-            <Text variant="h1" center>
-              That call has closed
-            </Text>
-            <Text variant="body" center>
-              Captain Bea could not find this job on the board. Let&apos;s pick another one!
-            </Text>
-            <Button label="Back to Dispatch ›" tone="green" size="lg" block onPress={() => router.replace('/dispatch')} />
-          </Panel>
+          <View style={[styles.col, { width: contentWidth }]}>
+            <Panel tone="white" radius="panel" style={styles.card}>
+              <CharacterPortrait id="bea" emotion="think" size={80} />
+              <Text variant="h1" center>
+                That call has closed
+              </Text>
+              <Text variant="body" center>
+                Captain Bea could not find this job on the board. Let&apos;s pick another one!
+              </Text>
+              <Button label="Back to Dispatch ›" tone="green" size="lg" block onPress={() => router.replace('/dispatch')} />
+            </Panel>
+          </View>
         </View>
       </ScreenFrame>
     );
@@ -43,6 +45,9 @@ export function MissionRoute({ id }: { id: string }) {
 }
 
 const styles = StyleSheet.create({
-  wrap: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: spacing.md },
+  wrap: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: spacing.md },
+  /* the gutter sits inside the capped width: `contentWidth` is the whole window
+     on a phone, so padding the wrapper instead would clip both card edges */
+  col: { paddingHorizontal: spacing.md },
   card: { alignItems: 'center', gap: spacing.sm },
 });

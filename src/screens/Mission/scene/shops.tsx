@@ -20,6 +20,7 @@ import { rp, rowOf } from './frame';
 import type { SceneDef } from './types';
 import {
   ArchWindow,
+  BaseShadow,
   Awning,
   Bench,
   Bicycle,
@@ -46,6 +47,7 @@ import {
   SHADE_SOFT,
   ShopDoor,
   SignBoard,
+  SignBracket,
   Steps,
   TileField,
   WindowGrid,
@@ -71,7 +73,7 @@ function bakeryArt(detail: boolean) {
   const wall = '#F6E3C0';
   return (
     <G>
-      <Contact cx={150} cy={241} rx={148} />
+      <BaseShadow cx={150} y={241} rx={148} />
       <SideReturn x={272} y={64} w={16} h={174} wall={wall} />
 
       {/* mass: wall, brick above, a tiled shopfront skin, a base course */}
@@ -88,7 +90,7 @@ function bakeryArt(detail: boolean) {
       <Rect x={206} y={12} width={20} height={46} rx={3} fill="#B9583C" />
       <Rect x={206} y={12} width={7} height={46} fill={HIGHLIGHT} />
       <Rect x={202} y={6} width={28} height={9} rx={4} fill="#8F3F28" />
-      <PitchedRoof x={22} y={56} w={252} rise={46} over={14} tone={palette.engineRed} toneDark={palette.engineRedDark} />
+      <PitchedRoof x={22} y={56} w={252} rise={38} over={14} tone={palette.engineRed} toneDark={palette.engineRedDark} />
 
       {/* upper storey: two mullioned windows with sills + a window box */}
       <WindowGrid rows={1} cols={2} x={46} y={66} w={50} h={38} dx={158} dy={0} glass={GLASS} frame={palette.cream} mullions={[1, 1]} />
@@ -138,17 +140,22 @@ function bakeryArt(detail: boolean) {
           OPEN
         </SvgText>
       </G>
+      {/* the arm the hanging loaf-sign turns on — without it the sign is a card
+          floating beside the shop instead of something hung off its wall */}
+      <SignBracket x={254} y={154} reach={24} drop={8} />
 
       {detail ? (
         <G>
-          <Chalkboard x={266} y={250} s={1.05} />
-          <Planter x={10} y={252} s={1} />
-          <Bicycle x={216} y={256} s={0.95} tone="#3E8FBF" />
-          <Crate x={62} y={252} s={0.85} fruit={['#E3A960', '#D69B52']} />
-          <Cat x={178} y={248} s={0.85} facing={-1} />
-          <Pigeon x={116} y={254} s={0.9} />
-          <Path d={rp(104, 252, 2.4, 2.4) + rp(110, 256, 2, 2) + rp(98, 257, 2.2, 2.2)} fill="#C98F63" />
-          <Puddle x={250} y={262} rx={17} />
+          {/* the pavement in front of the shop: a chalked menu, the morning
+              delivery, the baker's bike and the regulars */}
+          <Chalkboard x={258} y={272} s={1.5} />
+          <Planter x={36} y={262} s={1.2} />
+          <Bicycle x={206} y={280} s={1.25} tone="#3E8FBF" />
+          <Crate x={72} y={278} s={1.15} fruit={['#E3A960', '#D69B52']} />
+          <Cat x={160} y={264} s={1.05} facing={-1} />
+          <Pigeon x={116} y={272} s={1.1} />
+          <Path d={rp(102, 268, 3.4, 3.4) + rp(110, 276, 3, 3) + rp(94, 278, 3.2, 3.2)} fill="#C98F63" />
+          <Puddle x={244} y={292} rx={22} />
         </G>
       ) : null}
     </G>
@@ -165,7 +172,7 @@ function pizzaArt(detail: boolean) {
   const wall = '#F5E2BE';
   return (
     <G>
-      <Contact cx={150} cy={231} rx={146} />
+      <BaseShadow cx={150} y={231} rx={146} />
       <SideReturn x={270} y={68} w={16} h={160} wall={wall} />
 
       <Rect x={24} y={60} width={250} height={168} rx={6} fill={wall} />
@@ -254,7 +261,7 @@ function petShopArt(detail: boolean) {
   const wall = '#EAF6EC';
   return (
     <G>
-      <Contact cx={150} cy={219} rx={146} />
+      <BaseShadow cx={150} y={219} rx={146} />
       <SideReturn x={268} y={54} w={16} h={162} wall={wall} />
 
       <Rect x={26} y={48} width={246} height={168} rx={6} fill={wall} />
@@ -347,7 +354,7 @@ function libraryArt(detail: boolean) {
   const stoneDeep = '#DFD5BE';
   return (
     <G>
-      <Contact cx={150} cy={221} rx={150} />
+      <BaseShadow cx={150} y={221} rx={150} />
       <SideReturn x={272} y={78} w={16} h={140} wall={stone} />
 
       {/* body + rusticated base */}
@@ -448,7 +455,7 @@ function marketArt(detail: boolean) {
   ];
   return (
     <G>
-      <Contact cx={150} cy={213} rx={150} />
+      <BaseShadow cx={150} y={213} rx={150} />
       {/* the market hall behind: an arcade, not a flat wall */}
       <Rect x={8} y={44} width={284} height={166} rx={6} fill={hall} />
       <Rect x={8} y={44} width={38} height={166} fill="rgba(255,255,255,0.18)" />
@@ -523,21 +530,21 @@ export const bakery: SceneDef = {
   height: BAKERY_H,
   ground: 'paving',
   art: bakeryArt,
-  sway: { x: 272, y: 150, kind: 'sign' },
+  sway: { x: 278, y: 150, kind: 'sign' },
 };
 
 export const pizza: SceneDef = {
   height: PIZZA_H,
   ground: 'paving',
   art: pizzaArt,
-  sway: { x: 262, y: 138, kind: 'slice' },
+  sway: { x: 278, y: 138, kind: 'slice' },
 };
 
 export const petShop: SceneDef = {
   height: PET_H,
   ground: 'paving',
   art: petShopArt,
-  sway: { x: 270, y: 116, kind: 'cage' },
+  sway: { x: 278, y: 116, kind: 'cage' },
 };
 
 export const library: SceneDef = {
@@ -551,5 +558,5 @@ export const market: SceneDef = {
   height: MARKET_H,
   ground: 'paving',
   art: marketArt,
-  sway: { x: 150, y: 122, kind: 'scale' },
+  sway: { x: 150, y: 132, kind: 'scale' },
 };

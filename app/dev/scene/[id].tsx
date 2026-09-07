@@ -19,7 +19,7 @@ const IDS: SceneId[] = [
 
 /** TEMPORARY QA route — delete before shipping. */
 export default function DevScene() {
-  const { id } = useLocalSearchParams<{ id?: string }>();
+  const { id, bare } = useLocalSearchParams<{ id?: string; bare?: string }>();
   const scene = (IDS.includes(id as SceneId) ? id : 'bakery') as SceneId;
   const grid = id === 'all';
   if (grid) {
@@ -34,7 +34,7 @@ export default function DevScene() {
   return (
     <View style={styles.root}>
       <SceneHero scene={scene} radius={0} style={StyleSheet.absoluteFill} />
-      <View style={styles.bubble} />
+      {bare ? null : <View style={styles.bubble} />}
     </View>
   );
 }
@@ -42,5 +42,7 @@ export default function DevScene() {
 const styles = StyleSheet.create({
   root: { flex: 1, paddingTop: 150 },
   grid: { flex: 1, flexDirection: 'row', flexWrap: 'wrap', gap: 10, padding: 12, backgroundColor: '#EEF2F8', alignContent: 'flex-start' },
-  bubble: { position: 'absolute', left: 12, right: 12, bottom: 16, height: 210, borderRadius: 28, backgroundColor: 'rgba(255,255,255,0.5)' },
+  /* an honest stand-in for DialogueOverlay's card: opaque, so it hides what it
+     hides instead of tinting the art underneath and lying about its colour */
+  bubble: { position: 'absolute', left: 16, right: 16, bottom: 24, height: 200, borderRadius: 28, backgroundColor: '#FFFFFF' },
 });

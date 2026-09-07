@@ -7,20 +7,8 @@ import { CheckIcon, GlyphIcon, Panel, Text } from '@/ui';
 import { sfx } from '@/services/audio';
 import { haptics } from '@/services/haptics';
 import { useFeedbackAnim } from '@/hooks';
+import { makeQuestion } from './gateQuestion';
 
-interface Question {
-  prompt: string;
-  answer: number;
-}
-
-const QUESTIONS: Question[] = [
-  { prompt: 'What is 7 × 6?', answer: 42 },
-  { prompt: 'What is 8 × 9?', answer: 72 },
-  { prompt: 'What is 12 × 4?', answer: 48 },
-  { prompt: 'What is 15 + 27?', answer: 42 },
-  { prompt: 'What is 9 × 7?', answer: 63 },
-  { prompt: 'What is 96 ÷ 8?', answer: 12 },
-];
 
 const KEYS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'clear', '0', 'enter'] as const;
 const EDGE = 4;
@@ -79,7 +67,7 @@ function Key({ label, onPress }: { label: string; onPress: () => void }) {
  */
 export function ParentGate({ onPass, onFail }: { onPass: () => void; onFail: () => void }) {
   // A fresh random question per mount (lazy initializer, so it only runs once).
-  const [question] = useState(() => QUESTIONS[Math.floor(Math.random() * QUESTIONS.length)] ?? QUESTIONS[0]);
+  const [question] = useState(makeQuestion);
   const [entry, setEntry] = useState('');
   const [failed, setFailed] = useState(false);
   const { style, wobble } = useFeedbackAnim();

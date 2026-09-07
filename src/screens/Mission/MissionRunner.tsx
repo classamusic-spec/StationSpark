@@ -345,7 +345,7 @@ function RewardScreen({
     >
       {/* a reading column, not a wall of button: a tablet gets a bigger picture
           behind the card, never a 1000 px "Return to Station" */}
-      <Animated.View entering={FadeIn.duration(300)} style={{ width: contentWidth }}>
+      <Animated.View entering={FadeIn.duration(300)} style={[styles.rewardCol, { width: contentWidth }]}>
         <Panel tone="white" radius="panel" style={styles.rewardCard}>
           <Text variant="display" center>
             Great job!
@@ -381,7 +381,7 @@ function RewardScreen({
         </Panel>
       </Animated.View>
 
-      <Animated.View entering={FadeInUp.delay(300).springify().damping(15)} style={[styles.rewardCtas, { width: contentWidth }]}>
+      <Animated.View entering={FadeInUp.delay(300).springify().damping(15)} style={[styles.rewardCol, styles.rewardCtas, { width: contentWidth }]}>
         <Button label="Return to Station" tone="red" size="xl" block iconRight={<ChevronRightIcon size={26} />} onPress={onHome} />
         {!shiftComplete ? <Button label="Back to the board" tone="white" size="md" block onPress={onBoard} sound="tap-soft" /> : null}
       </Animated.View>
@@ -395,7 +395,11 @@ const styles = StyleSheet.create({
   /** a daylight wash over the place, so a reading card on top of it still wins */
   haze: { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(255,255,255,0.42)' },
   hudSlot: { position: 'absolute', left: 0, right: 0, zIndex: 45 },
-  reward: { paddingHorizontal: spacing.md, gap: spacing.md, flexGrow: 1, alignItems: 'center', justifyContent: 'center' },
+  reward: { gap: spacing.md, flexGrow: 1, alignItems: 'center', justifyContent: 'center' },
+  /* the gutter belongs inside the capped width — `contentWidth` is the whole
+     window on a phone, so padding the scroller instead clipped the card's
+     corners and ran both buttons into the bezel */
+  rewardCol: { paddingHorizontal: spacing.md },
   rewardCard: { alignItems: 'center', gap: spacing.sm, borderRadius: radii.panel },
   rewardRow: { flexDirection: 'row', gap: spacing.sm },
   rewardChip: { paddingHorizontal: spacing.md, paddingVertical: 6, borderRadius: radii.pill, minWidth: 108 },

@@ -15,7 +15,7 @@
 import React from 'react';
 import { Circle, Ellipse, G, Path, Rect } from 'react-native-svg';
 import { palette } from '@/theme';
-import { darker, lighter, rp, vary, type SceneFrame } from './frame';
+import { courseLines, darker, fanJoints, lighter, mix, rowOf, rp, vary, type SceneFrame } from './frame';
 import { HIGHLIGHT, SHADE, SHADE_SOFT } from './parts';
 
 const HILITE = HIGHLIGHT;
@@ -113,14 +113,18 @@ export function FarSkyline({ f, baseY, tint, light, seed = 2, opacity = 0.5 }: {
     } else if (kind === 2) {
       caps += rp(x, top - 7 * s, bw, 8 * s) + rp(x + bw * 0.17, top - 14 * s, bw * 0.66, 8 * s) + rp(x + bw * 0.34, top - 21 * s, bw * 0.32, 8 * s);
     } else if (kind === 3) {
+      /* a corner turret with a witch's hat — the old water tower read as a
+         mushroom on a stalk, which is not a thing a town has */
       caps += rp(x - 2 * s, top - 4 * s, bw + 4 * s, 6 * s);
+      const tx = x + bw * 0.7;
+      const tw2 = Math.max(7 * s, bw * 0.2);
       nodes.push(
         <G key={`fw${i}`}>
-          <Rect x={x + bw * 0.24} y={top - 26 * s} width={bw * 0.5} height={15 * s} rx={5} fill={tint} />
-          <Path d={`M ${x + bw * 0.24} ${top - 26 * s} h ${bw * 0.5} l ${-bw * 0.08} ${-7 * s} h ${-bw * 0.34} z`} fill={tint} />
+          <Rect x={tx - tw2} y={top - 30 * s} width={tw2 * 2} height={34 * s} rx={4} fill={tint} />
+          <Path d={`M ${tx - tw2 - 3 * s} ${top - 30 * s} L ${tx} ${top - 52 * s} L ${tx + tw2 + 3 * s} ${top - 30 * s} Z`} fill={tint} />
         </G>,
       );
-      caps += rp(x + bw * 0.3, top - 11 * s, 3.4 * s, 8 * s) + rp(x + bw * 0.62, top - 11 * s, 3.4 * s, 8 * s);
+      caps += rp(x + bw * 0.14, top - 12 * s, 4 * s, 9 * s);
     } else {
       caps += rp(x - 2 * s, top - 4 * s, bw + 4 * s, 6 * s) + rp(x + bw * 0.5, top - 26 * s, 2.6 * s, 23 * s);
     }
@@ -179,25 +183,48 @@ const MID_AWNS = [palette.engineRed, '#3E8FBF', '#4E9E5C', '#C9863B', '#8E76C0']
  * Heights are quoted as a fraction of the hero building's own height, so the
  * neighbours always relate to it — a few shoulder above it, most sit below.
  */
-export function MidTerrace({ f, seed = 4, opacity = 0.88, tints }: { f: SceneFrame; seed?: number; opacity?: number; tints?: { walls?: readonly string[]; roofs?: readonly string[] } }) {
-  const walls = tints?.walls ?? MID_WALLS;
-  const roofs = tints?.roofs ?? MID_ROOFS;
+export function MidTerrace({
+  f,
+  seed = 4,
+  opacity = 0.88,
+  tints,
+  haze,
+  fade = 0,
+}: {
+  f: SceneFrame;
+  seed?: number;
+  opacity?: number;
+  tints?: { walls?: readonly string[]; roofs?: readonly string[] };
+  /** the sky tone the whole terrace is washed towards */
+  haze?: string;
+  /** 0 = full strength, 1 = the sky. The value step behind the hero. */
+  fade?: number;
+}) {
+  const air = haze ?? '#CFE6F7';
+  const back = (c: string): string => (fade > 0 ? mix(c, air, fade) : c);
+  const walls = (tints?.walls ?? MID_WALLS).map((c) => back(c));
+  const roofs = (tints?.roofs ?? MID_ROOFS).map((c) => back(c));
   const baseY = f.gy + 6;
   const u = Math.max(44, f.bh);
   const s = f.s;
+  const glassTone = back('#4A5C8E');
+  const trim = back(palette.cream);
+  const shade = fade > 0.3 ? SHADE_SOFT : SHADE;
   const out: React.ReactElement[] = [];
   const unit = Math.max(54, f.bw * 0.32);
   let x = -unit * 0.35;
   let i = 0;
   while (x < f.w + 8 && i < 12) {
     const bw = unit * (0.8 + vary(i, seed + 2) * 0.5);
-    /* the neighbours are the tall ones: a two-storey shop flanked by four
-       storeys is what a town looks like, and it is what fills the sky */
-    const bh = Math.min(u * (0.66 + vary(i + 6, seed + 2) * 0.86), baseY - 26 * s);
+    /* The neighbours give the hero its scale, so they may not out-rank it:
+       most sit below its eaves and only the odd one shoulders past. A terrace
+       drawn half again as tall as the building the scene is *about* is what
+       made the hero look like a shed in its own picture. */
+    const bh = Math.min(u * (0.52 + vary(i + 6, seed + 2) * 0.56), baseY - 26 * s);
     const top = baseY - bh;
     const wall = walls[i % walls.length] ?? '#F0DCBB';
     const roof = roofs[(i * 2 + seed) % roofs.length] ?? '#C4776A';
-    const awn = MID_AWNS[(i + seed) % MID_AWNS.length] ?? palette.engineRed;
+    const awn = back(MID_AWNS[(i + seed) % MID_AWNS.length] ?? palette.engineRed);
     const pitched = vary(i + 21, seed) > 0.45;
     const chim = vary(i + 31, seed) > 0.5;
     const shopH = Math.min(bh * 0.3, 54 * s);
@@ -234,18 +261,18 @@ export function MidTerrace({ f, seed = 4, opacity = 0.88, tints }: { f: SceneFra
         ) : (
           <G>
             <Rect x={x - 5} y={top - 9 * s} width={bw + 10} height={13 * s} rx={5} fill={roof} />
-            <Rect x={x - 5} y={top + 2 * s} width={bw + 10} height={4 * s} rx={2} fill={SHADE} />
+            <Rect x={x - 5} y={top + 2 * s} width={bw + 10} height={4 * s} rx={2} fill={shade} />
           </G>
         )}
-        <Path d={reveals} fill={palette.cream} opacity={0.55} />
-        <Path d={panes} fill="#4A5C8E" opacity={0.72} />
-        <Path d={sills} fill={SHADE} />
-        <Rect x={x + 4} y={baseY - shopH - 13 * s} width={bw - 8} height={11 * s} rx={4} fill={palette.cream} />
+        <Path d={reveals} fill={trim} opacity={0.55} />
+        <Path d={panes} fill={glassTone} opacity={0.6} />
+        <Path d={sills} fill={shade} />
+        <Rect x={x + 4} y={baseY - shopH - 13 * s} width={bw - 8} height={11 * s} rx={4} fill={trim} />
         <Path d={`M ${x + 2} ${baseY - shopH} h ${bw - 4} l ${-5 * s} ${13 * s} h ${-(bw - 4 - 10 * s)} z`} fill={awn} />
         <Path
           d={rp(x + 8, baseY - shopH + 18 * s, bw * 0.42, Math.max(4, shopH - 20 * s)) + rp(x + bw * 0.6, baseY - shopH + 16 * s, bw * 0.24, Math.max(4, shopH - 18 * s))}
-          fill="#4A5C8E"
-          opacity={0.55}
+          fill={glassTone}
+          opacity={0.45}
         />
       </G>,
     );
@@ -255,70 +282,161 @@ export function MidTerrace({ f, seed = 4, opacity = 0.88, tints }: { f: SceneFra
   return <G opacity={opacity}>{out}</G>;
 }
 
+/**
+ * A TREE LINE for the middle distance — what stands behind a park gate. A row
+ * of shopfronts there told the child they were on a high street; a bank of
+ * canopies with trunks between them tells them they are looking into a park.
+ * Three value steps only: back mass, front mass, trunks.
+ */
+export function TreeLine({ f, back, front, haze, fade = 0.3, opacity = 0.95 }: { f: SceneFrame; back: string; front: string; haze: string; fade?: number; opacity?: number }) {
+  const baseY = f.gy + 8;
+  const s = f.s;
+  const u = Math.max(52, f.bh);
+  const b = mix(back, haze, fade);
+  const fr = mix(front, haze, fade * 0.7);
+  const trunk = mix('#6B4A2C', haze, fade);
+  let mass = '';
+  let crown = '';
+  let trunks = '';
+  const step = Math.max(46 * s, f.w / 7);
+  const n = Math.ceil((f.w + step) / step) + 1;
+  for (let i = 0; i < n; i += 1) {
+    const cx = -step * 0.4 + i * step;
+    const r = step * (0.42 + vary(i, 7) * 0.2);
+    const hgt = u * (0.36 + vary(i + 3, 7) * 0.3);
+    const cy = baseY - hgt;
+    mass += `M ${(cx - r).toFixed(1)} ${(cy + r * 0.5).toFixed(1)} a ${r.toFixed(1)} ${(r * 0.94).toFixed(1)} 0 1 1 ${(r * 2).toFixed(1)} 0 z`;
+    trunks += rp(cx - 4.4 * s, cy + r * 0.4, 8.8 * s, hgt);
+    if (i % 2 === 0) crown += `M ${(cx - r * 0.66).toFixed(1)} ${(cy + r * 0.2).toFixed(1)} a ${(r * 0.66).toFixed(1)} ${(r * 0.6).toFixed(1)} 0 1 1 ${(r * 1.32).toFixed(1)} 0 z`;
+  }
+  return (
+    <G opacity={opacity}>
+      <Rect x={-2} y={baseY - 10 * s} width={f.w + 4} height={30 * s} fill={b} />
+      <Path d={trunks} fill={trunk} />
+      <Path d={mass} fill={b} />
+      <Path d={crown} fill={fr} />
+    </G>
+  );
+}
+
 /* ------------------------------------------------------------------ */
 /* Near ground                                                          */
 /* ------------------------------------------------------------------ */
 
 export type GroundKind = 'paving' | 'grass' | 'apron';
 
-/**
- * The near ground plane: a soft-topped slab with a lighter lip, its surface
- * marked (paving joints, mown bands or an apron's guide dashes) and a kerb
- * where the pavement meets the road. Never a hard-edged rectangle.
- */
-/** Where the pavement gives way to the road — shared by the ground and its furniture. */
-export const roadLine = (f: SceneFrame): number => f.gy + Math.max(56 * f.s, (f.h - f.gy) * 0.4);
+/** A band of diagonal road hatching, batched into one path. */
+function hatch(w: number, y: number, hgt: number, tw: number, step: number): string {
+  let d = '';
+  for (let x = -hgt; x < w + step; x += step) {
+    d += `M ${x.toFixed(1)} ${(y + hgt).toFixed(1)} L ${(x + hgt).toFixed(1)} ${y.toFixed(1)} L ${(x + hgt + tw).toFixed(1)} ${y.toFixed(1)} L ${(x + tw).toFixed(1)} ${(y + hgt).toFixed(1)} Z`;
+  }
+  return d;
+}
 
+/** Where the pavement gives way to the road — shared by the ground and its furniture. */
+/**
+ * Where the pavement gives way to the road. Most of the near plane is
+ * *pavement*, because that is the part with joints, furniture and the shop's
+ * own dressing on it; the road is the strip beyond the kerb that closes the
+ * picture, and a road given half the near plane is simply a hole in it.
+ */
+export const roadLine = (f: SceneFrame): number => f.gy + Math.max(40 * f.s, (f.h - f.gy) * 0.6);
+
+/**
+ * THE NEAR GROUND PLANE.
+ *
+ * The failure this replaces: pavement and road drawn one value apart, ruled
+ * with parallel vertical lines, filling the bottom 40 % of the frame with a
+ * single grey nothing. A ground plane needs three things to stop reading as a
+ * wall — joints that *recede* (`fanJoints`, converging on the horizon, with
+ * cross-courses that open out towards the viewer), a real kerb with a lit top
+ * edge and a shadowed face, and a road that is properly darker than the
+ * pavement rather than a shade of it. Each band is one clear value step down
+ * from the one behind it, which is the same rule the depth planes above obey.
+ */
 export function GroundPlane({ f, near, lip, kind = 'paving' }: { f: SceneFrame; near: string; lip: string; kind?: GroundKind }) {
   const { w, h, gy, s } = f;
   const edge = `M 0 ${gy + 7 * s} Q ${w / 2} ${gy - 5 * s} ${w} ${gy + 7 * s}`;
-  const roadY = roadLine(f);
-  const step = Math.max(26, 56 * s);
-  let marks = '';
-  if (kind === 'paving') {
-    for (let i = 0; i * step < w + step; i += 1) marks += rp(i * step, gy + 12 * s, 2.4 * s, Math.max(6, roadY - gy - 14 * s));
-    marks += rp(0, gy + (roadY - gy) * 0.52, w, 2.4 * s);
-  } else if (kind === 'grass') {
-    for (let i = 0; i < 5; i += 1) marks += rp(0, gy + 14 * s + i * 20 * s, w, 4 * s);
-  } else {
-    for (let i = 0; i * step < w + step; i += 1) marks += rp(i * step, gy + 12 * s, 2.4 * s, Math.max(6, roadY - gy - 14 * s));
+  const roadY = Math.min(roadLine(f), h - 6 * s);
+  const hasRoad = kind !== 'grass' && roadY < h - 10 * s;
+  const kerbH = Math.max(5, 9 * s);
+  const tarmac = mix(near, palette.charcoal, 0.46);
+  const front = hasRoad ? roadY : h;
+
+  if (kind === 'grass') {
+    /* mown bands widen towards the viewer, and a worn path runs to the gate */
+    const bands = courseLines(w, gy + 10 * s, h, 7, 7 * s);
+    const pathTop = gy + (h - gy) * 0.1;
+    return (
+      <G>
+        <Path d={`${edge} L ${w} ${h} L 0 ${h} Z`} fill={near} />
+        <Path d={`${edge} L ${w} ${gy + 15 * s} Q ${w / 2} ${gy + 3 * s} 0 ${gy + 15 * s} Z`} fill={lip} />
+        <Path d={bands} fill={SHADE_SOFT} />
+        <Path
+          d={`M ${w * 0.5 - w * 0.09} ${pathTop} L ${w * 0.5 + w * 0.09} ${pathTop} L ${w * 0.5 + w * 0.42} ${h} L ${w * 0.5 - w * 0.42} ${h} Z`}
+          fill={mix(near, '#E8DFC8', 0.62)}
+        />
+        <Path d={fanJoints(w, gy, pathTop + 4 * s, h, 5, 2.6 * s)} fill={SHADE_SOFT} opacity={0.7} />
+        <Path d={courseLines(w, pathTop, h, 4, 2.4 * s)} fill={SHADE_SOFT} opacity={0.45} />
+      </G>
+    );
   }
+
+  const joints = fanJoints(w, gy, gy + 14 * s, front, kind === 'apron' ? 7 : 9, 2.8 * s);
+  const courses = courseLines(w, gy + 12 * s, front, kind === 'apron' ? 2 : 3, 2.6 * s);
   return (
     <G>
       <Path d={`${edge} L ${w} ${h} L 0 ${h} Z`} fill={near} />
       <Path d={`${edge} L ${w} ${gy + 15 * s} Q ${w / 2} ${gy + 3 * s} 0 ${gy + 15 * s} Z`} fill={lip} />
-      <Path d={marks} fill={SHADE_SOFT} />
-      {f.detail && kind !== 'grass' && roadY < h - 4 ? (
+      <Path d={joints + courses} fill={SHADE_SOFT} />
+      {hasRoad ? (
         <G>
-          <Rect x={0} y={roadY} width={w} height={h - roadY} fill={darker(near, 0.22)} />
-          <Rect x={0} y={roadY} width={w} height={5 * s} rx={2.5 * s} fill={lighter(lip, 0.4)} />
-          <Rect x={0} y={roadY + 5 * s} width={w} height={4 * s} fill={SHADE} />
-          <Path d={`M 0 ${roadY + (h - roadY) * 0.62} H ${w}`} stroke={palette.white} strokeWidth={3.4 * s} strokeDasharray={`${18 * s} ${16 * s}`} strokeLinecap="round" opacity={0.75} />
+          {/* tarmac, a full value step below the pavement */}
+          <Rect x={0} y={roadY} width={w} height={h - roadY} fill={tarmac} />
+          {/* the kerb: lit top edge, shadowed face, and the gutter it casts */}
+          <Rect x={0} y={roadY - 3 * s} width={w} height={4.4 * s} rx={2 * s} fill={lighter(lip, 0.45)} />
+          <Rect x={0} y={roadY + 1 * s} width={w} height={kerbH} fill={darker(lip, 0.2)} />
+          <Rect x={0} y={roadY + kerbH} width={w} height={3.4 * s} fill={darker(tarmac, 0.24)} opacity={0.75} />
+          {f.detail ? (
+            <G>
+              {/* two worn wheel tracks, so the tarmac is a surface cars use */}
+              <Path
+                d={rp(-4, roadY + (h - roadY) * 0.22, w + 8, (h - roadY) * 0.2) + rp(-4, roadY + (h - roadY) * 0.74, w + 8, (h - roadY) * 0.18)}
+                fill="rgba(255,255,255,0.05)"
+              />
+              {kind === 'apron' ? (
+                /* KEEP CLEAR hatching outside the engine bays — the one piece of
+                   road marking a fire station always has */
+                <Path d={hatch(w, roadY + kerbH + 5 * s, Math.max(14, (h - roadY) * 0.4), 7 * s, 26 * s)} fill={palette.safetyYellow} opacity={0.5} />
+              ) : null}
+              <Path
+                d={`M 0 ${roadY + (h - roadY) * 0.62} H ${w}`}
+                stroke={palette.cream}
+                strokeWidth={4.4 * s}
+                strokeDasharray={`${22 * s} ${18 * s}`}
+                strokeLinecap="round"
+                opacity={0.7}
+              />
+            </G>
+          ) : null}
         </G>
       ) : null}
     </G>
   );
 }
 
-/**
- * THE NEAREST PLANE. A pavement that runs 150 px down the frame with nothing on
- * it is the same mistake as a bare sky, so a street scene gets one big piece of
- * furniture standing at the kerb — darker, crisper and much larger than
- * anything on the building, which is what tells the eye it is in front.
- */
-export function NearStreet({ f, kind }: { f: SceneFrame; kind: GroundKind }) {
-  if (!f.detail || kind !== 'paving') return null;
+/** The street lamp that anchors the left of the near plane. */
+function NearLamp({ f, x, base }: { f: SceneFrame; x: number; base: number }) {
   const s = f.s;
-  const roadY = roadLine(f);
-  const x = f.w * 0.085;
-  const hgt = Math.min(f.h * 0.56, (roadY - f.gy) * 1.6 + 150 * s);
-  const top = roadY - hgt;
+  const hgt = Math.min(f.h * 0.58, (base - f.gy) * 1.5 + 165 * s);
+  const top = base - hgt;
   const armR = 22 * s;
   return (
     <G>
-      <Ellipse cx={x} cy={roadY - 2 * s} rx={17 * s} ry={4 * s} fill={palette.navy} opacity={0.14} />
-      <Rect x={x - 11 * s} y={roadY - 16 * s} width={22 * s} height={16 * s} rx={6} fill={palette.charcoal} />
-      <Rect x={x - 11 * s} y={roadY - 16 * s} width={7 * s} height={16 * s} rx={4} fill={HILITE} />
+      <Ellipse cx={x} cy={base - 2 * s} rx={19 * s} ry={4.6 * s} fill={palette.navy} opacity={0.16} />
+      <Rect x={x - 11 * s} y={base - 16 * s} width={22 * s} height={16 * s} rx={6} fill={palette.charcoal} />
+      <Rect x={x - 11 * s} y={base - 16 * s} width={7 * s} height={16 * s} rx={4} fill={HILITE} />
       <Rect x={x - 5.6 * s} y={top + armR} width={11 * s} height={hgt - armR - 10 * s} rx={5.6 * s} fill={palette.charcoalDark} />
       <Rect x={x - 5.6 * s} y={top + armR} width={4 * s} height={hgt - armR - 10 * s} fill={HILITE} />
       <Path d={`M ${x} ${top + armR + 4 * s} q 0 ${-armR} ${armR} ${-armR}`} stroke={palette.charcoalDark} strokeWidth={8 * s} fill="none" strokeLinecap="round" />
@@ -326,9 +444,82 @@ export function NearStreet({ f, kind }: { f: SceneFrame; kind: GroundKind }) {
       <Path d={`M ${x + armR * 0.5 + 4 * s} ${top + 3 * s} h ${18 * s} l ${-4.4 * s} ${17 * s} h ${-9.2 * s} z`} fill="#FFE9A8" />
       <Ellipse cx={x + armR * 0.5 + 13 * s} cy={top + 12 * s} rx={30 * s} ry={23 * s} fill={palette.safetyYellow} opacity={0.16} />
       <Rect x={x + armR * 0.5 + 7 * s} y={top - 7 * s} width={13 * s} height={8 * s} rx={3} fill={palette.charcoalDark} />
-      {/* a manhole out on the road, so the tarmac is a surface too */}
-      <Ellipse cx={f.w * 0.68} cy={roadY + (f.h - roadY) * 0.36} rx={22 * s} ry={7 * s} fill={SHADE} />
-      <Ellipse cx={f.w * 0.68} cy={roadY + (f.h - roadY) * 0.36 - 1.5 * s} rx={19 * s} ry={5.6 * s} fill="#AEB6CC" />
+    </G>
+  );
+}
+
+/**
+ * The hydrant at the right-hand kerb. It is the near plane's second anchor and
+ * — in a fire-department game — the one prop that belongs on every street in
+ * town, so the same red says "this is our patch" in all ten places.
+ */
+function NearHydrant({ f, x, base }: { f: SceneFrame; x: number; base: number }) {
+  const u = Math.max(0.5, f.s) * 1.5;
+  return (
+    <G x={x} y={base} scale={u}>
+      <Ellipse cx={0} cy={0} rx={17} ry={4} fill={palette.navy} opacity={0.16} />
+      <Rect x={-15} y={-7} width={30} height={8} rx={3.4} fill={palette.engineRedDark} />
+      <Rect x={-15} y={-7} width={30} height={2.6} rx={1.3} fill={HILITE} />
+      <Rect x={-10} y={-38} width={20} height={32} rx={7} fill={palette.engineRed} />
+      <Rect x={-10} y={-36} width={5.4} height={28} rx={2.7} fill={HILITE} />
+      <Rect x={4} y={-36} width={6} height={28} rx={3} fill={SHADE} />
+      <Rect x={-17} y={-31} width={8} height={10} rx={4} fill={palette.engineRedDark} />
+      <Rect x={9} y={-31} width={8} height={10} rx={4} fill={palette.engineRedDark} />
+      <Rect x={-13} y={-45} width={26} height={8} rx={4} fill={palette.engineRedDark} />
+      <Rect x={-13} y={-45} width={26} height={2.6} rx={1.3} fill={HILITE} />
+      <Path d="M -9 -45 q 0 -10 9 -10 q 9 0 9 10 z" fill={palette.engineRed} />
+      <Path d="M -9 -45 q 0 -10 9 -10 l 0 10 z" fill={HILITE} />
+      <Circle cx={0} cy={-56} r={3.6} fill={palette.gold} />
+      <Rect x={-11} y={-24} width={22} height={4} rx={2} fill={palette.safetyYellow} opacity={0.9} />
+    </G>
+  );
+}
+
+/**
+ * THE NEAREST PLANE. A pavement that runs 150 px down the frame with nothing on
+ * it is the same mistake as a bare sky, so the front of the frame gets real
+ * furniture — darker, crisper and much larger than anything on the building,
+ * which is what tells the eye it is in front. It stands at the two edges, so
+ * a dialogue bubble in the middle of the screen never lands on top of it.
+ */
+export function NearStreet({ f, kind }: { f: SceneFrame; kind: GroundKind }) {
+  if (!f.detail) return null;
+  const s = f.s;
+  const roadY = Math.min(roadLine(f), f.h - 6 * s);
+  /* the furniture stands *on* the pavement a little back from the kerb, not
+     balanced on its edge — and high enough that a dialogue card across the
+     bottom of the screen never swallows the whole prop */
+  const kerb = f.gy + (roadY - f.gy) * 0.86;
+  if (kind === 'grass') {
+    /* a park closes at the front with a low rail and a scatter of daisies */
+    const y = f.h - 10 * s;
+    return (
+      <G>
+        <NearLamp f={f} x={f.w * 0.08} base={f.gy + (f.h - f.gy) * 0.34} />
+        <G>
+          <Path d={rowOf(9, -10, y - 26 * s, 3.4 * s, 26 * s, f.w / 8)} fill="#4E5776" opacity={0.9} />
+          <Rect x={-6} y={y - 30 * s} width={f.w + 12} height={5.4 * s} rx={2.7 * s} fill="#4E5776" />
+          <Rect x={-6} y={y - 30 * s} width={f.w + 12} height={2 * s} rx={1 * s} fill={HILITE} />
+        </G>
+        <Path
+          d={rp(f.w * 0.26, f.h - 40 * s, 3.4 * s, 3.4 * s) + rp(f.w * 0.34, f.h - 30 * s, 3 * s, 3 * s) + rp(f.w * 0.71, f.h - 36 * s, 3.2 * s, 3.2 * s)}
+          fill={palette.white}
+          opacity={0.7}
+        />
+      </G>
+    );
+  }
+  return (
+    <G>
+      <NearLamp f={f} x={f.w * 0.075} base={kerb} />
+      {/* the yard draws its own hydrant on the apron; two would be one too many */}
+      {kind === 'paving' ? <NearHydrant f={f} x={f.w * 0.915} base={kerb} /> : null}
+      {/* the drain in the gutter and a manhole out on the tarmac, so both
+          surfaces read as surfaces rather than as fills */}
+      <Drain x={f.w * 0.72} y={roadY + 5 * s} s={Math.max(0.55, s * 0.95)} />
+      <Ellipse cx={f.w * 0.4} cy={roadY + (f.h - roadY) * 0.42} rx={26 * s} ry={8 * s} fill={SHADE} />
+      <Ellipse cx={f.w * 0.4} cy={roadY + (f.h - roadY) * 0.42 - 1.8 * s} rx={22 * s} ry={6.4 * s} fill="#9AA3BB" />
+      <Path d={rowOf(3, f.w * 0.4 - 13 * s, roadY + (f.h - roadY) * 0.42 - 3 * s, 26 * s, 1.6 * s, 3.4 * s)} fill={SHADE} opacity={0.6} />
     </G>
   );
 }

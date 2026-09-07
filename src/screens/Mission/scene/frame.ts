@@ -67,11 +67,15 @@ export function sceneFrame(w: number, h: number, sceneH: number, detail: boolean
   const a = w / Math.max(1, h);
   /* horizon: high on a portrait phone (the storefront wants the top half),
      low on a short wide panel (or the roof has nowhere to go) */
-  const gy = Math.round(h * clamp(0.575 + (a - 0.55) * 0.115 + (bleed ? 0.02 : 0), 0.56, 0.8));
-  /* how much of the width the hero building may take. A narrow box is nearly
-     all building; a wide one is a building in a street. */
-  const bwFrac = clamp(0.88 - (a - 0.8) * 0.16, 0.44, 0.92);
-  const topPad = h * 0.055 + 6;
+  const gy = Math.round(h * clamp(0.605 + (a - 0.5) * 0.1 + (bleed ? 0.015 : 0), 0.6, 0.82));
+  /* How much of the width the hero building may take.
+     On a tall portrait box the building is allowed to run *wider than the
+     frame*: a 300 × 240 design box capped at the frame width can only ever
+     fill a third of a 390 × 844 phone, which is what left a lake of empty
+     pavement under it. Cropping a few units off a symmetrical façade costs
+     nothing and buys the height that makes the frame feel close-up. */
+  const bwFrac = clamp(0.94 - (a - 0.72) * 0.62, 0.46, 1.12);
+  const topPad = Math.min(h * 0.05, 34) + 4;
   const k = Math.min((w * bwFrac * spill) / SCENE_W, Math.max(24, gy - topPad) / Math.max(1, sceneH));
   const bw = SCENE_W * k;
   const bh = sceneH * k;
@@ -141,6 +145,46 @@ export function rowOf(n: number, x: number, y: number, w: number, h: number, ste
 export function gridOf(rows: number, cols: number, x: number, y: number, w: number, h: number, dx: number, dy: number): string {
   let d = '';
   for (let r = 0; r < rows; r += 1) for (let c = 0; c < cols; c += 1) d += rp(x + c * dx, y + r * dy, w, h);
+  return d;
+}
+
+/**
+ * PAVING JOINTS THAT RECEDE. A ground plane ruled with parallel vertical lines
+ * reads as a wall lying down; the same plane ruled with lines that fan out
+ * towards the viewer and converge on the horizon reads as ground. All of them
+ * in one path: each joint is a tapered quad, thin at the horizon and full
+ * width at the front.
+ */
+export function fanJoints(w: number, gy: number, yTop: number, yBot: number, n: number, tw: number): string {
+  const depth = Math.max(1, yBot - gy);
+  const t0 = clamp((yTop - gy) / depth, 0, 1);
+  const vx = w / 2;
+  let d = '';
+  for (let i = 0; i <= n; i += 1) {
+    /* spread the front edge wider than the frame so the outermost joints leave
+       the picture at the sides rather than crowding into the middle */
+    const bx = -w * 0.42 + (i / n) * w * 1.84;
+    const x0 = vx + (bx - vx) * t0;
+    const hw0 = Math.max(0.35, (tw * t0) / 2);
+    const hw1 = tw / 2;
+    d +=
+      `M ${(x0 - hw0).toFixed(1)} ${yTop.toFixed(1)} L ${(x0 + hw0).toFixed(1)} ${yTop.toFixed(1)} ` +
+      `L ${(bx + hw1).toFixed(1)} ${yBot.toFixed(1)} L ${(bx - hw1).toFixed(1)} ${yBot.toFixed(1)} Z`;
+  }
+  return d;
+}
+
+/**
+ * The joints that run *across* a receding plane: closer together at the back,
+ * further apart at the front, so the spacing itself carries the depth.
+ */
+export function courseLines(w: number, yTop: number, yBot: number, n: number, th: number): string {
+  let d = '';
+  for (let i = 1; i <= n; i += 1) {
+    const t = (i / (n + 1)) ** 1.85;
+    const y = yTop + (yBot - yTop) * t;
+    d += rp(-2, y, w + 4, th * (0.5 + t));
+  }
   return d;
 }
 

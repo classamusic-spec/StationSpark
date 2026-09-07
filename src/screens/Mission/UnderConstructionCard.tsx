@@ -81,7 +81,9 @@ export function UnderConstructionCard({
 }
 
 const styles = StyleSheet.create({
-  wrap: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: spacing.md },
+  wrap: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: spacing.md },
+  /* the gutter lives inside the capped width — `contentWidth` is the whole
+     window on a phone, so padding the wrapper as well would clip both edges */
   inner: { paddingHorizontal: spacing.md },
   card: { alignItems: 'center', gap: spacing.sm, borderRadius: radii.panel },
   row: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: spacing.xs },
