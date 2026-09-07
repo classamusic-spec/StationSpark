@@ -40,6 +40,12 @@ export interface TaskBarProps {
   onReplay?: (() => void) | null;
   /** how far through — drawn as a quiet dot row, not a second scoreboard */
   progress?: { done: number; total: number };
+  /**
+   * Suppress the dot row. Set by `ActivityFrame` on a tablet, where the steps
+   * are drawn at the head of the tool rail at four times this size — near the
+   * child's hands rather than at the top of a 1024 px screen.
+   */
+  hideProgress?: boolean;
   /** shrink for short screens */
   compact?: boolean;
   style?: StyleProp<ViewStyle>;
@@ -57,7 +63,7 @@ export interface TaskBarProps {
  * is reserved for *hints and reactions*, which is what makes it worth reading
  * when it does appear.
  */
-export function TaskBar({ task, es, detail, onBack, onReplay, progress, compact, style }: TaskBarProps) {
+export function TaskBar({ task, es, detail, onBack, onReplay, progress, hideProgress, compact, style }: TaskBarProps) {
   /* The host supplies back / replay / progress so there is only ever one bar. */
   const chrome = useActivityChrome();
   const back = onBack ?? chrome.onBack;
@@ -119,7 +125,7 @@ export function TaskBar({ task, es, detail, onBack, onReplay, progress, compact,
         )}
       </View>
 
-      {steps && steps.total > 1 ? (
+      {steps && steps.total > 1 && !hideProgress ? (
         <View
           style={styles.dots}
           accessibilityRole="progressbar"

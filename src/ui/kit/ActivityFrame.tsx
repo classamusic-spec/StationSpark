@@ -82,7 +82,7 @@ export function ActivityFrame({
   const controlSurface = controls ? (
     <View onLayout={side ? undefined : onControlsLayout} style={side ? styles.rail : undefined}>
       {/* in a rail the tray fills the column instead of floating in it */}
-      {side ? <TrayRail>{trayNode}</TrayRail> : trayNode}
+      {side ? <TrayRail progress={progress}>{trayNode}</TrayRail> : trayNode}
     </View>
   ) : null;
 
@@ -113,6 +113,9 @@ export function ActivityFrame({
           onBack={onBack}
           onReplay={onReplay}
           progress={progress}
+          /* on a rail layout the steps are drawn big at the head of the rail
+             instead, so the bar does not say it twice */
+          hideProgress={side}
           compact={compact}
         />
       </View>

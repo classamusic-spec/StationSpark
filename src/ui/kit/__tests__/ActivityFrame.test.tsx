@@ -26,14 +26,18 @@ const HINT = 'Try the blue hydrant';
 const TABLET = activity.sideLayoutMinWidth;
 const PHONE = 390;
 
-async function frame(width: number, opts: { controls?: boolean; hint?: boolean } = {}) {
-  const { controls = true, hint = false } = opts;
+async function frame(
+  width: number,
+  opts: { controls?: boolean; hint?: boolean; progress?: boolean } = {},
+) {
+  const { controls = true, hint = false, progress = false } = opts;
   atWindowWidth(width);
   await renderKit(
     <ActivityFrame
       task="Pick the number"
       controls={controls ? <View testID={CONTROLS} /> : undefined}
       hint={hint ? { text: HINT, visible: true } : undefined}
+      progress={progress ? { done: 2, total: 5 } : undefined}
     >
       <View testID={PLAY} />
     </ActivityFrame>,
@@ -46,6 +50,9 @@ const isRail = (n: JsonNode) => styleOf(n).width === activity.sidePanelWidth;
 const isRow = (n: JsonNode) => styleOf(n).flexDirection === 'row' && styleOf(n).flex === 1;
 /** The absolute lane the hint bubble lives in. */
 const isHintLane = (n: JsonNode) => styleOf(n).position === 'absolute' && styleOf(n).zIndex === 20;
+/** However it is drawn, the step counter announces itself the same way. */
+const STEPS = 'Step 3 of 5';
+const isSteps = (n: JsonNode) => n.props.accessibilityLabel === STEPS;
 
 /** Every node between the root and `testID`, nearest ancestor last. */
 function ancestorsOf(testID: string): JsonNode[] {
@@ -145,6 +152,40 @@ describe('the hint lane', () => {
   it('draws no lane at all when the activity has no hint', async () => {
     await frame(PHONE);
     expect(pathTo(tree(), isHintLane)).toBeNull();
+  });
+});
+
+describe('how far through', () => {
+  it('says it once on a phone, in the bar', async () => {
+    await frame(PHONE, { progress: true });
+
+    expect(screen.getAllByLabelText(STEPS)).toHaveLength(1);
+    expect(pathTo(tree(), isRail)).toBeNull();
+  });
+
+  it('moves it into the rail on a tablet, and does not say it twice', async () => {
+    await frame(TABLET, { progress: true });
+
+    /*
+     * At 1024 px the bar's 8 px dot row sat at the top of the screen, an arm's
+     * length from a child whose hands are down at the rail. The rail draws the
+     * same thing at rail scale instead — but only one of them may exist, or the
+     * screen has two scoreboards that can disagree.
+     */
+    expect(screen.getAllByLabelText(STEPS)).toHaveLength(1);
+    expect(contains(tree(), isRail, isSteps)).toBe(true);
+  });
+
+  it('keeps it in the bar on a tablet when there is no rail to put it in', async () => {
+    await frame(TABLET, { progress: true, controls: false });
+
+    expect(screen.getAllByLabelText(STEPS)).toHaveLength(1);
+    expect(pathTo(tree(), isRail)).toBeNull();
+  });
+
+  it('draws no step counter for an activity that has no steps', async () => {
+    await frame(TABLET);
+    expect(screen.queryByLabelText(STEPS)).toBeNull();
   });
 });
 

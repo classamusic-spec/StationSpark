@@ -1,4 +1,4 @@
-import React, { createContext, useCallback, useContext, useEffect, useRef } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef } from 'react';
 import {
   StyleSheet,
   View,
@@ -8,10 +8,17 @@ import {
 } from 'react-native';
 import Animated, { FadeInUp } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { palette, radii, shadows, spacing } from '@/theme';
+import Svg, { G, Rect } from 'react-native-svg';
+import { palette, radii, roles, shadows, spacing } from '@/theme';
+import { Text } from '../Text';
+import { useActivityChrome } from './activityChrome';
 import { setTrayAnchor } from './playArea';
 
-const RailCtx = createContext(false);
+interface RailState {
+  readonly rail: boolean;
+  readonly progress?: { done: number; total: number } | undefined;
+}
+const RailCtx = createContext<RailState>({ rail: false });
 
 /**
  * Marks the column a tray is standing in as a RAIL rather than the foot of the
@@ -29,8 +36,80 @@ const RailCtx = createContext(false);
  * controls centred on it. The right third becomes deliberate chrome rather than
  * leftover space, and no game has to know about it.
  */
-export function TrayRail({ children }: { children: React.ReactNode }) {
-  return <RailCtx.Provider value={true}>{children}</RailCtx.Provider>;
+export function TrayRail({
+  children,
+  progress,
+}: {
+  children: React.ReactNode;
+  /** moved off the task bar and into the rail's head — see `RailHead` */
+  progress?: { done: number; total: number } | undefined;
+}) {
+  const value = useMemo<RailState>(() => ({ rail: true, progress }), [progress]);
+  return <RailCtx.Provider value={value}>{children}</RailCtx.Provider>;
+}
+
+/* ------------------------------------------------------------------ *
+ * What fills a rail that its controls do not
+ * ------------------------------------------------------------------ */
+
+/**
+ * A rail is 320 px wide and as tall as the screen, and most activities put
+ * three buttons in it. Centring them left a third of a tablet as blank white —
+ * technically a panel, visually an unfinished page, on all 27 activities.
+ *
+ * So the column gets a head and a foot of its own. The head takes the step
+ * progress off the task bar, where at 1024 px it was a row of 8 px dots an arm's
+ * length from the child's eye, and draws it at rail scale. The foot is the
+ * truck's safety chevron, quiet enough to read as material rather than
+ * decoration. Both are scenery: no shadow, no touch target, nothing to learn.
+ */
+function RailHead({ done, total }: { done: number; total: number }) {
+  return (
+    <View
+      style={styles.railHead}
+      accessibilityRole="progressbar"
+      accessibilityLabel={`Step ${Math.min(done + 1, total)} of ${total}`}
+    >
+      <View style={styles.railDots}>
+        {Array.from({ length: total }, (_, i) => (
+          <View
+            key={i}
+            style={[
+              styles.railDot,
+              i < done && styles.railDotDone,
+              i === done && styles.railDotNow,
+            ]}
+          />
+        ))}
+      </View>
+      <Text variant="small" color={roles.ink.muted} center>
+        {`Step ${Math.min(done + 1, total)} of ${total}`}
+      </Text>
+    </View>
+  );
+}
+
+/** The chevron off the truck's tail, at the weight of a watermark. */
+function RailFoot() {
+  return (
+    <View style={styles.railFoot} pointerEvents="none">
+      <Svg width="100%" height={26} viewBox="0 0 120 26" preserveAspectRatio="none">
+        <G opacity={0.16}>
+          {Array.from({ length: 9 }, (_, i) => (
+            <Rect
+              key={i}
+              x={i * 16 - 10}
+              y={-8}
+              width={7}
+              height={42}
+              fill={i % 2 === 0 ? palette.engineRed : palette.safetyYellow}
+              transform={`rotate(24 ${i * 16 - 10} -8)`}
+            />
+          ))}
+        </G>
+      </Svg>
+    </View>
+  );
 }
 
 /**
@@ -50,7 +129,11 @@ export function Tray({
   tone?: 'white' | 'glass' | 'cream';
 }) {
   const insets = useSafeAreaInsets();
-  const rail = useContext(RailCtx);
+  const { rail, progress } = useContext(RailCtx);
+  /* an activity may declare its steps on the frame OR on the chrome context;
+     the rail head has to honour both, exactly as the task bar does */
+  const chrome = useActivityChrome();
+  const steps = progress ?? chrome.progress;
   const bg =
     tone === 'white' ? palette.white : tone === 'cream' ? palette.panel : 'rgba(255,255,255,0.86)';
 
@@ -87,7 +170,15 @@ export function Tray({
           style,
         ]}
       >
-        {children}
+        {rail ? (
+          <>
+            {steps && steps.total > 1 ? <RailHead done={steps.done} total={steps.total} /> : null}
+            <View style={styles.railBody}>{children}</View>
+            <RailFoot />
+          </>
+        ) : (
+          children
+        )}
       </Animated.View>
     </View>
   );
@@ -112,15 +203,31 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
   },
   railWrap: { flex: 1 },
-  /* a column, not a sheet: rounded all round, and the controls sit in the
-     middle of it rather than at the top of a stub */
+  /* a column, not a sheet: rounded all round, with a head, a centred body and
+     a foot, so the height is composed rather than merely filled */
   trayRail: {
     flex: 1,
     borderRadius: radii.panel + 8,
-    justifyContent: 'center',
     paddingTop: spacing.md,
     paddingHorizontal: spacing.md,
+    overflow: 'hidden',
   },
+  railHead: {
+    alignItems: 'center',
+    gap: spacing.xs,
+    paddingBottom: spacing.md,
+    marginBottom: spacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: roles.border.hairline,
+  },
+  railDots: { flexDirection: 'row', justifyContent: 'center', flexWrap: 'wrap', gap: 7 },
+  railDot: { width: 12, height: 12, borderRadius: 6, backgroundColor: roles.state.disabledFill },
+  railDotDone: { backgroundColor: palette.leafGreen },
+  railDotNow: { backgroundColor: palette.safetyYellow, width: 28 },
+  /* the controls take the room the head and foot leave, and sit in the middle
+     of it — so a single button lands on the column's optical centre */
+  railBody: { flex: 1, justifyContent: 'center' },
+  railFoot: { marginHorizontal: -spacing.md, marginTop: spacing.sm },
   row: {
     flexDirection: 'row',
     justifyContent: 'center',
