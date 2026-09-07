@@ -278,6 +278,13 @@ export function Signals({ challenge, ageBand, onComplete, onEvent, compact }: Mi
         <View style={[styles.clipboard, { width: sheetWidth }]}>
           <View style={styles.clip} />
           <View style={styles.clipInner} />
+          {/* the sheet's own printed head: a red index tab and two rules, so
+              the paper above the sockets is a form rather than a blank */}
+          <View style={styles.clipHead}>
+            <View style={styles.clipTab} />
+            <View style={styles.clipRuleShort} />
+            <View style={[styles.clipRuleShort, styles.clipRuleShorter]} />
+          </View>
           <View style={styles.clipRule} />
           <View style={styles.slotRow}>
           {steps.map((want, i) => {
@@ -294,6 +301,9 @@ export function Signals({ challenge, ageBand, onComplete, onEvent, compact }: Mi
                   </Text>
                   <SlotZone
                     id={`step:${i}`}
+                    label={`step ${i + 1}`}
+                    /* a filled socket holds a card the child can pull back out */
+                    announce={!id}
                     enabled={!locked && state.phase === 'ordering'}
                     highlight={hintLadder.highlight && hintStep === i}
                     hitPad={layout.s(8)}
@@ -433,6 +443,10 @@ const styles = StyleSheet.create({
   },
   clipInner: { position: 'absolute', top: -5, width: 52, height: 10, borderRadius: 5, backgroundColor: palette.slateLight },
   clipRule: { alignSelf: 'stretch', height: 4, borderRadius: 2, backgroundColor: 'rgba(31,42,90,0.08)', marginBottom: spacing.xs },
+  clipHead: { alignSelf: 'stretch', flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginBottom: spacing.xs },
+  clipTab: { width: 26, height: 12, borderRadius: 6, backgroundColor: palette.engineRed },
+  clipRuleShort: { height: 5, width: 74, borderRadius: 2.5, backgroundColor: 'rgba(31,42,90,0.12)' },
+  clipRuleShorter: { width: 46, backgroundColor: 'rgba(31,42,90,0.08)' },
   cardHint: { borderColor: palette.safetyYellow, ...shadows.glowGold },
   actions: { flexDirection: 'row', justifyContent: 'center' },
 });

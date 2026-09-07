@@ -20,7 +20,7 @@ import { activity, hit, palette, radii, roles, shadows, spacing, springs, timing
 import { useReducedMotion } from '@/hooks';
 import { sfx } from '@/services/audio';
 import { haptics } from '@/services/haptics';
-import { Text, useSideRail } from '@/ui';
+import { ResetIcon, Text, useSideRail } from '@/ui';
 
 
 import { AskQuestion } from '../shared/AskQuestion';
@@ -450,7 +450,9 @@ export function RescueRoute({ challenge, ageBand, onComplete, onEvent, compact }
   const paletteCols = sideRail ? 3 : 5;
   const cmdSize = clamp((trayWidth - (paletteCols - 1) * spacing.xs) / paletteCols, hit.min, 74);
 
-  const busy = state.phase === 'running' || state.phase === 'arrived';
+  /* 'compare' is busy too: the question card no longer eats taps (so Back
+     works), which means the command palette underneath it must refuse them */
+  const busy = state.phase === 'running' || state.phase === 'arrived' || state.phase === 'compare';
 
   return (
     <GameFrame
@@ -579,7 +581,10 @@ export function RescueRoute({ challenge, ageBand, onComplete, onEvent, compact }
                 (busy || state.program.length === 0) && styles.disabled,
               ]}
             >
-              <Text variant="tiny" color={roles.ink.secondary}>
+              {/* a real control, not a caption: the reset used to be 10 pt of
+                  grey text in a 20 px box, well under the 56 px minimum */}
+              <ResetIcon size={20} color={roles.ink.secondary} />
+              <Text variant="tiny" color={roles.ink.secondary} center>
                 Start over
               </Text>
             </Pressable>
@@ -693,12 +698,19 @@ const styles = StyleSheet.create({
   },
   slotActive: { borderColor: palette.safetyYellow, borderWidth: 3 },
   slotBumped: { opacity: 0.55 },
-  clear: { paddingHorizontal: spacing.xs, paddingVertical: spacing.xxs, borderRadius: radii.pill },
-  clearGlow: {
-    backgroundColor: palette.safetyYellow,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 6,
+  clear: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 2,
+    minWidth: 76,
+    minHeight: hit.min,
+    paddingHorizontal: spacing.xs,
+    paddingVertical: spacing.xxs,
+    borderRadius: radii.card,
+    backgroundColor: roles.surface.control,
+    ...roles.lift.interactive,
   },
+  clearGlow: { backgroundColor: palette.safetyYellow },
 
   compareRow: { flexDirection: 'row', gap: spacing.md },
   compareCard: { alignItems: 'center', gap: 4 },

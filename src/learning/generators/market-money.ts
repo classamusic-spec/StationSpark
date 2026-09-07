@@ -1,4 +1,4 @@
-import type { AgeBand, ChallengeGenerator, VocabWord } from '../types';
+import type { AgeBand, ChallengeGenerator, GeneratorContext, VocabWord } from '../types';
 import { masteryAdjustment } from '../adaptive';
 import { subsetSolutions } from '../solvers';
 import { wordById } from '../vocabulary';
@@ -18,21 +18,47 @@ const stallIds: readonly string[] = [
   'milk',
   'olive',
   'basil',
+  /* ---- the second stall: Carmen's end of the row ---- */
+  'lemon',
+  'onion',
+  'carrot',
+  'potato',
+  'corn',
+  'grape',
+  'watermelon',
+  'melon',
+  'pear',
+  'peach',
+  'mango',
+  'pineapple',
+  'lettuce',
+  'tortilla',
+  'cookie',
+  'juice',
+  'honey',
+  'sweet-bread',
 ];
 
-/** Purses are built from real coin values so counting on transfers to real money. */
+/**
+ * Purses are built from real coin values so counting on transfers to real
+ * money. Each band has three, so two runs in a row rarely feel the same, and
+ * every purse can make a whole spread of prices (see `achievableSums`).
+ */
 const purses: Record<AgeBand, number[][]> = {
   A: [
     [1, 1, 1, 1, 5, 5],
     [1, 1, 1, 5, 5, 5],
+    [1, 1, 1, 1, 1, 5, 5],
   ],
   B: [
     [1, 1, 1, 5, 5, 10, 10, 25],
     [1, 1, 1, 1, 5, 10, 10, 25],
+    [1, 1, 5, 5, 5, 10, 10, 25],
   ],
   C: [
     [1, 1, 1, 5, 5, 10, 10, 25, 25],
     [1, 1, 1, 1, 5, 5, 10, 25, 25],
+    [1, 1, 5, 10, 10, 10, 25, 25, 25],
   ],
 };
 
@@ -47,8 +73,11 @@ function achievableSums(coins: readonly number[]): number[] {
   return [...sums].filter((s) => s > 0).sort((a, b) => a - b);
 }
 
-/** The note the next customer pays with, so the change is a friendly number. */
-const noteFor = (price: number): number => (price < 25 ? 25 : price < 50 ? 50 : 100);
+/**
+ * The note the next customer pays with, so the change is a friendly number.
+ * Always strictly more than the price, so there is always change to work out.
+ */
+export const noteFor = (price: number): number => (price < 25 ? 25 : price < 50 ? 50 : 100);
 
 /**
  * MARKET MONEY — buy fruit at the Farmers Market stall.
@@ -91,3 +120,12 @@ export const generateMarketMoney: ChallengeGenerator<'market-money'> = (ctx) => 
     ...(ageBand === 'C' ? { askChange: { paid: noteFor(price), change: noteFor(price) - price } } : {}),
   };
 };
+
+/**
+ * The same stall, selling something the *story* chose — the corn for the
+ * esquites, the seeds for the garden. The price still comes from the purse's
+ * own achievable sums, so pinning the item can never pin an impossible price.
+ */
+export function marketMoneyFor(itemId: string, ctx: GeneratorContext): ReturnType<typeof generateMarketMoney> {
+  return { ...generateMarketMoney(ctx), item: wordById(itemId) };
+}

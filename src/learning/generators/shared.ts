@@ -1,6 +1,35 @@
 /** Small helpers shared by the challenge generators. Pure, rng-driven. */
 import type { Rng } from '@/utils/rng';
-import type { AgeBand, GeneratorContext, SceneId } from '../types';
+import type { AgeBand, GeneratorContext, SceneId, VocabWord } from '../types';
+
+/**
+ * Words a child can tell apart ON THE SHELF.
+ *
+ * The icon sheet is smaller than the word bank, so several words share a
+ * picture on purpose (pera and durazno both borrow the apple, ajo borrows the
+ * onion). That is fine on a Word Tap tile, which prints the word underneath —
+ * but a Count Ingredients shelf and a Soup Pot counter are picked from by
+ * picture alone. Two identical pictures there is not a hard question, it is an
+ * unanswerable one, so every list a child grabs from is filtered through here.
+ *
+ * Takes words in the order given (shuffle before calling) and keeps the first
+ * of each picture, never one already spoken for by `taken`.
+ */
+export function distinctIcons(
+  words: readonly VocabWord[],
+  taken: readonly VocabWord[] = [],
+): VocabWord[] {
+  const icons = new Set(taken.map((w) => w.icon));
+  const ids = new Set(taken.map((w) => w.id));
+  const out: VocabWord[] = [];
+  for (const word of words) {
+    if (icons.has(word.icon) || ids.has(word.id)) continue;
+    icons.add(word.icon);
+    ids.add(word.id);
+    out.push(word);
+  }
+  return out;
+}
 
 /** Pick a per-band value: `byBand(ctx.ageBand, { A: 3, B: 5, C: 8 })`. */
 export function byBand<T>(band: AgeBand, values: { A: T; B: T; C: T }): T {

@@ -92,38 +92,96 @@ export const StreetApron = memo(function StreetApron({
   groundY,
   u,
   nozzle,
+  shopX = 0,
+  shopW = 0,
 }: {
   width: number;
   height: number;
   groundY: number;
   u: number;
   nozzle: { x: number; y: number };
+  /** the shop's footprint, so the pavement carries the building's shadow */
+  shopX?: number;
+  shopW?: number;
 }) {
-  const kerbY = groundY + u * 1.5;
+  /* The pavement is only as deep as the play area left it — on a phone that is
+     about 70 px. Dressing placed at fixed multiples of a wall unit fell clean
+     off the bottom of the frame and none of it was ever seen, so everything
+     here is placed at a FRACTION of the depth that actually exists. */
+  const depth = Math.max(24, height - groundY);
+  const at = (f: number) => groundY + depth * f;
+  const kerbY = at(0.34);
   const edge = (y: number) => `M -20 ${y + 5} Q ${width / 2} ${y - 5} ${width + 20} ${y + 5}`;
-  const coil = Math.max(20, u * 1.5);
+  const coil = Math.max(18, Math.min(u * 1.4, depth * 0.3));
   return (
     <Svg width={width} height={height} style={StyleSheet.absoluteFill} pointerEvents="none">
+      {/* the shop's own shadow, cast down the pavement away from the light */}
+      {shopW > 0 ? (
+        <Path
+          d={`M ${shopX + u * 0.4} ${groundY} L ${shopX + shopW + u * 1.6} ${groundY} L ${shopX + shopW + u * 2.6} ${groundY + u * 1.15} L ${shopX + u * 1.3} ${groundY + u * 1.15} Z`}
+          fill={palette.navy}
+          opacity={0.09}
+        />
+      ) : null}
       {/* kerb: a pale slab with a shaded lip, the one hard line on the street */}
-      <Path d={`${edge(kerbY)} L ${width + 20} ${kerbY + u * 0.85} Q ${width / 2} ${kerbY + u * 0.85 - 5} -20 ${kerbY + u * 0.85} Z`} fill="#E8ECF6" />
-      <Path d={`${edge(kerbY + u * 0.85)} L ${width + 20} ${kerbY + u * 1.2} Q ${width / 2} ${kerbY + u * 1.2 - 5} -20 ${kerbY + u * 1.2} Z`} fill={SHADE} />
-      {/* paving joints */}
+      <Path d={`${edge(kerbY)} L ${width + 20} ${at(0.48)} Q ${width / 2} ${at(0.48) - 5} -20 ${at(0.48)} Z`} fill="#E8ECF6" />
+      <Path d={`${edge(at(0.48))} L ${width + 20} ${at(0.56)} Q ${width / 2} ${at(0.56) - 5} -20 ${at(0.56)} Z`} fill={SHADE} />
+      {/* paving joints across the slab in front of the shop */}
       {[0.2, 0.46, 0.72].map((f) => (
-        <Path key={f} d={`M ${width * f} ${groundY + u * 0.3} l ${-u * 0.3} ${u * 1.1}`} stroke={SHADE_SOFT} strokeWidth={Math.max(1.4, u * 0.1)} strokeLinecap="round" />
+        <Path
+          key={f}
+          d={`M ${width * f} ${at(0.06)} l ${-depth * 0.1} ${depth * 0.26}`}
+          stroke={SHADE_SOFT}
+          strokeWidth={Math.max(1.4, u * 0.1)}
+          strokeLinecap="round"
+        />
       ))}
-      {/* a drain, because a street has one */}
-      <G>
-        <Rect x={width * 0.66} y={kerbY + u * 1.5} width={u * 2.4} height={u * 1.1} rx={u * 0.35} fill="#9AA4C0" />
-        {[0, 1, 2].map((i) => (
-          <Rect key={i} x={width * 0.66 + u * 0.35 + i * u * 0.65} y={kerbY + u * 1.72} width={u * 0.28} height={u * 0.68} rx={u * 0.14} fill={SHADE_DEEP} />
+      {/* the painted fire lane — flat markings give the slab a direction and
+          stop it reading as one grey band */}
+      <G opacity={0.45}>
+        <Rect x={0} y={at(0.62)} width={width} height={Math.max(2, depth * 0.028)} fill={palette.safetyYellow} />
+        {[0.08, 0.28, 0.48, 0.68, 0.88].map((f) => (
+          <Path
+            key={f}
+            d={`M ${width * f} ${at(0.66)} l ${-depth * 0.16} ${depth * 0.2} h ${depth * 0.1} l ${depth * 0.16} ${-depth * 0.2} z`}
+            fill={palette.safetyYellow}
+          />
         ))}
       </G>
+      {/* a gully at the kerb, because a street has one */}
+      <G>
+        <Rect x={width * 0.64} y={at(0.72)} width={Math.max(24, depth * 0.42)} height={Math.max(8, depth * 0.15)} rx={depth * 0.05} fill="#9AA4C0" />
+        {[0, 1, 2].map((i) => (
+          <Rect
+            key={i}
+            x={width * 0.64 + depth * (0.06 + i * 0.11)}
+            y={at(0.745)}
+            width={Math.max(2.4, depth * 0.045)}
+            height={Math.max(4, depth * 0.1)}
+            rx={depth * 0.02}
+            fill={SHADE_DEEP}
+          />
+        ))}
+      </G>
+      {/* a manhole cover in the middle of the slab */}
+      <G>
+        <Ellipse cx={width * 0.3} cy={at(0.9)} rx={depth * 0.22} ry={depth * 0.07} fill="#8F99B4" />
+        <Ellipse cx={width * 0.3} cy={at(0.875)} rx={depth * 0.22} ry={depth * 0.07} fill="#9AA4C0" />
+        <Ellipse cx={width * 0.3} cy={at(0.87)} rx={depth * 0.15} ry={depth * 0.045} fill={SHADE_SOFT} />
+        <Path
+          d={`M ${width * 0.3 - depth * 0.16} ${at(0.845)} a ${depth * 0.18} ${depth * 0.06} 0 0 1 ${depth * 0.2} ${-depth * 0.022}`}
+          stroke={HILITE}
+          strokeWidth={Math.max(1.2, depth * 0.016)}
+          fill="none"
+          strokeLinecap="round"
+        />
+      </G>
       {/* a puddle from the last drill */}
-      <Ellipse cx={width * 0.42} cy={kerbY + u * 2.1} rx={u * 3} ry={u * 0.7} fill={palette.waterCyanLight} opacity={0.5} />
-      <Ellipse cx={width * 0.38} cy={kerbY + u * 2} rx={u * 1.1} ry={u * 0.24} fill={palette.white} opacity={0.55} />
+      <Ellipse cx={width * 0.52} cy={at(0.86)} rx={depth * 0.58} ry={depth * 0.11} fill={palette.waterCyanLight} opacity={0.5} />
+      <Ellipse cx={width * 0.47} cy={at(0.83)} rx={depth * 0.2} ry={depth * 0.04} fill={palette.white} opacity={0.55} />
       {/* the hose coil the jet comes out of */}
       <G>
-        <Ellipse cx={nozzle.x} cy={nozzle.y + coil * 0.5} rx={coil * 1.15} ry={coil * 0.34} fill={palette.navy} opacity={0.12} />
+        <Ellipse cx={nozzle.x} cy={nozzle.y + coil * 0.5} rx={coil * 1.15} ry={coil * 0.3} fill={palette.navy} opacity={0.12} />
         {[1, 0.72, 0.46].map((k, i) => (
           <Ellipse
             key={i}

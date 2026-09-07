@@ -1,51 +1,63 @@
-import React from 'react';
-import { StyleSheet, View } from 'react-native';
-import Svg, { Circle, Defs, Ellipse, G, LinearGradient, Path, Rect, Stop } from 'react-native-svg';
+import React, { useCallback, useState } from 'react';
+import { StyleSheet, View, type LayoutChangeEvent } from 'react-native';
+import Svg, { Defs, Ellipse, LinearGradient, Path, Rect, Stop } from 'react-native-svg';
 import Animated, { useAnimatedStyle } from 'react-native-reanimated';
 import { palette } from '@/theme';
-import { Text } from '@/ui/Text';
-import { at, useStage } from './parts/Stage';
-import { Canister, HerbPot, KitchenWall, PinnedNote, Shelf, StoreJar, UtensilRail } from './parts/KitchenRoom';
+import { at } from './parts/Stage';
+import {
+  Canister,
+  ChalkMenu,
+  ContactPatch,
+  CounterCrumbs,
+  CounterRun,
+  HerbPot,
+  KitchenWall,
+  KitchenWindow,
+  MixingBowls,
+  PinnedNote,
+  SaltAndPepper,
+  Shelf,
+  SplashbackBand,
+  StoreJar,
+  TeaTowel,
+  UtensilRail,
+} from './parts/KitchenRoom';
+import { PotArt } from './parts/SceneBits';
 import { useRise, useSwing } from './parts/motion';
-
-const DESIGN = { w: 390, h: 700 };
-/** the colour the band below the room is painted, so the counter runs on */
-const COUNTER_DEEP = '#E2BC86';
 
 /* ------------------------------------------------------------------ */
 /* Hanging pendant lamp — sways from the ceiling                        */
 /* ------------------------------------------------------------------ */
 
-/**
- * The pendants hang low enough to clear the FIREHOUSE KITCHEN sign that swings
- * in over them — before this their shades were cut in half by the plaque and
- * only two red slivers showed at the frame edges.
- */
-const LAMP_LEN = 210;
+/** How far below the ceiling the shade hangs, in design units. */
+const LAMP_LEN = 190;
 
-function PendantLamp({ s, x, periodMs, delayMs }: { s: number; x: number; periodMs: number; delayMs: number }) {
+function PendantLamp({ x, len, periodMs, delayMs }: { x: number; len: number; periodMs: number; delayMs: number }) {
   const sway = useSwing(2.6, periodMs, delayMs);
   const style = useAnimatedStyle(() => ({ transform: [{ rotate: `${sway.value}deg` }] }));
   const w = 96;
+  const flex = len / LAMP_LEN;
   return (
     <Animated.View
       pointerEvents="none"
-      style={[at(s, x - w / 2, -LAMP_LEN, w, LAMP_LEN * 2), style]}
+      style={[{ position: 'absolute', left: x - w / 2, top: -len, width: w, height: len * 2 }, style]}
     >
-      <View style={{ position: 'absolute', top: LAMP_LEN * s, width: w * s, height: LAMP_LEN * s }}>
-        <Svg width={w * s} height={LAMP_LEN * s} viewBox={`0 0 ${w} ${LAMP_LEN}`}>
+      <View style={{ position: 'absolute', top: len, width: w, height: len }}>
+        <Svg width={w} height={len} viewBox={`0 0 ${w} ${LAMP_LEN}`}>
           <Defs>
             <LinearGradient id="lampShade" x1="0" y1="0" x2="0" y2="1">
               <Stop offset="0" stopColor={palette.engineRedLight} />
               <Stop offset="1" stopColor={palette.engineRedDark} />
             </LinearGradient>
           </Defs>
-          <Rect x={w / 2 - 2.5} y={0} width={5} height={154} rx={2.5} fill={palette.charcoal} />
-          <Rect x={w / 2 - 9} y={148} width={18} height={12} rx={5} fill={palette.charcoalDark} />
-          <Path d={`M ${w / 2 - 44} 204 Q ${w / 2} 144 ${w / 2 + 44} 204 Z`} fill="url(#lampShade)" />
-          <Path d={`M ${w / 2 - 44} 204 Q ${w / 2} 144 ${w / 2 - 20} 204 Z`} fill="rgba(255,255,255,0.22)" />
-          <Ellipse cx={w / 2} cy={204} rx={44} ry={7} fill={palette.engineRedDark} />
-          <Ellipse cx={w / 2} cy={203} rx={31} ry={5} fill="#FFF3C4" />
+          <Rect x={w / 2 - 2.5} y={0} width={5} height={LAMP_LEN - 56} rx={2.5} fill={palette.charcoal} />
+          <Rect x={w / 2 - 9} y={LAMP_LEN - 60} width={18} height={12} rx={5} fill={palette.charcoalDark} />
+          <Path d={`M ${w / 2 - 44} ${LAMP_LEN} Q ${w / 2} ${LAMP_LEN - 60} ${w / 2 + 44} ${LAMP_LEN} Z`} fill="url(#lampShade)" />
+          <Path d={`M ${w / 2 - 44} ${LAMP_LEN} Q ${w / 2} ${LAMP_LEN - 60} ${w / 2 - 20} ${LAMP_LEN} Z`} fill="rgba(255,255,255,0.22)" />
+          <Ellipse cx={w / 2} cy={LAMP_LEN} rx={44} ry={7} fill={palette.engineRedDark} />
+          <Ellipse cx={w / 2} cy={LAMP_LEN - 1} rx={31} ry={5} fill="#FFF3C4" />
+          {/* the pool of warm light the shade throws down the wall */}
+          <Ellipse cx={w / 2} cy={LAMP_LEN + 26} rx={40} ry={20} fill="rgba(255,220,140,0.22)" opacity={flex} />
         </Svg>
       </View>
     </Animated.View>
@@ -56,17 +68,17 @@ function PendantLamp({ s, x, periodMs, delayMs }: { s: number; x: number; period
 /* Steam wisps from the pot                                             */
 /* ------------------------------------------------------------------ */
 
-function Wisp({ s, x, y, periodMs, delayMs = 0, scale = 1 }: { s: number; x: number; y: number; periodMs: number; delayMs?: number; scale?: number }) {
+function Wisp({ x, y, periodMs, delayMs = 0, scale = 1 }: { x: number; y: number; periodMs: number; delayMs?: number; scale?: number }) {
   const t = useRise(periodMs, delayMs);
   const style = useAnimatedStyle(() => ({
     opacity: t.value < 0.15 ? t.value / 0.15 : 1 - (t.value - 0.15) / 0.85,
-    transform: [{ translateY: -t.value * 62 * s }, { scale: 0.7 + t.value * 0.6 }],
+    transform: [{ translateY: -t.value * 62 }, { scale: 0.7 + t.value * 0.6 }],
   }));
   const w = 26 * scale;
   const h = 46 * scale;
   return (
-    <Animated.View pointerEvents="none" style={[at(s, x - w / 2, y - h, w, h), style]}>
-      <Svg width={w * s} height={h * s} viewBox="0 0 26 46">
+    <Animated.View pointerEvents="none" style={[{ position: 'absolute', left: x - w / 2, top: y - h, width: w, height: h }, style]}>
+      <Svg width={w} height={h} viewBox="0 0 26 46">
         <Path
           d="M13 46c-7-6-9-12-4-18 4-5 5-9 1-13 6 3 8 8 4 14-3 5-3 9 3 12 4 2 3 4-4 5z"
           fill="rgba(255,255,255,0.72)"
@@ -76,186 +88,22 @@ function Wisp({ s, x, y, periodMs, delayMs = 0, scale = 1 }: { s: number; x: num
   );
 }
 
-/* ------------------------------------------------------------------ */
-/* The room                                                             */
-/* ------------------------------------------------------------------ */
-
-function Room({ s }: { s: number }) {
-  const bricks: React.ReactElement[] = [];
-  for (let row = 0; row < 9; row += 1) {
-    const y = 300 + row * 26;
-    const offset = row % 2 === 0 ? 0 : -26;
-    for (let col = 0; col < 4; col += 1) {
-      bricks.push(
-        <Rect
-          key={`b${row}-${col}`}
-          x={offset + col * 52}
-          y={y}
-          width={48}
-          height={22}
-          rx={5}
-          fill="#F0C9A0"
-          opacity={0.55}
-        />,
-      );
-    }
-  }
-
-  const checks: React.ReactElement[] = [];
-  for (let row = 0; row < 4; row += 1) {
-    for (let col = 0; col < 5; col += 1) {
-      if ((row + col) % 2 === 0) {
-        checks.push(<Rect key={`c${row}-${col}`} x={col * 26} y={556 + row * 26} width={26} height={26} fill="#F2685C" />);
-      }
-    }
-  }
-
+/** The COOK · LEARN · HELP! board, drawn rather than lettered. */
+function CookBoard({ x, y, size }: { x: number; y: number; size: number }) {
   return (
-    <Svg width={DESIGN.w * s} height={DESIGN.h * s} viewBox={`0 0 ${DESIGN.w} ${DESIGN.h}`}>
-      <Defs>
-        <LinearGradient id="wall" x1="0" y1="0" x2="0" y2="1">
-          <Stop offset="0" stopColor="#FFE6C7" />
-          <Stop offset="0.65" stopColor="#FFF6E5" />
-          <Stop offset="1" stopColor="#FBE7C6" />
-        </LinearGradient>
-        <LinearGradient id="winSky" x1="0" y1="0" x2="0" y2="1">
-          <Stop offset="0" stopColor={palette.skyTop} />
-          <Stop offset="1" stopColor={palette.skyBottom} />
-        </LinearGradient>
-        <LinearGradient id="counter" x1="0" y1="0" x2="0" y2="1">
-          <Stop offset="0" stopColor="#F6DCB2" />
-          <Stop offset="1" stopColor="#E2BC86" />
-        </LinearGradient>
-      </Defs>
-
-      {/* wall */}
-      <Rect x={0} y={0} width={DESIGN.w} height={DESIGN.h} fill="url(#wall)" />
-      <G opacity={0.85}>{bricks}</G>
-
-      {/* window with the sky and the truck */}
-      <G>
-        <Rect x={196} y={26} width={186} height={252} rx={26} fill={palette.white} />
-        <Rect x={206} y={36} width={166} height={232} rx={19} fill="url(#winSky)" />
-        <Circle cx={248} cy={84} r={17} fill="rgba(255,255,255,0.85)" />
-        <Circle cx={268} cy={90} r={22} fill="rgba(255,255,255,0.85)" />
-        <Circle cx={330} cy={70} r={14} fill="rgba(255,255,255,0.7)" />
-        {/* fire truck parked outside */}
-        <Rect x={230} y={188} width={128} height={54} rx={12} fill={palette.engineRed} />
-        <Rect x={230} y={188} width={128} height={16} rx={8} fill={palette.engineRedLight} opacity={0.6} />
-        <Rect x={242} y={200} width={38} height={26} rx={7} fill="#9BD3F5" />
-        <Rect x={292} y={200} width={54} height={26} rx={7} fill="#9BD3F5" />
-        <Rect x={230} y={230} width={128} height={9} rx={4} fill={palette.safetyYellow} />
-        <Circle cx={258} cy={246} r={13} fill={palette.charcoal} />
-        <Circle cx={258} cy={246} r={6} fill={palette.slateLight} />
-        <Circle cx={334} cy={246} r={13} fill={palette.charcoal} />
-        <Circle cx={334} cy={246} r={6} fill={palette.slateLight} />
-        <Rect x={206} y={244} width={166} height={24} fill={palette.grass} opacity={0.9} />
-        {/* mullions */}
-        <Rect x={286} y={36} width={7} height={232} rx={3} fill={palette.white} opacity={0.95} />
-        <Rect x={206} y={142} width={166} height={7} rx={3} fill={palette.white} opacity={0.95} />
-        <Rect x={196} y={26} width={186} height={252} rx={26} fill="none" stroke={palette.creamDeep} strokeWidth={6} />
-      </G>
-
-      {/* ── wall furniture ──────────────────────────────────────────────
-          Zoning matters as much as density: the upper-left wall is kept clear
-          because the FIREHOUSE KITCHEN sign hangs there, and the recipe cards
-          scroll over the lower half. Everything drawn here lives in the band
-          between the window and the counter. */}
-
-      {/* pot rack, hung under the window */}
-      <G>
-        <Rect x={198} y={300} width={172} height={9} rx={4.5} fill={palette.charcoal} />
-        <Rect x={198} y={300} width={172} height={3.5} rx={1.75} fill="rgba(255,255,255,0.32)" />
-        <Rect x={200} y={292} width={7} height={14} rx={3.5} fill={palette.charcoalDark} />
-        <Rect x={361} y={292} width={7} height={14} rx={3.5} fill={palette.charcoalDark} />
-        {[228, 282, 334].map((x, i) => (
-          <G key={`pan${i}`}>
-            <Rect x={x - 2} y={309} width={4} height={13} rx={2} fill={palette.charcoalDark} />
-            <Path d={`M ${x - 22} 322 h 44 a 22 20 0 0 1 -44 0 z`} fill={i === 1 ? palette.slate : palette.charcoal} />
-            <Path d={`M ${x - 14} 327 h 13 a 13 10 0 0 1 -13 0 z`} fill="rgba(255,255,255,0.32)" />
-            <Rect x={x + 20} y={314} width={26} height={6} rx={3} fill={palette.charcoalDark} />
-          </G>
-        ))}
-      </G>
-
-      {/* chalkboard menu on the right */}
-      <G>
-        <Rect x={202} y={356} width={172} height={116} rx={12} fill={palette.woodDark} />
-        <Rect x={210} y={364} width={156} height={92} rx={7} fill="#2E3A46" />
-        <Rect x={210} y={364} width={156} height={26} rx={7} fill="rgba(255,255,255,0.18)" />
-        <Rect x={206} y={460} width={164} height={9} rx={4.5} fill={palette.wood} />
-        <Rect x={226} y={462} width={18} height={4} rx={2} fill={palette.white} opacity={0.85} />
-        {[384, 402, 420, 438].map((y, i) => (
-          <Rect key={`menu${i}`} x={224} y={y} width={i % 2 === 0 ? 114 : 86} height={5} rx={2.5} fill={palette.white} opacity={0.55} />
-        ))}
-      </G>
-
-      {/* COOK · LEARN · HELP! poster board, clear of the hanging sign */}
-      <G>
-        <Rect x={14} y={292} width={112} height={112} rx={16} fill={palette.tanDark} />
-        <Rect x={19} y={297} width={102} height={102} rx={13} fill={palette.cream} />
-        <Rect x={19} y={297} width={102} height={30} rx={13} fill="rgba(255,255,255,0.32)" />
-        <Path d="M70 314c9 8 13 14 13 20a13 13 0 0 1-26 0c0-6 4-12 13-20z" fill={palette.flameOuter} />
-        <Path d="M70 324c5 5 7 8 7 11a7 7 0 0 1-14 0c0-3 2-6 7-11z" fill={palette.flameCore} />
-      </G>
-
-      {/* spice shelf under the poster */}
-      <G>
-        <Rect x={10} y={452} width={176} height={9} rx={4.5} fill={palette.wood} />
-        <Rect x={10} y={452} width={176} height={3.5} rx={1.75} fill="rgba(255,255,255,0.32)" />
-        <Path d="M28 461 l0 12 l10 -12 z" fill={palette.woodDark} />
-        <Path d="M168 461 l-10 12 l10 0 z" fill={palette.woodDark} />
-        {[
-          { x: 20, h: 30, c: '#E7D8FF' },
-          { x: 54, h: 24, c: '#FFE1B8' },
-          { x: 86, h: 34, c: '#D9F2D2' },
-          { x: 122, h: 26, c: '#FFD2E5' },
-          { x: 152, h: 30, c: '#CFE9F8' },
-        ].map((j, i) => (
-          <G key={`spice${i}`}>
-            <Rect x={j.x} y={452 - j.h} width={24} height={j.h} rx={6} fill={j.c} />
-            <Rect x={j.x} y={452 - j.h} width={8} height={j.h} rx={4} fill="rgba(255,255,255,0.32)" />
-            <Rect x={j.x - 2} y={452 - j.h - 6} width={28} height={7} rx={3.5} fill={palette.tanDark} />
-          </G>
-        ))}
-      </G>
-
-      {/* fire-shield tea towel on a rail */}
-      <G>
-        <Rect x={196} y={480} width={68} height={7} rx={3.5} fill={palette.slate} />
-        <Path d="M204 486 h 52 v 36 q -26 8 -52 0 z" fill={palette.white} />
-        <Path d="M204 486 h 17 v 34 q -8 2 -17 1 z" fill="rgba(31,42,90,0.08)" />
-        <Path d="M230 494 c 7 6 10 10 10 14 a 10 10 0 0 1 -20 0 c 0 -4 3 -8 10 -14 z" fill={palette.engineRed} opacity={0.85} />
-        <Path d="M230 502 c 4 4 5 6 5 8 a 5 5 0 0 1 -10 0 c 0 -2 1 -4 5 -8 z" fill={palette.safetyYellow} />
-      </G>
-
-      {/* counter + checkered cloth */}
-      <G>
-        <Rect x={0} y={520} width={DESIGN.w} height={180} fill="url(#counter)" />
-        <Rect x={0} y={520} width={DESIGN.w} height={14} rx={7} fill="#FFF1D8" />
-        <G opacity={0.92}>
-          <Rect x={0} y={556} width={130} height={104} rx={10} fill={palette.white} />
-          {checks}
-        </G>
-      </G>
-
-      {/* pot on the counter */}
-      <G>
-        <Ellipse cx={305} cy={534} rx={46} ry={7} fill="rgba(31,42,90,0.12)" />
-        <Rect x={262} y={478} width={86} height={54} rx={14} fill={palette.charcoal} />
-        <Rect x={262} y={478} width={86} height={13} rx={6} fill={palette.slate} />
-        <Rect x={250} y={490} width={16} height={9} rx={4} fill={palette.slate} />
-        <Rect x={344} y={490} width={16} height={9} rx={4} fill={palette.slate} />
-        <Rect x={278} y={500} width={54} height={8} rx={4} fill="rgba(255,255,255,0.18)" />
-      </G>
-
-      {/* sauce bottles bottom right (from the reference) */}
-      <G>
-        <Rect x={352} y={470} width={26} height={62} rx={11} fill={palette.engineRed} />
-        <Rect x={358} y={458} width={14} height={16} rx={5} fill={palette.engineRedDark} />
-        <Rect x={356} y={488} width={18} height={22} rx={7} fill="rgba(255,255,255,0.3)" />
-      </G>
-    </Svg>
+    <View style={{ position: 'absolute', left: x, top: y, width: size, height: size }} pointerEvents="none">
+      <Svg width={size} height={size} viewBox="0 0 120 120">
+        <Rect x={2} y={6} width={116} height={112} rx={18} fill={palette.tanDark} />
+        <Rect x={2} y={0} width={116} height={112} rx={18} fill={palette.cream} />
+        <Rect x={2} y={0} width={116} height={34} rx={18} fill="rgba(255,255,255,0.4)" />
+        {/* a friendly flame badge — the station's own mark */}
+        <Path d="M60 26c14 13 20 22 20 31a20 20 0 0 1-40 0c0-9 6-18 20-31z" fill={palette.flameOuter} />
+        <Path d="M60 42c7 7 10 12 10 16a10 10 0 0 1-20 0c0-4 3-9 10-16z" fill={palette.flameCore} />
+        {/* three ruled lines, the way a pinned card reads from across a room */}
+        <Rect x={26} y={86} width={68} height={5} rx={2.5} fill="rgba(31,42,90,0.22)" />
+        <Rect x={34} y={97} width={52} height={5} rx={2.5} fill="rgba(31,42,90,0.15)" />
+      </Svg>
+    </View>
   );
 }
 
@@ -265,70 +113,89 @@ export interface KitchenBackdropProps {
 }
 
 /**
- * The warm firehouse kitchen: cream + brick wall, a window onto the sky with
- * the truck parked outside, swaying red pendant lamps, a jar shelf, the
- * COOK · LEARN · HELP! poster, a checkered cloth counter and a pot that steams.
+ * THE FIREHOUSE KITCHEN, BEHIND THE RECIPE BOX.
  *
- * Reusable behind every kitchen screen — pair with `<ScreenFrame mood="kitchen">`.
- */
-/**
- * Critique #20: the room used to be scaled with `fit="cover"`, which cropped the
- * lampshades off the top and pushed the wall sign half off the left edge. It is
- * now anchored to its design box and **letterboxed** — the room is always whole,
- * and the bands above and below it are painted wall and counter so the join is
- * invisible rather than a strip of sky.
+ * This used to be a 390 × 700 picture letterboxed into whatever screen it got.
+ * On a phone that was fine; on a tablet it was a narrow strip of drawn room
+ * marooned in the middle of a metre of bare tile, with the pendant lamps
+ * sliced off and the sign hanging over a pinned note. A backdrop cannot be a
+ * fixed picture — it has to be a room that is laid out for the wall it is
+ * given.
+ *
+ * So everything here is placed as a fraction of the measured box, and the room
+ * is zoned around the furniture that sits on top of it:
+ *
+ *   - the top-centre stays clear: the FIREHOUSE KITCHEN plaque swings in there
+ *   - the lamps hang at the far left and right, well clear of the plaque
+ *   - the middle band carries the window, the chalk menu and the pinned notes
+ *   - the foot is a real worktop — deck, splashback, nose, cabinets — with the
+ *     pot, the bowls and the herbs standing on it and steaming
  */
 export function KitchenBackdrop({ still }: KitchenBackdropProps) {
-  const stage = useStage(DESIGN.w, DESIGN.h, 'contain');
-  const s = stage.s;
-  /* Anchor the room to the FOOT of the screen, not the middle: a counter
-     belongs on the floor, and it puts the whole letterbox band at the top where
-     it can be dressed as wall instead of sitting as two flat stripes. */
-  const roomTop = Math.max(0, stage.top * 2);
-  const band = roomTop;
+  const [box, setBox] = useState({ w: 0, h: 0 });
+  const onLayout = useCallback((e: LayoutChangeEvent) => {
+    const { width, height } = e.nativeEvent.layout;
+    setBox((b) => (Math.abs(b.w - width) < 1 && Math.abs(b.h - height) < 1 ? b : { w: width, h: height }));
+  }, []);
+
+  const { w, h } = box;
+  const ready = w > 0 && h > 0;
+
+  /* the worktop across the foot */
+  const counterH = Math.max(38, Math.min(96, h * 0.1));
+  const counterY = h - counterH;
+  const deck = Math.max(70, Math.min(180, h * 0.17));
+  const deckTop = counterY - deck;
+  const baseY = counterY - deck * 0.34;
+
+  /* the wall band above it, and the strip of it the plaque needs kept clear */
+  const side = Math.min(200, w * 0.24);
+  const midY = Math.max(70, deckTop - 210);
+  const lampLen = Math.max(90, Math.min(210, h * 0.2));
+
   return (
-    <View style={[StyleSheet.absoluteFill, styles.root]} pointerEvents="none" onLayout={stage.onLayout}>
+    <View style={[StyleSheet.absoluteFill, styles.root]} pointerEvents="none" onLayout={onLayout}>
       <KitchenWall />
-      {stage.ready ? (
+      {ready ? (
         <>
-          {/* the band above the room is wall, and a wall in this kitchen is
-              never bare: a rail of tools over a shelf of store jars */}
-          {band > 60 ? (
-            <View style={{ position: 'absolute', left: stage.left, top: 0, width: stage.width, height: band }}>
-              <UtensilRail s={s} x={18} y={Math.max(4, band / s - 118)} w={Math.min(148, DESIGN.w * 0.36)} />
-              <Shelf s={s} x={DESIGN.w - 160} y={Math.max(28, band / s - 30)} w={148} />
-              <StoreJar s={s} x={DESIGN.w - 154} y={Math.max(28, band / s - 30) - 44} h={44} tone="honey" />
-              <Canister s={s} x={DESIGN.w - 112} y={Math.max(28, band / s - 30) - 48} h={48} tone="#E8C89B" />
-              <StoreJar s={s} x={DESIGN.w - 68} y={Math.max(28, band / s - 30) - 40} h={40} tone="herbs" />
-            </View>
-          ) : null}
-          <View style={[styles.band, { top: roomTop + stage.height - 2, bottom: 0, backgroundColor: COUNTER_DEEP }]} />
-          <View style={{ position: 'absolute', left: stage.left, top: roomTop, width: stage.width, height: stage.height }}>
-            <Room s={s} />
-            {/* the left wall used to be ~190 units of bare brick beside the
-                window: a pinned recipe, a shelf of jars and a herb pot on the
-                sill, so there is somewhere for the eye to go */}
-            <PinnedNote s={s} x={34} y={38} w={92} />
-            <Shelf s={s} x={16} y={238} w={158} />
-            <StoreJar s={s} x={22} y={190} h={48} tone="jam" />
-            <Canister s={s} x={64} y={186} h={52} tone="#C9DDF2" />
-            <StoreJar s={s} x={110} y={194} h={44} tone="berry" />
-            <HerbPot s={s} x={140} y={214} h={46} />
-            <View style={[at(s, 19, 336, 102, 60), styles.poster]}>
-              <Text variant="tiny" center color={palette.navySoft} style={{ fontSize: 14 * s, lineHeight: 19 * s }}>
-                {'COOK\nLEARN\nHELP!'}
-              </Text>
-            </View>
-            {still ? null : (
-              <>
-                <Wisp s={s} x={292} y={480} periodMs={3400} />
-                <Wisp s={s} x={310} y={476} periodMs={4100} delayMs={900} scale={0.8} />
-                <Wisp s={s} x={324} y={482} periodMs={3800} delayMs={1800} scale={0.6} />
-                <PendantLamp s={s} x={54} periodMs={4600} delayMs={0} />
-                <PendantLamp s={s} x={336} periodMs={5400} delayMs={700} />
-              </>
-            )}
+          {/* ---- the wall ------------------------------------------- */}
+          <SplashbackBand s={1} x={0} y={Math.max(0, deckTop - 96)} w={w} depth={Math.min(96, deckTop)} />
+
+          {/* left: a pinned recipe over a shelf of jars */}
+          <PinnedNote s={1} x={w * 0.035} y={midY - 118} w={Math.min(96, side * 0.6)} />
+          <Shelf s={1} x={w * 0.03} y={midY + 46} w={side} />
+          <StoreJar s={1} x={w * 0.035} y={midY - 2} h={48} tone="jam" />
+          <Canister s={1} x={w * 0.035 + 54} y={midY - 6} h={52} tone="#C9DDF2" />
+          <StoreJar s={1} x={w * 0.035 + 104} y={midY + 2} h={44} tone="berry" />
+          <CookBoard x={w * 0.04} y={midY + 74} size={Math.min(112, side * 0.62)} />
+
+          {/* right: the window onto the yard, the chalk menu and the tools */}
+          <KitchenWindow s={1} x={w - side - w * 0.03} y={midY - 130} w={side} />
+          <ChalkMenu s={1} x={w - side - w * 0.03} y={midY + 44} w={Math.min(170, side * 0.9)} />
+          <UtensilRail s={1} x={w * 0.5 - Math.min(190, w * 0.22)} y={deckTop - 132} w={Math.min(190, w * 0.22) * 2} />
+          <TeaTowel s={1} x={w - side - w * 0.03 - 56} y={deckTop - 120} w={44} />
+
+          {/* ---- the worktop ---------------------------------------- */}
+          <CounterRun s={1} w={w} y={counterY} h={counterH + 40} deck={deck} />
+          <CounterCrumbs s={1} x={w * 0.3} y={counterY - 26} w={w * 0.4} seed={7} />
+
+          {/* ---- what stands on it ---------------------------------- */}
+          <HerbPot s={1} x={w * 0.05} y={baseY - 62} h={60} />
+          <MixingBowls s={1} x={w * 0.16} y={baseY - 52} w={84} />
+          <SaltAndPepper s={1} x={w * 0.74} y={baseY - 30} h={30} />
+          <ContactPatch s={1} cx={w * 0.62} y={baseY - 2} rx={62} strength={0.85} />
+          <View style={at(1, w * 0.62 - 62, baseY - 84)}>
+            <PotArt size={124} bubbling={!still} />
           </View>
+          {still ? null : (
+            <>
+              <Wisp x={w * 0.6} y={baseY - 86} periodMs={3400} />
+              <Wisp x={w * 0.63} y={baseY - 90} periodMs={4100} delayMs={900} scale={0.8} />
+              <Wisp x={w * 0.66} y={baseY - 84} periodMs={3800} delayMs={1800} scale={0.6} />
+              <PendantLamp x={w * 0.11} len={lampLen} periodMs={4600} delayMs={0} />
+              <PendantLamp x={w * 0.89} len={lampLen} periodMs={5400} delayMs={700} />
+            </>
+          )}
         </>
       ) : null}
     </View>
@@ -337,6 +204,4 @@ export function KitchenBackdrop({ still }: KitchenBackdropProps) {
 
 const styles = StyleSheet.create({
   root: { overflow: 'hidden' },
-  band: { position: 'absolute', left: 0, right: 0 },
-  poster: { alignItems: 'center', justifyContent: 'center' },
 });

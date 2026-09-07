@@ -19,6 +19,7 @@ import { NeighbourBlock, StreetApron } from './StreetDressing';
 import {
   AskQuestion,
   GameShell,
+  GROUND_OVERLAP,
   PulseRing,
   fractionStageTargets,
   optionsFor,
@@ -162,7 +163,18 @@ export function HoseHero({ challenge, ageBand, onComplete, onEvent, compact, mis
       ),
     [box.h, box.w, challenge.grid, stage.isTablet],
   );
-  const nozzle = useMemo(() => ({ x: box.w * 0.18, y: box.h * 0.82 }), [box.h, box.w]);
+  /* the coil the jet is fed from sits on the pavement beside the hydrant, not
+     on top of it: the two used to overlap into one unreadable red-and-black
+     blob in the corner of every screenshot */
+  const hydrant = useMemo(() => {
+    const size = Math.max(64, Math.min(layout.u * 3.4, box.h * 0.2, 128));
+    /* the prop's own contact ellipse sits at y = 95 of its 100-unit box */
+    return { size, x: Math.max(8, box.w * 0.035), y: layout.groundY - size * 0.95 };
+  }, [box.h, box.w, layout.groundY, layout.u]);
+  const nozzle = useMemo(
+    () => ({ x: Math.max(hydrant.x + hydrant.size * 1.1, box.w * 0.26), y: box.h * 0.86 }),
+    [box.h, box.w, hydrant.size, hydrant.x],
+  );
   const flameSize = layout.u * (ageBand === 'A' ? 2.5 : 2.15);
   const hitRadius = Math.max(46, layout.u * (hints.assist ? 3.6 : 2.4));
 
@@ -247,8 +259,8 @@ export function HoseHero({ challenge, ageBand, onComplete, onEvent, compact, mis
     sfx.play('success');
     haptics.celebrate();
     session.progress(total, total);
-    sfx.play('dog-bark');
-    session.say('rookie', 'Every flame out!');
+    /* the cast is Bea, Rookie and the neighbours — there is no dog to bark */
+    sfx.play('sparkle');
     session.say('rookie', 'Every flame is out! Great aim, rookie!');
     speech.say('Every flame is out! Great aim!', { speaker: 'rookie' });
     const t = setTimeout(() => session.complete(), 1200);
@@ -409,7 +421,9 @@ export function HoseHero({ challenge, ageBand, onComplete, onEvent, compact, mis
       hint={hints.bubble}
       onDismissHint={hints.dismiss}
       onStageLayout={onLayout}
-      backdrop={<Stage variant="street" groundHeight={110} />}
+      /* the street's ground plane meets the pavement the game paints, so the
+         kerb does not stop mid-screen with the backdrop showing under it */
+      backdrop={(below) => <Stage variant="street" groundHeight={Math.max(110, below + GROUND_OVERLAP)} />}
       footer={<CountStrip current={state.outCount} total={total} icon="flame" invert />}
       overlay={
         <>
@@ -456,10 +470,13 @@ export function HoseHero({ challenge, ageBand, onComplete, onEvent, compact, mis
           })}
 
           {/* kerb, drain, puddle and the hose coil the jet is fed from */}
-          <StreetApron width={box.w} height={box.h} groundY={layout.groundY} u={layout.u} nozzle={nozzle} />
+          <StreetApron width={box.w} height={box.h} groundY={layout.groundY} u={layout.u} nozzle={nozzle} shopX={layout.box.x} shopW={layout.box.w} />
 
-          <View style={[styles.hydrant, { left: box.w * 0.03, top: layout.groundY - stage.s(58) }]} pointerEvents="none">
-            <Hydrant size={stage.s(58)} />
+          {/* the hydrant the line is run from — big enough to read as street
+              furniture and standing wholly inside the frame, not a 60 px
+              sticker half off the left edge */}
+          <View style={[styles.hydrant, { left: hydrant.x, top: hydrant.y }]} pointerEvents="none">
+            <Hydrant size={hydrant.size} />
           </View>
 
           {/* water + hose (Skia) */}

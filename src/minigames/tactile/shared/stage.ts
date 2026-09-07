@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useWindowDimensions, type LayoutChangeEvent } from 'react-native';
 import { useSharedValue, useFrameCallback, type SharedValue } from 'react-native-reanimated';
-import { spacing } from '@/theme';
+import { activity, spacing } from '@/theme';
 
 /** Everything is laid out against this design box and then scaled. */
 export const DESIGN = { w: 390, h: 700 } as const;
@@ -14,6 +14,15 @@ export interface Stage {
   /** scale a design-box number */
   s: (n: number) => number;
   isTablet: boolean;
+  /**
+   * True when `GameShell` has moved the tray into a side rail. A rail is a tall
+   * narrow column, so a tray laid out as a wrapping ROW spills out of it — the
+   * defect that left a 14-unit barrier hanging over both edges of the panel.
+   * Games ask this and stack their tray instead.
+   */
+  rail: boolean;
+  /** how wide a tray token may be before it overflows the tray or the rail */
+  trayWidth: number;
   pad: number;
   gap: number;
 }
@@ -24,12 +33,17 @@ export function useStage(compact?: boolean): Stage {
   return useMemo(() => {
     const raw = Math.min(width / DESIGN.w, height / DESIGN.h);
     const scale = Math.max(0.82, Math.min(raw, 1.75));
+    const rail = width >= activity.sideLayoutMinWidth;
     return {
       windowW: width,
       windowH: height,
       scale,
       s: (n: number) => n * scale,
       isTablet: Math.min(width, height) >= 600,
+      rail,
+      /* the rail is a fixed column; the bottom tray is the window less its
+         own padding. Either way this is the widest a token may be drawn. */
+      trayWidth: (rail ? activity.sidePanelWidth : Math.min(width, 640)) - spacing.md * 2 - spacing.sm * 2,
       pad: compact ? spacing.sm : spacing.md,
       gap: compact ? spacing.xs : spacing.sm,
     };

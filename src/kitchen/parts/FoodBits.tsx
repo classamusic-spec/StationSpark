@@ -223,13 +223,27 @@ export function PieIndicator({
 /* Plate with a crew portrait slot                                       */
 /* ------------------------------------------------------------------ */
 
+/**
+ * A plate, with the three things that make a plate sit on a table: a rim you
+ * can see the underside of, a lit sheen up its top-left, and a soft navy
+ * contact ellipse. It used to be two flat ovals, which is why a row of plates
+ * read as stickers floating on the wall.
+ */
 export function PlateArt({ size }: { size: number }) {
   return (
     <Svg width={size} height={size * 0.5} viewBox="0 0 100 50">
-      <Ellipse cx={50} cy={26} rx={48} ry={22} fill={palette.white} />
-      <Ellipse cx={50} cy={24} rx={48} ry={22} fill="#F4F6FC" />
-      <Ellipse cx={50} cy={24} rx={36} ry={15} fill={palette.white} />
-      <Ellipse cx={50} cy={24} rx={36} ry={15} fill="none" stroke="#DDE3F2" strokeWidth={2} />
+      {/* what the plate lays on the surface */}
+      <Ellipse cx={52} cy={41} rx={47} ry={8} fill="rgba(31,42,90,0.07)" />
+      <Ellipse cx={51} cy={39} rx={42} ry={5.5} fill="rgba(31,42,90,0.14)" />
+      {/* the rim: its underside, then its face */}
+      <Ellipse cx={50} cy={25} rx={48} ry={21} fill="#C9D2E6" />
+      <Ellipse cx={50} cy={22} rx={48} ry={21} fill="#F4F6FC" />
+      {/* the well */}
+      <Ellipse cx={50} cy={22} rx={36} ry={14.5} fill={palette.white} />
+      <Ellipse cx={50} cy={22} rx={36} ry={14.5} fill="none" stroke="#DDE3F2" strokeWidth={2} />
+      {/* one light direction: the sheen runs up the top-left of the rim */}
+      <Path d="M8 18a48 21 0 0 1 34 -17 48 21 0 0 0 -28 19z" fill="rgba(255,255,255,0.9)" />
+      <Path d="M92 27a48 21 0 0 1 -30 15 48 21 0 0 0 25 -17z" fill="rgba(31,42,90,0.07)" />
     </Svg>
   );
 }

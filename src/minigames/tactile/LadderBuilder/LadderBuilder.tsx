@@ -15,6 +15,7 @@ import { Animal, LadderPiece, animalName } from '@/world/props';
 import {
   DragToken,
   GameShell,
+  GROUND_OVERLAP,
   PlayGround,
   TownFacade,
   bestNextPiece,
@@ -142,13 +143,27 @@ export function LadderBuilder({ challenge, ageBand, onComplete, onEvent, compact
     const unitPx = Math.max(12, Math.min(stage.s(34), (groundY - topPad) / (target + 0.9)));
     const ladderW = Math.max(58, Math.min(stage.s(76), w * 0.22));
     const stackX = Math.max(stage.s(8), w * 0.06);
-    const gaugeX = stackX + ladderW + stage.s(8);
+    /* the climber's rig is drawn in a SQUARE box, so he is half his own height
+       wide either side of the ladder. The gauge band starts past that, or the
+       painted numbers end up printed across his chest. */
+    const climberH = Math.max(46, Math.min(stage.s(70), ladderW * 1.15)) * 1.75;
+    const gaugeX = stackX + ladderW + Math.max(stage.s(10), climberH * 0.32 - ladderW / 2 + 6);
     const gaugeW = Math.max(34, stage.s(44));
     const ledgeY = groundY - target * unitPx;
     return { w, h, groundY, unitPx, ladderW, stackX, gaugeX, gaugeW, ledgeY };
   }, [box.h, box.w, stage, target]);
 
-  const trayUnitPx = Math.max(11, Math.min(geo.unitPx, stage.s(19)));
+  /* THE RACK. A 16-unit ladder drawn at the play area's own scale is 300 px
+     tall: it ran clean out of the tray, top and bottom. Every token now shares
+     one box height, so the tray reads as a rack of ladders standing on one
+     floor — the long ones fill it, the short ones are short. */
+  const longest = Math.max(...pieces, 1);
+  const trayBoxH = Math.max(88, Math.min(stage.rail ? 168 : 138, stage.s(138)));
+  const trayUnitPx = Math.max(6, Math.min(stage.s(19), trayBoxH / longest));
+  const trayPieceW = Math.max(
+    30,
+    Math.min(stage.s(54), (stage.trayWidth - spacing.sm * Math.max(0, pieces.length - 1)) / Math.max(1, pieces.length)),
+  );
 
   /* ---- placing ---- */
   const rejectPiece = useCallback(
@@ -271,6 +286,9 @@ export function LadderBuilder({ challenge, ageBand, onComplete, onEvent, compact
     transform: [{ translateY: -climb.value * (geo.groundY - geo.ledgeY - rookieSize * 0.25) }],
   }));
   const stackStyle = useAnimatedStyle(() => ({ transform: [{ translateX: wobble.value }] }));
+  const beaSize = Math.max(72, Math.min(stage.s(104), geo.h * 0.24));
+  /* far enough down the street that she and Rookie never read as a pair */
+  const beaX = Math.min(geo.w - beaSize * 0.9, Math.max(geo.gaugeX + geo.gaugeW + stage.s(18), geo.w * 0.6));
   const animalOnShoulder = state.phase === 'climbing' || state.phase === 'done';
 
   return (
@@ -282,7 +300,9 @@ export function LadderBuilder({ challenge, ageBand, onComplete, onEvent, compact
       onStageLayout={onLayout}
       hint={hints.bubble}
       onDismissHint={hints.dismiss}
-      backdrop={<Stage variant="street" groundHeight={130} />}
+      /* the street's ground plane meets the pavement the game paints, so the
+         play area does not end in a seam with the backdrop's middle distance */
+      backdrop={(below) => <Stage variant="street" groundHeight={Math.max(130, below + GROUND_OVERLAP)} />}
       footer={
         <View style={styles.mathRow}>
           <Text variant="h3" color={total === target ? palette.leafGreenDark : palette.navy}>
@@ -299,22 +319,20 @@ export function LadderBuilder({ challenge, ageBand, onComplete, onEvent, compact
       }
       tray={
         <Tray>
-          <TrayRow>
+          {/* stood on one baseline: a row of ladders of different lengths, not
+              a scatter of tokens at different heights */}
+          <TrayRow style={styles.rack}>
             {available.map((p) => (
-              <DragToken
-                key={p.index}
-                disabled={p.used || state.phase !== 'building'}
-                highlight={hints.assist && !p.used && p.value === suggestion}
-                onPlace={() => place(p.index)}
-                accessibilityLabel={`Ladder piece of ${p.value}`}
-              >
-                <LadderPiece
-                  units={p.value}
-                  unitPx={trayUnitPx}
-                  width={Math.max(48, stage.s(54))}
-                  tone={p.used ? 'ghost' : 'yellow'}
-                />
-              </DragToken>
+              <View key={p.index} style={[styles.rackCell, { width: trayPieceW, height: trayBoxH }]}>
+                <DragToken
+                  disabled={p.used || state.phase !== 'building'}
+                  highlight={hints.assist && !p.used && p.value === suggestion}
+                  onPlace={() => place(p.index)}
+                  accessibilityLabel={`Ladder piece of ${p.value}`}
+                >
+                  <LadderPiece units={p.value} unitPx={trayUnitPx} width={trayPieceW} tone={p.used ? 'ghost' : 'yellow'} />
+                </DragToken>
+              </View>
             ))}
           </TrayRow>
         </Tray>
@@ -370,14 +388,13 @@ export function LadderBuilder({ challenge, ageBand, onComplete, onEvent, compact
           {/* the pavement, with a kerb and a drain */}
           <PlayGround width={geo.w} height={geo.h} top={geo.groundY} variant="pavement" dressed kerb seed={target} />
 
-          {/* Captain Bea foots the ladder while the child climbs */}
-          <View
-            style={[styles.bea, { left: Math.min(geo.w - stage.s(70), geo.gaugeX + geo.gaugeW + stage.s(14)), top: geo.groundY - stage.s(96) }]}
-            pointerEvents="none"
-          >
-            <ContactShadow width={stage.s(56)} style={styles.beaShadow} />
+          {/* Captain Bea watches the climb from further down the pavement.
+              Two figures shoulder to shoulder read as a huddle; she stands out
+              in the street, past the gauge, so the ladder keeps the frame. */}
+          <View style={[styles.bea, { left: beaX, top: geo.groundY - beaSize }]} pointerEvents="none">
+            <ContactShadow width={beaSize * 0.42} style={styles.beaShadow} />
             <CaptainBea
-              size={stage.s(96)}
+              size={beaSize}
               emotion={state.phase === 'done' ? 'proud' : 'calm'}
               pose={state.phase === 'done' ? 'cheer' : 'stand'}
               bobPhase={0.55}
@@ -411,7 +428,9 @@ export function LadderBuilder({ challenge, ageBand, onComplete, onEvent, compact
 
           {/* Rookie climbing */}
           <Animated.View
-            style={[styles.rookie, { left: geo.stackX + geo.ladderW / 2 - rookieH * 0.29, top: geo.groundY - rookieH }, climberStyle]}
+            /* the rig is drawn in a square box, so centring it on the ladder
+               means half its HEIGHT either side — not a third of it */
+            style={[styles.rookie, { left: geo.stackX + geo.ladderW / 2 - rookieH / 2, top: geo.groundY - rookieH }, climberStyle]}
             pointerEvents="none"
           >
             {/* critique #23 — the full rig, never a head in a circle */}
@@ -455,7 +474,11 @@ const styles = StyleSheet.create({
     borderTopRightRadius: radii.panel * 3,
   },
   groundLip: { position: 'absolute', left: 0, right: 0, top: 0, height: 10, backgroundColor: palette.grass, borderTopLeftRadius: radii.panel * 3, borderTopRightRadius: radii.panel * 3 },
-  bea: { position: 'absolute', alignItems: 'center' },
+  bea: { position: 'absolute', alignItems: 'center', justifyContent: 'flex-end' },
+  rack: { alignItems: 'flex-end' },
+  /* one cell per token, all the same size: a wrapping row of ladders of wildly
+     different heights landed as an L in the tablet rail */
+  rackCell: { justifyContent: 'flex-end', alignItems: 'center' },
   beaShadow: { position: 'absolute', bottom: -3 },
   stack: { position: 'absolute', bottom: 0, justifyContent: 'flex-end' },
   stacked: { position: 'absolute', alignItems: 'center' },

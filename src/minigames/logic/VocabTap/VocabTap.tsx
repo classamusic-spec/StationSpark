@@ -108,8 +108,11 @@ export function VocabTap({ challenge, ageBand, onComplete, onEvent, compact }: M
   /* the word is pinned ON the classroom board, measured from the play area */
   const { box, onLayout } = usePlayBox();
   const room = classroomMetrics(box);
-  const cardWidth = box.w > 0 ? clamp(room.boardW * 0.82, 180, 520) : layout.s(280);
+  const cardWidth = box.w > 0 ? clamp(room.boardW * 0.86, 180, 540) : layout.s(280);
   const wordSize = clamp(cardWidth * 0.16, 26, 62);
+  /* the flash card is what the child reads: it takes a real share of the board
+     rather than floating small in the middle of a big slate */
+  const cardMinHeight = box.h > 0 ? clamp(room.boardH * 0.4, 110, 300) : undefined;
 
   return (
     <GameFrame
@@ -152,11 +155,16 @@ export function VocabTap({ challenge, ageBand, onComplete, onEvent, compact }: M
               : { left: 0, right: 0, top: 0, bottom: 0 },
           ]}
         >
-          <View style={[styles.wordCard, { width: cardWidth }]}>
+          <View style={[styles.wordCard, { width: cardWidth, minHeight: cardMinHeight }]}>
             <View style={styles.pins} pointerEvents="none">
               <View style={styles.pin} />
               <View style={styles.pin} />
             </View>
+            {/* the card is index paper: a red margin rule and two feint lines,
+                so a big white rectangle reads as something written on */}
+            <View style={styles.cardMargin} pointerEvents="none" />
+            <View style={[styles.cardRule, { top: '30%' }]} pointerEvents="none" />
+            <View style={[styles.cardRule, { top: '70%' }]} pointerEvents="none" />
             {state.phase === 'solved' ? (
               <Animated.View entering={ZoomIn.springify()} style={styles.sparkle} pointerEvents="none">
                 <SparkleBurst size={layout.s(90)} />
@@ -208,8 +216,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
     alignItems: 'center',
+    justifyContent: 'center',
+    gap: 2,
+    overflow: 'hidden',
     ...shadows.card,
   },
+  cardMargin: { position: 'absolute', left: '11%', top: 0, bottom: 0, width: 2.4, backgroundColor: palette.pinkSoft },
+  cardRule: { position: 'absolute', left: '6%', right: '6%', height: 2, backgroundColor: palette.creamDeep },
   pins: { position: 'absolute', top: -7, left: 0, right: 0, flexDirection: 'row', justifyContent: 'space-evenly' },
   pin: { width: 14, height: 14, borderRadius: 7, backgroundColor: palette.engineRed },
   sparkle: { position: 'absolute', top: -18, right: -18 },

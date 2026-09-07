@@ -128,6 +128,20 @@ export function ListenCount({ challenge, ageBand, onComplete, onEvent, compact }
   const crateWidth = box.w > 0 ? clamp(box.w * 0.56, 150, 320) : Math.min(layout.s(190), layout.boxWidth * 0.6);
   const benchLift = clamp(box.h * 0.09, 22, 60);
   const benchY = box.h > 0 ? box.h - benchLift : 0;
+  /*
+   * How many items sit on ONE board. It has to count the item's real footprint
+   * — the icon plus its padding plus the gap — or the row wraps inside itself
+   * and the overflow ends up standing on thin air above the next shelf.
+   */
+  const itemSlot = itemSize + 4 + spacing.xs;
+  const shelfAvail = (box.w > 0 ? box.w : 360) - spacing.sm * 2;
+  const perShelf = Math.max(3, Math.floor((shelfAvail + spacing.xs) / itemSlot));
+  const shelfRowWidth = perShelf * itemSlot - spacing.xs;
+  const shelfRows = useMemo(() => {
+    const out: number[][] = [];
+    for (let i = 0; i < shelf.length; i += perShelf) out.push(shelf.slice(i, i + perShelf));
+    return out;
+  }, [perShelf, shelf]);
 
   return (
     <GameFrame
@@ -200,29 +214,40 @@ export function ListenCount({ challenge, ageBand, onComplete, onEvent, compact }
           </View>
         </Pressable>
 
-        <View style={styles.shelfWrap}>
-          <View style={styles.shelfItems}>
-            {shelf.map((i) =>
-              state.taken.includes(i) ? null : (
-                <Pressable
-                  key={i}
-                  onPress={() => take(i)}
-                  accessibilityRole="button"
-                  accessibilityLabel={`Add one ${challenge.item.es}`}
-                  hitSlop={6}
-                >
-                  <Animated.View entering={ZoomIn.delay(i * 45).springify().damping(14)} style={styles.shelfItem}>
-                    <VocabIcon id={challenge.item.id} size={itemSize} />
-                  </Animated.View>
-                </Pressable>
-              ),
-            )}
+        {/*
+         * ONE BOARD PER ROW. The items wrapped onto two lines but only the last
+         * line had a shelf under it, so the top row stood in mid-air casting a
+         * shadow on nothing. Every row now gets its own board and brackets.
+         */}
+        {shelfRows.map((rowItems, r) => (
+          <View key={`shelf${r}`} style={styles.shelfWrap}>
+            <View style={[styles.shelfItems, { width: shelfRowWidth }]}>
+              {rowItems.map((i) =>
+                state.taken.includes(i) ? null : (
+                  <Pressable
+                    key={i}
+                    onPress={() => take(i)}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Add one ${challenge.item.es}`}
+                    hitSlop={6}
+                  >
+                    <Animated.View entering={ZoomIn.delay(i * 45).springify().damping(14)} style={styles.shelfItem}>
+                      <VocabIcon id={challenge.item.id} size={itemSize} />
+                    </Animated.View>
+                  </Pressable>
+                ),
+              )}
+            </View>
+            <View style={styles.shelfBoard} />
+            <View style={styles.shelfBrackets}>
+              <View style={styles.shelfBracket} />
+              <View style={styles.shelfBracket} />
+            </View>
           </View>
-          <View style={styles.shelfBoard} />
-        </View>
+        ))}
 
         <View style={styles.crateWrap}>
-          <CrateBox width={crateWidth} height={crateWidth * 0.7} />
+          <CrateBox width={crateWidth} height={crateWidth * 0.77} />
           <View style={styles.crateItems}>
             {state.taken.map((i) => (
               <Pressable
@@ -273,7 +298,7 @@ const styles = StyleSheet.create({
     maxWidth: 420,
     ...shadows.card,
   },
-  shelfWrap: { alignItems: 'center' },
+  shelfWrap: { alignSelf: 'stretch', alignItems: 'center' },
   shelfItems: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -288,10 +313,22 @@ const styles = StyleSheet.create({
     width: '96%',
     borderRadius: 6,
     backgroundColor: palette.wood,
+    borderTopWidth: 3,
+    borderTopColor: '#DDAE72',
     borderBottomWidth: 4,
     borderBottomColor: palette.woodDark,
     marginTop: 2,
     ...shadows.soft,
+  },
+  /* the fixings: a board without brackets is a plank floating on a wall */
+  shelfBrackets: { flexDirection: 'row', justifyContent: 'space-between', width: '74%' },
+  shelfBracket: {
+    width: 0,
+    height: 0,
+    borderTopWidth: 11,
+    borderTopColor: palette.woodDark,
+    borderRightWidth: 11,
+    borderRightColor: 'transparent',
   },
   crateWrap: { alignItems: 'center', justifyContent: 'center' },
   crateItems: {

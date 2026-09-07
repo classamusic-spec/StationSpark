@@ -8,7 +8,7 @@ import { posKey, samePos, solveHosePath } from '@/utils/grid';
 import { hit, palette, radii, spacing, springs } from '@/theme';
 import { sfx } from '@/services/audio';
 import { haptics } from '@/services/haptics';
-import { Button, EquipmentIcon, ResetIcon, Text, TrayRow } from '@/ui';
+import { Button, EquipmentIcon, ResetIcon, Text, TrayRow, useSideRail } from '@/ui';
 
 import { Draggable } from '../shared/Draggable';
 import { GameFrame } from '../shared/GameFrame';
@@ -78,6 +78,7 @@ function reducer(state: State, action: Action): State {
 export function HosePath({ challenge, ageBand, onComplete, onEvent, compact }: MiniGameProps<'hose-path'>) {
   const session = useMiniGameSession('hose-path', onComplete, onEvent);
   const layout = useGameLayout({ compact });
+  const sideRail = useSideRail();
   const [state, dispatch] = useReducer(reducer, { phase: 'building', placed: {}, misses: 0, nudges: 0, flow: 0 });
   const hintLadder = useHintLadder(state.misses + state.nudges, session.hint);
   const finished = useRef(false);
@@ -244,7 +245,8 @@ export function HosePath({ challenge, ageBand, onComplete, onEvent, compact }: M
     [state.phase],
   );
 
-  const pieceSize = Math.max(hit.big, layout.s(70));
+  /* a rail is 320 px wide with two pieces in it — they grow to suit */
+  const pieceSize = sideRail ? 118 : Math.max(hit.big, layout.s(70));
   const flowKeys = useMemo(
     () => new Set((path ?? []).slice(0, state.flow).map(posKey)),
     [path, state.flow],
@@ -366,6 +368,7 @@ export function HosePath({ challenge, ageBand, onComplete, onEvent, compact }: M
               <SlotZone
                 key={key}
                 id={`cell:${key}`}
+                label={`row ${pos.row + 1}, column ${pos.col + 1}`}
                 enabled={!placed && state.phase === 'building'}
                 highlight={hintLadder.highlight && hintCellKey === key}
                 hitPad={layout.s(4)}
@@ -381,7 +384,26 @@ export function HosePath({ challenge, ageBand, onComplete, onEvent, compact }: M
                     >
                       <RotatingPiece piece={placed.piece} rotation={placed.rotation} size={cell} water={wet} />
                     </Pressable>
-                  ) : null}
+                  ) : (
+                    /*
+                     * An empty plot is not a blank. Sixteen identical flat
+                     * rectangles were the largest field of undifferentiated
+                     * colour in the game; each one now shows the coupling ghost
+                     * a piece will land on, over a lit top edge and a shaded
+                     * foot, so the board reads as tooled plots.
+                     */
+                    <View style={styles.cellDress} pointerEvents="none">
+                      <View style={styles.cellLip} />
+                      <View style={styles.cellFoot} />
+                      <View
+                        style={[
+                          styles.cellGhost,
+                          { width: cell * 0.42, height: cell * 0.42, borderRadius: cell * 0.12 },
+                        ]}
+                      />
+                      <View style={[styles.cellStud, { width: cell * 0.14, height: cell * 0.14, borderRadius: cell * 0.07 }]} />
+                    </View>
+                  )}
                 </View>
               </SlotZone>
             );
@@ -445,8 +467,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     overflow: 'hidden',
   },
-  cellSlot: { position: 'absolute', borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.55)' },
+  cellSlot: { position: 'absolute', borderRadius: 10, backgroundColor: 'rgba(255,250,240,0.72)', overflow: 'hidden' },
   cellInner: { alignItems: 'center', justifyContent: 'center' },
+  cellDress: { position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, alignItems: 'center', justifyContent: 'center' },
+  cellLip: { position: 'absolute', left: 0, right: 0, top: 0, height: '22%', backgroundColor: 'rgba(255,255,255,0.55)' },
+  cellFoot: { position: 'absolute', left: 0, right: 0, bottom: 0, height: '16%', backgroundColor: 'rgba(31,42,90,0.055)' },
+  cellGhost: { borderWidth: 2.5, borderStyle: 'dashed', borderColor: 'rgba(31,42,90,0.16)' },
+  cellStud: { position: 'absolute', backgroundColor: 'rgba(31,42,90,0.1)' },
   banner: {
     backgroundColor: palette.mint,
     borderRadius: radii.pill,

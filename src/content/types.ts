@@ -54,7 +54,13 @@ export type RecipeId =
   /* ---- dishes that teach a skill the kitchen was missing ---- */
   | 'veggie-caldo'
   | 'agua-fresca'
-  | 'esquites';
+  | 'esquites'
+  /* ---- the five dishes of the seventeen-call town ---- */
+  | 'arroz-con-leche'
+  | 'garden-pizza'
+  | 'banana-bread'
+  | 'paletas'
+  | 'frijoles-de-olla';
 
 export type MissionBeat =
   | { type: 'dialogue'; lines: DialogueLine[]; backdrop?: SceneId }
@@ -151,7 +157,14 @@ export type StationUpgradeId =
   | 'reading-nook'
   | 'world-map'
   | 'festival-lights'
-  | 'garden-pond';
+  | 'garden-pond'
+  /* ---- keepsakes from the five newest calls ---- */
+  | 'herb-boxes'
+  | 'spice-rack'
+  | 'shell-shelf'
+  | 'tool-wall'
+  | 'welcome-arch'
+  | 'weather-vane';
 
 export interface StationUpgradeDef {
   id: StationUpgradeId;

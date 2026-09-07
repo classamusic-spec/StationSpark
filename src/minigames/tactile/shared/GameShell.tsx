@@ -6,6 +6,27 @@ import { activity, spacing } from '@/theme';
 import { CaptainHint } from './CaptainHint';
 import type { HintText } from './useHintLadder';
 
+/**
+ * How much chrome stands between the foot of the play area and the foot of the
+ * window. A game paints its own near ground inside the play area, and the
+ * shared `Stage` paints the whole screen behind it; unless the two agree on
+ * where the ground line is, the pavement stops mid-screen and a band of the
+ * backdrop's middle distance shows through under it. Passing `backdrop` as a
+ * function of this number lets a game size `Stage`'s ground plane so it carries
+ * the same floor on past the counter and the tray — one floor, top to bottom.
+ */
+export type BackdropFor = (chromeBelow: number) => React.ReactNode;
+
+/**
+ * How far ABOVE the foot of the play area the shared `Stage`'s ground plane
+ * should start. The game paints its own near ground inside the play area; the
+ * Stage only has to carry the same floor on down past the counter and the
+ * tray. A small overlap is all that takes — pushing the Stage's ground all the
+ * way up to the game's own horizon instead squeezed its sky, hills and middle
+ * distance into a sliver and left a band of raw blue over the scene.
+ */
+export const GROUND_OVERLAP = 44;
+
 export interface GameShellProps {
   /** the task — the one instruction, shown once in the TaskBar */
   prompt: string;
@@ -19,8 +40,9 @@ export interface GameShellProps {
   /** hear something the bar cannot see; omit and it reads the task itself */
   onReplay?: (() => void) | null;
   progress?: { done: number; total: number };
-  /** scene dressing drawn behind everything (a `<Stage variant=… />`) */
-  backdrop?: React.ReactNode;
+  /** scene dressing drawn behind everything (a `<Stage variant=… />`), or a
+   *  function of the chrome height below the play area (see `BackdropFor`) */
+  backdrop?: React.ReactNode | BackdropFor;
   /** the play area — the game measures it with `useMeasuredBox()` */
   onStageLayout?: (e: LayoutChangeEvent) => void;
   children?: React.ReactNode;
@@ -30,6 +52,14 @@ export interface GameShellProps {
   footer?: React.ReactNode;
   /** bottom tray with draggables / buttons */
   tray?: React.ReactNode;
+  /**
+   * Keep the tray across the foot of the screen even on a tablet. A rail is the
+   * right home for answer tiles and tools, but not for a two-button steering
+   * bar: that turns a third of a 1024 px window into empty white panel while
+   * the thing the child is looking at gets narrower. Wide chrome is the one
+   * thing the extra room must never buy.
+   */
+  wideTray?: boolean;
   /** absolutely positioned layers (AskQuestion, celebrations) */
   overlay?: React.ReactNode;
   hint?: HintText | null;
@@ -58,13 +88,14 @@ export function GameShell({
   hud,
   footer,
   tray,
+  wideTray,
   overlay,
   hint,
   onDismissHint,
 }: GameShellProps) {
   const { width } = useWindowDimensions();
   const insets = useSafeAreaInsets();
-  const side = width >= activity.sideLayoutMinWidth && !!tray;
+  const side = width >= activity.sideLayoutMinWidth && !!tray && !wideTray;
 
   const [trayH, setTrayH] = useState(0);
   const onTrayLayout = useCallback((e: LayoutChangeEvent) => {
@@ -72,9 +103,19 @@ export function GameShell({
     setTrayH((p) => (Math.abs(p - h) < 1 ? p : h));
   }, []);
 
+  const [footerH, setFooterH] = useState(0);
+  const onFooterLayout = useCallback((e: LayoutChangeEvent) => {
+    const h = e.nativeEvent.layout.height;
+    setFooterH((p) => (Math.abs(p - h) < 1 ? p : h));
+  }, []);
+
+  /* what stands between the play area and the bottom of the window */
+  const chromeBelow = footerH + (side ? 0 : trayH);
+  const scenery = typeof backdrop === 'function' ? backdrop(chromeBelow) : backdrop;
+
   return (
     <View style={styles.root}>
-      {backdrop}
+      {scenery}
       <View style={[styles.top, { paddingTop: insets.top + (compact ? spacing.xs : spacing.sm) }]} pointerEvents="box-none">
         <TaskBar
           task={prompt}
@@ -96,7 +137,11 @@ export function GameShell({
       </View>
 
       {footer ? (
-        <View style={[styles.footer, { paddingBottom: compact ? spacing.xs : spacing.sm }]} pointerEvents="box-none">
+        <View
+          style={[styles.footer, { paddingBottom: compact ? spacing.xs : spacing.sm }]}
+          onLayout={onFooterLayout}
+          pointerEvents="box-none"
+        >
           {footer}
         </View>
       ) : null}
@@ -106,7 +151,7 @@ export function GameShell({
       {onDismissHint ? (
         /* the hint bubble is lifted clear of the tray so it can never cover an
            interactive tile (blocking defect in the art critique) */
-        <View style={[styles.hintLane, { bottom: trayH }]} pointerEvents="box-none">
+        <View style={[styles.hintLane, { bottom: side ? 0 : trayH }]} pointerEvents="box-none">
           <CaptainHint hint={hint ?? null} onDismiss={onDismissHint} />
         </View>
       ) : null}

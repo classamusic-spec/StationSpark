@@ -265,8 +265,32 @@ export function WordBuilder({ challenge, ageBand, onComplete, onEvent, compact }
   const slotSize = Math.max(34, Math.min(sideRail ? 88 : 74, (inner - (perRow - 1) * slotGap) / perRow));
   /** pin the row width so a long word always wraps into two tidy lines */
   const rowWidth = perRow * (slotSize + slotGap) - slotGap;
-  const tileSize = Math.max(hit.min, layout.s(tiles.length > 6 ? 58 : tiles.length > 4 ? 62 : 66));
-  const iconSize = box.w > 0 ? clamp(boardWidth * 0.24, 56, ageBand === 'A' ? 108 : 96) : layout.s(72);
+  /*
+   * THE LETTER BANK WRAPS EVENLY. Six tiles at the old size came to 456 px on a
+   * 390 px phone, so the row broke five-then-one and left a single letter
+   * stranded under a gap. The bank now picks its own columns and fills them:
+   * one row up to five letters, two balanced rows after that, three columns in
+   * a tablet's rail.
+   */
+  const bankWidth = (sideRail ? activity.sidePanelWidth : Math.min(layout.width, 560)) - spacing.md * 2;
+  const bankPerRow = sideRail ? Math.min(tiles.length, 3) : tiles.length <= 5 ? tiles.length : Math.ceil(tiles.length / 2);
+  const tileSize = clamp(
+    (bankWidth - (bankPerRow - 1) * spacing.sm) / bankPerRow,
+    hit.min,
+    sideRail ? 86 : 78,
+  );
+  const bankRowWidth = bankPerRow * (tileSize + spacing.sm) - spacing.sm;
+  /*
+   * THE SHEET COMMANDS THE BOARD. Pinned at its natural height the word sheet
+   * filled less than half the chalkboard and sat marooned in the middle of it,
+   * with a hand's depth of bare slate above and below. It now takes most of the
+   * board's height and spreads its picture, its word and its slots across it.
+   */
+  const boardMinHeight = box.h > 0 ? Math.max(190, room.boardH * 0.84) : undefined;
+  const iconSize =
+    box.w > 0
+      ? clamp(Math.min(boardWidth * 0.3, room.boardH * 0.3), 64, ageBand === 'A' ? 134 : 118)
+      : layout.s(72);
 
   /* ----- copy ----- */
   const hintText = useMemo(() => {
@@ -293,7 +317,7 @@ export function WordBuilder({ challenge, ageBand, onComplete, onEvent, compact }
       progress={{ done: state.filled, total: letters.length }}
       hint={{ text: hintText, visible: hintLadder.showBubble && !solved, onDismiss: hintLadder.dismiss }}
       tray={
-        <TrayRow style={styles.tileRow}>
+        <TrayRow style={[styles.tileRow, { width: bankRowWidth }]}>
           {tiles.map((letter, i) => (
             <TileToken
               key={`${letter}-${i}`}
@@ -324,7 +348,7 @@ export function WordBuilder({ challenge, ageBand, onComplete, onEvent, compact }
             { paddingBottom: hintLane },
           ]}
         >
-        <View style={[styles.board, { width: boardWidth }]}>
+        <View style={[styles.board, { width: boardWidth, minHeight: boardMinHeight }]}>
           <BoardRules />
           <Animated.View style={cardStyle}>
             <PictureCard size={iconSize}>
@@ -345,6 +369,7 @@ export function WordBuilder({ challenge, ageBand, onComplete, onEvent, compact }
                 <SlotZone
                   key={i}
                   id={`slot#${i}`}
+                  label={`letter space ${i + 1}`}
                   enabled={!isFilled && !solved}
                   highlight={(hintLadder.highlight || solved) && i === state.filled}
                   hitPad={layout.s(10)}
@@ -388,11 +413,13 @@ const styles = StyleSheet.create({
   deck: { position: 'absolute', alignItems: 'center', justifyContent: 'center' },
   board: {
     alignItems: 'center',
+    justifyContent: 'space-evenly',
     gap: spacing.sm,
     backgroundColor: palette.panel,
     borderRadius: radii.panel,
     borderWidth: 10,
     borderColor: palette.wood,
+    borderTopColor: '#DDAE72',
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.md,
     ...shadows.card,

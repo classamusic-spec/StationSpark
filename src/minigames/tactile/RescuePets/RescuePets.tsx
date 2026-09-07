@@ -18,7 +18,7 @@ import { Chip, Text } from '@/ui';
 import { sfx } from '@/services/audio';
 import { haptics } from '@/services/haptics';
 import { speech } from '@/services/speech';
-import Svg, { Ellipse, G, Path } from 'react-native-svg';
+import Svg, { Ellipse, G, Path, Rect } from 'react-native-svg';
 import { Rookie } from '@/characters';
 import { ContactShadow, Stage } from '@/world';
 
@@ -27,6 +27,7 @@ import {
   AskQuestion,
   BigTree,
   GameShell,
+  GROUND_OVERLAP,
   PlayGround,
   PulseRing,
   TREE_ASPECT,
@@ -115,8 +116,11 @@ function Stranded({ id, size, x, y, phase, basket, enabled, onRescue, onPickUp }
         dx.value = e.translationX;
         dy.value = e.translationY;
       })
-      .onEnd((e) => {
-        runOnJS(drop)(e.translationX, e.translationY);
+      /* only a drag the child actually completed rescues an animal: RNGH calls
+         onEnd(e, false) on CANCEL/FAIL, and dropping there banked a rescue
+         that never happened */
+      .onEnd((e, success) => {
+        if (success) runOnJS(drop)(e.translationX, e.translationY);
       })
       .onFinalize(() => {
         dx.value = withSpring(0, springs.snap);
@@ -212,18 +216,33 @@ export function RescuePets({ challenge, ageBand, onComplete, onEvent, compact }:
       treeW = maxTreeW;
       treeH = treeW / TREE_ASPECT;
     }
-    const treeX = w * (wide ? 0.3 : 0.45) - treeW / 2;
+    /* the oak owns the left of the frame; Rookie and the basket own the right,
+       or the two subjects stack on top of each other on a phone */
+    const treeX = w * (wide ? 0.3 : 0.36) - treeW / 2;
     const treeY = groundY - treeH * (TREE_FOOT / TREE_VB.h);
 
     const petSize = Math.max(64, Math.min(stage.s(76), treeW * 0.21));
 
     const basketW = Math.max(104, Math.min(stage.s(158), w * (wide ? 0.22 : 0.34)));
     const basketH = basketW * 0.75;
-    const basketX = w - basketW - stage.s(16);
-    const basketY = groundY - basketH * 0.86;
+    const basketX = w - basketW - stage.s(12);
+    /* the basket is SET DOWN on the ground line, not hovering above it */
+    const basketY = groundY - basketH;
 
-    const rookieH = Math.max(96, Math.min(groundY * 0.42, stage.s(200)));
-    const rookieW = rookieH * 0.727;
+    /* The rig is drawn in a square box and its feet are at the foot of that
+       box. Standing him at `groundY - basketH * 0.3` put his legs inside the
+       basket — the "head in a basket" defect the art critique called out, and
+       the most unsettling thing in the seven games. He stands ON the grass
+       now, next to the basket he has set down, with the basket drawn in front
+       of him so his near hand rests on the rim. */
+    const rookieH = Math.max(96, Math.min(groundY * 0.42, stage.s(196)));
+    const rookieW = rookieH;
+    /* the drawing occupies roughly the middle 60 % of its square box */
+    const rookieVisible = rookieH * 0.6;
+    const rookieX = Math.max(
+      wide ? treeX + treeW * 0.6 : 4,
+      basketX + basketW * 0.22 - rookieH * 0.5 - rookieVisible * 0.5,
+    );
 
     return {
       w,
@@ -233,9 +252,10 @@ export function RescuePets({ challenge, ageBand, onComplete, onEvent, compact }:
       petSize,
       basket: { x: basketX, y: basketY, w: basketW, h: basketH },
       basketCentre: { x: basketX + basketW / 2, y: basketY + basketH / 2, r: Math.max(96, basketW * 0.9) },
-      /* Rookie stands *behind* the basket on the same ground line, so the two
-         read as one rescue post rather than a head in a basket */
-      rookie: { x: basketX + basketW * 0.5 - rookieW / 2, y: groundY - basketH * 0.3 - rookieH, h: rookieH, w: rookieW },
+      rookie: { x: rookieX, y: groundY - rookieH, h: rookieH, w: rookieW, visible: rookieVisible },
+      /* the stretch of empty lawn between the oak and the rescue post — on a
+         tablet it is a third of the frame, so it gets a bench and shrubs */
+      lawn: { from: treeX + treeW * 0.62, to: rookieX + rookieH * 0.2 },
     };
   }, [box.h, box.w, stage]);
 
@@ -246,12 +266,14 @@ export function RescuePets({ challenge, ageBand, onComplete, onEvent, compact }:
         const spot = TREE_PERCHES[i % TREE_PERCHES.length];
         const fx = spot?.fx ?? 0.5;
         const fy = spot?.fy ?? 0.4;
+        /* an animal half off the edge of the frame reads as a bug, not as the
+           world continuing: every perch is pulled back inside the play area */
         return {
-          x: geo.tree.x + fx * geo.tree.w - geo.petSize / 2,
-          y: geo.tree.y + fy * geo.tree.h - geo.petSize,
+          x: Math.max(2, Math.min(geo.w - geo.petSize - 2, geo.tree.x + fx * geo.tree.w - geo.petSize / 2)),
+          y: Math.max(2, geo.tree.y + fy * geo.tree.h - geo.petSize),
         };
       }),
-    [geo.petSize, geo.tree.h, geo.tree.w, geo.tree.x, geo.tree.y, needHelp],
+    [geo.petSize, geo.tree.h, geo.tree.w, geo.tree.x, geo.tree.y, geo.w, needHelp],
   );
 
   /* ---- rescuing ---- */
@@ -328,6 +350,17 @@ export function RescuePets({ challenge, ageBand, onComplete, onEvent, compact }:
   const hugStyle = useAnimatedStyle(() => ({
     transform: [{ scale: 1 + hug.value * 0.12 }, { translateY: -hug.value * 6 }],
   }));
+  /* a wide frame leaves a stretch of bare lawn between the oak and the rescue
+     post; it gets park furniture rather than a hundred more blades of grass */
+  const lawnGap = geo.lawn.to - geo.lawn.from;
+  const bench =
+    lawnGap > stage.s(150)
+      ? {
+          x: geo.lawn.from + lawnGap * 0.5 - Math.min(stage.s(120), lawnGap * 0.5) / 2,
+          w: Math.min(stage.s(120), lawnGap * 0.5),
+          y: geo.groundY - stage.s(8),
+        }
+      : null;
 
   const firstUnsaved = useMemo(() => {
     for (let i = 0; i < needHelp; i += 1) if (!state.saved.includes(i)) return i;
@@ -345,7 +378,9 @@ export function RescuePets({ challenge, ageBand, onComplete, onEvent, compact }:
       onStageLayout={onLayout}
       hint={hints.bubble}
       onDismissHint={hints.dismiss}
-      backdrop={<Stage variant="park" groundHeight={140} />}
+      /* the park's ground plane rises to meet the bank the game paints, so the
+         lawn is one lawn from the hedge to the foot of the screen */
+      backdrop={(below) => <Stage variant="park" groundHeight={Math.max(140, below + GROUND_OVERLAP)} />}
       footer={
         <View style={styles.counter}>
           <Chip label={`${safeCount} safe`} tone="green" />
@@ -394,12 +429,40 @@ export function RescuePets({ challenge, ageBand, onComplete, onEvent, compact }:
             </Svg>
           </View>
 
+          {/* park furniture on the open lawn: a bench and two shrubs, standing
+              on the same ground line as everything else */}
+          {bench ? (
+            <View style={[styles.bench, { left: bench.x, top: bench.y - bench.w * 0.52, width: bench.w }]} pointerEvents="none">
+              <Svg width={bench.w} height={bench.w * 0.62} viewBox="0 0 120 74">
+                <Ellipse cx={60} cy={68} rx={50} ry={5} fill={palette.navy} opacity={0.12} />
+                <Ellipse cx={14} cy={60} rx={13} ry={11} fill={leaf.deep} />
+                <Ellipse cx={10} cy={56} rx={9} ry={8} fill={palette.leafGreen} />
+                <Ellipse cx={108} cy={62} rx={11} ry={9} fill={leaf.deep} />
+                <Ellipse cx={112} cy={58} rx={7} ry={6} fill={palette.leafGreen} />
+                <Rect x={26} y={44} width={7} height={22} rx={3} fill={palette.slate} />
+                <Rect x={87} y={44} width={7} height={22} rx={3} fill={palette.slate} />
+                <Rect x={22} y={38} width={76} height={8} rx={4} fill={bark.lit} />
+                <Rect x={22} y={38} width={76} height={3} rx={1.5} fill="rgba(255,255,255,0.32)" />
+                <Rect x={22} y={26} width={76} height={7} rx={3.5} fill={bark.mid} />
+                <Rect x={22} y={15} width={76} height={7} rx={3.5} fill={bark.mid} />
+                <Rect x={24} y={12} width={6} height={30} rx={3} fill={palette.slate} />
+                <Rect x={90} y={12} width={6} height={30} rx={3} fill={palette.slate} />
+              </Svg>
+            </View>
+          ) : null}
+
           {/* the oak — the subject, sized to the play area it was given */}
           <View style={[styles.tree, { left: geo.tree.x, top: geo.tree.y }]} pointerEvents="none">
             <BigTree width={geo.tree.w} height={geo.tree.h} perches={needHelp} />
           </View>
 
-          {/* Rookie with the basket, both standing on the ground line */}
+          {/* Rookie standing on the grass, with his own contact shadow */}
+          <View
+            style={[styles.contact, { left: geo.rookie.x + geo.rookie.h / 2 - geo.rookie.visible * 0.3, top: geo.groundY - 5 }]}
+            pointerEvents="none"
+          >
+            <ContactShadow width={geo.rookie.visible * 0.6} />
+          </View>
           <Animated.View
             style={[styles.rookie, { left: geo.rookie.x, top: geo.rookie.y, width: geo.rookie.w }, hugStyle]}
             pointerEvents="none"
@@ -413,7 +476,7 @@ export function RescuePets({ challenge, ageBand, onComplete, onEvent, compact }:
             />
           </Animated.View>
           <View
-            style={[styles.contact, { left: geo.basket.x - geo.basket.w * 0.08, top: geo.groundY - geo.basket.h * 0.06 }]}
+            style={[styles.contact, { left: geo.basket.x - geo.basket.w * 0.08, top: geo.groundY - geo.basket.h * 0.05 }]}
             pointerEvents="none"
           >
             <ContactShadow width={geo.basket.w * 1.16} />
@@ -472,6 +535,7 @@ export function RescuePets({ challenge, ageBand, onComplete, onEvent, compact }:
 
 const styles = StyleSheet.create({
   tree: { position: 'absolute' },
+  bench: { position: 'absolute' },
   litter: { position: 'absolute' },
   contact: { position: 'absolute' },
   rookie: { position: 'absolute', alignItems: 'center' },

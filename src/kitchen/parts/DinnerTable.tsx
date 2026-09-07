@@ -1,6 +1,6 @@
-import React, { useEffect } from 'react';
-import { StyleSheet, View } from 'react-native';
-import Svg, { Ellipse, Rect } from 'react-native-svg';
+import React, { useCallback, useEffect, useState } from 'react';
+import { StyleSheet, View, type LayoutChangeEvent } from 'react-native';
+import Svg, { Ellipse, G, Path, Rect } from 'react-native-svg';
 import Animated, { FadeIn, FadeInDown, useAnimatedStyle, useSharedValue, withDelay, withRepeat, withSequence, withSpring } from 'react-native-reanimated';
 import type { CharacterId } from '@/content/types';
 import { palette, spacing, springs } from '@/theme';
@@ -37,6 +37,15 @@ export function DinnerTable({
   recipeName: string;
   onNext: () => void;
 }) {
+  const [boxW, setBoxW] = useState(0);
+  const onLayout = useCallback((e: LayoutChangeEvent) => {
+    const width = e.nativeEvent.layout.width;
+    setBoxW((p) => (Math.abs(p - width) < 1 ? p : width));
+  }, []);
+  /* the table takes the room it is given: it used to be a fixed 260 px oval,
+     which on a tablet was a doll's table marooned in the middle of the screen */
+  const tableW = Math.max(260, Math.min(560, boxW - spacing.lg * 2));
+
   useEffect(() => {
     sfx.play('fanfare');
     haptics.celebrate();
@@ -45,7 +54,7 @@ export function DinnerTable({
   }, [recipeName]);
 
   return (
-    <Animated.View entering={FadeIn} style={styles.root}>
+    <Animated.View entering={FadeIn} style={styles.root} onLayout={onLayout}>
       <Animated.View entering={FadeInDown.springify().damping(14)}>
         <Text variant="display" center color={palette.engineRed}>
           Dinner is served!
@@ -63,17 +72,7 @@ export function DinnerTable({
         </View>
 
         <View style={styles.table}>
-          <Svg width={260} height={110} viewBox="0 0 260 110">
-            <Ellipse cx={130} cy={104} rx={92} ry={6} fill="rgba(31,42,90,0.14)" />
-            <Rect x={44} y={54} width={16} height={48} rx={7} fill={palette.woodDark} />
-            <Rect x={200} y={54} width={16} height={48} rx={7} fill={palette.woodDark} />
-            <Ellipse cx={130} cy={50} rx={124} ry={34} fill={palette.wood} />
-            <Ellipse cx={130} cy={45} rx={124} ry={34} fill="#D9A164" />
-            <Ellipse cx={130} cy={42} rx={92} ry={22} fill={palette.white} />
-          </Svg>
-          <Animated.View entering={FadeInDown.delay(240).springify().damping(11)} style={styles.dish}>
-            <VocabIcon id={recipeGlyph[recipeId] ?? 'soup'} size={76} />
-          </Animated.View>
+          <TableTop width={tableW} recipeId={recipeId} />
         </View>
 
         <View style={styles.seatRow}>
@@ -86,6 +85,56 @@ export function DinnerTable({
 
       <Button label="Nice work!" tone="green" size="lg" onPress={onNext} sound="pop" />
     </Animated.View>
+  );
+}
+
+/**
+ * The table the crew sit round: a wooden top with a visible edge and a lit rim,
+ * a cream cloth over the middle, four laid places and what the child cooked in
+ * the centre. It scales with the room, so a tablet gets a bigger table rather
+ * than the same small one in more space.
+ */
+function TableTop({ width, recipeId }: { width: number; recipeId: string }) {
+  const h = width * 0.423;
+  const places: [number, number][] = [
+    [66, 34],
+    [194, 34],
+    [98, 60],
+    [162, 60],
+  ];
+  return (
+    <View style={{ width, height: h }}>
+      <Svg width={width} height={h} viewBox="0 0 260 110">
+        {/* what the table lays on the floor */}
+        <Ellipse cx={134} cy={106} rx={110} ry={9} fill="rgba(31,42,90,0.06)" />
+        <Ellipse cx={132} cy={103} rx={94} ry={6} fill="rgba(31,42,90,0.15)" />
+        {/* legs */}
+        <Rect x={44} y={54} width={16} height={48} rx={7} fill={palette.woodDark} />
+        <Rect x={200} y={54} width={16} height={48} rx={7} fill={palette.woodDark} />
+        {/* the top: its edge, then its face */}
+        <Ellipse cx={130} cy={53} rx={124} ry={34} fill="#8E5C2C" />
+        <Ellipse cx={130} cy={45} rx={124} ry={34} fill={palette.wood} />
+        <Ellipse cx={130} cy={43} rx={117} ry={31} fill="#DCA76B" />
+        {/* one light direction: the rim is lit up its top-left */}
+        <Path d="M14 42a124 34 0 0 1 96 -31 124 34 0 0 0 -87 33z" fill="rgba(255,255,255,0.42)" />
+        {/* the cloth */}
+        <Ellipse cx={130} cy={42} rx={94} ry={23} fill="#FFFDF6" />
+        <Ellipse cx={130} cy={42} rx={94} ry={23} fill="none" stroke="#F2685C" strokeWidth={3} />
+        <Ellipse cx={130} cy={41} rx={80} ry={18} fill="none" stroke="rgba(242,104,92,0.35)" strokeWidth={2} />
+        {/* four places laid */}
+        {places.map(([cx, cy], i) => (
+          <G key={`place${i}`}>
+            <Ellipse cx={cx + 1} cy={cy + 3} rx={17} ry={5} fill="rgba(31,42,90,0.12)" />
+            <Ellipse cx={cx} cy={cy} rx={17} ry={7} fill="#DDE3F2" />
+            <Ellipse cx={cx} cy={cy - 1} rx={17} ry={7} fill={palette.white} />
+            <Ellipse cx={cx} cy={cy - 1} rx={10} ry={4} fill="#F4F6FC" />
+          </G>
+        ))}
+      </Svg>
+      <View style={styles.dish} pointerEvents="none">
+        <VocabIcon id={recipeGlyph[recipeId] ?? 'soup'} size={width * 0.3} />
+      </View>
+    </View>
   );
 }
 
@@ -121,5 +170,5 @@ const styles = StyleSheet.create({
   seatRow: { flexDirection: 'row', gap: spacing.xl },
   diner: { alignItems: 'center' },
   table: { alignItems: 'center', justifyContent: 'center', marginVertical: -6 },
-  dish: { position: 'absolute', top: 4 },
+  dish: { position: 'absolute', top: '4%', alignSelf: 'center' },
 });

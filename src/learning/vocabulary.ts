@@ -30,6 +30,12 @@
  *             big small hot cold fast
  *   feelings  scared proud tired excited calm brave
  *   colors    black pink purple
+ *
+ * SECOND WORD LIST (the garden / building site / beach / apartments / open-day
+ * expansion) adds 100 more words. Nothing new was asked of the icon sheet: each
+ * new word points at a glyph that already exists, borrowing the nearest drawn
+ * cousin where it has no portrait of its own (ajo → onion, durazno → apple,
+ * palomitas → corn, abeja → honey) — exactly the rule naranja → apple used.
  */
 import type { Rng } from '@/utils/rng';
 import type { VocabWord } from './types';
@@ -243,6 +249,130 @@ export const vocabulary: VocabWord[] = [
   { id: 'frog', en: 'frog', es: 'rana', icon: 'frog', category: 'animals' },
   { id: 'parrot', en: 'parrot', es: 'loro', icon: 'parrot', category: 'animals' },
   { id: 'lizard', en: 'lizard', es: 'lagartija', icon: 'lizard', category: 'animals' },
+  /* ================================================================ *
+   * SECOND WORD LIST — the words the garden, the building site, the
+   * beach, the apartment block and the station's open day needed.
+   * Every icon id below is already drawn by `@/ui/kit/VocabIcon`; where a
+   * word has no portrait of its own it borrows the closest drawn cousin
+   * (ajo → onion, durazno → apple, palomitas → corn), which is the same
+   * rule the first list used for naranja → apple.
+   * ================================================================ */
+
+  /* ---- equipment (+11) ---- */
+  { id: 'lantern', en: 'lantern', es: 'farol', icon: 'flashlight', category: 'equipment' },
+  { id: 'apron', en: 'apron', es: 'delantal', icon: 'uniform', category: 'equipment' },
+  { id: 'hammer', en: 'hammer', es: 'martillo', icon: 'toolbox', category: 'equipment' },
+  { id: 'shovel', en: 'shovel', es: 'pala', icon: 'toolbox', category: 'equipment' },
+  { id: 'watering-can', en: 'watering can', es: 'regadera', icon: 'bucket', category: 'equipment' },
+  { id: 'basket', en: 'basket', es: 'canasta', icon: 'bucket', category: 'equipment' },
+  { id: 'box', en: 'box', es: 'caja', icon: 'toolbox', category: 'equipment' },
+  { id: 'umbrella', en: 'umbrella', es: 'paraguas', icon: 'rain', category: 'equipment' },
+  { id: 'towel', en: 'towel', es: 'toalla', icon: 'uniform', category: 'equipment' },
+  { id: 'seed', en: 'seed', es: 'semilla', icon: 'flower', category: 'equipment' },
+  { id: 'plant', en: 'plant', es: 'planta', icon: 'tree', category: 'equipment' },
+
+  /* ---- food (+15) ---- */
+  { id: 'chili', en: 'chili', es: 'chile', icon: 'pepper', category: 'food' },
+  { id: 'garlic', en: 'garlic', es: 'ajo', icon: 'onion', category: 'food' },
+  { id: 'melon', en: 'melon', es: 'melón', icon: 'watermelon', category: 'food' },
+  { id: 'pear', en: 'pear', es: 'pera', icon: 'apple', category: 'food' },
+  { id: 'peach', en: 'peach', es: 'durazno', icon: 'apple', category: 'food' },
+  { id: 'mango', en: 'mango', es: 'mango', icon: 'apple', category: 'food' },
+  { id: 'pineapple', en: 'pineapple', es: 'piña', icon: 'apple', category: 'food' },
+  { id: 'cookie', en: 'cookie', es: 'galleta', icon: 'cake', category: 'food' },
+  { id: 'popcorn', en: 'popcorn', es: 'palomitas', icon: 'corn', category: 'food' },
+  { id: 'noodles', en: 'noodles', es: 'fideos', icon: 'soup', category: 'food' },
+  { id: 'yogurt', en: 'yogurt', es: 'yogur', icon: 'milk', category: 'food' },
+  { id: 'tea', en: 'tea', es: 'té', icon: 'juice', category: 'food' },
+  { id: 'sandwich', en: 'sandwich', es: 'torta', icon: 'bread', category: 'food' },
+  { id: 'salsa', en: 'salsa', es: 'salsa', icon: 'tomato', category: 'food' },
+  { id: 'sweet-bread', en: 'sweet bread', es: 'pan dulce', icon: 'bread', category: 'food' },
+
+  /* ---- colors (+1) ---- */
+  { id: 'gold', en: 'gold', es: 'dorado', icon: 'sun', category: 'colors' },
+
+  /* ---- numbers (+8): trece … veinte ---- */
+  { id: 'thirteen', en: 'thirteen', es: 'trece', icon: 'ladder', category: 'numbers' },
+  { id: 'fourteen', en: 'fourteen', es: 'catorce', icon: 'ladder', category: 'numbers' },
+  { id: 'fifteen', en: 'fifteen', es: 'quince', icon: 'ladder', category: 'numbers' },
+  { id: 'sixteen', en: 'sixteen', es: 'dieciséis', icon: 'ladder', category: 'numbers' },
+  { id: 'seventeen', en: 'seventeen', es: 'diecisiete', icon: 'ladder', category: 'numbers' },
+  { id: 'eighteen', en: 'eighteen', es: 'dieciocho', icon: 'ladder', category: 'numbers' },
+  { id: 'nineteen', en: 'nineteen', es: 'diecinueve', icon: 'ladder', category: 'numbers' },
+  { id: 'twenty', en: 'twenty', es: 'veinte', icon: 'ladder', category: 'numbers' },
+
+  /* ---- places & weather (+14) ---- */
+  { id: 'apartment', en: 'apartment', es: 'apartamento', icon: 'house', category: 'places' },
+  { id: 'playground', en: 'playground', es: 'parque de juegos', icon: 'park', category: 'places' },
+  { id: 'bridge', en: 'bridge', es: 'puente', icon: 'street', category: 'places' },
+  { id: 'pier', en: 'pier', es: 'muelle', icon: 'beach', category: 'places' },
+  { id: 'sand', en: 'sand', es: 'arena', icon: 'beach', category: 'places' },
+  { id: 'wave', en: 'wave', es: 'ola', icon: 'river', category: 'places' },
+  { id: 'sky', en: 'sky', es: 'cielo', icon: 'cloud', category: 'places' },
+  { id: 'star', en: 'star', es: 'estrella', icon: 'moon', category: 'places' },
+  { id: 'city', en: 'city', es: 'ciudad', icon: 'house', category: 'places' },
+  { id: 'sidewalk', en: 'sidewalk', es: 'banqueta', icon: 'street', category: 'places' },
+  { id: 'roof', en: 'roof', es: 'techo', icon: 'house', category: 'places' },
+  { id: 'door', en: 'door', es: 'puerta', icon: 'open', category: 'places' },
+  { id: 'window', en: 'window', es: 'ventana', icon: 'house', category: 'places' },
+  { id: 'pharmacy', en: 'pharmacy', es: 'farmacia', icon: 'hospital', category: 'places' },
+
+  /* ---- actions, order words, comparison & courtesy (+28) ---- */
+  { id: 'run', en: 'run', es: 'correr', icon: 'fast', category: 'actions' },
+  { id: 'jump', en: 'jump', es: 'saltar', icon: 'up', category: 'actions' },
+  { id: 'climb', en: 'climb', es: 'subir', icon: 'ladder', category: 'actions' },
+  { id: 'push', en: 'push', es: 'empujar', icon: 'right', category: 'actions' },
+  { id: 'pull', en: 'pull', es: 'jalar', icon: 'left', category: 'actions' },
+  { id: 'read', en: 'read', es: 'leer', icon: 'library', category: 'actions' },
+  { id: 'write', en: 'write', es: 'escribir', icon: 'school', category: 'actions' },
+  { id: 'sing', en: 'sing', es: 'cantar', icon: 'musician', category: 'actions' },
+  { id: 'clean', en: 'clean', es: 'limpiar', icon: 'water', category: 'actions' },
+  { id: 'count', en: 'count', es: 'contar', icon: 'three', category: 'actions' },
+  { id: 'share', en: 'share', es: 'compartir', icon: 'happy', category: 'actions' },
+  { id: 'plant-it', en: 'plant', es: 'sembrar', icon: 'garden', category: 'actions' },
+  { id: 'morning', en: 'morning', es: 'mañana', icon: 'sun', category: 'actions' },
+  { id: 'night', en: 'night', es: 'noche', icon: 'moon', category: 'actions' },
+  { id: 'today', en: 'today', es: 'hoy', icon: 'sun', category: 'actions' },
+  { id: 'first', en: 'first', es: 'primero', icon: 'one', category: 'actions' },
+  { id: 'next', en: 'next', es: 'luego', icon: 'two', category: 'actions' },
+  { id: 'last', en: 'last', es: 'último', icon: 'stop', category: 'actions' },
+  { id: 'more', en: 'more', es: 'más', icon: 'big', category: 'actions' },
+  { id: 'less', en: 'less', es: 'menos', icon: 'small', category: 'actions' },
+  { id: 'half', en: 'half', es: 'mitad', icon: 'pizza', category: 'actions' },
+  { id: 'empty', en: 'empty', es: 'vacío', icon: 'closed', category: 'actions' },
+  { id: 'full', en: 'full', es: 'lleno', icon: 'water', category: 'actions' },
+  { id: 'slow', en: 'slow', es: 'despacio', icon: 'turtle', category: 'actions' },
+  { id: 'quiet', en: 'quiet', es: 'silencio', icon: 'listen', category: 'actions' },
+  { id: 'welcome', en: 'welcome', es: 'bienvenido', icon: 'open', category: 'actions' },
+  { id: 'you-are-welcome', en: "you're welcome", es: 'de nada', icon: 'happy', category: 'actions' },
+  { id: 'excuse-me', en: 'excuse me', es: 'con permiso', icon: 'please', category: 'actions' },
+
+  /* ---- people & community helpers (+13) ---- */
+  { id: 'grandmother', en: 'grandmother', es: 'abuela', icon: 'calm', category: 'people' },
+  { id: 'grandfather', en: 'grandfather', es: 'abuelo', icon: 'proud', category: 'people' },
+  { id: 'mother', en: 'mom', es: 'mamá', icon: 'happy', category: 'people' },
+  { id: 'father', en: 'dad', es: 'papá', icon: 'excited', category: 'people' },
+  { id: 'sister', en: 'sister', es: 'hermana', icon: 'brave', category: 'people' },
+  { id: 'brother', en: 'brother', es: 'hermano', icon: 'tired', category: 'people' },
+  { id: 'baby', en: 'baby', es: 'bebé', icon: 'small', category: 'people' },
+  { id: 'captain', en: 'captain', es: 'capitana', icon: 'helmet', category: 'people' },
+  { id: 'builder', en: 'builder', es: 'constructor', icon: 'toolbox', category: 'people' },
+  { id: 'engineer', en: 'engineer', es: 'ingeniera', icon: 'scientist', category: 'people' },
+  { id: 'lifeguard', en: 'lifeguard', es: 'salvavidas', icon: 'water', category: 'people' },
+  { id: 'student', en: 'student', es: 'estudiante', icon: 'school', category: 'people' },
+  { id: 'coach', en: 'coach', es: 'entrenador', icon: 'whistle', category: 'people' },
+
+  /* ---- animals (+10) ---- */
+  { id: 'goat', en: 'goat', es: 'cabra', icon: 'sheep', category: 'animals' },
+  { id: 'donkey', en: 'donkey', es: 'burro', icon: 'horse', category: 'animals' },
+  { id: 'chicken', en: 'chicken', es: 'gallina', icon: 'bird', category: 'animals' },
+  { id: 'bee', en: 'bee', es: 'abeja', icon: 'honey', category: 'animals' },
+  { id: 'butterfly', en: 'butterfly', es: 'mariposa', icon: 'flower', category: 'animals' },
+  { id: 'snail', en: 'snail', es: 'caracol', icon: 'turtle', category: 'animals' },
+  { id: 'dolphin', en: 'dolphin', es: 'delfín', icon: 'fish', category: 'animals' },
+  { id: 'seagull', en: 'seagull', es: 'gaviota', icon: 'bird', category: 'animals' },
+  { id: 'owl', en: 'owl', es: 'búho', icon: 'bird', category: 'animals' },
+  { id: 'crab', en: 'crab', es: 'cangrejo', icon: 'lizard', category: 'animals' },
 ];
 
 const byId = new Map(vocabulary.map((w) => [w.id, w]));
@@ -284,11 +414,15 @@ export function randomWords(
 export const numberWordsEn = [
   'zero', 'one', 'two', 'three', 'four', 'five', 'six',
   'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve',
+  'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen',
+  'eighteen', 'nineteen', 'twenty',
 ];
 
 export const numberWordsEs = [
   'cero', 'uno', 'dos', 'tres', 'cuatro', 'cinco', 'seis',
   'siete', 'ocho', 'nueve', 'diez', 'once', 'doce',
+  'trece', 'catorce', 'quince', 'dieciséis', 'diecisiete',
+  'dieciocho', 'diecinueve', 'veinte',
 ];
 
 export const numberWordEn = (n: number): string => numberWordsEn[n] ?? String(n);
@@ -324,6 +458,21 @@ const gender: Record<string, 'm' | 'f'> = {
   scientist: 'f',
   bird: 'm', fish: 'm', horse: 'm', cow: 'f', sheep: 'f', pig: 'm', mouse: 'm',
   frog: 'f', parrot: 'm', lizard: 'f',
+  // ---- second word list ----
+  lantern: 'm', apron: 'm', hammer: 'm', shovel: 'f', 'watering-can': 'f',
+  basket: 'f', box: 'f', umbrella: 'm', towel: 'f', seed: 'f', plant: 'f',
+  chili: 'm', garlic: 'm', melon: 'm', pear: 'f', peach: 'm', mango: 'm',
+  pineapple: 'f', cookie: 'f', popcorn: 'f', noodles: 'm', yogurt: 'm', tea: 'm',
+  sandwich: 'f', salsa: 'f', 'sweet-bread': 'm',
+  apartment: 'm', playground: 'm', bridge: 'm', pier: 'm', sand: 'f', wave: 'f',
+  sky: 'm', star: 'f', city: 'f', sidewalk: 'f', roof: 'm', door: 'f',
+  window: 'f', pharmacy: 'f',
+  morning: 'f', night: 'f', half: 'f', quiet: 'm',
+  grandmother: 'f', grandfather: 'm', mother: 'f', father: 'm', sister: 'f',
+  brother: 'm', baby: 'm', captain: 'f', builder: 'm', engineer: 'f',
+  lifeguard: 'm', student: 'm', coach: 'm',
+  goat: 'f', donkey: 'm', chicken: 'f', bee: 'f', butterfly: 'f', snail: 'm',
+  dolphin: 'm', seagull: 'f', owl: 'm', crab: 'm',
 };
 
 /** Plurals that the regular rule would get wrong (accents, compounds). */
@@ -351,6 +500,18 @@ const pluralEsOverride: Record<string, string> = {
   garden: 'jardines',
   snow: 'nieve',
   mouse: 'ratones',
+  // ---- second word list: accents drop, and a few words are already plural ----
+  umbrella: 'paraguas',
+  melon: 'melones',
+  popcorn: 'palomitas',
+  noodles: 'fideos',
+  tea: 'té',
+  'sweet-bread': 'panes dulces',
+  playground: 'parques de juegos',
+  dolphin: 'delfines',
+  lifeguard: 'salvavidas',
+  sand: 'arena',
+  sky: 'cielo',
 };
 
 const pluralEnOverride: Record<string, string> = {
@@ -384,6 +545,16 @@ const pluralEnOverride: Record<string, string> = {
   mouse: 'mice',
   police: 'police officers',
   'train-station': 'train stations',
+  // ---- second word list ----
+  popcorn: 'popcorn',
+  noodles: 'noodles',
+  tea: 'tea',
+  'sweet-bread': 'sweet breads',
+  sand: 'sand',
+  sky: 'sky',
+  peach: 'peaches',
+  sandwich: 'sandwiches',
+  'watering-can': 'watering cans',
 };
 
 /** Spanish plural: vowel → +s, -z → -ces, other consonant → +es. */
@@ -428,6 +599,11 @@ export const countableIds: readonly string[] = [
   'lemon', 'onion', 'carrot', 'grape', 'tortilla', 'quesadilla', 'cake', 'flower',
   'cat', 'kitten', 'dog', 'puppy', 'bunny', 'duck', 'duckling', 'turtle',
   'bird', 'fish', 'horse', 'cow', 'sheep', 'pig', 'mouse', 'frog', 'parrot', 'lizard',
+  /* ---- second word list ---- */
+  'box', 'basket', 'towel', 'seed', 'plant', 'hammer', 'shovel', 'watering-can',
+  'chili', 'garlic', 'pear', 'peach', 'mango', 'melon', 'cookie', 'sandwich',
+  'goat', 'donkey', 'chicken', 'bee', 'butterfly', 'snail', 'seagull', 'owl', 'crab',
+  'star', 'window', 'door',
 ];
 
 export const countableWords = (): VocabWord[] => countableIds.map((id) => wordById(id));

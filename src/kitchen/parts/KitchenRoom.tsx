@@ -89,39 +89,119 @@ function TileField() {
 /* ------------------------------------------------------------------ */
 
 /**
- * A counter run: butcher-block top with a lit front nose, a shadow gap, and
- * cabinet doors with real handles underneath. `y` is where the worktop
- * *surface* sits — the thing standing on it should have its feet on that line.
+ * A counter run: a butcher-block WORKTOP, its lit front nose, a shadow gap, and
+ * cabinet doors with real handles underneath.
+ *
+ * `y` is the front nose line — the counter's leading edge. `deck` is how much
+ * worktop *surface* is drawn above it, receding towards the splashback. That
+ * deck is the whole point: without it a kitchen has a nose and then wall, so a
+ * pot or a board or a ball of dough placed "on the counter" is really placed on
+ * a vertical surface, which is exactly what it looks like. With it there is a
+ * horizontal plane to stand on, take a contact shadow and catch the light.
  */
-export function CounterRun({ s, w, y, h }: { s: number; w: number; y: number; h: number }) {
+export function CounterRun({ s, w, y, h, deck = 0 }: { s: number; w: number; y: number; h: number; deck?: number }) {
   const topH = Math.min(20, h * 0.34);
+  const d = Math.max(0, deck);
+  const boxH = h + d;
+  /* long, soft grain along the run — a few honest strokes, never stripes */
+  const grain = useMemo(() => {
+    if (d < 16) return [];
+    const rows = Math.max(3, Math.min(6, Math.round(d / 16)));
+    return Array.from({ length: rows }, (_, i) => {
+      const t = (i + 0.75) / (rows + 0.5);
+      return {
+        y: d * t,
+        x: w * (0.03 + ((i * 41) % 19) / 19 * 0.24),
+        w: w * (0.34 + ((i * 67) % 23) / 23 * 0.4),
+        th: 2 + (i % 2) * 1.2,
+        dark: i % 2 === 0,
+      };
+    });
+  }, [d, w]);
+
   return (
-    <View style={at(s, 0, y - topH * 0.35, w, h)} pointerEvents="none">
-      <Svg width={w * s} height={h * s} viewBox={`0 0 ${w} ${h}`}>
+    <View style={at(s, 0, y - d - topH * 0.35, w, boxH)} pointerEvents="none">
+      <Svg width={w * s} height={boxH * s} viewBox={`0 0 ${w} ${boxH}`}>
+        <Defs>
+          <LinearGradient id="ckDeck" x1="0" y1="0" x2="0" y2="1">
+            <Stop offset="0" stopColor="#DCA972" />
+            <Stop offset="0.55" stopColor="#EABE8C" />
+            <Stop offset="1" stopColor="#F5D0A4" />
+          </LinearGradient>
+        </Defs>
+        {d > 0 ? (
+          <>
+            {/* the worktop surface, running back to the wall */}
+            <Rect x={0} y={0} width={w} height={d} fill="url(#ckDeck)" />
+            {/* the shade the splashback throws along the back of it */}
+            <Rect x={0} y={0} width={w} height={Math.min(11, d * 0.34)} fill="rgba(31,42,90,0.14)" />
+            <Rect x={0} y={0} width={w} height={2} fill="rgba(31,42,90,0.10)" />
+            {grain.map((g, i) => (
+              <Rect
+                key={`dg${i}`}
+                x={g.x}
+                y={g.y}
+                width={g.w}
+                height={g.th}
+                rx={g.th / 2}
+                fill={g.dark ? 'rgba(140,88,36,0.22)' : 'rgba(255,255,255,0.34)'}
+              />
+            ))}
+          </>
+        ) : null}
         {/* the shadow the worktop throws on the cabinet fronts */}
-        <Rect x={0} y={topH} width={w} height={9} fill="rgba(31,42,90,0.16)" />
+        <Rect x={0} y={d + topH} width={w} height={9} fill="rgba(31,42,90,0.16)" />
         {/* cabinet fronts */}
-        <Rect x={0} y={topH + 4} width={w} height={h - topH - 4} fill="#E6C89A" />
+        <Rect x={0} y={d + topH + 4} width={w} height={h - topH - 4} fill="#E6C89A" />
         {Array.from({ length: Math.max(2, Math.round(w / 130)) }, (_, i) => {
           const n = Math.max(2, Math.round(w / 130));
           const dw = w / n;
           return (
             <G key={`door${i}`}>
-              <Rect x={i * dw + 6} y={topH + 12} width={dw - 12} height={h - topH - 20} rx={9} fill="#EFD6AC" />
-              <Rect x={i * dw + 12} y={topH + 18} width={dw - 24} height={h - topH - 32} rx={6} fill="none" stroke={LIT} strokeWidth={2.5} />
-              <Rect x={i * dw + dw / 2 - 16} y={topH + 20} width={32} height={6} rx={3} fill="#B99A6A" />
+              <Rect x={i * dw + 6} y={d + topH + 12} width={dw - 12} height={h - topH - 20} rx={9} fill="#EFD6AC" />
+              <Rect
+                x={i * dw + 12}
+                y={d + topH + 18}
+                width={dw - 24}
+                height={h - topH - 32}
+                rx={6}
+                fill="none"
+                stroke={LIT}
+                strokeWidth={2.5}
+              />
+              <Rect x={i * dw + dw / 2 - 16} y={d + topH + 20} width={32} height={6} rx={3} fill="#B99A6A" />
             </G>
           );
         })}
-        {/* the worktop itself */}
-        <Rect x={0} y={0} width={w} height={topH} rx={4} fill={palette.wood} />
-        <Rect x={0} y={0} width={w} height={topH * 0.44} fill="#D89A5D" />
-        <Rect x={0} y={0} width={w} height={3.5} fill="rgba(255,255,255,0.5)" />
-        {/* grain */}
-        {Array.from({ length: 4 }, (_, i) => (
-          <Rect key={`g${i}`} x={w * (0.06 + i * 0.23)} y={topH * 0.16} width={w * 0.16} height={2} rx={1} fill="rgba(255,255,255,0.22)" />
-        ))}
-        <Rect x={0} y={topH - 5} width={w} height={5} fill={palette.woodDark} />
+        {/* the front nose of the slab */}
+        <Rect x={0} y={d} width={w} height={topH} rx={d > 0 ? 0 : 4} fill={palette.wood} />
+        <Rect x={0} y={d} width={w} height={topH * 0.44} fill="#D89A5D" />
+        <Rect x={0} y={d} width={w} height={3.5} fill="rgba(255,255,255,0.5)" />
+        {d > 0
+          ? null
+          : Array.from({ length: 4 }, (_, i) => (
+              <Rect key={`g${i}`} x={w * (0.06 + i * 0.23)} y={topH * 0.16} width={w * 0.16} height={2} rx={1} fill="rgba(255,255,255,0.22)" />
+            ))}
+        <Rect x={0} y={d + topH - 5} width={w} height={5} fill={palette.woodDark} />
+      </Svg>
+    </View>
+  );
+}
+
+/**
+ * The soft navy ellipse every object standing on a surface owes the surface.
+ * `ry ≈ rx × 0.22`, per the art direction — one shape, two opacities, so a
+ * heavy thing reads as heavy and a light thing barely marks the wood.
+ */
+export function ContactPatch({ s, cx, y, rx, strength = 1 }: { s: number; cx: number; y: number; rx: number; strength?: number }) {
+  const ry = rx * 0.22;
+  const w = rx * 2.5;
+  const h = ry * 3;
+  return (
+    <View style={at(s, cx - w / 2, y - h / 2, w, h)} pointerEvents="none">
+      <Svg width={w * s} height={h * s} viewBox={`0 0 ${w} ${h}`}>
+        <Ellipse cx={w / 2} cy={h / 2} rx={rx * 1.16} ry={ry * 1.3} fill={`rgba(31,42,90,${0.07 * strength})`} />
+        <Ellipse cx={w / 2} cy={h / 2} rx={rx} ry={ry} fill={`rgba(31,42,90,${0.15 * strength})`} />
       </Svg>
     </View>
   );
@@ -516,12 +596,11 @@ export function PinnedNote({ s, x, y, w, tone = '#FFF8EA' }: { s: number; x: num
  * runs `depth` units down from there, to the worktop.
  */
 export function SplashbackBand({ s, x, y, w, depth = 34 }: { s: number; x: number; y: number; w: number; depth?: number }) {
-  const band = 22;
+  const band = 19;
   const h = Math.max(band + 2, depth);
-  const cell = 30;
+  const cell = 26;
   const n = Math.max(2, Math.round(w / cell));
   const step = w / n;
-  const tones = [palette.engineRed, palette.safetyYellow, palette.leafGreen, palette.waterCyan];
   const rows = Math.max(1, Math.round((h - band) / 18));
   return (
     <View style={at(s, x, y, w, h)} pointerEvents="none">
@@ -543,15 +622,23 @@ export function SplashbackBand({ s, x, y, w, depth = 34 }: { s: number; x: numbe
         {Array.from({ length: rows }, (_, r) => (
           <Rect key={`sr${r}`} x={0} y={band + r * ((h - band) / rows)} width={w} height={1.2} fill={GROUT} />
         ))}
-        {/* the accent course */}
+        {/* The accent course. It used to be four hues of big diamond, one per
+            30 units — with a pot or a jug standing in front of it, all a child
+            saw was two coloured arrowheads stranded at the frame edges. One
+            hue, small, evenly spaced: a tile border, not confetti. */}
         <Rect x={0} y={0} width={w} height={band} fill="#FFF8EA" />
         {Array.from({ length: n }, (_, i) => {
-          const c = tones[i % tones.length] ?? palette.engineRed;
           const cx = i * step + step / 2;
           return (
             <G key={`t${i}`}>
-              <Rect x={i * step + 1} y={1} width={step - 2} height={band - 2} rx={2.5} fill="#FFFDF6" />
-              <Path d={`M${cx} 5 L${cx + 6.5} ${band / 2} L${cx} ${band - 5} L${cx - 6.5} ${band / 2} Z`} fill={c} opacity={0.9} />
+              <Rect x={i * step + 0.8} y={1} width={step - 1.6} height={band - 2} rx={2} fill="#FFFDF6" />
+              {i % 2 === 0 ? (
+                <Path
+                  d={`M${cx} 5 L${cx + 4.6} ${band / 2} L${cx} ${band - 5} L${cx - 4.6} ${band / 2} Z`}
+                  fill={palette.engineRed}
+                  opacity={0.62}
+                />
+              ) : null}
             </G>
           );
         })}

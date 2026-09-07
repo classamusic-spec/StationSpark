@@ -243,6 +243,129 @@ export function Mug({ x, baseY, s, tint = palette.cream }: { x: number; baseY: n
   );
 }
 
+/**
+ * A station wall clock. Every room we draw is a working room, and a working
+ * room has a clock on it — it is the cheapest way to make a bare band of wall
+ * read as somewhere rather than as paint.
+ */
+export function WallClock({ cx, cy, r, tone = palette.engineRed }: { cx: number; cy: number; r: number; tone?: string }) {
+  return (
+    <G>
+      <Circle cx={cx} cy={cy + r * 0.06} r={r} fill={SHADE_SOFT} />
+      <Circle cx={cx} cy={cy} r={r} fill={tone} />
+      <Circle cx={cx} cy={cy} r={r * 0.84} fill={palette.cream} />
+      <Path d={`M ${cx - r} ${cy} a ${r} ${r} 0 0 1 ${r} ${-r} l 0 ${r * 0.16} a ${r * 0.84} ${r * 0.84} 0 0 0 ${-r * 0.84} ${r * 0.84} z`} fill={HILITE_STRONG} opacity={0.5} />
+      {/* four quarter ticks concatenated into one path — never four nodes */}
+      <Path
+        d={
+          `M ${cx - 1.6} ${cy - r * 0.74} h 3.2 v ${r * 0.2} h -3.2 z ` +
+          `M ${cx - 1.6} ${cy + r * 0.54} h 3.2 v ${r * 0.2} h -3.2 z ` +
+          `M ${cx - r * 0.74} ${cy - 1.6} h ${r * 0.2} v 3.2 h ${-r * 0.2} z ` +
+          `M ${cx + r * 0.54} ${cy - 1.6} h ${r * 0.2} v 3.2 h ${-r * 0.2} z`
+        }
+        fill={palette.navyMuted}
+        opacity={0.55}
+      />
+      <Path d={`M ${cx} ${cy} L ${cx + r * 0.36} ${cy - r * 0.3}`} stroke={palette.navy} strokeWidth={Math.max(2, r * 0.13)} strokeLinecap="round" />
+      <Path d={`M ${cx} ${cy} L ${cx - r * 0.12} ${cy - r * 0.6}`} stroke={palette.navy} strokeWidth={Math.max(1.6, r * 0.09)} strokeLinecap="round" />
+      <Circle cx={cx} cy={cy} r={Math.max(1.8, r * 0.1)} fill={palette.safetyYellow} />
+    </G>
+  );
+}
+
+/**
+ * A framed picture on a wall — mount, frame, glass sheen, and a simple drawn
+ * motif so the frame is never an empty rectangle.
+ */
+export function Poster({
+  x,
+  y,
+  w,
+  h,
+  s,
+  motif = 'engine',
+  frame = palette.wood,
+}: {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  s: number;
+  motif?: 'engine' | 'hills' | 'helmet';
+  frame?: string;
+}) {
+  const ix = x + 5 * s;
+  const iy = y + 5 * s;
+  const iw = w - 10 * s;
+  const ih = h - 10 * s;
+  return (
+    <G>
+      <Rect x={x + 2} y={y + 4} width={w} height={h} rx={7} fill={SHADE_SOFT} />
+      <Rect x={x} y={y} width={w} height={h} rx={7} fill={frame} />
+      <Rect x={x} y={y} width={w} height={h - 4 * s} rx={7} fill={HILITE_SOFT} />
+      <Rect x={ix} y={iy} width={iw} height={ih} rx={3} fill={motif === 'hills' ? '#CFEAFF' : palette.panel} />
+      {motif === 'engine' ? (
+        <G>
+          <Rect x={ix + iw * 0.12} y={iy + ih * 0.46} width={iw * 0.72} height={ih * 0.28} rx={4} fill={palette.engineRed} />
+          <Rect x={ix + iw * 0.12} y={iy + ih * 0.46} width={iw * 0.72} height={ih * 0.09} rx={3} fill={HILITE} />
+          <Rect x={ix + iw * 0.12} y={iy + ih * 0.68} width={iw * 0.72} height={ih * 0.07} rx={3} fill={palette.safetyYellow} />
+          <Circle cx={ix + iw * 0.28} cy={iy + ih * 0.78} r={Math.max(2, ih * 0.07)} fill={palette.charcoal} />
+          <Circle cx={ix + iw * 0.7} cy={iy + ih * 0.78} r={Math.max(2, ih * 0.07)} fill={palette.charcoal} />
+        </G>
+      ) : motif === 'hills' ? (
+        <G>
+          <Circle cx={ix + iw * 0.74} cy={iy + ih * 0.3} r={Math.max(3, ih * 0.14)} fill={palette.safetyYellow} />
+          <Path d={`M ${ix} ${iy + ih} L ${ix + iw * 0.36} ${iy + ih * 0.42} L ${ix + iw * 0.66} ${iy + ih} z`} fill={palette.grass} />
+          <Path d={`M ${ix + iw * 0.4} ${iy + ih} L ${ix + iw * 0.76} ${iy + ih * 0.54} L ${ix + iw} ${iy + ih} z`} fill={palette.grassDark} />
+        </G>
+      ) : (
+        <G>
+          <HelmetProp cx={ix + iw / 2} cy={iy + ih * 0.66} r={Math.min(iw, ih) * 0.3} />
+        </G>
+      )}
+      <Path d={`M ${ix} ${iy + ih} L ${ix + iw * 0.44} ${iy} L ${ix + iw * 0.62} ${iy} L ${ix + iw * 0.18} ${iy + ih} z`} fill={HILITE_SOFT} />
+    </G>
+  );
+}
+
+/**
+ * Paving joints for a ground plane, as ONE path.
+ *
+ * A flat slab of colour across the foot of a scene is the single most common
+ * way a backdrop goes bland, and the cure is texture rather than props: the
+ * ground gets a running bond of joints, so it reads as a surface with a size.
+ */
+export function Paving({
+  w,
+  top,
+  bottom,
+  s,
+  unit = 74,
+  tone = SHADE_SOFT,
+}: {
+  w: number;
+  top: number;
+  bottom: number;
+  s: number;
+  unit?: number;
+  tone?: string;
+}) {
+  const step = Math.max(22, unit * s);
+  const rows = Math.max(1, Math.ceil((bottom - top) / (step * 0.42)));
+  let d = '';
+  for (let r = 0; r < rows; r += 1) {
+    const y = top + (r + 1) * step * 0.42;
+    if (y > bottom) break;
+    d += `M 0 ${y.toFixed(1)} h ${w.toFixed(1)} v 2 h ${(-w).toFixed(1)} z `;
+    const offset = r % 2 ? step / 2 : 0;
+    for (let c = 0; c * step + offset < w + step; c += 1) {
+      const x = c * step + offset;
+      d += `M ${x.toFixed(1)} ${y.toFixed(1)} h 2 v ${(-step * 0.42).toFixed(1)} h -2 z `;
+    }
+  }
+  return <Path d={d} fill={tone} />;
+}
+
 /* ------------------------------------------------------------------ */
 /* Idle life                                                           */
 /* ------------------------------------------------------------------ */
@@ -441,9 +564,10 @@ export const RadioRoom = memo(function RadioRoom({ box }: { box: PlayBox }) {
         <Rect x={mapX} y={bandTop + boardH * 0.44} width={mapW} height={Math.max(5, boardH * 0.09)} fill="#EFF2F9" />
         <Rect x={mapX + mapW * 0.33} y={bandTop} width={Math.max(5, mapW * 0.05)} height={boardH} fill="#EFF2F9" />
         <Rect x={mapX + mapW * 0.66} y={bandTop} width={Math.max(4, mapW * 0.04)} height={boardH} fill="#EFF2F9" />
-        {/* river */}
+        {/* river — inset by half its own stroke so the round caps stay inside
+            the frame instead of poking out past the map's left edge */}
         <Path
-          d={`M ${mapX} ${bandTop + boardH * 0.86} Q ${mapX + mapW * 0.35} ${bandTop + boardH * 0.72} ${mapX + mapW} ${bandTop + boardH * 0.9}`}
+          d={`M ${mapX + Math.max(3, boardH * 0.05)} ${bandTop + boardH * 0.84} Q ${mapX + mapW * 0.35} ${bandTop + boardH * 0.7} ${mapX + mapW - Math.max(3, boardH * 0.05)} ${bandTop + boardH * 0.88}`}
           stroke={palette.waterCyanLight}
           strokeWidth={Math.max(5, boardH * 0.1)}
           fill="none"
@@ -533,14 +657,57 @@ export const RadioRoom = memo(function RadioRoom({ box }: { box: PlayBox }) {
         </G>
         {/* cable run down the wall into the desk */}
         <Path
-          d={`M ${acX + acW * 0.9} ${acTop + acH * 0.1} q ${10 * s} ${acH * 0.4} ${-4 * s} ${acH * 0.9}`}
+          d={`M ${acX + acW * 0.96} ${acTop + acH * 0.1} q ${10 * s} ${acH * 0.4} ${-4 * s} ${acH * 0.9}`}
           stroke={palette.charcoal}
           strokeWidth={Math.max(2.5, 4 * s)}
           fill="none"
           strokeLinecap="round"
           opacity={0.55}
         />
-        <Rect x={acX + acW * 0.86} y={acTop + acH * 0.06} width={9 * s} height={9 * s} rx={2.5} fill="#7A86AC" />
+        <Rect x={acX + acW * 0.93} y={acTop + acH * 0.06} width={9 * s} height={9 * s} rx={2.5} fill="#7A86AC" />
+
+        {/*
+         * EVERYTHING ON THIS PANEL LIVES IN ITS TOP HALF. The console
+         * (Dispatch) and the call sheet (Signals) both stand across the lower
+         * part of this wall, so anything hung below the midline comes out as a
+         * fragment poking round the furniture. The watch clock, the charger
+         * rack of handhelds and the station photograph all sit above it.
+         */}
+        {acH > 74 * s ? (
+          <G>
+            <G>
+              {(() => {
+                const rw = clamp(acW * 0.22, 52, 140);
+                const rh = clamp(acH * 0.16, 24, 58);
+                const rx0 = acX + acW * 0.32;
+                const ry0 = acTop + acH * 0.34;
+                return (
+                  <G>
+                    <Rect x={rx0} y={ry0} width={rw} height={rh} rx={7} fill="#77839F" />
+                    <Rect x={rx0} y={ry0} width={rw} height={rh * 0.24} rx={5} fill={HILITE_SOFT} />
+                    {[0, 1, 2].map((i) => (
+                      <G key={`hh${i}`}>
+                        <Rect x={rx0 + rw * (0.1 + i * 0.3)} y={ry0 + rh * 0.2} width={rw * 0.2} height={rh * 0.66} rx={3} fill={palette.charcoalDark} />
+                        <Rect x={rx0 + rw * (0.1 + i * 0.3)} y={ry0 + rh * 0.26} width={rw * 0.2} height={rh * 0.16} rx={2} fill={palette.leafGreen} opacity={0.85} />
+                        <Rect x={rx0 + rw * (0.17 + i * 0.3)} y={ry0 + rh * 0.04} width={rw * 0.05} height={rh * 0.18} rx={2} fill={palette.slate} />
+                      </G>
+                    ))}
+                  </G>
+                );
+              })()}
+            </G>
+            <WallClock cx={acX + acW * 0.86} cy={acTop + acH * 0.2} r={clamp(acH * 0.13, 12, 32)} tone={palette.navySoft} />
+            <Poster
+              x={acX + acW * 0.68}
+              y={acTop + acH * 0.4}
+              w={clamp(acW * 0.17, 42, 110)}
+              h={clamp(acH * 0.2, 30, 76)}
+              s={s}
+              motif="engine"
+              frame={palette.tanDark}
+            />
+          </G>
+        ) : null}
       </G>
 
       {/* --- the desk --- */}
@@ -780,8 +947,41 @@ export const StoreRoom = memo(function StoreRoom({
         </G>
       ) : null}
 
+      {/*
+       * THE BAND BETWEEN THE SHELF AND THE BENCH. With a bench in the room the
+       * old tool rail switched itself off and left a hand's width of bare
+       * planking across the middle of the frame.
+       *
+       * It is dressed with WALL, not with props: whatever the game stands on
+       * the bench — three gear bins, a crate, a row of name plaques — occupies
+       * most of this band, and anything object-shaped drawn here ends up half
+       * behind it. A dado rail and a half-tone below it read correctly at any
+       * height and can never collide with the activity.
+       */}
+      {dressMiddle && benchY !== undefined && wallBottom - (shelfY + 40 * s) > 46 * s
+        ? (() => {
+            const dado = shelfY + clamp((wallBottom - shelfY) * 0.28, 34, 110);
+            return (
+              <G>
+                <Rect x={0} y={dado} width={w} height={wallBottom - dado + 8} fill="rgba(31,42,90,0.055)" />
+                <Rect x={0} y={dado} width={w} height={5 * s} rx={2.5 * s} fill="#C4AC80" />
+                <Rect x={0} y={dado} width={w} height={2 * s} rx={1 * s} fill={HILITE} />
+                <Rect x={0} y={dado + 5 * s} width={w} height={2.4 * s} fill={SHADE_SOFT} />
+                {/* the tongue-and-groove of the boarding below the rail */}
+                <Path
+                  d={[0.1, 0.3, 0.5, 0.7, 0.9]
+                    .map((f) => `M ${(w * f).toFixed(1)} ${(dado + 10 * s).toFixed(1)} h 2 v ${(wallBottom - dado - 10 * s).toFixed(1)} h -2 z `)
+                    .join('')}
+                  fill={HILITE_SOFT}
+                />
+              </G>
+            );
+          })()
+        : null}
+
       {/* floor: painted safety line, joint lines and a drain */}
       <Ground w={w} h={h} top={floorTop} near="#CBD2E3" lip="#E1E6F1" />
+      <Paving w={w} top={floorTop + 18 * s} bottom={h} s={s} unit={70} />
       <Rect x={0} y={floorTop + 12 * s} width={w} height={4 * s} rx={2 * s} fill={palette.safetyYellow} opacity={0.7} />
       <G>
         <Rect x={w * 0.44} y={h - 18 * s} width={24 * s} height={11 * s} rx={4} fill="#B4BCD2" />
@@ -803,12 +1003,29 @@ export const StoreRoom = memo(function StoreRoom({
           <Rect x={0} y={benchY} width={w} height={14 * s} rx={6 * s} fill={palette.wood} />
           <Rect x={0} y={benchY} width={w} height={4.4 * s} rx={2.2 * s} fill="#DDAE72" />
           <Rect x={0} y={benchY + 11 * s} width={w} height={3.4 * s} fill={SHADE_SOFT} />
-          {/* a vice clamped to the near end */}
-          <G>
-            <Rect x={w * 0.03} y={benchY - 15 * s} width={26 * s} height={15 * s} rx={4} fill="#7E88A8" />
-            <Rect x={w * 0.03} y={benchY - 15 * s} width={26 * s} height={5 * s} rx={2.5} fill={HILITE_SOFT} />
-            <Rect x={w * 0.03 + 9 * s} y={benchY - 22 * s} width={8 * s} height={8 * s} rx={3} fill="#5A6488" />
-          </G>
+          {/*
+           * The bench dressing lives on the APRON, under the top — a vice
+           * standing on the bench top collided with whatever the game stands
+           * there (it poked out of the first gear bin at every size). Under the
+           * top there is nothing to hit: two drawer fronts and a hanging cloth.
+           */}
+          {h - benchY > 34 * s ? (
+            <G>
+              {[0.16, 0.56].map((f, i) => {
+                const dw = w * 0.28;
+                const dy = benchY + 24 * s;
+                const dh = Math.max(10, h - dy - 6 * s);
+                return (
+                  <G key={`bd${i}`}>
+                    <Rect x={w * f} y={dy} width={dw} height={dh} rx={5} fill="#8E5F2E" />
+                    <Rect x={w * f} y={dy} width={dw} height={dh - 3 * s} rx={5} fill="#B07A3E" />
+                    <Rect x={w * f} y={dy} width={dw} height={2.6 * s} rx={1.3 * s} fill={HILITE_SOFT} />
+                    <Rect x={w * f + dw * 0.32} y={dy + dh * 0.42} width={dw * 0.36} height={Math.max(3.4, 4 * s)} rx={2 * s} fill="#6E4823" />
+                  </G>
+                );
+              })}
+            </G>
+          ) : null}
         </G>
       ) : null}
     </SceneLayer>
@@ -885,6 +1102,25 @@ export const ClockTower = memo(function ClockTower({
         {Array.from({ length: Math.max(3, Math.round((h - capY) / (46 * s))) }, (_, i) => (
           <Rect key={`sc${i}`} x={tx} y={capY + (i + 1) * 46 * s} width={towerW} height={2.4} fill={SHADE_SOFT} />
         ))}
+        {/*
+         * QUOINS. The shaft is the largest single surface in this game, and a
+         * course line every 46 px was not enough to stop it reading as a sheet
+         * of cream. Dressed stones down both angles give the tower its
+         * masonry — and they cost one path each, not one node per block.
+         */}
+        {[0, 1].map((side) => (
+          <Path
+            key={`qn${side}`}
+            d={Array.from({ length: Math.max(2, Math.round((h - capY) / (46 * s))) }, (_, i) => {
+              const qy = capY + i * 46 * s + 4 * s;
+              const long = i % 2 === 0;
+              const qw = (long ? 34 : 22) * s;
+              const qx = side === 0 ? tx + 3 * s : tx + towerW - 3 * s - qw;
+              return `M ${qx.toFixed(1)} ${qy.toFixed(1)} h ${qw.toFixed(1)} v ${(42 * s).toFixed(1)} h ${(-qw).toFixed(1)} z `;
+            }).join('')}
+            fill={side === 0 ? HILITE_SOFT : SHADE_SOFT}
+          />
+        ))}
         {/* cornice above the dial */}
         <Rect x={tx - 12 * s} y={capY} width={towerW + 24 * s} height={13 * s} rx={6 * s} fill="#E2CDA6" />
         <Rect x={tx - 12 * s} y={capY + 13 * s} width={towerW + 24 * s} height={5 * s} rx={2.5 * s} fill={SHADE} />
@@ -935,6 +1171,28 @@ export const ClockTower = memo(function ClockTower({
           />
         ))}
       </G>
+
+      {/* --- a carved roundel between the louvres, so the base is not bare --- */}
+      {h - ledgeY > 70 * s ? (
+        <G>
+          {(() => {
+            const ry = ledgeY + (h - ledgeY) * 0.44;
+            const rr = clamp((h - ledgeY) * 0.16, 11, 34);
+            return (
+              <G>
+                <Circle cx={tx + towerW / 2} cy={ry + 2} r={rr} fill={SHADE_SOFT} />
+                <Circle cx={tx + towerW / 2} cy={ry} r={rr} fill="#E2CDA6" />
+                <Circle cx={tx + towerW / 2} cy={ry} r={rr * 0.78} fill="#EFE0C1" />
+                <Path
+                  d={`M ${tx + towerW / 2} ${ry - rr * 0.56} l ${rr * 0.2} ${rr * 0.4} l ${rr * 0.44} ${rr * 0.06} l ${-rr * 0.34} ${rr * 0.32} l ${rr * 0.1} ${rr * 0.44} l ${-rr * 0.4} ${-rr * 0.22} l ${-rr * 0.4} ${rr * 0.22} l ${rr * 0.1} ${-rr * 0.44} l ${-rr * 0.34} ${-rr * 0.32} l ${rr * 0.44} ${-rr * 0.06} z`}
+                  fill={palette.safetyYellow}
+                  opacity={0.9}
+                />
+              </G>
+            );
+          })()}
+        </G>
+      ) : null}
 
       {/* --- louvred openings below the ledge --- */}
       <G>
@@ -1036,6 +1294,47 @@ export const TrainingYard = memo(function TrainingYard({ box }: { box: PlayBox }
           ))}
         </G>
       ))}
+      {/*
+       * The lower wall takes a second value. Above the red band the blocks used
+       * to run all the way to the props in one unbroken field — the flattest
+       * band in the yard, and the one the child stares at while they think.
+       */}
+      <Rect x={0} y={groundTop - (groundTop - wallTop) * 0.42} width={w} height={(groundTop - wallTop) * 0.42 + 6} fill="rgba(31,42,90,0.055)" />
+      {/* a gear rail across the middle of the wall, hung with hose and coats */}
+      {groundTop - wallTop > 150 * s ? (
+        <G>
+          {(() => {
+            const railY = groundTop - (groundTop - wallTop) * 0.5;
+            return (
+              <G>
+                <Rect x={w * 0.28} y={railY} width={w * 0.44} height={5.4 * s} rx={2.7 * s} fill="#9AA4C4" />
+                <Rect x={w * 0.28} y={railY} width={w * 0.44} height={2 * s} rx={1 * s} fill={HILITE} />
+                {[0.32, 0.42, 0.52, 0.62].map((f, i) => (
+                  <G key={`gr${i}`}>
+                    <Path d={`M ${w * f} ${railY + 5 * s} v ${6 * s} a ${3.6 * s} ${3.6 * s} 0 0 0 ${7 * s} 0`} stroke={palette.slate} strokeWidth={2.8 * s} fill="none" strokeLinecap="round" />
+                    {i % 2 === 0 ? (
+                      <Path
+                        d={`M ${w * f} ${railY + 14 * s} h ${9 * s} l ${3 * s} ${26 * s} q ${-7 * s} ${5 * s} ${-15 * s} 0 z`}
+                        fill={[palette.charcoal, palette.navySoft][i % 2]}
+                      />
+                    ) : (
+                      <Rect x={w * f - 1 * s} y={railY + 14 * s} width={12 * s} height={22 * s} rx={5 * s} fill={[palette.safetyYellow, palette.engineRedLight][i % 2]} />
+                    )}
+                  </G>
+                ))}
+                {/* an equipment cabinet at the end of the rail */}
+                <G>
+                  <Rect x={w * 0.76} y={railY - 4 * s} width={34 * s} height={40 * s} rx={6} fill="#E3E8F2" />
+                  <Rect x={w * 0.76} y={railY - 4 * s} width={34 * s} height={35 * s} rx={6} fill={palette.white} />
+                  <Rect x={w * 0.76 + 13 * s} y={railY + 5 * s} width={8 * s} height={20 * s} rx={2.4} fill={palette.engineRed} />
+                  <Rect x={w * 0.76 + 7 * s} y={railY + 11 * s} width={20 * s} height={8 * s} rx={2.4} fill={palette.engineRed} />
+                  <Rect x={w * 0.76 + 31 * s} y={railY + 12 * s} width={4 * s} height={9 * s} rx={2} fill={palette.slate} />
+                </G>
+              </G>
+            );
+          })()}
+        </G>
+      ) : null}
       {/* painted red band */}
       <Rect x={0} y={groundTop - 34 * s} width={w} height={13 * s} fill={palette.engineRed} opacity={0.75} />
       <Rect x={0} y={groundTop - 34 * s} width={w} height={4 * s} fill={HILITE_SOFT} />
@@ -1106,9 +1405,20 @@ export const TrainingYard = memo(function TrainingYard({ box }: { box: PlayBox }
 
       {/* apron */}
       <Ground w={w} h={h} top={groundTop} near="#C7CFE1" lip="#DEE4F1" />
+      <Paving w={w} top={groundTop + 18 * s} bottom={h} s={s} unit={76} />
       {[0.34, 0.66].map((f, i) => (
         <Rect key={`ck${i}`} x={w * 0.08} y={groundTop + (h - groundTop) * f} width={w * 0.84} height={3 * s} rx={1.5 * s} fill={palette.white} opacity={0.5} />
       ))}
+      {/* a wet patch where the yard has been hosed down — the apron's one soft
+          shape, and the reason the ground is not a flat sheet of grey */}
+      <Ellipse cx={w * 0.44} cy={h - 10 * s} rx={clamp(w * 0.22, 40, 170)} ry={9 * s} fill={palette.waterCyanLight} opacity={0.4} />
+      <Ellipse cx={w * 0.3} cy={h - 16 * s} rx={clamp(w * 0.09, 18, 70)} ry={5 * s} fill={palette.waterCyanLight} opacity={0.3} />
+      {/* a stack of spare hose reels in the near corner */}
+      <G>
+        <Contact cx={w * 0.17} cy={h - 6 * s} rx={22 * s} />
+        <HoseCoil cx={w * 0.17} cy={h - 16 * s} r={15 * s} />
+        <HoseCoil cx={w * 0.17 + 4 * s} cy={h - 34 * s} r={12 * s} tone={palette.engineRedLight} />
+      </G>
       {/* standpipe */}
       <G>
         <Contact cx={w * 0.07} cy={h - 8 * s} rx={16 * s} />
@@ -1207,17 +1517,74 @@ export const Classroom = memo(function Classroom({ box }: { box: PlayBox }) {
         <Rect x={m.boardX - 10 * s} y={m.boardY - 8 * s} width={m.boardW + 20 * s} height={m.boardH + 14 * s} rx={14} fill={palette.wood} />
         <Rect x={m.boardX} y={m.boardY} width={m.boardW} height={m.boardH} rx={8} fill="#2F3A50" />
         <Rect x={m.boardX} y={m.boardY} width={m.boardW} height={m.boardH * 0.24} rx={8} fill="#3B4760" />
-        {/* faint chalk work, so the board is never a black hole */}
-        {[0.16, 0.28, 0.4].map((f, i) => (
-          <Rect key={`ch${i}`} x={m.boardX + m.boardW * 0.07} y={m.boardY + m.boardH * f} width={m.boardW * (0.62 - i * 0.14)} height={2.6} rx={1.3} fill={palette.white} opacity={0.14} />
-        ))}
-        <G opacity={0.15}>
+        {/*
+         * CHALK WORK. A blackboard with nothing on it is the same defect as a
+         * band of raw sky: a big flat field in the middle of the frame. The
+         * board is a used one — a wiped sweep, a heading rule, a number line, a
+         * chalk engine and a sun — all pushed to the margins so the word card
+         * the game pins in the middle still lands on quiet board.
+         */}
+        {/* the wiped sweep: what a cloth leaves behind, and the board's material */}
+        <Path
+          d={`M ${m.boardX} ${m.boardY + m.boardH * 0.72} Q ${m.boardX + m.boardW * 0.3} ${m.boardY + m.boardH * 0.3} ${m.boardX + m.boardW * 0.62} ${m.boardY + m.boardH * 0.5} Q ${m.boardX + m.boardW * 0.86} ${m.boardY + m.boardH * 0.64} ${m.boardX + m.boardW} ${m.boardY + m.boardH * 0.38} L ${m.boardX + m.boardW} ${m.boardY + m.boardH * 0.9} Q ${m.boardX + m.boardW * 0.5} ${m.boardY + m.boardH * 0.62} ${m.boardX} ${m.boardY + m.boardH * 0.94} z`}
+          fill={palette.white}
+          opacity={0.05}
+        />
+        {/*
+         * The chalk lives in the top and bottom TENTHS of the board and
+         * nowhere else. Word Builder pins a full-height sheet over the middle
+         * of this board, and anything drawn under it came out as a half-hidden
+         * fragment poking round the paper — a stray mark, not a drawing.
+         */}
+        {/* heading: a double rule with a hand-written wave, top-left */}
+        <G opacity={0.26}>
+          <Rect x={m.boardX + m.boardW * 0.07} y={m.boardY + m.boardH * 0.035} width={m.boardW * 0.3} height={3} rx={1.5} fill={palette.white} />
           <Path
-            d={`M ${m.boardX + m.boardW * 0.78} ${m.boardY + m.boardH * 0.34} l ${m.boardW * 0.06} ${-m.boardH * 0.14} l ${m.boardW * 0.06} ${m.boardH * 0.14} z`}
+            d={`M ${m.boardX + m.boardW * 0.07} ${m.boardY + m.boardH * 0.085} q ${m.boardW * 0.03} ${-8} ${m.boardW * 0.06} 0 q ${m.boardW * 0.03} ${8} ${m.boardW * 0.06} 0 q ${m.boardW * 0.03} ${-8} ${m.boardW * 0.06} 0`}
+            stroke={palette.white}
+            strokeWidth={2.6}
+            fill="none"
+            strokeLinecap="round"
+          />
+        </G>
+        {/* a chalk engine, drawn in outline the way a teacher would, top-right */}
+        <G opacity={0.22}>
+          <Rect x={m.boardX + m.boardW * 0.74} y={m.boardY + m.boardH * 0.028} width={m.boardW * 0.18} height={m.boardH * 0.048} rx={4} fill="none" stroke={palette.white} strokeWidth={2.4} />
+          <Rect x={m.boardX + m.boardW * 0.74} y={m.boardY + m.boardH * 0.008} width={m.boardW * 0.06} height={m.boardH * 0.024} rx={3} fill="none" stroke={palette.white} strokeWidth={2.2} />
+          <Circle cx={m.boardX + m.boardW * 0.785} cy={m.boardY + m.boardH * 0.084} r={Math.max(2.6, m.boardH * 0.016)} fill="none" stroke={palette.white} strokeWidth={2.2} />
+          <Circle cx={m.boardX + m.boardW * 0.885} cy={m.boardY + m.boardH * 0.084} r={Math.max(2.6, m.boardH * 0.016)} fill="none" stroke={palette.white} strokeWidth={2.2} />
+        </G>
+        {/* a number line along the foot: ticks in ONE path */}
+        <G opacity={0.2}>
+          <Rect x={m.boardX + m.boardW * 0.07} y={m.boardY + m.boardH * 0.945} width={m.boardW * 0.44} height={2.6} rx={1.3} fill={palette.white} />
+          <Path
+            d={Array.from({ length: 6 }, (_, i) => {
+              const tx = m.boardX + m.boardW * (0.07 + i * 0.088);
+              return `M ${tx.toFixed(1)} ${(m.boardY + m.boardH * 0.945 - 5).toFixed(1)} h 2.6 v 12 h -2.6 z `;
+            }).join('')}
             fill={palette.white}
           />
-          <Rect x={m.boardX + m.boardW * 0.79} y={m.boardY + m.boardH * 0.34} width={m.boardW * 0.1} height={m.boardH * 0.1} rx={3} fill={palette.white} />
         </G>
+        {/* a chalk sun in the far corner */}
+        <G opacity={0.18}>
+          <Circle cx={m.boardX + m.boardW * 0.88} cy={m.boardY + m.boardH * 0.945} r={Math.max(6, m.boardH * 0.028)} fill="none" stroke={palette.white} strokeWidth={2.4} />
+          <Path
+            d={Array.from({ length: 8 }, (_, i) => {
+              const a = (i * Math.PI) / 4;
+              const r0 = Math.max(6, m.boardH * 0.028) + 3;
+              const r1 = r0 + Math.max(4, m.boardH * 0.018);
+              const cx0 = m.boardX + m.boardW * 0.88;
+              const cy0 = m.boardY + m.boardH * 0.945;
+              return `M ${(cx0 + Math.cos(a) * r0).toFixed(1)} ${(cy0 + Math.sin(a) * r0).toFixed(1)} L ${(cx0 + Math.cos(a) * r1).toFixed(1)} ${(cy0 + Math.sin(a) * r1).toFixed(1)} `;
+            }).join('')}
+            stroke={palette.white}
+            strokeWidth={2.2}
+            strokeLinecap="round"
+            fill="none"
+          />
+        </G>
+        {/* chalk dust settled along the bottom edge */}
+        <Rect x={m.boardX} y={m.boardY + m.boardH - 5} width={m.boardW} height={5} fill={palette.white} opacity={0.09} />
         {/* chalk ledge with chalk and an eraser */}
         <Rect x={m.boardX - 10 * s} y={m.boardY + m.boardH + 4 * s} width={m.boardW + 20 * s} height={9 * s} rx={4 * s} fill="#A2743F" />
         <Rect x={m.boardX - 10 * s} y={m.boardY + m.boardH + 4 * s} width={m.boardW + 20 * s} height={3 * s} rx={1.5 * s} fill={HILITE} />
@@ -1231,6 +1598,37 @@ export const Classroom = memo(function Classroom({ box }: { box: PlayBox }) {
       <Rect x={0} y={m.deskTop} width={w} height={h - m.deskTop} fill="#C0A87C" />
       <Rect x={0} y={m.deskTop} width={w} height={8 * s} rx={4 * s} fill="#EBD9B4" />
       <Rect x={0} y={m.deskTop + 8 * s} width={w} height={3.4 * s} fill={SHADE_SOFT} />
+      {/*
+       * The desk FACE. Left as one flat plank it was the last empty band in the
+       * room — so it gets what a desk really has: two drawer fronts with a rail
+       * handle each, a joint between them, and the grain of the wood.
+       */}
+      {h - m.deskTop > 26 * s
+        ? [0.06, 0.56].map((f, i) => {
+            const dw = w * 0.38;
+            const dx = w * f;
+            const dy = m.deskTop + 16 * s;
+            const dh = Math.max(12, h - dy - 8 * s);
+            return (
+              <G key={`dw${i}`}>
+                <Rect x={dx} y={dy} width={dw} height={dh} rx={6} fill="#B49A6C" />
+                <Rect x={dx} y={dy} width={dw} height={dh - 4 * s} rx={6} fill="#CBB183" />
+                <Rect x={dx} y={dy} width={dw} height={3.4 * s} rx={1.7 * s} fill={HILITE_SOFT} />
+                <Rect x={dx + dw * 0.3} y={dy + dh * 0.42} width={dw * 0.4} height={Math.max(4, 5 * s)} rx={2.5 * s} fill="#8E7A55" />
+                <Rect x={dx + dw * 0.3} y={dy + dh * 0.42} width={dw * 0.4} height={Math.max(1.6, 2 * s)} rx={1} fill={HILITE} />
+              </G>
+            );
+          })
+        : null}
+      <Path
+        d={[0.34, 0.62, 0.86]
+          .map((f) => {
+            const gy = m.deskTop + (h - m.deskTop) * f;
+            return `M ${(w * 0.02).toFixed(1)} ${gy.toFixed(1)} h ${(w * 0.96).toFixed(1)} v 2 h ${(-w * 0.96).toFixed(1)} z `;
+          })
+          .join('')}
+        fill="rgba(140,110,66,0.16)"
+      />
       <G>
         <Contact cx={w * 0.08} cy={m.deskTop + 2} rx={14 * s} />
         <Circle cx={w * 0.08} cy={m.deskTop - 10 * s} r={11 * s} fill={palette.engineRed} />
@@ -1300,6 +1698,14 @@ export const EngineBay = memo(function EngineBay({ box }: { box: PlayBox }) {
         </LinearGradient>
       </Defs>
       <Rect x={0} y={0} width={w} height={floorTop + 4} fill="url(#ebWall)" />
+      {/* block coursing on the bay wall — the surface gets a size, in one path */}
+      <Path
+        d={Array.from({ length: Math.max(2, Math.round(floorTop / (38 * s))) }, (_, i) => {
+          const cy = (i + 1) * 38 * s;
+          return `M 0 ${cy.toFixed(1)} h ${w.toFixed(1)} v 2 h ${(-w).toFixed(1)} z `;
+        }).join('')}
+        fill={SHADE_SOFT}
+      />
 
       {/* ceiling light strip */}
       <G>
@@ -1345,6 +1751,7 @@ export const EngineBay = memo(function EngineBay({ box }: { box: PlayBox }) {
 
       {/* the floor */}
       <Ground w={w} h={h} top={floorTop} near="#C6CEDF" lip="#DEE4F1" />
+      <Paving w={w} top={floorTop + 20 * s} bottom={h} s={s} unit={86} />
       <Rect x={w * 0.08} y={floorTop + 14 * s} width={w * 0.84} height={4 * s} rx={2 * s} fill={palette.safetyYellow} opacity={0.7} />
       <Ellipse cx={w * 0.22} cy={h - 12 * s} rx={30 * s} ry={7 * s} fill={palette.waterCyanLight} opacity={0.55} />
       <Ellipse cx={w * 0.78} cy={h - 8 * s} rx={20 * s} ry={5 * s} fill={SHADE_SOFT} />
@@ -1406,9 +1813,60 @@ function Shopfront({
           <Rect x={x + w * (0.14 + i * 0.42)} y={top + 16 * s + Math.max(10, h * 0.24)} width={w * 0.3} height={4 * s} rx={2 * s} fill={SHADE} />
         </G>
       ))}
+      {/*
+       * THE STOREY BETWEEN. From the sills to the signboard the façade used to
+       * be one unbroken slab of render — a hand's width of flat cream across
+       * the middle of the frame, which is the blandest thing a backdrop can do.
+       * It now gets a string course, a second storey of smaller windows with a
+       * flower box, and the render's own coursing.
+       */}
+      {h > 150 * s ? (
+        <G>
+          {/* render coursing: one path, so a whole wall costs a single node */}
+          <Path
+            d={[0.36, 0.44, 0.52, 0.6].map((f) => {
+              const cy = top + h * f;
+              return `M ${x.toFixed(1)} ${cy.toFixed(1)} h ${w.toFixed(1)} v 2 h ${(-w).toFixed(1)} z `;
+            }).join('')}
+            fill={SHADE_SOFT}
+          />
+          {/* string course */}
+          <Rect x={x - 3 * s} y={top + h * 0.32} width={w + 6 * s} height={6 * s} rx={3 * s} fill={roof} opacity={0.55} />
+          <Rect x={x - 3 * s} y={top + h * 0.32} width={w + 6 * s} height={2.2 * s} rx={1.1 * s} fill={HILITE} />
+          {/* second storey: three smaller sashes */}
+          {[0.12, 0.4, 0.68].map((f, i) => (
+            <G key={`sw${i}`}>
+              <Rect x={x + w * f} y={top + h * 0.4} width={w * 0.2} height={h * 0.14} rx={4} fill="#3D5290" />
+              <Rect x={x + w * f} y={top + h * 0.4} width={w * 0.2} height={h * 0.05} rx={4} fill="#5B72BE" />
+              <Rect x={x + w * f + w * 0.093} y={top + h * 0.4} width={2.4} height={h * 0.14} fill={palette.cream} opacity={0.55} />
+              <Rect x={x + w * (f - 0.015)} y={top + h * 0.54} width={w * 0.23} height={3.4 * s} rx={1.7 * s} fill={SHADE} />
+            </G>
+          ))}
+          {/* a window box on the middle sill — the one warm note on the storey */}
+          <G>
+            <Rect x={x + w * 0.385} y={top + h * 0.545} width={w * 0.23} height={h * 0.05} rx={3} fill={palette.woodDark} />
+            <Rect x={x + w * 0.385} y={top + h * 0.545} width={w * 0.23} height={h * 0.017} rx={2} fill={HILITE_SOFT} />
+            {[0.06, 0.115, 0.17].map((g, i) => (
+              <Circle key={`fl${i}`} cx={x + w * (0.385 + g)} cy={top + h * 0.54} r={Math.max(2.4, h * 0.016)} fill={[palette.engineRedLight, palette.safetyYellow, palette.pink][i % 3]} />
+            ))}
+          </G>
+          {/* a downpipe hugging the shaded edge */}
+          <Rect x={x + w - side * 0.55} y={top + h * 0.3} width={4.4 * s} height={h * 0.4} rx={2.2 * s} fill={SHADE} />
+        </G>
+      ) : null}
       {/* signage plate */}
       <Rect x={x + w * 0.14} y={base - h * 0.42} width={w * 0.72} height={Math.max(9, h * 0.11)} rx={5} fill={palette.cream} />
       <Rect x={x + w * 0.14} y={base - h * 0.42} width={w * 0.72} height={Math.max(3, h * 0.04)} rx={3} fill={HILITE} />
+      {/* drawn lettering, so the sign is a sign rather than a blank plate */}
+      <Path
+        d={[0.2, 0.34, 0.46, 0.56, 0.68].map((f, i) => {
+          const lw = w * (i % 2 ? 0.08 : 0.1);
+          const ly = base - h * 0.42 + Math.max(9, h * 0.11) * 0.42;
+          return `M ${(x + w * f).toFixed(1)} ${ly.toFixed(1)} h ${lw.toFixed(1)} v ${Math.max(2.6, h * 0.028).toFixed(1)} h ${(-lw).toFixed(1)} z `;
+        }).join('')}
+        fill={palette.navyMuted}
+        opacity={0.45}
+      />
       {/* awning */}
       <G>
         {Array.from({ length: 5 }, (_, i) => (
@@ -1480,6 +1938,8 @@ export const StreetBlock = memo(function StreetBlock({ box }: { box: PlayBox }) 
       {/* pavement + kerb + road */}
       <Ground w={w} h={h} top={roadTop} near="#C4CCDE" lip="#E3E8F2" />
       <Rect x={0} y={roadTop + 16 * s} width={w} height={4 * s} fill={SHADE_SOFT} />
+      {/* the flags of the pavement: material, not props */}
+      <Paving w={w} top={roadTop + 22 * s} bottom={h} s={s} unit={80} />
       {/* drain */}
       <G>
         <Rect x={w * 0.12} y={roadTop + 24 * s} width={24 * s} height={11 * s} rx={4} fill="#AEB6CC" />
@@ -1578,19 +2038,12 @@ export const MarketStreet = memo(function MarketStreet({ box, pavingTop: pavingO
 
       {/* paving */}
       <Ground w={w} h={h} top={pavingTop} near="#E3CFA6" lip="#F1E2C1" />
-      {[0, 1, 2].map((r) =>
-        Array.from({ length: 4 }, (_, c) => (
-          <Rect
-            key={`cb${r}-${c}`}
-            x={(c * w) / 4 + (r % 2 ? w / 8 : 0) - 10}
-            y={pavingTop + 22 * s + r * 20 * s}
-            width={w / 5}
-            height={5 * s}
-            rx={2.5 * s}
-            fill="rgba(158,106,54,0.14)"
-          />
-        )),
-      )}
+      {/* cobbles, as a running bond in a single path: the market's floor has a
+          size, so the stall reads as standing on a street rather than on paint */}
+      <Paving w={w} top={pavingTop + 16 * s} bottom={h} s={s} unit={54} tone="rgba(158,106,54,0.16)" />
+      <Rect x={0} y={pavingTop + 14 * s} width={w} height={3.4 * s} fill="rgba(158,106,54,0.2)" />
+      {/* the stall's own cast shadow, so it is planted rather than pasted on */}
+      <Ellipse cx={w * 0.5} cy={pavingTop + 20 * s} rx={w * 0.44} ry={11 * s} fill={palette.navy} opacity={0.07} />
       {/* chalk menu board propped at the near edge of the market */}
       <G>
         <Contact cx={w * 0.09} cy={h - 8 * s} rx={24 * s} />
@@ -1680,6 +2133,45 @@ export const PlanRoom = memo(function PlanRoom({ box }: { box: PlayBox }) {
         <Rect x={w * 0.86} y={14 * s} width={w * 0.1} height={26 * s} rx={6} fill={palette.engineRed} />
         <Rect x={w * 0.86} y={14 * s} width={w * 0.1} height={8 * s} rx={4} fill={HILITE} />
         <Circle cx={w * 0.91} cy={14 * s + 16 * s} r={5 * s} fill={palette.safetyYellow} />
+      </G>
+
+      {/*
+       * WAINSCOT. The plan board covers the middle of this wall, so what the
+       * child actually sees of the room is a strip above it and a strip below —
+       * and below it was one flat sheet of blueprint blue. A dado rail and a
+       * half-tone panelled skirt give the lower wall its own value, and the
+       * clock and the pinned elevation give the strip above the board something
+       * to be about.
+       */}
+      {(() => {
+        const dado = tableTop - clamp(tableTop * 0.16, 24, 96);
+        return (
+          <G>
+            <Rect x={0} y={dado} width={w} height={tableTop - dado + 4} fill="rgba(31,42,90,0.07)" />
+            <Rect x={0} y={dado} width={w} height={5 * s} rx={2.5 * s} fill="#DCE5F2" />
+            <Rect x={0} y={dado + 5 * s} width={w} height={2.4 * s} fill={SHADE_SOFT} />
+            {/* panel joints in the skirt — one path, four panels */}
+            <Path
+              d={[0.14, 0.38, 0.62, 0.86].map((f) => `M ${(w * f).toFixed(1)} ${(dado + 12 * s).toFixed(1)} h 2 v ${(tableTop - dado - 16 * s).toFixed(1)} h -2 z `).join('')}
+              fill={HILITE_SOFT}
+            />
+          </G>
+        );
+      })()}
+      {/* the watch clock and a wide pinned elevation, filling the band the top
+          props left bare */}
+      <WallClock cx={w * 0.5} cy={clamp(tableTop * 0.16, 30, 88)} r={clamp(tableTop * 0.055, 11, 26)} tone={palette.navySoft} />
+      <G>
+        <Rect x={w * 0.06} y={clamp(tableTop * 0.24, 56, 140)} width={w * 0.34} height={clamp(tableTop * 0.09, 16, 44)} rx={4} fill={palette.panel} opacity={0.9} />
+        <Rect x={w * 0.06} y={clamp(tableTop * 0.24, 56, 140)} width={w * 0.34} height={clamp(tableTop * 0.03, 5, 14)} rx={3} fill={HILITE} />
+        <Path
+          d={[0.09, 0.17, 0.25, 0.33].map((f) => {
+            const py = clamp(tableTop * 0.24, 56, 140) + clamp(tableTop * 0.055, 10, 26);
+            return `M ${(w * f).toFixed(1)} ${py.toFixed(1)} h ${(w * 0.05).toFixed(1)} v 2.6 h ${(-w * 0.05).toFixed(1)} z `;
+          }).join('')}
+          fill={palette.navyMuted}
+          opacity={0.35}
+        />
       </G>
 
       {/* the table */}

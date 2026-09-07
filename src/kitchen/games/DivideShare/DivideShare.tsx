@@ -29,11 +29,10 @@ import {
   SplashbackBand,
   StoreJar,
   TeaTowel,
-  UtensilRail,
 } from '../../parts/KitchenRoom';
 import { useSwing } from '../../parts/motion';
 import { PlateArt } from '../../parts/FoodBits';
-import { ChefKnife, EquationStrip } from '../../parts/SceneBits';
+import { ChefKnife, EquationStrip, ServingTray } from '../../parts/SceneBits';
 import { pluralEn } from '../../spanish';
 import { answerOptions, equationText, nextPlate, shareState } from '../../shareMath';
 import { CutHint, useIdleAssist, useStrokeGesture, type Stroke } from '../../gestures';
@@ -51,6 +50,11 @@ interface Scene {
   h: number;
   tableY: number;
   tableH: number;
+  /** how much table SURFACE is drawn above the front edge */
+  deck: number;
+  deckTop: number;
+  /** the line on that surface the plates stand on */
+  plateBase: number;
   tray: { x: number; y: number; w: number; h: number };
   item: number;
   perRow: number;
@@ -72,8 +76,15 @@ interface Scene {
  */
 function layout(box: FluidBox, among: number, trayCount: number, asking: boolean): Scene {
   const { s, w, h } = box;
-  const tableH = Math.max(40, Math.min(78, h * 0.11));
+  /* the table is a SURFACE: `deck` is the worktop drawn receding above its
+     front edge, and the plates stand on that wood. Before this the plates and
+     the crew were pinned to a splashback with the counter's nose 40 units
+     below them, so four plates floated on a tiled wall. */
+  const tableH = Math.max(26, Math.min(52, h * 0.085));
   const tableY = h - tableH;
+  const deck = Math.max(48, Math.min(122, h * 0.2));
+  const deckTop = tableY - deck;
+  const plateBase = tableY - deck * 0.12;
   /* a landscape tablet has width to spare and no height: the portion to carry
      stands beside the tray there, rather than under it */
   const wide = w > h * 0.92;
@@ -97,12 +108,16 @@ function layout(box: FluidBox, among: number, trayCount: number, asking: boolean
 
   const plateW = Math.max(62, Math.min(112, (w - 20) / among - 10));
   let plateTop = wide ? tray.y + trayH + (asking ? 100 : 12) : next.y + nextSize + 8;
-  const band = Math.max(120, tableY + tableH * 0.28 - plateTop);
+  const band = Math.max(120, plateBase - plateTop);
   /* the crew stand ON the table: the column's foot lands on the worktop rather
      than hanging in the middle of the wall */
   const figure = Math.max(46, Math.min(plateW * 1.3, band - plateW * 0.62 - 32));
   const plateH = figure + plateW * 0.62 + 32;
-  plateTop = Math.min(plateTop, h - plateH - 2);
+  /* the column is anchored to the TABLE, not to whatever is above it: `max`,
+     not `min`. With `min` the crew stopped wherever the answer row left them,
+     so four plates ended up on the splashback with a metre of empty worktop
+     underneath them. */
+  plateTop = Math.max(plateTop, plateBase - plateH);
 
   const gap = (w - among * plateW) / (among + 1);
   const points = Array.from({ length: among }, (_, i) => ({
@@ -111,7 +126,7 @@ function layout(box: FluidBox, among: number, trayCount: number, asking: boolean
     w: plateW,
   }));
 
-  return { s, w, h, tableY, tableH, tray, item, perRow, next, askY, plateTop, plateH, plateW, figure, points };
+  return { s, w, h, tableY, tableH, deck, deckTop, plateBase, tray, item, perRow, next, askY, plateTop, plateH, plateW, figure, points };
 }
 
 interface CrewSeat {
@@ -346,31 +361,30 @@ export function DivideShare({ challenge, ageBand, onComplete, onEvent, compact }
             const side = Math.min(112, w * 0.26);
             return (
               <>
-                {/* --- the room ------------------------------------- */}
-                <SplashbackBand s={s} x={0} y={sc.tableY - 54} w={w} depth={54} />
-                {sc.plateTop - sc.tray.y - sc.tray.h > 130 ? (
+                {/* --- the room -------------------------------------
+                    wall, a tiled splashback, then the TABLE the plates stand
+                    on. Nothing hangs in the band the crew occupy. */}
+                <SplashbackBand s={s} x={0} y={4} w={w} depth={Math.max(24, sc.deckTop - 4)} />
+                {sc.plateTop - sc.tray.y - sc.tray.h > 150 ? (
                   <>
-                    <Shelf s={s} x={8} y={sc.plateTop - 54} w={side} />
-                    <StoreJar s={s} x={12} y={sc.plateTop - 96} h={42} tone="jam" />
-                    <Canister s={s} x={48} y={sc.plateTop - 100} h={46} tone="#E8C89B" />
-                    <KitchenWindow s={s} x={w - side - 8} y={sc.plateTop - 96} w={side} />
+                    <Shelf s={s} x={12} y={sc.plateTop - 58} w={side} />
+                    <StoreJar s={s} x={16} y={sc.plateTop - 100} h={42} tone="jam" />
+                    <Canister s={s} x={52} y={sc.plateTop - 104} h={46} tone="#E8C89B" />
+                    <KitchenWindow s={s} x={w - side - 12} y={sc.plateTop - 100} w={side} />
                   </>
-                ) : null}
-                <CounterRun s={s} w={w} y={sc.tableY} h={sc.tableH + 44} />
-                <CounterCrumbs s={s} x={w * 0.26} y={sc.tableY - 10} w={w * 0.48} seed={6} />
-                <HerbPot s={s} x={6} y={sc.tableY - 46} h={44} />
-                <TeaTowel s={s} x={w - 40} y={sc.tableY - 94} w={32} />
-                <UtensilRail
-                  s={s}
-                  x={w - Math.min(132, w * 0.34) - 6}
-                  y={sc.tray.y + sc.tray.h + 12}
-                  w={Math.min(132, w * 0.34)}
-                />
+                ) : (
+                  <TeaTowel s={s} x={12} y={Math.max(sc.tray.y + sc.tray.h + 10, sc.deckTop - 96)} w={30} />
+                )}
+                <CounterRun s={s} w={w} y={sc.tableY} h={sc.tableH + 44} deck={sc.deck} />
+                <CounterCrumbs s={s} x={w * 0.3} y={sc.tableY - 20} w={w * 0.4} seed={6} />
+                {/* things standing on the table, at its ends, clear of the plates */}
+                <HerbPot s={s} x={6} y={sc.plateBase - 46} h={44} />
+                <StoreJar s={s} x={w - 46} y={sc.plateBase - 52} h={50} tone="honey" />
 
                 {/* the serving tray — and, in the dealing phase, the board the
                     knife runs across */}
                 <View style={at(s, tray.x, tray.y, tray.w, tray.h)} pointerEvents="none">
-                  <View style={[styles.tray, { borderRadius: 22 * s, borderWidth: 5 * s }]} />
+                  <ServingTray width={tray.w * s} height={tray.h * s} />
                 </View>
 
                 {trayItems.map((i) => {
@@ -678,11 +692,6 @@ const styles = StyleSheet.create({
   body: { flex: 1 },
   stage: { flex: 1 },
   equationRow: { alignItems: 'center' },
-  tray: {
-    flex: 1,
-    backgroundColor: palette.tan,
-    borderColor: palette.wood,
-  },
   knife: { position: 'absolute', left: 0, top: 0 },
   nextToken: {
     flex: 1,

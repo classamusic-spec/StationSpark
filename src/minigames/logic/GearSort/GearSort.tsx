@@ -151,16 +151,18 @@ export function GearSort({ challenge, ageBand, onComplete, onEvent, compact }: M
     Math.min(sideRail ? 250 : 210, box.h > 0 ? box.h * 0.5 : 210),
   );
   /*
-   * BinBox is drawn in a 120 × 100 box and keeps its aspect ratio, so any other
+   * BinBox is drawn in a 120 × 106 box and keeps its aspect ratio, so any other
    * height just letterboxes the artwork — which is what left a dead 30 px band
    * between a bin and its name plate, and made the measured drop target taller
    * than the bin a child can see. The slot is now exactly the bin.
    */
-  const binHeight = Math.round((binWidth * 100) / 120);
-  const tokenIcon = Math.max(44, layout.s(ageBand === 'C' ? 48 : 54));
+  const binHeight = Math.round((binWidth * 106) / 120);
+  /* in a rail the tokens are the only thing in a 320 px column: they grow to
+     fill it rather than floating small in the middle of it */
+  const tokenIcon = sideRail ? 74 : Math.max(44, layout.s(ageBand === 'C' ? 48 : 54));
   /* wide enough for the longest gear name — "Extinguisher" used to be clipped
      to "Extinguish…", then broken mid-word */
-  const tokenWidth = Math.max(hit.big + 24, layout.s(110));
+  const tokenWidth = sideRail ? 130 : Math.max(hit.big + 24, layout.s(110));
 
   const focusItem = remaining[0];
   const hintBin = state.focusBin ?? focusItem?.bin ?? null;
@@ -241,21 +243,14 @@ export function GearSort({ challenge, ageBand, onComplete, onEvent, compact }: M
 
                 <SlotZone
                   id={`bin:${bin.id}`}
+                  label={`the ${bin.label} bin`}
                   hitPad={layout.s(14)}
                   highlight={hintLadder.highlight && hintBin === bin.id}
                   style={{ width: binWidth, height: binHeight }}
                 >
+                  {/* the bin draws its own dark mouth under the rim, so there
+                      is no dashed cut-out floating on its face any more */}
                   <BinBox width={binWidth} height={binHeight} tint={tint} />
-                  {/* the mouth: a dashed well so the bin reads as somewhere to put things */}
-                  {contents.length === 0 ? (
-                    <View
-                      style={[
-                        styles.well,
-                        { top: binHeight * 0.34, height: binHeight * 0.5, left: binWidth * 0.17, right: binWidth * 0.17 },
-                      ]}
-                      pointerEvents="none"
-                    />
-                  ) : null}
                   <View style={styles.binContents} pointerEvents="none">
                     {contents.map((it) => (
                       <Animated.View key={it.id} entering={ZoomIn.springify().damping(11)}>
@@ -281,18 +276,11 @@ const styles = StyleSheet.create({
   bench: { flex: 1, justifyContent: 'flex-end', paddingHorizontal: spacing.sm },
   bins: { flexDirection: 'row', justifyContent: 'center', alignItems: 'flex-start' },
   binCol: { alignItems: 'center', gap: 6 },
-  well: {
-    position: 'absolute',
-    borderRadius: radii.tile,
-    borderWidth: 3,
-    borderStyle: 'dashed',
-    borderColor: 'rgba(31,42,90,0.22)',
-  },
   binContents: {
     position: 'absolute',
     left: 8,
     right: 8,
-    bottom: 8,
+    bottom: '10%',
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'center',

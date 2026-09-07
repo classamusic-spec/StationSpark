@@ -22,8 +22,9 @@ import { FractionBar, PumpLever, TankShell, WaterSurface } from '@/world/props';
 import { Stage } from '@/world';
 import { PUMPER_DECK, PUMPER_VB, PumperTruck } from '@/world/scenes';
 
-import { GameShell, PlayGround, clampNum, useClock, useHintLadder, useMeasuredBox, useSpokenPrompt, useStage } from '../shared';
-import { TankCradle, TankRig } from './TankRig';
+import { GROUND_OVERLAP, GameShell, PlayGround, clampNum, useClock, useHintLadder, useMeasuredBox, useSpokenPrompt, useStage } from '../shared';
+import { StationApron } from './StationApron';
+import { TankBack, TankCradle, TankRig } from './TankRig';
 
 /* ------------------------------------------------------------------ */
 /* State machine: filling → confirming → (wrong → filling) | done       */
@@ -193,8 +194,11 @@ export function WaterTank({ challenge, ageBand, onComplete, onEvent, compact }: 
         .onUpdate((e) => {
           leverPress.value = Math.max(0, Math.min(1, e.translationY / 56));
         })
-        .onEnd((e) => {
-          if (e.translationY > 34) runOnJS(pump)();
+        /* a cancelled pull is not a pump: RNGH reports onEnd(e, false) when the
+           gesture is cancelled or fails, and pumping there adds water the
+           child never asked for */
+        .onEnd((e, success) => {
+          if (success && e.translationY > 34) runOnJS(pump)();
         })
         .onFinalize(() => {
           leverPress.value = withSpring(0, springs.pop);
@@ -216,17 +220,19 @@ export function WaterTank({ challenge, ageBand, onComplete, onEvent, compact }: 
     /* the apron the engine is parked on — the wheels touch this line */
     const groundY = h - Math.max(26, Math.min(h * 0.11, stage.s(58)));
 
-    const truckW = Math.min(w * 0.98, stage.s(500));
+    const truckW = Math.min(w * 0.98, stage.s(520));
     const truckH = truckW * (PUMPER_VB.h / PUMPER_VB.w);
     const truckX = (w - truckW) / 2;
     /* the truck's own contact ellipse sits at y = 140 of its 150-unit box */
     const truckY = groundY - truckH * (140 / PUMPER_VB.h);
     const deckY = truckY + truckH * (PUMPER_DECK.y / PUMPER_VB.h);
 
-    /* the tank grows into every pixel above the deck, so the engine and its
-       tank together fill the play area instead of hovering in it */
-    const tankW = Math.min(w * 0.4, stage.s(184), truckW * (PUMPER_DECK.w / PUMPER_VB.w) * 0.86);
-    const tankH = Math.max(140, Math.min(deckY - stage.s(10), stage.s(380)));
+    /* The tank has to be tall enough to read a quarter on and short enough to
+       still look bolted to an engine: a glass column three times the height of
+       the truck under it reads as a fridge somebody parked. Capped against
+       both the room above the deck and the truck's own height. */
+    const tankW = Math.min(w * 0.46, stage.s(206), truckW * (PUMPER_DECK.w / PUMPER_VB.w) * 0.9);
+    const tankH = Math.max(140, Math.min(deckY - stage.s(12), truckH * 1.9, stage.s(360)));
     const tankX = truckX + truckW * 0.9 - tankW;
     const tankY = Math.max(0, deckY - tankH + 4);
     const inset = Math.max(6, tankW * 0.05);
@@ -260,7 +266,9 @@ export function WaterTank({ challenge, ageBand, onComplete, onEvent, compact }: 
       onStageLayout={onLayout}
       hint={hints.bubble}
       onDismissHint={hints.dismiss}
-      backdrop={<Stage variant="yard" groundHeight={150} />}
+      /* the yard's ground plane is lifted to meet the apron the game paints,
+         so the engine stands on one floor instead of two */
+      backdrop={(below) => <Stage variant="yard" groundHeight={Math.max(150, below + GROUND_OVERLAP)} />}
       hud={
         <View style={styles.hud}>
           <Text variant="h2">{formatFraction(target)}</Text>
@@ -274,7 +282,7 @@ export function WaterTank({ challenge, ageBand, onComplete, onEvent, compact }: 
       }
       tray={
         <Tray>
-          <TrayRow>
+          <TrayRow style={stage.rail ? styles.trayColumn : undefined}>
             <Button
               label="Empty"
               tone="white"
@@ -309,8 +317,10 @@ export function WaterTank({ challenge, ageBand, onComplete, onEvent, compact }: 
     >
       {ready ? (
         <View style={StyleSheet.absoluteFill}>
-          {/* the station apron the engine is parked on */}
+          {/* the station apron the engine is parked on, with the painted bay
+              it is parked in, a drain and a puddle from the last drill */}
           <PlayGround width={geo.w} height={geo.h} top={geo.groundY} variant="apron" dressed={false} />
+          <StationApron width={geo.w} height={geo.h} groundY={geo.groundY} scale={stage.scale} />
 
           {/* the engine the tank is bolted to */}
           <View style={[styles.truck, { left: geo.truck.x, top: geo.truck.y, width: geo.truck.w }]} pointerEvents="none">
@@ -351,6 +361,9 @@ export function WaterTank({ challenge, ageBand, onComplete, onEvent, compact }: 
           <Animated.View style={[styles.tank, { left: geo.tank.x, top: geo.tank.y, width: geo.tank.w, height: geo.tank.h }, tankStyle]}>
             <TankCradle width={geo.tank.w} height={geo.tank.h} />
             <View style={[styles.tankInner, { margin: geo.inner.inset, borderRadius: radii.card }]}>
+              {/* the liner behind the water: an empty tank must still read as a
+                  tank and not as a hole cut through the engine */}
+              <TankBack width={geo.inner.w} height={geo.inner.h} />
               <WaterSurface width={geo.inner.w} height={geo.inner.h} level={level} slosh={slosh} clock={clock} radius={radii.card} />
             </View>
             <TankShell
@@ -393,7 +406,7 @@ const styles = StyleSheet.create({
   pipe: { position: 'absolute', height: 14, backgroundColor: palette.slate, borderRadius: 7 },
   pipeLip: { position: 'absolute', height: 4, backgroundColor: 'rgba(255,255,255,0.32)', borderRadius: 2, marginTop: 2 },
   tank: { position: 'absolute', ...shadows.card },
-  tankInner: { position: 'absolute', left: 0, top: 0, overflow: 'hidden', backgroundColor: 'rgba(214,240,255,0.62)' },
+  tankInner: { position: 'absolute', left: 0, top: 0, overflow: 'hidden', backgroundColor: '#E1EDF6' },
   tickLabel: {
     position: 'absolute',
     minWidth: 30,
@@ -404,4 +417,7 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
   },
   mathRow: { backgroundColor: palette.white, paddingHorizontal: spacing.md, paddingVertical: 6, borderRadius: radii.pill },
+  /* a rail is a column: three wide buttons wrapping inside it left one alone
+     on a second line with a gap beside it */
+  trayColumn: { flexDirection: 'column', alignSelf: 'stretch' },
 });

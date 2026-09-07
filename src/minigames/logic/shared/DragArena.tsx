@@ -1,9 +1,26 @@
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 import { useSharedValue, type SharedValue } from 'react-native-reanimated';
 import type { Point, Rect, SlotRect } from './dragGeometry';
 
 export type Measurable = { measureInWindow: (cb: (x: number, y: number, w: number, h: number) => void) => void };
+
+/**
+ * A token the child has PICKED UP BY TAPPING rather than by dragging.
+ *
+ * Dragging is a two-handed, sighted, fine-motor gesture: a child using
+ * VoiceOver or TalkBack, or a switch, or a trackpad, cannot perform it at all.
+ * Every drag in these games therefore has a tap twin — tap the token, then tap
+ * where it goes — and this is the handoff between the two taps.
+ */
+export interface DragSelection {
+  id: string;
+  /** what the token is, spoken back on the slot ("Put the helmet here") */
+  label: string;
+  group?: string;
+  /** run the same landing the drag would have run */
+  place: (slotId: string) => void;
+}
 
 interface ArenaApi {
   /** every registered slot, in arena coordinates — read from gesture worklets */
@@ -27,6 +44,9 @@ interface ArenaApi {
    * pointing at where the target used to be. Call this before a drag can land.
    */
   refresh: () => void;
+  /** the token picked up by tap, waiting for a slot to be tapped */
+  selected: DragSelection | null;
+  select: (s: DragSelection | null) => void;
 }
 
 const ArenaContext = createContext<ArenaApi | null>(null);
@@ -120,9 +140,12 @@ export function DragArena({ children, style }: { children: React.ReactNode; styl
     };
   }, []);
 
+  const [selected, setSelected] = useState<DragSelection | null>(null);
+  const select = useCallback((s: DragSelection | null) => setSelected(s), []);
+
   const api = useMemo<ArenaApi>(
-    () => ({ slots, hovered, origin, measureNode, putSlot, dropSlot, getSlot, subscribe, refresh: remeasure }),
-    [slots, hovered, origin, measureNode, putSlot, dropSlot, getSlot, subscribe, remeasure],
+    () => ({ slots, hovered, origin, measureNode, putSlot, dropSlot, getSlot, subscribe, refresh: remeasure, selected, select }),
+    [slots, hovered, origin, measureNode, putSlot, dropSlot, getSlot, subscribe, remeasure, selected, select],
   );
 
   return (

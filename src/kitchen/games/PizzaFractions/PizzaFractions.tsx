@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
-import Svg, { Circle, Defs, Path, RadialGradient, Rect, Stop } from 'react-native-svg';
+import Svg, { Circle, Defs, Ellipse, Path, RadialGradient, Rect, Stop } from 'react-native-svg';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   FadeInDown,
@@ -46,20 +46,19 @@ import {
 import { answerOptions, equationText, nextPlate, shareState } from '../../shareMath';
 import { FluidStage, at, type FluidBox } from '../../parts/Stage';
 import {
+  Canister,
   CounterCrumbs,
   CounterRun,
-  HerbPot,
+  JarRow,
   KitchenWall,
-  KitchenWindow,
   Shelf,
   SplashbackBand,
   StoreJar,
-  TeaTowel,
   UtensilRail,
 } from '../../parts/KitchenRoom';
 import { useSwing } from '../../parts/motion';
 import { BowlCell, PieIndicator, PlateArt, ToppingRegion } from '../../parts/FoodBits';
-import { CheckerCloth, CookCTA, EquationStrip, PizzaCutter, RollingPin, WoodPeel } from '../../parts/SceneBits';
+import { CookCTA, EquationStrip, PastryBoard, PizzaCutter, RollingPin } from '../../parts/SceneBits';
 import {
   CutHint,
   SweepHint,
@@ -90,9 +89,14 @@ interface Geo {
   s: number;
   w: number;
   h: number;
+  /** the counter's front nose — its leading edge */
   counterY: number;
   counterH: number;
+  /** how much worktop SURFACE is drawn above the nose */
+  deck: number;
+  deckTop: number;
   rack: { x: number; y: number; w: number; h: number };
+  /** the pastry board's square drawing box, standing on the worktop */
   board: { x: number; y: number; w: number; h: number };
   /** the pizza's centre and crust radius, in play-area units */
   cx: number;
@@ -107,27 +111,56 @@ interface Geo {
 }
 
 /**
- * Compose the room. The peel and the pizza are the subject of the screen, so
- * they take the biggest circle the play area can hold beside the ingredient
- * rack; the wall behind gets a shelf, a window and a rail, and the counter runs
- * across the foot. Nothing is a fixed 122-unit radius in the middle of a box
- * half as big again any more.
+ * The pastry board's drawing box is square and holds a dough circle of radius
+ * 100 centred at (131, 112) of its 262 units. These two constants are the only
+ * place the drawing and the layout maths have to agree: the box is 2.62 doughs
+ * across, and the dough's centre sits a little above the middle of it, so more
+ * wood shows in front of the dough than behind it — which is what a board on a
+ * counter looks like from a child's eye height.
+ */
+const BOARD_BOX = 2.62;
+const BOARD_CX = 131 / 262;
+const BOARD_CY = 112 / 262;
+
+/**
+ * Compose the room.
+ *
+ * THE FIX THE WHOLE SCREEN TURNED ON: the dough used to be laid on a tan
+ * rounded square floating in the middle of a tan wall, with the counter drawn
+ * as a 40-unit nose right at the foot of the play area. There was no horizontal
+ * surface anywhere near the dough, so the dough was being rolled up a wall.
+ *
+ * The worktop is now a real plane. `counterY` is the counter's front edge and
+ * `deck` is how much of its SURFACE recedes up the screen behind that edge —
+ * enough to hold the whole board with wood showing in front of it and behind
+ * it. The board stands on that wood, the pizza stands on the board, and the
+ * band left at the top is splashback and wall.
  */
 function pizzaLayout(box: FluidBox, wide: boolean): Geo {
   const { s, w, h } = box;
-  const counterH = Math.max(38, Math.min(72, h * 0.1));
+  const counterH = Math.max(26, Math.min(46, h * 0.085));
   const counterY = h - counterH;
 
-  const rackW = Math.max(76, Math.min(104, w * 0.2));
+  const rackW = Math.max(74, Math.min(104, w * 0.2));
   const rack = { x: w - rackW - 6, y: 6, w: rackW, h: counterY - 16 };
 
   const areaX = 8;
   const areaW = rack.x - areaX - 8;
   const areaTop = 6;
-  const areaH = counterY - areaTop - 6;
-  const r = Math.min(areaW * 0.5, areaH * 0.45);
-  const cx = areaX + areaW / 2;
-  const cy = areaTop + areaH * 0.44;
+  /* the strip of wall + splashback that stays visible above the worktop, and
+     the strip of worktop that stays visible in front of the board */
+  const wallBand = Math.max(52, Math.min(120, h * 0.18));
+  const front = Math.max(18, Math.min(34, h * 0.07));
+  /* the board is the hero, but it is never the whole screen: it keeps a strip
+     of worktop in front of it, a gap to the pantry column, and enough wall
+     above for a tiled splashback */
+  const boardSize = Math.max(110, Math.min(areaW - 14, counterY - areaTop - wallBand - front, h * 0.6));
+  const r = boardSize / BOARD_BOX;
+  const board = { x: areaX + (areaW - boardSize) / 2, y: counterY - front - boardSize, w: boardSize, h: boardSize };
+  const deckTop = Math.max(areaTop + 10, board.y - Math.max(12, boardSize * 0.07));
+
+  const cx = board.x + boardSize * BOARD_CX;
+  const cy = board.y + boardSize * BOARD_CY;
   const k = r / R_CRUST;
 
   const plateW = Math.max(70, Math.min(104, (w - 24) / 4 - 8));
@@ -137,15 +170,17 @@ function pizzaLayout(box: FluidBox, wide: boolean): Geo {
     h,
     counterY,
     counterH,
+    deck: counterY - deckTop,
+    deckTop,
     rack,
-    board: { x: cx - r * 1.2, y: cy - r * 1.14, w: r * 2.4, h: r * 2.3 },
+    board,
     cx,
     cy,
     r,
     k,
     plateY: wide ? h * 0.46 : h * 0.44,
     plateW,
-    pileY: Math.min(h - 76, counterY - 66),
+    pileY: Math.min(h - 76, counterY - 62),
     askY: h * 0.16,
   };
 }
@@ -627,8 +662,57 @@ export function PizzaFractions({ challenge, ageBand, onComplete, onEvent, compac
     transform: [{ scale: doughScale.value }, { scaleX: doughSquish.value }, { scaleY: 2 - doughSquish.value }],
   }));
 
+  /**
+   * The recipe lives in the tray, not over the board. It used to be a row of
+   * chips across the top of the play area, which on a phone ran off the right
+   * edge (the pie dial was sliced in half) and on a tablet left the control
+   * rail an empty cream slab. In the tray it wraps to the room it is given at
+   * every size, and the board gets the whole play area.
+   */
+  const recipeStrip =
+    phase === 'roll' || phase === 'top' ? (
+      <View style={styles.pieRow}>
+        <PieIndicator
+          size={46}
+          count={count}
+          slices={wedges.map((w) => {
+            const owner = assigned[w.index] ?? null;
+            const targetIndex = w.index;
+            let acc = 0;
+            let target: ToppingId | null = null;
+            for (const p of plan) {
+              if (targetIndex < acc + p.need) {
+                target = p.topping;
+                break;
+              }
+              acc += p.need;
+            }
+            return { topping: owner ?? target, filled: owner !== null };
+          })}
+        />
+        {challenge.toppings.map((t, i) => (
+          <React.Fragment key={t.topping}>
+            {i > 0 ? (
+              <Text variant="h3" color={roles.ink.muted}>
+                +
+              </Text>
+            ) : null}
+            <Animated.View entering={FadeInDown.delay(i * 80).springify()} style={styles.fracChip}>
+              <Text variant="h2" color={palette.engineRed}>
+                {formatFraction(t.fraction)}
+              </Text>
+              <Text variant="tiny" center color={roles.ink.secondary} numberOfLines={1}>
+                {toppingLabel(t.topping)}
+              </Text>
+            </Animated.View>
+          </React.Fragment>
+        ))}
+      </View>
+    ) : null;
+
   const controls = (
     <>
+      {recipeStrip}
       <View style={styles.trayRow}>
         {phase === 'cut' ? <GrownUpChip /> : null}
         {phase === 'roll' && reduced ? (
@@ -685,48 +769,7 @@ export function PizzaFractions({ challenge, ageBand, onComplete, onEvent, compac
       hint={{ text: assist.text, es: assist.es, visible: assist.visible, onDismiss: assist.dismiss }}
     >
       <View style={styles.body}>
-        {/* The recipe stays up through the rolling too: the child can see what
-            they are building towards while the base is still a lump, and the
-            top of the board is not a blank wall. */}
-        {phase === 'roll' || phase === 'top' ? (
-          <View style={styles.pieRow}>
-            {challenge.toppings.map((t, i) => (
-              <React.Fragment key={t.topping}>
-                {i > 0 ? (
-                  <Text variant="h3" color={roles.ink.muted}>
-                    +
-                  </Text>
-                ) : null}
-                <Animated.View entering={FadeInDown.delay(i * 80).springify()} style={styles.fracChip}>
-                  <Text variant="h2" color={palette.engineRed}>
-                    {formatFraction(t.fraction)}
-                  </Text>
-                  <Text variant="tiny" color={roles.ink.secondary}>
-                    {toppingLabel(t.topping)}
-                  </Text>
-                </Animated.View>
-              </React.Fragment>
-            ))}
-            <PieIndicator
-              size={64}
-              count={count}
-              slices={wedges.map((w) => {
-                const owner = assigned[w.index] ?? null;
-                const targetIndex = w.index;
-                let acc = 0;
-                let target: ToppingId | null = null;
-                for (const p of plan) {
-                  if (targetIndex < acc + p.need) {
-                    target = p.topping;
-                    break;
-                  }
-                  acc += p.need;
-                }
-                return { topping: owner ?? target, filled: owner !== null };
-              })}
-            />
-          </View>
-        ) : phase === 'share' || phase === 'ask' ? (
+        {phase === 'share' || phase === 'ask' ? (
           <View style={styles.pieRow}>
             <EquationStrip text={equationText(challenge.cutInto, among, answered ? each : null)} tone="gold" />
           </View>
@@ -746,37 +789,59 @@ export function PizzaFractions({ challenge, ageBand, onComplete, onEvent, compac
               x: PC.x + (fx - g.cx) / g.k,
               y: PC.y + (fy - g.cy) / g.k,
             });
-            const side = Math.max(0, g.board.x - 8);
+            const railW = Math.min(150, g.w * 0.36);
+            const railH = railW * 0.42;
             return (
             <>
-              {/* --- the room ------------------------------------- */}
-              <SplashbackBand s={s} x={0} y={g.counterY - 52} w={g.w} depth={52} />
-              {g.board.y > 76 ? (
+              {/* --- the room --------------------------------------
+                  wall, then splashback, then the WORKTOP the board stands on.
+                  `deck` is the surface: without it everything below was drawn
+                  against a vertical tan field, which is why the dough looked
+                  like it was being rolled up a wall. */}
+              <SplashbackBand s={s} x={0} y={4} w={g.w} depth={Math.max(26, g.deckTop - 4)} />
+              {g.deckTop - 22 > railH ? (
+                <UtensilRail s={s} x={g.w - railW - 10} y={g.deckTop - railH - 8} w={railW} />
+              ) : null}
+              {g.deckTop > 150 ? (
                 <>
-                  <Shelf s={s} x={8} y={g.board.y - 34} w={Math.max(76, side + 44)} />
-                  <StoreJar s={s} x={12} y={g.board.y - 74} h={40} tone="jam" />
-                  <KitchenWindow s={s} x={g.rack.x - 108} y={6} w={100} />
+                  <Shelf s={s} x={10} y={g.deckTop - 58} w={Math.min(150, g.w * 0.34)} />
+                  <JarRow s={s} x={14} y={g.deckTop - 58} w={Math.min(150, g.w * 0.34) - 12} h={46} seed={1} />
                 </>
               ) : null}
-              <UtensilRail s={s} x={8} y={6} w={Math.min(126, g.w * 0.3)} />
-              {/* the rack column is scene, not just a control: when the bowls
-                  are away it is a shelf of store jars, so the pizza never sits
-                  beside a bare strip of wall */}
+              <CounterRun s={s} w={g.w} y={g.counterY} h={g.counterH + 44} deck={g.deck} />
+
+              {/* the pantry column: bowls while the pizza is being topped, and
+                  otherwise jars STANDING ON the worktop — further back is
+                  smaller and higher up the screen, which is what says
+                  "this is a surface receding away from you" */}
               {phase === 'top' ? null : (
                 <>
-                  <Shelf s={s} x={g.rack.x - 4} y={g.rack.y + g.rack.h * 0.34} w={g.rack.w + 8} />
-                  <StoreJar s={s} x={g.rack.x} y={g.rack.y + g.rack.h * 0.34 - 46} h={46} tone="honey" />
-                  <StoreJar s={s} x={g.rack.x + g.rack.w * 0.5} y={g.rack.y + g.rack.h * 0.34 - 42} h={42} tone="herbs" />
-                  <Shelf s={s} x={g.rack.x - 4} y={g.rack.y + g.rack.h * 0.68} w={g.rack.w + 8} />
-                  <StoreJar s={s} x={g.rack.x} y={g.rack.y + g.rack.h * 0.68 - 44} h={44} tone="berry" />
-                  <StoreJar s={s} x={g.rack.x + g.rack.w * 0.5} y={g.rack.y + g.rack.h * 0.68 - 40} h={40} tone="oats" />
+                  <Canister
+                    s={s}
+                    x={g.rack.x + g.rack.w * 0.4}
+                    y={g.deckTop + g.deck * 0.14 - Math.min(50, g.deck * 0.17)}
+                    h={Math.min(50, g.deck * 0.17)}
+                    tone="#E8C89B"
+                  />
+                  <StoreJar
+                    s={s}
+                    x={g.rack.x}
+                    y={g.counterY - g.deck * 0.42 - Math.min(58, g.deck * 0.2)}
+                    h={Math.min(58, g.deck * 0.2)}
+                    tone="herbs"
+                  />
+                  <StoreJar
+                    s={s}
+                    x={g.rack.x + g.rack.w * 0.3}
+                    y={g.counterY - g.deck * 0.08 - Math.min(70, g.deck * 0.24)}
+                    h={Math.min(70, g.deck * 0.24)}
+                    tone="honey"
+                  />
                 </>
               )}
-              <CounterRun s={s} w={g.w} y={g.counterY} h={g.counterH + 44} />
-              <CounterCrumbs s={s} x={g.cx - g.r} y={g.counterY - 10} w={g.r * 2} seed={8} />
-              <HerbPot s={s} x={6} y={g.counterY - 44} h={42} />
-              <TeaTowel s={s} x={g.w - 46} y={Math.max(6, g.counterY - 160)} w={38} />
-              <CheckerCloth width={g.r * 0.8 * s} height={g.r * 0.7 * s} style={at(s, -8, g.counterY - g.r * 0.5)} />
+
+              {/* flour worked across the worktop in front of the board */}
+              <CounterCrumbs s={s} x={g.board.x + g.board.w * 0.12} y={g.counterY - 26} w={g.board.w * 0.76} seed={8} />
 
               {phase === 'share' ? (
                 <ShareScene
@@ -805,8 +870,12 @@ export function PizzaFractions({ challenge, ageBand, onComplete, onEvent, compac
                 </View>
               ) : (
                 <>
-                  <View style={at(s, g.cx - g.r * 0.95, g.cy - g.r * 0.99, g.r * 1.9)} pointerEvents="none">
-                    <WoodPeel size={g.r * 1.9 * s} />
+                  {/* THE BOARD. A wood-grain pastry board resting on the
+                      worktop, with a return under its front edge and its own
+                      contact shadow — the dough is on top of it, and the pin
+                      throws a shadow across it. */}
+                  <View style={at(s, g.board.x, g.board.y, g.board.w, g.board.h)} pointerEvents="none">
+                    <PastryBoard size={g.board.w * s} flour={phase === 'roll' ? 1 : 0.55} />
                   </View>
 
                   {phase === 'roll' ? (
@@ -880,11 +949,15 @@ export function PizzaFractions({ challenge, ageBand, onComplete, onEvent, compac
                 />
               ) : null}
 
-              {/* the cutter lies on the counter beside the peel the whole time,
-                  as in the reference — it is scene dressing, not a mode marker */}
-              {phase === 'roll' ? null : (
-                <View style={at(s, 12, g.counterY - g.r * 0.42)} pointerEvents="none">
-                  <PizzaCutter size={g.r * (phase === 'cut' ? 0.78 : 0.66) * s} />
+              {/* the rolling pin is put down on the worktop once the base is
+                  rolled, and the cutter is picked up — the tools live on the
+                  wood beside the board, never half off the frame */}
+              {phase === 'roll' || phase === 'ask' || phase === 'share' ? null : (
+                <View
+                  style={at(s, g.rack.x - g.r * 0.1, g.counterY - g.deck * 0.72, g.r * 0.76)}
+                  pointerEvents="none"
+                >
+                  <PizzaCutter size={g.r * 0.76 * s} />
                 </View>
               )}
             </>
@@ -918,7 +991,16 @@ function DoughArt({ size, thick }: { size: number; thick: number }) {
           <Stop offset="1" stopColor="#E7CFA2" />
         </RadialGradient>
       </Defs>
-      <Circle cx={PC.x} cy={PC.y + 6 + dome * 6} r={R_CRUST * (0.96 - dome * 0.06)} fill="rgba(31,42,90,0.16)" />
+      {/* what the dough lays on the board: an ellipse, offset down-right,
+          tight and dark when the dough is still a tall lump and wide and faint
+          once it has been rolled flat */}
+      <Ellipse
+        cx={PC.x + 5 + dome * 4}
+        cy={PC.y + R_CRUST * (0.84 - dome * 0.2)}
+        rx={R_CRUST * (0.92 - dome * 0.18)}
+        ry={R_CRUST * (0.2 - dome * 0.05)}
+        fill={`rgba(31,42,90,${0.1 + dome * 0.07})`}
+      />
       <Circle cx={PC.x} cy={PC.y} r={R_CRUST} fill="#D8B87E" />
       <Circle cx={PC.x} cy={PC.y - dome * 4} r={R_CRUST - 4} fill="url(#dough)" />
       {/* the dome: strongest when the dough is still a lump */}
@@ -952,10 +1034,11 @@ function RollSurface({
   const { s, board } = geo;
   const w = board.w * s;
   const h = board.h * s;
-  const pinW = geo.r * 1.4 * s;
-  const pinH = pinW * 0.42;
-  const restX = w / 2;
-  const restY = h * 0.46;
+  /* the pin is a little wider than the dough, and it lies ACROSS it */
+  const pinW = geo.r * 1.7 * s;
+  const pinH = pinW * 0.52;
+  const restX = w * BOARD_CX;
+  const restY = h * BOARD_CY;
   /* the pin rocks over the dough on its own: the gesture, demonstrated, before
      anybody has touched anything. It stops dead under reduced motion. */
   const idle = useSwing(1, 2100);
@@ -1030,7 +1113,8 @@ function PizzaArt({
       {/* critique #18: a golden PUFFY crust (scalloped, three tones), real
           sauce, and a bed of shredded cheese — it used to be a red disc with
           faint dots and a keyline. No outlines: value does the separating. */}
-      <Circle cx={PC.x} cy={PC.y + 5} r={R_CRUST} fill="rgba(31,42,90,0.14)" />
+      {/* the base's shadow on the board — down-right, one light direction */}
+      <Ellipse cx={PC.x + 5} cy={PC.y + R_CRUST * 0.8} rx={R_CRUST * 0.94} ry={R_CRUST * 0.22} fill="rgba(31,42,90,0.13)" />
       <Circle cx={PC.x} cy={PC.y} r={R_CRUST} fill="#D89845" />
       {Array.from({ length: 22 }, (_, i) => {
         const a = (i / 22) * Math.PI * 2;
@@ -1465,14 +1549,18 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    flexWrap: 'wrap',
     gap: spacing.xs,
-    paddingHorizontal: spacing.md,
+    rowGap: 4,
+    paddingHorizontal: spacing.xs,
+    marginBottom: spacing.xs,
   },
   fracChip: {
     backgroundColor: roles.surface.card,
     borderRadius: radii.tile,
-    paddingHorizontal: 12,
-    paddingVertical: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    minWidth: 62,
     alignItems: 'center',
     ...shadows.soft,
   },

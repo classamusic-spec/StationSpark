@@ -11,12 +11,12 @@ import {
   generateClockWatch,
   generateCountIngredients,
   generateDivideShare,
-  generateMarketMoney,
   generateMeasurePour,
   generatePizzaFractions,
   generateRecipeScale,
   generateSoupPot,
   generateWordBuilder,
+  marketMoneyFor,
 } from '@/learning/generators';
 import { wordById } from '@/learning/vocabulary';
 import { foodWords } from '@/kitchen/food';
@@ -204,6 +204,84 @@ export const recipes: RecipeDef[] = [
     ],
   },
   {
+    id: 'garden-pizza',
+    name: 'Huerta Pizza',
+    nameEs: 'Pizza de la huerta',
+    blurb: 'Don Nico’s garden on a pizza — halves, quarters and, for the oldest, thirds.',
+    subjects: ['cooking', 'math', 'spanish'],
+    grownUp: true,
+    xp: 30,
+    intro: [
+      bea('Everything on this one grew in the garden.'),
+      grownUpLine('hot oven'),
+    ],
+    steps: [
+      {
+        game: 'count-ingredients',
+        challenge: countThese(
+          [{ id: 'tomato', count: 4 }, { id: 'mushroom', count: 3 }, { id: 'basil', count: 2 }],
+          ['strawberry', 'banana', 'lemon'],
+          true,
+        ),
+        intro: [radio('Tomate, champiñón, albahaca. Straight from the beds!', 'Tomate, champiñón y albahaca.')],
+      },
+      {
+        /* The kitchen's second fraction pizza — and the only place a child
+           meets thirds on a pie, which is what the huerta pizza is here for. */
+        game: 'pizza-fractions',
+        challenge: (ctx) => {
+          const base = generatePizzaFractions(ctx);
+          if (ctx.ageBand === 'A') {
+            return {
+              ...base,
+              toppings: [
+                { topping: 'cheese' as const, fraction: { num: 1, den: 2 } },
+                { topping: 'tomato' as const, fraction: { num: 1, den: 2 } },
+              ],
+              cutInto: 4,
+              shareAmong: 2,
+              each: 2,
+            };
+          }
+          if (ctx.ageBand === 'B') {
+            return {
+              ...base,
+              toppings: [
+                { topping: 'cheese' as const, fraction: { num: 1, den: 2 } },
+                { topping: 'tomato' as const, fraction: { num: 1, den: 4 } },
+                { topping: 'basil' as const, fraction: { num: 1, den: 4 } },
+              ],
+              cutInto: 8,
+              shareAmong: 4,
+              each: 2,
+            };
+          }
+          return {
+            ...base,
+            toppings: [
+              { topping: 'cheese' as const, fraction: { num: 1, den: 3 } },
+              { topping: 'tomato' as const, fraction: { num: 1, den: 3 } },
+              { topping: 'mushroom' as const, fraction: { num: 1, den: 3 } },
+            ],
+            cutInto: 12,
+            shareAmong: 4,
+            each: 3,
+          };
+        },
+        intro: [bea('Three equal parts. Thirds, like the garden beds.')],
+      },
+      {
+        game: 'divide-share',
+        challenge: (ctx) => ({
+          ...generateDivideShare(ctx),
+          item: wordById('pizza'),
+          ...(ctx.ageBand === 'A' ? { total: 8, among: 2, each: 4 } : { total: 12, among: 4, each: 3 }),
+        }),
+        intro: [radio('Now the slices. Everybody gets the same!')],
+      },
+    ],
+  },
+  {
     id: 'tacos',
     name: 'Station Tacos',
     nameEs: 'Tacos del cuartel',
@@ -314,6 +392,69 @@ export const recipes: RecipeDef[] = [
     ],
   },
   {
+    id: 'frijoles-de-olla',
+    name: 'Pot Beans',
+    nameEs: 'Frijoles de la olla',
+    blurb: 'A cup of beans, a pot of water, and the vegetables in exactly the right order.',
+    subjects: ['cooking', 'math', 'logic', 'spanish'],
+    grownUp: true,
+    xp: 30,
+    intro: [
+      bea('Beans go on early. They cook all morning.'),
+      bea('Frijoles de la olla. Everybody gets a bowl.'),
+      grownUpLine('hot pot'),
+    ],
+    steps: [
+      {
+        game: 'measure-pour',
+        challenge: measure('beans', 3, 4, 'cup'),
+        intro: [radio('Three quarters of a cup of frijoles.', 'Frijoles.')],
+      },
+      {
+        game: 'measure-pour',
+        challenge: measureByBand('water', 'cup'),
+        intro: [bea('Now the water. Right up to the line.')],
+      },
+      {
+        /* A second ordered pot, and a different order: aromatics, then the hard
+           vegetables, then the chile last so the heat stays gentle. */
+        game: 'soup-pot',
+        challenge: potOf(
+          {
+            A: [
+              { item: wordById('garlic'), count: 1 },
+              { item: wordById('carrot'), count: 2 },
+              { item: wordById('tomato'), count: 2 },
+            ],
+            B: [
+              { item: wordById('garlic'), count: 2 },
+              { item: wordById('carrot'), count: 2 },
+              { item: wordById('tomato'), count: 3 },
+              { item: wordById('chili'), count: 1 },
+            ],
+            C: [
+              { item: wordById('garlic'), count: 2 },
+              { item: wordById('carrot'), count: 3 },
+              { item: wordById('tomato'), count: 3 },
+              { item: wordById('chili'), count: 2 },
+            ],
+          },
+          [wordById('strawberry'), wordById('banana'), wordById('apple')],
+        ),
+        intro: [radio('Ajo, zanahoria, tomate. Chile goes in last!', 'Ajo, zanahoria, tomate.')],
+      },
+      {
+        game: 'divide-share',
+        challenge: (ctx) => ({
+          ...generateDivideShare(ctx),
+          item: wordById('beans'),
+          ...(ctx.ageBand === 'A' ? { total: 8, among: 2, each: 4 } : { total: 12, among: 4, each: 3 }),
+        }),
+        intro: [bea('One bowl each. Same beans in every bowl.')],
+      },
+    ],
+  },
+  {
     id: 'soup',
     name: 'Big Pot Soup',
     nameEs: 'Sopa de olla',
@@ -355,6 +496,57 @@ export const recipes: RecipeDef[] = [
     ],
   },
   {
+    id: 'arroz-con-leche',
+    name: 'Rice Pudding',
+    nameEs: 'Arroz con leche',
+    blurb: 'Rice, milk and a slow stir — the pudding the whole station waits up for.',
+    subjects: ['cooking', 'math', 'spanish'],
+    grownUp: true,
+    xp: 30,
+    intro: [
+      bea('Arroz con leche. Sofía taught us this one too.'),
+      bea('Slow is the secret. Nobody rushes a pudding.'),
+      grownUpLine('hot pot'),
+    ],
+    steps: [
+      {
+        game: 'measure-pour',
+        challenge: measure('rice', 3, 4, 'cup'),
+        intro: [radio('Three quarters of a cup of arroz.', 'Arroz.')],
+      },
+      {
+        game: 'measure-pour',
+        challenge: measureByBand('milk', 'cup'),
+        intro: [bea('Now the leche. Stop right on the line.')],
+      },
+      {
+        game: 'count-ingredients',
+        challenge: countThese([{ id: 'egg', count: 2 }, { id: 'lemon', count: 1 }], ['tomato', 'olive', 'mushroom'], true),
+        intro: [radio('Dos huevos y un limón. Count them in!', 'Dos huevos y un limón.')],
+      },
+      {
+        game: 'clock-watch',
+        challenge: (ctx) => ({ ...generateClockWatch(ctx), event: 'the arroz con leche is thick and creamy' }),
+        intro: [bea('Now we wait. Move the clock to pudding time.')],
+      },
+      {
+        game: 'recipe-scale',
+        bands: ['C'],
+        challenge: (ctx) => ({
+          ...generateRecipeScale(ctx),
+          serves: 4,
+          eating: 6,
+          lines: [
+            { item: wordById('egg'), amount: 2, scaled: 3 },
+            { item: wordById('lemon'), amount: 4, scaled: 6 },
+            { item: wordById('apple'), amount: 6, scaled: 9 },
+          ],
+        }),
+        intro: [radio('Two more neighbours knocked. Grow it by half!')],
+      },
+    ],
+  },
+  {
     id: 'bread',
     name: "Rosa's Bread",
     nameEs: 'El pan de Rosa',
@@ -381,6 +573,47 @@ export const recipes: RecipeDef[] = [
         game: 'count-ingredients',
         challenge: countThese([{ id: 'egg', count: 2 }, { id: 'olive', count: 4 }], ['apple', 'strawberry', 'mushroom'], true),
         intro: [{ speaker: 'npc', npcName: 'Rosa', text: 'Two eggs, four olives. ¡Gracias!', es: 'Dos huevos, cuatro aceitunas. ¡Gracias!', emotion: 'excited' }],
+      },
+    ],
+  },
+  {
+    id: 'banana-bread',
+    name: 'Banana Bread',
+    nameEs: 'Pan de plátano',
+    blurb: 'The loaf that rescues three sad bananas — measure, count, label, bake.',
+    subjects: ['cooking', 'math', 'reading', 'spanish'],
+    grownUp: true,
+    xp: 25,
+    intro: [
+      bea('Three bananas went soft. Perfect! That is the point.'),
+      grownUpLine('hot oven'),
+    ],
+    steps: [
+      {
+        game: 'measure-pour',
+        challenge: measureByBand('flour', 'cup'),
+        intro: [radio('Harina first. Watch the line.', 'Harina.')],
+      },
+      {
+        game: 'count-ingredients',
+        challenge: countThese([{ id: 'banana', count: 3 }, { id: 'egg', count: 2 }], ['tomato', 'olive', 'mushroom'], true),
+        intro: [radio('Tres plátanos y dos huevos.', 'Tres plátanos y dos huevos.')],
+      },
+      {
+        /* The kitchen's second spelling beat: the tin needs a label too. */
+        game: 'word-builder',
+        challenge: (ctx) =>
+          ctx.ageBand === 'A'
+            ? spell(wordById('bread'), 'es', 1, 0)(ctx)
+            : ctx.ageBand === 'B'
+              ? spell(wordById('banana'), 'en', 0, 1)(ctx)
+              : spell(wordById('egg'), 'es', 0, 2)(ctx),
+        intro: [bea('Label the tin so nobody eats it early.')],
+      },
+      {
+        game: 'clock-watch',
+        challenge: (ctx) => ({ ...generateClockWatch(ctx), event: 'the banana bread comes out of the oven' }),
+        intro: [radio('Into the oven. Set the clock, please.')],
       },
     ],
   },
@@ -435,6 +668,72 @@ export const recipes: RecipeDef[] = [
               ? spell(foodWords.lemon, 'en', 0, 1)(ctx)
               : spell(foodWords.strawberry, 'es', 0, 2)(ctx),
         intro: [bea('Now the label. Spell it, letter by letter.')],
+      },
+    ],
+  },
+  {
+    id: 'paletas',
+    name: 'Fruit Ice Pops',
+    nameEs: 'Paletas de fruta',
+    blurb: 'Buy the fruit, count it, share it into the moulds — then wait for the freezer.',
+    subjects: ['cooking', 'math', 'spanish', 'teamwork'],
+    grownUp: true,
+    xp: 30,
+    intro: [
+      bea('Hottest day of the year. Paletas for everyone!'),
+      grownUpLine('knife'),
+    ],
+    steps: [
+      {
+        /* Money again, because a market trip is the honest way to start a dish. */
+        game: 'market-money',
+        challenge: (ctx) => marketMoneyFor('watermelon', ctx),
+        intro: [
+          {
+            speaker: 'npc',
+            npcName: 'Abuela Carmen',
+            text: 'Sandía for the paletas. Count it out, please.',
+            es: 'Sandía para las paletas. Cuenta bien, por favor.',
+            emotion: 'happy',
+          },
+        ],
+      },
+      {
+        game: 'count-ingredients',
+        challenge: countByBand(
+          {
+            A: [
+              { item: foodWords.watermelon, count: 3 },
+              { item: foodWords.strawberry, count: 2 },
+            ],
+            B: [
+              { item: foodWords.watermelon, count: 4 },
+              { item: foodWords.strawberry, count: 3 },
+              { item: foodWords.lemon, count: 2 },
+            ],
+            C: [
+              { item: foodWords.watermelon, count: 5 },
+              { item: foodWords.strawberry, count: 4 },
+              { item: foodWords.lemon, count: 3 },
+            ],
+          },
+          [foodWords.tomato, foodWords.onion, foodWords.mushroom],
+        ),
+        intro: [radio('Sandía, fresas, limón. Read the card twice!', 'Sandía, fresas y limón.')],
+      },
+      {
+        game: 'divide-share',
+        challenge: (ctx) => ({
+          ...generateDivideShare(ctx),
+          item: wordById('strawberry'),
+          ...(ctx.ageBand === 'A' ? { total: 8, among: 2, each: 4 } : { total: 12, among: 4, each: 3 }),
+        }),
+        intro: [bea('Same fruit in every mould. Fair is fair.')],
+      },
+      {
+        game: 'clock-watch',
+        challenge: (ctx) => ({ ...generateClockWatch(ctx), event: 'the paletas are frozen hard' }),
+        intro: [radio('Into the freezer. Set the clock and be patient!')],
       },
     ],
   },
@@ -544,7 +843,7 @@ export const recipes: RecipeDef[] = [
       {
         /* Money arrives in the kitchen: the shopping happens before the cooking. */
         game: 'market-money',
-        challenge: (ctx) => ({ ...generateMarketMoney(ctx), item: foodWords.corn }),
+        challenge: (ctx) => ({ ...marketMoneyFor('corn', ctx), item: foodWords.corn }),
         intro: [
           {
             speaker: 'npc',

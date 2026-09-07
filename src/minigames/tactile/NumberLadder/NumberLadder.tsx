@@ -14,6 +14,7 @@ import { Stage } from '@/world';
 import { Animal, LadderRails } from '@/world/props';
 import {
   GameShell,
+  GROUND_OVERLAP,
   PlayGround,
   TownFacade,
   clampNum,
@@ -289,6 +290,12 @@ export function NumberLadder({ challenge, ageBand, onComplete, onEvent, compact 
   }));
 
   const flagTop = geo.bottomY - (target - geo.lo) * geo.unitPx;
+  const petSize = Math.max(40, Math.min(stage.s(58), geo.ladderW * 0.78));
+  const flagH = Math.max(38, Math.min(stage.s(58), petSize));
+  const sillW = petSize + flagH * 0.62 + stage.s(12);
+  /* the sill always lands inside the play area, whether the target is the top
+     rung or the bottom one */
+  const sillY = Math.max(petSize + 6, Math.min(flagTop, geo.bottomY - stage.s(8)));
 
   return (
     <GameShell
@@ -299,7 +306,9 @@ export function NumberLadder({ challenge, ageBand, onComplete, onEvent, compact 
       onStageLayout={onLayout}
       hint={hints.bubble}
       onDismissHint={hints.dismiss}
-      backdrop={<Stage variant="street" groundHeight={130} />}
+      /* the street's ground meets the pavement the game paints, so there is no
+         seam between the play area's floor and the backdrop's */
+      backdrop={(below) => <Stage variant="street" groundHeight={Math.max(130, below + GROUND_OVERLAP)} />}
       footer={
         <View style={styles.mathRow}>
           <Text variant="h3" color={state.pos === target ? palette.leafGreenDark : palette.navy}>
@@ -386,25 +395,40 @@ export function NumberLadder({ challenge, ageBand, onComplete, onEvent, compact 
             );
           })}
 
-          {/* target flag */}
-          <View style={[styles.flag, { left: geo.ladderX + geo.ladderW + 4, top: flagTop - stage.s(46) }]} pointerEvents="none">
-            <Svg width={stage.s(52)} height={stage.s(52)} viewBox="0 0 60 60">
-              <Rect x={6} y={6} width={5} height={50} rx={2.5} fill={palette.charcoal} />
-              <Path d="M11 8h38l-9 11 9 11H11z" fill={palette.leafGreen} />
-            </Svg>
-            <View style={styles.flagPet}>
-              <Animal id="kitten" size={stage.s(40)} mood={state.phase === 'done' ? 'happy' : 'help'} />
-            </View>
-          </View>
-
           {/* the pavement the ladder is footed on */}
           <PlayGround width={geo.w} height={geo.h} top={geo.groundY} variant="pavement" dressed kerb seed={span} />
 
+          {/* THE LANDING. The kitten used to be a 40 px sticker hanging off the
+              bottom of a small flag with nothing under it, half buried by the
+              kerb. It stands on a sill now — drawn at the target rung, planted
+              on the wall, with the flag beside it — so the thing the child is
+              climbing to is an object in the world and not a decal. */}
+          <View style={[styles.sill, { left: geo.ladderX + geo.ladderW - stage.s(6), top: sillY, width: sillW }]} pointerEvents="none">
+            <Svg width={sillW} height={stage.s(16)} viewBox={`0 0 ${sillW} 16`}>
+              <Rect x={0} y={3} width={sillW} height={9} rx={4} fill={palette.woodDark} />
+              <Rect x={0} y={3} width={sillW} height={3.6} rx={1.8} fill={palette.wood} />
+              <Rect x={0} y={11} width={sillW} height={3} rx={1.5} fill="rgba(31,42,90,0.22)" />
+            </Svg>
+          </View>
+          <View style={[styles.flag, { left: geo.ladderX + geo.ladderW + petSize + stage.s(2), top: sillY - flagH }]} pointerEvents="none">
+            <Svg width={flagH * 0.62} height={flagH} viewBox="0 0 40 64">
+              <Rect x={4} y={2} width={5} height={60} rx={2.5} fill={palette.charcoal} />
+              <Rect x={4} y={2} width={1.8} height={60} fill="rgba(255,255,255,0.32)" />
+              <Path d="M9 5h29l-7 9 7 9H9z" fill={palette.leafGreen} />
+              <Path d="M9 5h29l-2.4 3H9z" fill="rgba(255,255,255,0.32)" />
+            </Svg>
+          </View>
+          <View style={[styles.flagPet, { left: geo.ladderX + geo.ladderW + stage.s(2), top: sillY - petSize + stage.s(3) }]} pointerEvents="none">
+            <Animal id="kitten" size={petSize} mood={state.phase === 'done' ? 'happy' : 'help'} />
+          </View>
+
           {/* Rookie — critique #23: the full rig, not a head in a circle */}
           <Animated.View
+            /* the rig is drawn in a square box: centring it on the ladder means
+               half its HEIGHT either side, not half the ladder's width */
             style={[
               styles.rookie,
-              { left: geo.ladderX + geo.ladderW / 2 - rookieSize * 0.5, top: geo.groundY - rookieSize * 1.7 },
+              { left: geo.ladderX + geo.ladderW / 2 - rookieSize * 0.85, top: geo.groundY - rookieSize * 1.7 },
               climberStyle,
             ]}
             pointerEvents="none"
@@ -428,8 +452,9 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
     ...shadows.soft,
   },
-  flag: { position: 'absolute', alignItems: 'center' },
-  flagPet: { marginTop: -6 },
+  flag: { position: 'absolute' },
+  flagPet: { position: 'absolute' },
+  sill: { position: 'absolute' },
   wall: { position: 'absolute', left: 0, top: 0 },
   rookie: { position: 'absolute', alignItems: 'center' },
   mathRow: {

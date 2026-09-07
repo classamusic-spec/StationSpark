@@ -18,7 +18,7 @@ import { palette, radii, shadows, spacing, springs, timings } from '@/theme';
 import { useIdleBob } from '@/hooks';
 import { sfx } from '@/services/audio';
 import { haptics } from '@/services/haptics';
-import { Button, Chip, ResetIcon, SparkleBurst, Text, TrayRow, VocabIcon } from '@/ui';
+import { Button, Chip, ResetIcon, SparkleBurst, Text, TrayRow, VocabIcon, useSideRail } from '@/ui';
 import { AskQuestion } from '../shared/AskQuestion';
 import { GameFrame } from '../shared/GameFrame';
 import { SlotZone } from '../shared/SlotZone';
@@ -141,6 +141,7 @@ export function MarketMoney({ challenge, ageBand, onComplete, onEvent, compact }
   const layout = useGameLayout({ compact });
   const [state, dispatch] = useReducer(reducer, { phase: 'shopping', counter: [], misses: 0 });
   const hintLadder = useHintLadder(state.misses, session.hint);
+  const sideRail = useSideRail();
   const finished = useRef(false);
 
   const { coins, price, item, exactChange } = challenge;
@@ -358,7 +359,11 @@ export function MarketMoney({ challenge, ageBand, onComplete, onEvent, compact }
     return `${values.join(' + ')} = ${total}`;
   }, [coins, state.counter, total]);
 
-  const coinSize = Math.max(52, layout.s(purse.length > 8 ? 56 : 62));
+  /* in a rail the purse is the only thing in a 320 px column: three columns of
+     bigger coins fill it instead of a small cluster floating in the middle */
+  const coinSize = sideRail
+    ? (purse.length > 9 ? 76 : 86)
+    : Math.max(52, layout.s(purse.length > 8 ? 56 : 62));
   const counterCoin = Math.max(38, layout.s(44));
   const canPay = state.phase === 'shopping' && state.counter.length > 0;
 
@@ -454,11 +459,24 @@ export function MarketMoney({ challenge, ageBand, onComplete, onEvent, compact }
         {/* ---- the counter the coins land on ---- */}
         <SlotZone
           id="counter"
+          label="the counter"
+          /* the coins lying on it are tappable — do not collapse them */
+          announce={state.counter.length === 0}
           enabled={state.phase === 'shopping'}
           hitPad={layout.s(14)}
           style={[styles.counter, { width: stallWidth, minHeight: layout.s(90) }]}
         >
+          {/*
+           * A COUNTER, NOT A BROWN BOX. It was one flat plank with a dashed
+           * rectangle drawn on it — the biggest undressed surface on the
+           * screen. It now has a planed top lip, its grain, and a felt cash
+           * tray sunk into it with a lit rim and a shaded well.
+           */}
+          <View style={styles.counterLip} pointerEvents="none" />
+          <View style={[styles.counterGrain, { top: '38%' }]} pointerEvents="none" />
+          <View style={[styles.counterGrain, styles.counterGrainShort, { top: '72%' }]} pointerEvents="none" />
           <View style={styles.counterInner}>
+            <View style={styles.counterWell} pointerEvents="none" />
             {state.counter.length === 0 ? (
               <Text variant="small" color={palette.woodDark} center>
                 Drop your coins here
@@ -515,6 +533,25 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.xs,
     ...shadows.card,
   },
+  counterLip: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    height: 9,
+    borderTopLeftRadius: radii.card,
+    borderTopRightRadius: radii.card,
+    backgroundColor: '#DDAE72',
+  },
+  counterGrain: {
+    position: 'absolute',
+    left: '8%',
+    width: '56%',
+    height: 2.6,
+    borderRadius: 1.3,
+    backgroundColor: 'rgba(140,88,40,0.34)',
+  },
+  counterGrainShort: { left: '34%', width: '38%' },
   counterInner: {
     flex: 1,
     alignSelf: 'stretch',
@@ -523,13 +560,25 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
-    backgroundColor: 'rgba(255,246,229,0.55)',
+    backgroundColor: palette.creamDeep,
     borderRadius: radii.tile,
-    borderWidth: 3,
-    borderStyle: 'dashed',
-    borderColor: palette.tanDark,
-    paddingVertical: 6,
-    paddingHorizontal: 6,
+    borderTopWidth: 3,
+    borderTopColor: 'rgba(31,42,90,0.14)',
+    borderBottomWidth: 3,
+    borderBottomColor: 'rgba(255,255,255,0.7)',
+    paddingVertical: 8,
+    paddingHorizontal: 8,
+    marginTop: 6,
+    overflow: 'hidden',
+  },
+  /* the felt bed the coins are counted onto */
+  counterWell: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    height: '38%',
+    backgroundColor: 'rgba(31,42,90,0.05)',
   },
   strip: {
     flexDirection: 'row',

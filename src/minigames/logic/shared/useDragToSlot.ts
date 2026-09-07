@@ -138,6 +138,20 @@ export function useDragToSlot(opts: UseDragToSlotOptions) {
     [arena, fade, later, lift, tx, ty, wobble],
   );
 
+  /**
+   * A drag the system took away from us — a phone call, a scroll that won the
+   * gesture race, a view that unmounted mid-drag. RNGH still calls `onEnd`, so
+   * without this the token was "dropped" wherever the finger happened to be and
+   * the child was scored for an answer they never gave. Nothing lands: the
+   * token simply goes home.
+   */
+  const cancelDrag = useCallback(() => {
+    setDragging(false);
+    lift.value = withTiming(0, timings.fast);
+    tx.value = withSpring(0, springs.gentle);
+    ty.value = withSpring(0, springs.gentle);
+  }, [lift, tx, ty]);
+
   const { group, disabled, snapRadius = 44, liftScale = 1.1 } = opts;
 
   const gesture = useMemo(
@@ -156,16 +170,21 @@ export function useDragToSlot(opts: UseDragToSlotOptions) {
           const hit = pickDropSlot(arena.slots.value, e.absoluteX - o.x, e.absoluteY - o.y, group, 0);
           arena.hovered.value = hit ? hit.id : null;
         })
-        .onEnd((e) => {
+        /* `success` is false on CANCELLED / FAILED — see cancelDrag above */
+        .onEnd((e, success) => {
+          arena.hovered.value = null;
+          if (!success) {
+            runOnJS(cancelDrag)();
+            return;
+          }
           const o = arena.origin.value;
           const hit = pickDropSlot(arena.slots.value, e.absoluteX - o.x, e.absoluteY - o.y, group, snapRadius);
-          arena.hovered.value = null;
           runOnJS(settle)(hit ? hit.id : null);
         })
         .onFinalize(() => {
           arena.hovered.value = null;
         }),
-    [arena, disabled, group, lift, pickUp, settle, snapRadius, tx, ty],
+    [arena, cancelDrag, disabled, group, lift, pickUp, settle, snapRadius, tx, ty],
   );
 
   const animatedStyle = useAnimatedStyle(() => ({
@@ -179,5 +198,19 @@ export function useDragToSlot(opts: UseDragToSlotOptions) {
     shadowRadius: 8 + lift.value * 14,
   }));
 
-  return { gesture, animatedStyle, dragging, nodeRef, remeasure, lift };
+  /**
+   * Land this token on a slot without a drag — the tap path. It runs exactly
+   * the same `settle`, so the spring, the sound, the haptic and `onSettled`
+   * are identical whichever way the child played.
+   */
+  const placeAt = useCallback(
+    (slotId: string | null) => {
+      arena.refresh();
+      remeasure();
+      settle(slotId);
+    },
+    [arena, remeasure, settle],
+  );
+
+  return { gesture, animatedStyle, dragging, nodeRef, remeasure, lift, placeAt };
 }

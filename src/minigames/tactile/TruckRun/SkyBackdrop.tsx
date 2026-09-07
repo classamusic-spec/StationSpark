@@ -86,7 +86,28 @@ export const SkyBackdrop = memo(function SkyBackdrop({ width, height, reduced }:
         <Circle cx={sunX} cy={sunY} r={sunR} fill="#FFDE6A" />
         <Path d={`M ${sunX - sunR * 0.62} ${sunY - sunR * 0.3} a ${sunR} ${sunR} 0 0 1 ${sunR * 0.75} ${-sunR * 0.5}`} stroke={palette.white} strokeWidth={sunR * 0.2} fill="none" strokeLinecap="round" opacity={0.7} />
 
-        {/* two ranges of hills fading into the haze */}
+        {/* flat cloud banks, high in the frame: the top third of the sky was
+            raw gradient with two gull strokes in it — the emptiest band in the
+            game. Static and pale, so they never pull an eye off the road. */}
+        <G opacity={0.5}>
+          <Ellipse cx={width * 0.2} cy={hy * 0.19} rx={78 * s} ry={17 * s} fill={palette.white} />
+          <Ellipse cx={width * 0.09} cy={hy * 0.22} rx={44 * s} ry={12 * s} fill={palette.white} />
+          <Ellipse cx={width * 0.3} cy={hy * 0.235} rx={40 * s} ry={11 * s} fill={palette.white} />
+          <Ellipse cx={width * 0.24} cy={hy * 0.13} rx={38 * s} ry={14 * s} fill={palette.white} />
+        </G>
+        <G opacity={0.34}>
+          <Ellipse cx={width * 0.74} cy={hy * 0.56} rx={62 * s} ry={13 * s} fill={palette.white} />
+          <Ellipse cx={width * 0.62} cy={hy * 0.585} rx={34 * s} ry={9 * s} fill={palette.white} />
+          <Ellipse cx={width * 0.8} cy={hy * 0.5} rx={30 * s} ry={11 * s} fill={palette.white} />
+        </G>
+
+        {/* three ranges of hills fading into the haze: value, not detail, is
+            what keeps the distance behind the road */}
+        <Path
+          d={`M -20 ${hy + 4} Q ${width * 0.28} ${hy - 152 * s} ${width * 0.54} ${hy - 54 * s} Q ${width * 0.78} ${hy - 118 * s} ${width + 20} ${hy - 30 * s} L ${width + 20} ${hy + 8} Z`}
+          fill="#B4D6EF"
+          opacity={0.5}
+        />
         <Path
           d={`M -20 ${hy + 4} Q ${width * 0.2} ${hy - 88 * s} ${width * 0.46} ${hy - 18 * s} Q ${width * 0.68} ${hy - 74 * s} ${width + 20} ${hy - 6 * s} L ${width + 20} ${hy + 8} Z`}
           fill="#9BC7E8"

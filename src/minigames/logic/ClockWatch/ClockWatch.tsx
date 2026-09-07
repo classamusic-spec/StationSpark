@@ -369,34 +369,20 @@ export function ClockWatch({ challenge, onComplete, onEvent, compact }: MiniGame
               </Animated.View>
             ) : null}
 
+            {/*
+             * TWO HANDS THAT CANNOT BECOME ONE. At 9:50 the short navy hand sat
+             * directly under the long red one and vanished; a child reading the
+             * dial saw a single stroke. Each hand now carries a counterweight
+             * tail past the centre and its own cast shadow, so even perfectly
+             * aligned they read as two — and they look like clock hands rather
+             * than two coloured sticks.
+             */}
             <Animated.View style={[StyleSheet.absoluteFill, hourStyle]} pointerEvents="none">
-              <View
-                style={[
-                  styles.hand,
-                  {
-                    left: centre - handWidth * 0.65,
-                    top: centre - hourLen,
-                    width: handWidth * 1.3,
-                    height: hourLen,
-                    backgroundColor: palette.navy,
-                  },
-                ]}
-              />
+              <ClockHand centre={centre} len={hourLen} width={handWidth * 1.34} color={palette.navy} edge={palette.navySoft} />
             </Animated.View>
 
             <Animated.View style={[StyleSheet.absoluteFill, minuteStyle]} pointerEvents="none">
-              <View
-                style={[
-                  styles.hand,
-                  {
-                    left: centre - handWidth / 2,
-                    top: centre - minuteLen,
-                    width: handWidth,
-                    height: minuteLen,
-                    backgroundColor: palette.engineRed,
-                  },
-                ]}
-              />
+              <ClockHand centre={centre} len={minuteLen} width={handWidth} color={palette.engineRed} edge={palette.engineRedDark} />
             </Animated.View>
 
             <View
@@ -429,6 +415,71 @@ export function ClockWatch({ challenge, onComplete, onEvent, compact }: MiniGame
         ) : null}
       </View>
     </GameFrame>
+  );
+}
+
+/**
+ * One clock hand: a cast shadow, the shaft, a lit edge and a counterweight
+ * tail. Three tones, no outline, and a silhouette that survives being lined up
+ * exactly on top of the other hand.
+ */
+function ClockHand({
+  centre,
+  len,
+  width,
+  color,
+  edge,
+}: {
+  centre: number;
+  len: number;
+  width: number;
+  color: string;
+  edge: string;
+}) {
+  const tail = len * 0.24;
+  return (
+    <>
+      <View
+        style={[
+          styles.hand,
+          {
+            left: centre - width / 2 + 2,
+            top: centre - len + 3,
+            width,
+            height: len + tail,
+            backgroundColor: 'rgba(31,42,90,0.16)',
+            borderRadius: width,
+          },
+        ]}
+      />
+      <View
+        style={[
+          styles.hand,
+          { left: centre - width / 2, top: centre - len, width, height: len + tail, backgroundColor: color, borderRadius: width },
+        ]}
+      />
+      {/* the counterweight is the darker tone, and it is what tells two aligned
+          hands apart at a glance */}
+      <View
+        style={[
+          styles.hand,
+          { left: centre - width * 0.44, top: centre + tail * 0.1, width: width * 0.88, height: tail * 0.9, backgroundColor: edge, borderRadius: width },
+        ]}
+      />
+      <View
+        style={[
+          styles.hand,
+          {
+            left: centre - width * 0.16,
+            top: centre - len + width * 0.5,
+            width: width * 0.3,
+            height: len * 0.52,
+            backgroundColor: 'rgba(255,255,255,0.4)',
+            borderRadius: width,
+          },
+        ]}
+      />
+    </>
   );
 }
 

@@ -312,7 +312,9 @@ export function EquipmentCheck({ challenge, ageBand, onComplete, onEvent, compac
                     style={[styles.token, { width: tokenSize + spacing.md, opacity: spent ? 0.4 : 1 }]}
                   >
                     <EquipmentIcon id={id} size={tokenSize} />
-                    <Text variant="tiny" center numberOfLines={1}>
+                    {/* two lines: "First Aid Kit" and "Extinguisher" were being
+                        clipped to an ellipsis on a phone */}
+                    <Text variant="tiny" center numberOfLines={2} style={styles.tokenLabel}>
                       {equipmentLabel(id)}
                     </Text>
                     <View style={styles.tokenChip}>
@@ -338,7 +340,9 @@ export function EquipmentCheck({ challenge, ageBand, onComplete, onEvent, compac
               size="md"
               icon={<CheckIcon size={22} />}
               onPress={onDone}
-              disabled={state.phase === 'closing' || state.phase === 'done'}
+              /* 'ask' included: the question card lets taps through to the
+                 task bar now, so the tray must decline them itself */
+              disabled={state.phase !== 'packing'}
             />
           </View>
         </View>
@@ -373,6 +377,7 @@ export function EquipmentCheck({ challenge, ageBand, onComplete, onEvent, compac
                         <SlotZone
                           key={i}
                           id={`${item.id}#${i}`}
+                          label={`the ${equipmentLabel(item.id).toLowerCase()} shelf`}
                           enabled={!filled && state.phase === 'packing'}
                           highlight={highlightItem === item.id && i === packed}
                           hitPad={layout.s(10)}
@@ -451,6 +456,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.xs,
     gap: 2,
   },
+  tokenLabel: { marginTop: 1, paddingHorizontal: 2, letterSpacing: 0.1 },
   tokenChip: { alignItems: 'center' },
   actions: { flexDirection: 'row', justifyContent: 'center', gap: spacing.md, marginTop: spacing.xs },
 });

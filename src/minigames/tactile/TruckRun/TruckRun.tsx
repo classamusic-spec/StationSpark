@@ -15,7 +15,7 @@ import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from '
 import { Pressable, StyleSheet, View } from 'react-native';
 import Animated, { runOnJS, useAnimatedStyle, useSharedValue, withSequence, withTiming } from 'react-native-reanimated';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
-import Svg, { Path } from 'react-native-svg';
+import Svg, { Defs, LinearGradient, Path, Rect, Stop } from 'react-native-svg';
 import type { TruckRunProp } from '@/learning/types';
 import type { MiniGameProps } from '@/minigames/types';
 import { useMiniGameSession } from '@/minigames/useMiniGameSession';
@@ -297,8 +297,9 @@ export function TruckRun({ challenge, ageBand, onComplete, onEvent, compact }: M
       });
     const tap = Gesture.Tap()
       .maxDuration(400)
-      .onEnd((e) => {
-        runOnJS(steer)(e.x < middle ? -1 : 1);
+      /* a tap that lost the race (the pan took over) must not also steer */
+      .onEnd((e, success) => {
+        if (success) runOnJS(steer)(e.x < middle ? -1 : 1);
       });
     return Gesture.Race(pan, tap);
   }, [box.w, dragAnchor, steer]);
@@ -345,6 +346,11 @@ export function TruckRun({ challenge, ageBand, onComplete, onEvent, compact }: M
       onDismissHint={hints.dismiss}
       onStageLayout={onLayout}
       tray={tray}
+      /* a steering bar is two chevrons and a speed gauge. Sent to a tablet's
+         side rail it turned a third of the window into an empty white column
+         and made the road — the thing the child is actually looking at —
+         narrower. The extra room goes to the road. */
+      wideTray
     >
       {/* the testID below is the QA hook (like the drag/slot testIDs the
           harness already uses): it publishes the live run, so tools/qa can work
@@ -367,6 +373,19 @@ export function TruckRun({ challenge, ageBand, onComplete, onEvent, compact }: M
             scene={challenge.scene}
           />
           <GateLabels frame={frame} width={box.w} height={box.h} />
+          {/* the near tarmac falls into shade at the bottom of the frame: it
+              closes the composition and stops the last strip of road reading
+              as a flat grey slab with nothing happening in it */}
+          <Svg width={box.w} height={box.h} style={StyleSheet.absoluteFill} pointerEvents="none">
+            <Defs>
+              <LinearGradient id="ss-run-near" x1="0" y1="0" x2="0" y2="1">
+                <Stop offset="0" stopColor={palette.navy} stopOpacity={0} />
+                <Stop offset="0.55" stopColor={palette.navy} stopOpacity={0.08} />
+                <Stop offset="1" stopColor={palette.navy} stopOpacity={0.24} />
+              </LinearGradient>
+            </Defs>
+            <Rect x={0} y={box.h * 0.68} width={box.w} height={box.h * 0.32} fill="url(#ss-run-near)" />
+          </Svg>
           <GestureDetector gesture={gesture}>
             <Animated.View
               style={StyleSheet.absoluteFill}
@@ -380,8 +399,17 @@ export function TruckRun({ challenge, ageBand, onComplete, onEvent, compact }: M
 }
 
 const styles = StyleSheet.create({
-  trayRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingHorizontal: spacing.xs },
-  padHit: { flex: 1 },
+  trayRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.sm,
+    paddingHorizontal: spacing.xs,
+  },
+  /* the pads take the width a thumb needs and no more: given the whole of a
+     tablet they became two 400 px blank slabs, which is the same "wider
+     chrome" defect as the rail they replaced */
+  padHit: { flex: 1, maxWidth: 260 },
   padEdge: { backgroundColor: palette.slateLight, borderRadius: radii.pill, height: hit.big + 6, ...shadows.card },
   padFace: {
     height: hit.big,
@@ -390,7 +418,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  speed: { width: 96, alignItems: 'center' },
+  /* the one readout on the bar gets the room the pads gave back */
+  speed: { flex: 1, minWidth: 96, maxWidth: 420, alignItems: 'center', paddingHorizontal: spacing.sm },
   speedTrack: { width: '100%', height: 14, borderRadius: 7, backgroundColor: roles.surface.sunken, overflow: 'hidden' },
   speedFill: { height: '100%', borderRadius: 7 },
 });

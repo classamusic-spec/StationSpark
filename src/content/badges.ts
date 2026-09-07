@@ -10,8 +10,78 @@ import { palette } from '@/theme/colors';
 import { vocabulary } from '@/learning/vocabulary';
 import type { BadgeDef, BadgeId } from './types';
 
-// Every word in the bank is bilingual, so learning a word is learning Spanish too.
-const spanishWordIds = new Set(vocabulary.filter((w) => w.es.length > 0).map((w) => w.id));
+/* ------------------------------------------------------------------ *
+ * What "a word learned" actually means
+ *
+ * `session.learnedWord()` is called by the mini-games with the word a child
+ * just met — and it is called with the TEXT, in whichever language was on
+ * screen: Word Tap records `word.en` AND `word.es` for the same word, and one
+ * or two games record a bare skill name that is not a vocabulary word at all.
+ *
+ * So `progress.words` is a bag of strings in two languages, not a list of ids.
+ * Counting its length double-counts every bilingual pair, and testing it
+ * against a set of vocabulary *ids* counted "water" as Spanish (the id happens
+ * to read like the English) while missing "agua" entirely. Both badges were
+ * measuring the wrong thing.
+ *
+ * Everything below resolves a recorded string back to the word it came from,
+ * so the ledger says what the badges claim: `word-watcher` counts distinct
+ * WORDS (agua and water are one word), and the Spanish badges count only the
+ * entries that are genuinely Spanish.
+ * ------------------------------------------------------------------ */
+
+const normalise = (value: string): string => value.trim().toLowerCase();
+
+/** Any recorded string → the vocabulary id it belongs to. Ids win over text. */
+const wordIdByText = (() => {
+  const map = new Map<string, string>();
+  for (const word of vocabulary) map.set(normalise(word.id), word.id);
+  for (const word of vocabulary) {
+    for (const text of [word.en, word.es]) {
+      const key = normalise(text);
+      if (!map.has(key)) map.set(key, word.id);
+    }
+  }
+  return map;
+})();
+
+/** The Spanish half of the bank, by text. "radio" is Spanish as well as English. */
+const spanishText = new Set(vocabulary.map((w) => normalise(w.es)));
+
+/**
+ * The vocabulary word a recorded string came from, or `undefined` when it was
+ * never a word (a skill name, a stray label). Exported so a screen can show a
+ * child's word list with both languages on it instead of a bare string.
+ */
+export function vocabIdForLearned(entry: string): string | undefined {
+  return wordIdByText.get(normalise(entry));
+}
+
+/** Distinct WORDS behind a recorded list — "agua" and "water" count once. */
+export function learnedWordIds(words: readonly string[]): string[] {
+  const out = new Set<string>();
+  for (const entry of words) {
+    const id = vocabIdForLearned(entry);
+    if (id) out.add(id);
+  }
+  return [...out];
+}
+
+/**
+ * Distinct words the child met IN SPANISH — an entry only counts when the text
+ * recorded is the word's Spanish, so an English-only session earns no Spanish
+ * badge no matter how many words it records.
+ */
+export function learnedSpanishWordIds(words: readonly string[]): string[] {
+  const out = new Set<string>();
+  for (const entry of words) {
+    const key = normalise(entry);
+    if (!spanishText.has(key)) continue;
+    const id = wordIdByText.get(key);
+    if (id) out.add(id);
+  }
+  return [...out];
+}
 
 export const badges: BadgeDef[] = [
   {
@@ -293,10 +363,10 @@ const played = (progress: BadgeProgressLike, kinds: readonly string[]): number =
  * Kept as a constant (not `missions.length`) so this module stays free of the
  * mission graph — `content.test.ts` asserts the two never drift apart.
  */
-export const TOTAL_MISSIONS = 12;
+export const TOTAL_MISSIONS = 17;
 
 /** Every recipe in the kitchen book; chef-de-station needs all of them. */
-export const TOTAL_RECIPES = 13;
+export const TOTAL_RECIPES = 18;
 
 /**
  * Every skill badge the child has earned right now. Pure — call it after
@@ -305,7 +375,8 @@ export const TOTAL_RECIPES = 13;
 export function earnedSkillBadges(progress: BadgeProgressLike): BadgeId[] {
   const out: BadgeId[] = [];
   const missionCount = Object.keys(progress.missions).length;
-  const spanishWords = progress.words.filter((id) => spanishWordIds.has(id)).length;
+  const learnedWords = learnedWordIds(progress.words).length;
+  const spanishWords = learnedSpanishWordIds(progress.words).length;
 
   if (missionCount >= 1) out.push('first-shift');
   if (missionCount >= TOTAL_MISSIONS) out.push('community-helper');
@@ -318,7 +389,7 @@ export function earnedSkillBadges(progress: BadgeProgressLike): BadgeId[] {
   if ((progress.gamesPlayed['spray-pattern'] ?? 0) >= 3) out.push('pattern-pro');
   if ((progress.gamesPlayed['clock-watch'] ?? 0) >= 3) out.push('time-keeper');
   if ((progress.gamesPlayed['clock-watch'] ?? 0) >= 5) out.push('time-traveler');
-  if (progress.words.length >= 20) out.push('word-watcher');
+  if (learnedWords >= 20) out.push('word-watcher');
   if (spanishWords >= 10) out.push('spanish-speaker');
   if (spanishWords >= 30) out.push('bilingual-buddy');
   if (progress.shiftDays.length >= 3) out.push('team-player');

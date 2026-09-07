@@ -30,6 +30,7 @@ import { RecipeCardFrame } from '../../parts/RecipeCardFrame';
 import { CookCTA } from '../../parts/SceneBits';
 import {
   Canister,
+  ContactPatch,
   CounterCrumbs,
   CounterRun,
   CuttingBoard,
@@ -81,6 +82,11 @@ interface Scene {
   wide: boolean;
   counterY: number;
   counterH: number;
+  /** how much worktop SURFACE is drawn above the counter's front edge */
+  deck: number;
+  deckTop: number;
+  /** the line on that worktop the blender's feet stand on */
+  baseY: number;
   /** the blender, in design units */
   jar: { x: number; y: number; w: number; h: number };
   /** the drop target at the mouth of the jug */
@@ -100,15 +106,20 @@ interface Scene {
  */
 function layout(box: FluidBox, count: number): Scene {
   const { s, w, h } = box;
-  const counterH = Math.max(46, Math.min(84, h * 0.14));
+  /* the counter is a SURFACE: `deck` is the worktop drawn receding above its
+     front nose, and the blender's feet land on that wood */
+  const counterH = Math.max(28, Math.min(56, h * 0.09));
   const counterY = h - counterH;
+  const deck = Math.max(50, Math.min(120, h * 0.2));
+  const deckTop = counterY - deck;
+  const baseY = counterY - deck * 0.24;
   const wide = w > h * 0.92;
   /* the hero never gets less than half the standing room */
-  const heroFloor = (counterY - 12) * 0.5;
+  const heroFloor = (baseY - 12) * 0.5;
 
   const shelfRegion = wide
-    ? { x: 10, y: 12, w: Math.min(w * 0.4, 230) - 20, h: counterY - 34 }
-    : { x: 12, y: 6, w: w - 24, h: Math.min(h * 0.36, 210, counterY - 20 - heroFloor) };
+    ? { x: 14, y: 12, w: Math.min(w * 0.4, 230) - 26, h: deckTop - 26 }
+    : { x: 16, y: 6, w: w - 32, h: Math.min(h * 0.36, 210, deckTop - 16 - heroFloor) };
 
   const grid = packGrid(count, shelfRegion, { gap: 10, max: 96, min: 44 });
 
@@ -119,11 +130,11 @@ function layout(box: FluidBox, count: number): Scene {
   const heroX = wide ? shelfRegion.x + shelfRegion.w + 16 : 0;
   const heroTop = wide ? 12 : shelfRegion.y + shelfRegion.h + 10;
   const heroW = w - heroX - dressW;
-  const heroH = counterY - heroTop;
+  const heroH = baseY - heroTop;
 
   const jarH = Math.min(heroH * 0.99, (heroW * 0.9) / JAR_ASPECT);
   const jarW = jarH * JAR_ASPECT;
-  const jar = { x: heroX + (heroW - jarW) / 2, y: counterY - jarH, w: jarW, h: jarH };
+  const jar = { x: heroX + (heroW - jarW) / 2, y: baseY - jarH, w: jarW, h: jarH };
 
   return {
     s,
@@ -132,6 +143,9 @@ function layout(box: FluidBox, count: number): Scene {
     wide,
     counterY,
     counterH,
+    deck,
+    deckTop,
+    baseY,
     jar,
     mouth: { x: jar.x + jar.w / 2, y: jar.y + jar.h * 0.34 },
     dropRadius: Math.max(100, jarW * 0.85),
@@ -451,10 +465,10 @@ export function CountIngredients({ challenge, onComplete, onEvent, compact }: Mi
             return (
               <>
                 {/* --- the room ------------------------------------- */}
-                <SplashbackBand s={s} x={0} y={sc.counterY - 62} w={w} depth={62} />
+                <SplashbackBand s={s} x={0} y={4} w={w} depth={Math.max(26, sc.deckTop - 4)} />
                 <PantryShelves sc={sc} count={baskets.length} />
-                <CounterRun s={s} w={w} y={sc.counterY} h={sc.counterH + 44} />
-                <CounterCrumbs s={s} x={jar.x - 20} y={sc.counterY - 12} w={jar.w + 40} seed={2} />
+                <CounterRun s={s} w={w} y={sc.counterY} h={sc.counterH + 44} deck={sc.deck} />
+                <CounterCrumbs s={s} x={jar.x - 20} y={sc.counterY - 24} w={jar.w + 40} seed={2} />
 
                 {/* whatever room the blender does not need becomes kitchen */}
                 {sideRoom > 52 ? (
@@ -462,25 +476,27 @@ export function CountIngredients({ challenge, onComplete, onEvent, compact }: Mi
                     <CuttingBoard
                       s={s}
                       x={heroLeft + 4}
-                      y={sc.counterY - Math.min(sideRoom, 122) * 0.44}
+                      y={sc.baseY - Math.min(sideRoom, 122) * 0.42}
                       w={Math.min(sideRoom, 122)}
                     />
                     <MixingBowls
                       s={s}
                       x={jar.x + jar.w + 6}
-                      y={sc.counterY - Math.min(sideRoom, 104) * 0.7}
+                      y={sc.baseY - Math.min(sideRoom, 104) * 0.68}
                       w={Math.min(sideRoom, 104)}
                     />
-                    <SaltAndPepper s={s} x={jar.x + jar.w + 10} y={sc.counterY - 26} h={24} />
+                    <SaltAndPepper s={s} x={jar.x + jar.w + 10} y={sc.counterY - 30} h={24} />
                   </>
                 ) : null}
                 {sc.wide && sc.dressW > 60 ? (
                   <>
                     <KitchenWindow s={s} x={w - sc.dressW - 4} y={16} w={sc.dressW} />
-                    <UtensilRail s={s} x={w - sc.dressW - 6} y={sc.counterY - 150} w={sc.dressW + 4} />
-                    <TeaTowel s={s} x={w - sc.dressW * 0.62} y={sc.counterY - 116} w={sc.dressW * 0.38} />
+                    <UtensilRail s={s} x={w - sc.dressW - 6} y={Math.max(20, sc.deckTop - 132)} w={sc.dressW + 4} />
+                    <TeaTowel s={s} x={w - sc.dressW * 0.62} y={Math.max(8, sc.deckTop - 100)} w={sc.dressW * 0.38} />
                   </>
                 ) : null}
+                {/* what the blender lays on the wood */}
+                <ContactPatch s={s} cx={jar.x + jar.w / 2} y={sc.baseY - 2} rx={jar.w * 0.44} />
 
                 {/* --- what is already in the jug -------------------- */}
                 <View style={[at(s, 8, sc.wide ? 8 : sc.shelfRegion.y + sc.shelfRegion.h + 12, 128), styles.chipCol]} pointerEvents="none">
@@ -574,8 +590,10 @@ export function CountIngredients({ challenge, onComplete, onEvent, compact }: Mi
 
 function PantryShelves({ sc, count }: { sc: Scene; count: number }) {
   const { s, grid, shelfRegion } = sc;
-  const plankX = Math.max(4, shelfRegion.x - 8);
-  const plankW = Math.min(sc.w - plankX - 4, shelfRegion.w + 16);
+  /* the plank keeps its brackets inside the frame: a shelf whose ends run off
+     both edges reads as a bug rather than as the room carrying on */
+  const plankX = Math.max(12, shelfRegion.x - 6);
+  const plankW = Math.min(sc.w - plankX * 2, shelfRegion.w + 12);
   /* the last row is rarely full — the leftover slots become store jars rather
      than the "empty shelf run" the art director called out */
   const spare = grid.cols * grid.rows - count;
@@ -815,8 +833,9 @@ function BlenderArt({ width, fill, blended, whirl }: { width: number; fill: numb
       ))}
 
       {/* the jug — real value in the glass, so it is not a white void */}
-      <Path d="M32 40h84l-9 100H41z" fill="#CFD9EA" />
-      <Path d="M40 40h68l-7 100H47z" fill="#E7EDF7" />
+      <Path d="M32 40h84l-9 100H41z" fill="#AEBED9" />
+      <Path d="M40 40h68l-7 100H47z" fill="#D8E3F3" />
+      <Path d="M44 108h60l-3 32H47z" fill="rgba(31,42,90,0.06)" />
 
       {/* contents, filling the tapered jug from the bottom up */}
       {fill > 0 ? (

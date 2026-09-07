@@ -4,6 +4,19 @@
  * in while Captain Bea sums the mission up.
  *
  * Nothing here is a score. It is a list of things they can now do.
+ *
+ * Two layout faults lived here and are fixed. The screen used to add its own
+ * `insets.top + 96` on top of the chrome offset the runner had already applied,
+ * which opened ~200 px of raw sky above the card; and the "Next" pill was
+ * absolutely pinned to the bottom, so on a phone it sat *over* the last rows of
+ * the card and the new-words line was unreadable behind it. The CTA is in the
+ * flow now — `space-between` puts it at the foot when there is room and pushes
+ * it down when there is not, and it can never cover a word.
+ *
+ * The list is the content, so it is what the extra width on a tablet buys:
+ * past a reading column's worth of room the skills run in two columns instead
+ * of leaving half the card empty, while the card and the pill stay capped at
+ * `contentWidth` (see `src/screens/shared/useScaledLayout.ts`).
  */
 import React, { useEffect, useMemo } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
@@ -18,6 +31,7 @@ import { speech } from '@/services/speech';
 import { Button, Panel, SubjectPill, Text } from '@/ui';
 import { CheckIcon, ChevronRightIcon } from '@/ui/icons';
 import { CharacterPortrait } from '@/characters';
+import { useScaledLayout } from '@/screens/shared';
 
 /** Kid-facing names for every skill tag. */
 export const skillLabels: Record<SkillTag, string> = {
@@ -50,18 +64,20 @@ export const skillLabels: Record<SkillTag, string> = {
   teamwork: 'Teamwork',
 };
 
-function SkillRow({ label, index }: { label: string; index: number }) {
+function SkillRow({ label, index, half }: { label: string; index: number; half: boolean }) {
   return (
     <Animated.View
       entering={FadeInDown.delay(300 + index * stagger.tile)
         .springify()
         .damping(15)}
-      style={styles.skill}
+      style={[styles.skill, half ? styles.skillHalf : styles.skillFull]}
     >
       <View style={styles.tick}>
         <CheckIcon size={16} color={palette.white} />
       </View>
-      <Text variant="bodyStrong">{label}</Text>
+      <Text variant="bodyStrong" style={styles.skillLabel}>
+        {label}
+      </Text>
     </Animated.View>
   );
 }
@@ -74,6 +90,9 @@ export interface MissionRecapProps {
 
 export function MissionRecap({ mission, results, onNext }: MissionRecapProps) {
   const insets = useSafeAreaInsets();
+  const { contentWidth } = useScaledLayout();
+  /** a reading column this wide fits two ticked skills side by side */
+  const twoUp = contentWidth >= 460;
 
   const skills = useMemo(() => {
     const seen = new Set<SkillTag>();
@@ -99,11 +118,11 @@ export function MissionRecap({ mission, results, onNext }: MissionRecapProps) {
   }, [line]);
 
   return (
-    <View style={styles.root}>
-      <ScrollView
-        contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + 110, paddingTop: insets.top + 96 }]}
-        showsVerticalScrollIndicator={false}
-      >
+    <ScrollView
+      contentContainerStyle={[styles.scroll, { paddingBottom: Math.max(insets.bottom, spacing.md) }]}
+      showsVerticalScrollIndicator={false}
+    >
+      <View style={[styles.stack, { width: contentWidth }]}>
         <Animated.View entering={FadeInDown.springify().damping(16)}>
           <Panel tone="white" radius="panel" style={styles.card}>
             <Text variant="display" center>
@@ -125,7 +144,7 @@ export function MissionRecap({ mission, results, onNext }: MissionRecapProps) {
 
             <View style={styles.skills}>
               {(skills.length > 0 ? skills.map((s) => skillLabels[s] ?? s) : ['Helping the community']).map((label, i) => (
-                <SkillRow key={label} label={label} index={i} />
+                <SkillRow key={label} label={label} index={i} half={twoUp} />
               ))}
             </View>
 
@@ -151,22 +170,32 @@ export function MissionRecap({ mission, results, onNext }: MissionRecapProps) {
             <Text variant="bodyStrong">{line}</Text>
           </View>
         </Animated.View>
-      </ScrollView>
-
-      <View style={[styles.ctaWrap, { paddingBottom: Math.max(insets.bottom, spacing.md) }]} pointerEvents="box-none">
-        <Button label="Next" tone="green" size="xl" block iconRight={<ChevronRightIcon size={26} />} onPress={onNext} />
       </View>
-    </View>
+
+      <Animated.View entering={FadeInUp.delay(560).springify().damping(15)} style={{ width: contentWidth }}>
+        <Button label="Next" tone="green" size="xl" block iconRight={<ChevronRightIcon size={26} />} onPress={onNext} />
+      </Animated.View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1 },
-  scroll: { paddingHorizontal: spacing.md, gap: spacing.md },
+  scroll: {
+    flexGrow: 1,
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing.md,
+    paddingTop: spacing.sm,
+    gap: spacing.md,
+  },
+  stack: { gap: spacing.md },
   card: { gap: spacing.sm },
   pills: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, justifyContent: 'center' },
-  skills: { gap: 8, marginTop: spacing.xs },
+  skills: { flexDirection: 'row', flexWrap: 'wrap', columnGap: spacing.xs, rowGap: 8, marginTop: spacing.xs },
   skill: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
+  skillFull: { width: '100%' },
+  skillHalf: { width: '48%' },
+  skillLabel: { flexShrink: 1 },
   tick: {
     width: 26,
     height: 26,
@@ -177,6 +206,7 @@ const styles = StyleSheet.create({
   },
   words: { marginTop: spacing.xs, gap: 2 },
   beaconRow: { flexDirection: 'row', alignItems: 'flex-end', gap: spacing.xs },
+  /* the CTA lives in the flow now — nothing is pinned over the card */
   bubble: {
     flex: 1,
     backgroundColor: palette.white,
@@ -184,5 +214,4 @@ const styles = StyleSheet.create({
     borderBottomLeftRadius: 8,
     padding: spacing.sm,
   },
-  ctaWrap: { position: 'absolute', left: spacing.md, right: spacing.md, bottom: 0 },
 });

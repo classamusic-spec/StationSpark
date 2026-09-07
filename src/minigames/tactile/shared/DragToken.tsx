@@ -56,8 +56,12 @@ export function DragToken({
         x.value = e.translationX;
         y.value = e.translationY;
       })
-      .onEnd((e) => {
-        runOnJS(release)(e.translationY < -liftThreshold);
+      /* RNGH calls onEnd(e, false) when the gesture is CANCELLED or FAILS —
+         without the flag a drag the child abandoned (a second finger, a
+         scroll taking over, the app backgrounding) was scored as a real drop
+         and placed a piece they never played. */
+      .onEnd((e, success) => {
+        runOnJS(release)(success && e.translationY < -liftThreshold);
       })
       .onFinalize(() => {
         x.value = withSpring(0, springs.snap);

@@ -34,6 +34,7 @@ import { sfx } from '@/services/audio';
 import { haptics } from '@/services/haptics';
 import { speech } from '@/services/speech';
 import { useGame } from '@/state/store';
+import { useScaledLayout } from '@/screens/shared';
 import { ActivityChromeProvider, Button, Panel, RoundIconButton, ScreenFrame, Text, TopBar } from '@/ui';
 import { BackIcon, ChevronRightIcon } from '@/ui/icons';
 import { GlyphIcon, StarRow } from '@/ui/kit';
@@ -71,6 +72,15 @@ const LOCATION_SCENE: Record<LocationId, SceneId> = {
 
 const DIALOGUE_STATES = new Set(['dialogue', 'scene', 'minigameIntro', 'minigameOutro']);
 const HUD_STATES = new Set(['dialogue', 'scene', 'minigameIntro', 'minigame', 'minigameOutro', 'travel', 'kitchen', 'recap']);
+/**
+ * Beats that play *at the location*. The storefront is drawn as the screen's
+ * backdrop for these, under the chrome rather than inside a padded body: an
+ * inset scene left a band of the frame's own blue above it, which is two skies
+ * with a seam between them (see the header of `src/world/Stage.tsx`).
+ */
+const SCENE_STATES = new Set(['dialogue', 'scene', 'minigameIntro', 'minigameOutro', 'complete', 'recap', 'reward']);
+/** Reading beats keep the place behind them, hazed back so the card wins. */
+const HAZED_STATES = new Set(['recap', 'reward']);
 
 export interface MissionRunnerProps {
   mission: MissionDef;
@@ -166,6 +176,8 @@ export function MissionRunner({ mission }: MissionRunnerProps) {
   const activityBeat = state === 'minigame';
   const showChrome = state !== 'complete' && state !== 'reward' && state !== 'done' && !activityBeat;
   const showHud = HUD_STATES.has(state);
+  /** the brief paints its own sky and its own pavement, edge to edge */
+  const briefBeat = state === 'brief' || state === 'idle';
 
   /* What the game's own TaskBar shows: quit on the left, beats as progress dots. */
   const activityChrome = useMemo(
@@ -178,7 +190,15 @@ export function MissionRunner({ mission }: MissionRunnerProps) {
     }),
     [beats.length, ctx.beatIndex],
   );
-  const bodyTop = showChrome ? insets.top + 8 + 56 + (showHud ? 42 : 8) : 0;
+  const bodyTop = showChrome && !briefBeat ? insets.top + 8 + 56 + (showHud ? 42 : 8) : 0;
+
+  /* The place itself, drawn once behind everything that happens there. */
+  const backdrop = SCENE_STATES.has(state) ? (
+    <>
+      <SceneHero scene={backdropScene} radius={0} bleed style={StyleSheet.absoluteFill} />
+      {HAZED_STATES.has(state) ? <View style={styles.haze} pointerEvents="none" /> : null}
+    </>
+  ) : null;
 
   const chrome = showChrome ? (
     <>
@@ -212,7 +232,6 @@ export function MissionRunner({ mission }: MissionRunnerProps) {
   } else if (DIALOGUE_STATES.has(state)) {
     body = (
       <View style={styles.sceneWrap}>
-        <SceneHero scene={backdropScene} radius={0} style={StyleSheet.absoluteFill} />
         {line ? (
           <DialogueOverlay
             key={`${ctx.beatIndex}-${ctx.phase}-${ctx.lineIndex}`}
@@ -255,7 +274,7 @@ export function MissionRunner({ mission }: MissionRunnerProps) {
   } else if (state === 'reward') {
     body = <RewardScreen mission={mission} stars={stars} onHome={() => router.replace('/')} onBoard={() => router.replace('/dispatch')} shiftComplete={shift.complete} />;
   } else if (state === 'complete') {
-    body = <View style={styles.sceneWrap}><SceneHero scene={backdropScene} radius={0} style={StyleSheet.absoluteFill} /></View>;
+    body = null;
   } else if (state === 'done' || state === 'quit') {
     body = null;
   } else {
@@ -264,7 +283,7 @@ export function MissionRunner({ mission }: MissionRunnerProps) {
   }
 
   return (
-    <ScreenFrame mood="day" chrome={chrome} safeTop={false} safeBottom={false}>
+    <ScreenFrame mood="day" backdrop={backdrop} chrome={chrome} safeTop={false} safeBottom={false}>
       <View style={[styles.body, { paddingTop: bodyTop }]}>{body}</View>
 
       <CelebrationOverlay
@@ -306,6 +325,7 @@ function RewardScreen({
   onBoard: () => void;
 }) {
   const insets = useSafeAreaInsets();
+  const { contentWidth } = useScaledLayout();
   const badge = badgeById?.(mission.badge);
 
   useEffect(() => {
@@ -317,10 +337,15 @@ function RewardScreen({
 
   return (
     <ScrollView
-      contentContainerStyle={[styles.reward, { paddingTop: insets.top + spacing.xl, paddingBottom: insets.bottom + spacing.lg }]}
+      contentContainerStyle={[
+        styles.reward,
+        { paddingTop: insets.top + spacing.lg, paddingBottom: Math.max(insets.bottom, spacing.md) + spacing.lg },
+      ]}
       showsVerticalScrollIndicator={false}
     >
-      <Animated.View entering={FadeIn.duration(300)}>
+      {/* a reading column, not a wall of button: a tablet gets a bigger picture
+          behind the card, never a 1000 px "Return to Station" */}
+      <Animated.View entering={FadeIn.duration(300)} style={{ width: contentWidth }}>
         <Panel tone="white" radius="panel" style={styles.rewardCard}>
           <Text variant="display" center>
             Great job!
@@ -356,7 +381,7 @@ function RewardScreen({
         </Panel>
       </Animated.View>
 
-      <Animated.View entering={FadeInUp.delay(300).springify().damping(15)} style={styles.rewardCtas}>
+      <Animated.View entering={FadeInUp.delay(300).springify().damping(15)} style={[styles.rewardCtas, { width: contentWidth }]}>
         <Button label="Return to Station" tone="red" size="xl" block iconRight={<ChevronRightIcon size={26} />} onPress={onHome} />
         {!shiftComplete ? <Button label="Back to the board" tone="white" size="md" block onPress={onBoard} sound="tap-soft" /> : null}
       </Animated.View>
@@ -367,8 +392,10 @@ function RewardScreen({
 const styles = StyleSheet.create({
   body: { flex: 1 },
   sceneWrap: { flex: 1, overflow: 'hidden' },
+  /** a daylight wash over the place, so a reading card on top of it still wins */
+  haze: { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(255,255,255,0.42)' },
   hudSlot: { position: 'absolute', left: 0, right: 0, zIndex: 45 },
-  reward: { paddingHorizontal: spacing.md, gap: spacing.md, flexGrow: 1, justifyContent: 'center' },
+  reward: { paddingHorizontal: spacing.md, gap: spacing.md, flexGrow: 1, alignItems: 'center', justifyContent: 'center' },
   rewardCard: { alignItems: 'center', gap: spacing.sm, borderRadius: radii.panel },
   rewardRow: { flexDirection: 'row', gap: spacing.sm },
   rewardChip: { paddingHorizontal: spacing.md, paddingVertical: 6, borderRadius: radii.pill, minWidth: 108 },

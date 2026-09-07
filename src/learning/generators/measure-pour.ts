@@ -1,8 +1,8 @@
 import type { ChallengeGenerator, Fraction } from '../types';
 import { wordById } from '../vocabulary';
 
-const cupIngredients = ['flour', 'milk', 'water', 'sugar'];
-const spoonIngredients = ['sugar', 'butter', 'basil'];
+const cupIngredients = ['flour', 'milk', 'water', 'sugar', 'rice', 'juice', 'beans', 'yogurt'];
+const spoonIngredients = ['sugar', 'butter', 'basil', 'honey', 'salt', 'cilantro', 'olive'];
 
 /**
  * MEASURE & POUR — fill the cup to the line.

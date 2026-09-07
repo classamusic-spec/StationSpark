@@ -11,11 +11,11 @@ import Animated, {
 } from 'react-native-reanimated';
 import type { MiniGameProps } from '@/minigames/types';
 import { useMiniGameSession } from '@/minigames/useMiniGameSession';
-import { palette, radii, shadows, spacing } from '@/theme';
+import { activity, palette, radii, shadows, spacing } from '@/theme';
 import { sfx } from '@/services/audio';
 import { haptics } from '@/services/haptics';
 import { speech } from '@/services/speech';
-import { AnswerTile, Text, TrayRow } from '@/ui';
+import { AnswerTile, Text, TrayRow, useSideRail } from '@/ui';
 import type { AnswerState } from '@/ui/kit/AnswerTile';
 
 import { GameFrame } from '../shared/GameFrame';
@@ -151,6 +151,21 @@ export function SprayPattern({ challenge, ageBand, onComplete, onEvent, compact 
     return `Next comes ${NAMES[challenge.answer].en}.`;
   }, [challenge.answer, shown]);
 
+  /*
+   * THE ANSWER GRID FILLS ITS TRAY. Four options at the default tile width came
+   * to 392 px on a 390 px phone, so the row wrapped three-then-one and left a
+   * lone "cone" adrift under a gap. The tiles now take a share of the tray
+   * instead of a minimum: two rows of two on a phone, one row of three when
+   * there are three, and two full-width columns in a tablet's rail.
+   */
+  const sideRail = useSideRail();
+  const trayInner = sideRail
+    ? activity.sidePanelWidth - spacing.md * 2
+    : Math.min(layout.width, 560) - spacing.md * 2;
+  const optionsPerRow = sideRail ? 2 : challenge.options.length <= 3 ? challenge.options.length : 2;
+  const optionWidth = Math.max(96, Math.floor((trayInner - (optionsPerRow - 1) * spacing.sm) / optionsPerRow));
+  const glyphSize = clamp(optionWidth * 0.44, 40, ageBand === 'A' ? 74 : 64);
+
   const tileState = (symbol: PatternSymbol): AnswerState => {
     if (state.phase === 'solved') return symbol === challenge.answer ? 'correct' : 'disabled';
     if (state.picked === symbol && symbol !== challenge.answer) return 'wrong';
@@ -175,9 +190,10 @@ export function SprayPattern({ challenge, ageBand, onComplete, onEvent, compact 
               state={tileState(symbol)}
               onPress={() => choose(symbol)}
               accessibilityLabel={NAMES[symbol].en}
+              style={{ width: optionWidth }}
             >
               <View style={styles.optionInner}>
-                <PatternGlyph symbol={symbol} size={layout.s(ageBand === 'A' ? 56 : 48)} />
+                <PatternGlyph symbol={symbol} size={glyphSize} />
                 <Text variant="tiny" center>
                   {NAMES[symbol].en}
                 </Text>

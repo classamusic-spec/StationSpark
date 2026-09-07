@@ -1,7 +1,7 @@
 import React, { useCallback } from 'react';
 import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
-import { palette, radii, roles, spacing } from '@/theme';
+import { hit, palette, radii, roles, spacing } from '@/theme';
 import { speech } from '@/services/speech';
 import { useActivityChrome } from './activityChrome';
 import { BackIcon, SpeakerIcon } from '../icons';
@@ -87,8 +87,12 @@ export function TaskBar({ task, es, detail, onBack, onReplay, progress, compact,
       style={[styles.wrap, roles.lift.surface, compact && styles.compact, style]}
     >
       <View style={styles.row}>
+        {/* 56 (`hit.min`) is the house minimum, and this bar is on all 27
+            activities, so a 44 px Back button was the most-missed target in the
+            app. It cannot be rescued with hitSlop either: react-native-web
+            ignores hitSlop entirely, so on web the drawn size IS the target. */}
         {back ? (
-          <RoundIconButton onPress={back} accessibilityLabel="Back" size={compact ? 44 : 48}>
+          <RoundIconButton onPress={back} accessibilityLabel="Back" size={compact ? hit.min : 56}>
             <BackIcon size={compact ? 20 : 22} color={palette.navy} />
           </RoundIconButton>
         ) : (
@@ -107,7 +111,7 @@ export function TaskBar({ task, es, detail, onBack, onReplay, progress, compact,
         </View>
 
         {replay ? (
-          <RoundIconButton onPress={replay} accessibilityLabel="Hear it again" size={compact ? 44 : 48} tone="white">
+          <RoundIconButton onPress={replay} accessibilityLabel="Hear it again" size={compact ? hit.min : 56} tone="white">
             <SpeakerIcon size={compact ? 20 : 22} color={palette.waterCyanDark} />
           </RoundIconButton>
         ) : (
@@ -143,7 +147,7 @@ const styles = StyleSheet.create({
   compact: { paddingVertical: spacing.xs },
   row: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
   /* keeps the task optically centred when only one side has a button */
-  spacer: { width: 48 },
+  spacer: { width: 56 },
   middle: { flex: 1, justifyContent: 'center' },
   es: { marginTop: 2 },
   dots: { flexDirection: 'row', justifyContent: 'center', gap: 6, paddingBottom: 2 },

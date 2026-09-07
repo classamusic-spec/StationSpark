@@ -3,7 +3,10 @@ import { masteryAdjustment } from '../adaptive';
 import { wordById } from '../vocabulary';
 import { clampInt } from './shared';
 
-const shareables = ['taco', 'pizza', 'apple', 'strawberry', 'banana', 'bread'];
+const shareables = [
+  'taco', 'pizza', 'apple', 'strawberry', 'banana', 'bread',
+  'quesadilla', 'tortilla', 'cookie', 'grape', 'pear', 'corn', 'egg', 'sandwich',
+];
 
 /**
  * DIVIDE & SHARE — everybody gets the same. `total` always divides by `among`,

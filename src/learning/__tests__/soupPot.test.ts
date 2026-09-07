@@ -9,7 +9,7 @@
 import { createRng } from '@/utils/rng';
 import type { AgeBand, ChallengeOf, GeneratorContext } from '@/learning/types';
 import { challengeSkills } from '@/learning/types';
-import { generateSoupPot } from '@/learning/generators';
+import { generateSoupPot, potOrder } from '@/learning/generators';
 import { validateChallenge } from '@/learning/validate';
 
 const BANDS: AgeBand[] = ['A', 'B', 'C'];
@@ -18,8 +18,12 @@ const ctxFor = (ageBand: AgeBand, seed: number): GeneratorContext => ({ ageBand,
 const sample = (band: AgeBand, count = 60): ChallengeOf<'soup-pot'>[] =>
   Array.from({ length: count }, (_, i) => generateSoupPot(ctxFor(band, i * 31 + 5)));
 
-/** The cooking order the generator draws from — softening first, lime last. */
-const COOKING_ORDER = ['onion', 'carrot', 'potato', 'tomato', 'pepper', 'mushroom', 'lemon'];
+/**
+ * The cooking order the generator draws from — softening first, lime last.
+ * Imported rather than copied, so growing the pot's shelf can never quietly
+ * stop this test from testing anything.
+ */
+const COOKING_ORDER = potOrder;
 
 const isSubsequence = (ids: readonly string[]): boolean => {
   let at = -1;

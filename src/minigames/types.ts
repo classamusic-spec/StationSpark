@@ -20,6 +20,20 @@ export interface MiniGameResult {
   /** completed successfully (always true when finished; we never fail a child) */
   success: true;
   attempts: number;
+  /**
+   * How many of those attempts were right. The session knows this — it counts
+   * `correct()` and `incorrect()` separately — but until now it threw the split
+   * away, and the store tried to reconstruct it with
+   * `Math.max(1, attempts - (attempts - 1))`, which is `Math.max(1, 1)`: the
+   * constant 1. So a perfect six-item Gear Sort recorded six attempts and one
+   * correct, and the Grown-Ups report card told a parent their child was 17%
+   * on Sorting after getting every single item right.
+   *
+   * Optional because a couple of places synthesise a result for a beat that was
+   * skipped or could not render. Those are not plays, so they carry no count —
+   * and the store deliberately leaves mastery alone rather than inventing one.
+   */
+  correct?: number;
   hintsUsed: number;
   durationMs: number;
   stars: Stars;

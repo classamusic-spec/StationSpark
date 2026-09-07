@@ -10,17 +10,21 @@ import { missionById } from '@/content/missions';
 import { spacing } from '@/theme';
 import { Button, Panel, ScreenFrame, Text, TopBar } from '@/ui';
 import { CharacterPortrait } from '@/characters';
+import { useScaledLayout } from '@/screens/shared';
 import { MissionRunner } from './MissionRunner';
+import { SceneHero } from './SceneHero';
 
 export function MissionRoute({ id }: { id: string }) {
   const router = useRouter();
+  const { contentWidth } = useScaledLayout();
   const mission = id ? missionById(id) : undefined;
 
   if (!mission) {
+    /* back in the station yard, not adrift on a rectangle of sky */
     return (
-      <ScreenFrame chrome={<TopBar />}>
+      <ScreenFrame backdrop={<SceneHero scene="station-yard" radius={0} style={StyleSheet.absoluteFill} />} chrome={<TopBar />}>
         <View style={styles.wrap}>
-          <Panel tone="white" radius="panel" style={styles.card}>
+          <Panel tone="white" radius="panel" style={[styles.card, { width: contentWidth }]}>
             <CharacterPortrait id="bea" emotion="think" size={80} />
             <Text variant="h1" center>
               That call has closed
@@ -40,5 +44,5 @@ export function MissionRoute({ id }: { id: string }) {
 
 const styles = StyleSheet.create({
   wrap: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: spacing.md },
-  card: { width: '100%', maxWidth: 440, alignItems: 'center', gap: spacing.sm },
+  card: { alignItems: 'center', gap: spacing.sm },
 });

@@ -87,6 +87,7 @@ export function useMiniGameSession(
         kind,
         success: true,
         attempts: Math.max(1, attempts.current),
+        correct: Math.max(0, attempts.current - mistakes.current),
         hintsUsed: hints.current,
         durationMs: Date.now() - startedAt.current,
         stars,

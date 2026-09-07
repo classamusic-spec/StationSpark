@@ -1,5 +1,5 @@
-import type { ChallengeGenerator, VocabWord } from '../types';
-import { vocabulary } from '../vocabulary';
+import type { ChallengeGenerator, ChallengeOf, GeneratorContext, VocabWord } from '../types';
+import { vocabulary, wordById } from '../vocabulary';
 import { byBand } from './shared';
 
 const LETTERS: Record<'en' | 'es', string[]> = {
@@ -63,3 +63,34 @@ export const generateWordBuilder: ChallengeGenerator<'word-builder'> = (ctx) => 
     prefilled,
   };
 };
+
+/**
+ * Spell a word the *story* chose — the sign on the station gate, the label on
+ * the jug. Built rather than spread over a finished challenge, because
+ * `letters` and `tiles` are one promise between them: every letter still to
+ * place has to be in the tray, or the word cannot be finished.
+ *
+ * Distractor tiles are only ever letters the word does not use, so a spare tile
+ * can never turn out to belong in a slot after all.
+ */
+export function wordBuilderFor(
+  wordId: string,
+  lang: 'en' | 'es',
+  ctx: GeneratorContext,
+  options: { prefilled?: number; distractors?: number } = {},
+): ChallengeOf<'word-builder'> {
+  const word = wordById(wordId);
+  const letters = upper(word[lang]);
+  const prefilled = Math.max(0, Math.min(options.prefilled ?? 0, letters.length - 1));
+  const distractorCount = options.distractors ?? byBand<number>(ctx.ageBand, { A: 0, B: 1, C: 2 });
+  const used = new Set(letters);
+  const spare = LETTERS[lang].filter((l) => !used.has(l));
+  return {
+    kind: 'word-builder',
+    word,
+    lang,
+    letters,
+    prefilled,
+    tiles: ctx.rng.shuffle([...letters.slice(prefilled), ...ctx.rng.shuffle(spare).slice(0, distractorCount)]),
+  };
+}

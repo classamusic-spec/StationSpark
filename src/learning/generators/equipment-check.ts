@@ -2,6 +2,11 @@ import type { ChallengeGenerator, EquipmentId } from '../types';
 import { masteryAdjustment } from '../adaptive';
 import { clampInt } from './shared';
 
+/**
+ * Everything on the truck's shelves. `EquipmentId` is the drawn set, so this is
+ * the whole locker — the generator never invents a piece of gear the
+ * EquipmentIcon sheet cannot draw.
+ */
 const kit: EquipmentId[] = ['hose', 'cone', 'first-aid', 'flashlight', 'ladder', 'bucket', 'helmet', 'radio', 'boots', 'rope', 'extinguisher', 'axe'];
 
 /**

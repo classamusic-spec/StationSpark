@@ -218,8 +218,10 @@ const styles = StyleSheet.create({
    * exactly like the hint does (see `@/ui/kit/playArea`). It is decorative
    * and auto-hides, so it is inert all the way down and never takes a touch.
    */
-  say: { position: 'absolute', left: spacing.md, right: spacing.md, zIndex: 45 },
-  sayRow: { flexDirection: 'row', alignItems: 'flex-end', gap: spacing.xs },
+  say: { position: 'absolute', left: spacing.md, right: spacing.md, zIndex: 45, alignItems: 'center' },
+  /* one bubble motif, one width: the same 560 px cap the dialogue bubble keeps,
+     so a tablet gets a bubble and not a 900 px banner */
+  sayRow: { flexDirection: 'row', alignItems: 'flex-end', gap: spacing.xs, maxWidth: 620, width: '100%' },
   sayBubble: {
     flex: 1,
     backgroundColor: palette.white,

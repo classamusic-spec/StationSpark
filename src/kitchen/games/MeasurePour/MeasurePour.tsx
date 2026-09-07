@@ -29,12 +29,14 @@ import { FluidStage, at, type FluidBox } from '../../parts/Stage';
 import { CookCTA } from '../../parts/SceneBits';
 import {
   Canister,
+  ContactPatch,
   CounterCrumbs,
   CounterRun,
   HerbPot,
   KitchenWall,
   KitchenWindow,
   MixingBowls,
+  PinnedNote,
   Shelf,
   SplashbackBand,
   StoreJar,
@@ -89,6 +91,11 @@ interface Scene {
   h: number;
   counterY: number;
   counterH: number;
+  /** how much worktop SURFACE is drawn above the counter's front edge */
+  deck: number;
+  deckTop: number;
+  /** the line on that worktop the cup's foot stands on */
+  baseY: number;
   /** the measuring cup */
   cup: Box;
   /** the glass inside the cup, where the liquid lives */
@@ -116,20 +123,26 @@ interface Scene {
  */
 function layout(box: FluidBox): Scene {
   const { s, w, h } = box;
-  const counterH = Math.max(46, Math.min(84, h * 0.14));
+  /* the counter is a SURFACE, not just a nose: `deck` is how much worktop is
+     drawn receding behind its front edge, and the cup stands on that wood a
+     little back from the edge instead of hovering on the splashback tiles */
+  const counterH = Math.max(28, Math.min(56, h * 0.09));
   const counterY = h - counterH;
+  const deck = Math.max(54, Math.min(140, h * 0.24));
+  const deckTop = counterY - deck;
+  const baseY = counterY - deck * 0.3;
   const top = 6;
   const availH = counterY - top;
 
   /* The jug hangs ABOVE the cup and pours down into it — the way a hand really
      holds it — so the cup gets the full width of the play area rather than
      sharing it side by side with a container. */
-  const jugH = Math.max(88, Math.min(150, availH * 0.28));
+  const jugH = Math.max(86, Math.min(146, availH * 0.27));
   const jugW = jugH * 0.95;
 
-  const cupW = Math.min(w * 0.46, (counterY - (top + jugH * 1.05)) * CUP_ASPECT);
+  const cupW = Math.min(w * 0.46, Math.max(60, (baseY - (top + jugH * 1.05)) * CUP_ASPECT));
   const cupH = cupW / CUP_ASPECT;
-  const cup: Box = { x: Math.max(8, w * 0.03), y: counterY - cupH, w: cupW, h: cupH };
+  const cup: Box = { x: Math.max(8, w * 0.04), y: baseY - cupH, w: cupW, h: cupH };
   /* the glass, inset below the rim so the topmost measure line is on the glass
      and not painted across the lip */
   const inner: Box = { x: cup.x + cupW * 0.09, y: cup.y + cupH * 0.13, w: cupW * 0.82, h: cupH * 0.82 };
@@ -146,12 +159,12 @@ function layout(box: FluidBox): Scene {
      anything else however short the play area is */
   const railX = cup.x + cupW * 1.34 + 8;
   const dressW = Math.max(90, w - railX - 8);
-  const windowH = Math.min(dressW * 0.82, availH * 0.34);
+  const windowH = Math.min(dressW * 0.82, availH * 0.32);
   const jarH = Math.min(46, availH * 0.15);
-  const shelfY = Math.min(top + windowH + 12 + jarH, counterY - 150);
+  const shelfY = Math.min(top + windowH + 12 + jarH, Math.max(top + 60, deckTop - 6));
   const readout: Box = {
     x: railX,
-    y: Math.min(shelfY + 20, counterY - 100),
+    y: Math.min(shelfY + 18, baseY - 100),
     w: dressW,
     h: 92,
   };
@@ -162,6 +175,9 @@ function layout(box: FluidBox): Scene {
     h,
     counterY,
     counterH,
+    deck,
+    deckTop,
+    baseY,
     cup,
     inner,
     span: inner.h * 0.72,
@@ -409,7 +425,10 @@ export function MeasurePour({ challenge, onComplete, onEvent, compact }: MiniGam
           return (
             <>
               {/* --- the room ------------------------------------- */}
-              <SplashbackBand s={s} x={0} y={sc.counterY - 66} w={w} depth={66} />
+              {/* the whole wall above the worktop is tiled: a band of bare
+                  cream between the tiles and the window was the flattest thing
+                  on the screen */}
+              <SplashbackBand s={s} x={0} y={4} w={w} depth={Math.max(26, sc.deckTop - 4)} />
               {/* the strip of wall beside the cup: a window over a shelf of jars
                   over the readout, and a rail of tools above the jug */}
               <KitchenWindow
@@ -422,17 +441,15 @@ export function MeasurePour({ challenge, onComplete, onEvent, compact }: MiniGam
               <StoreJar s={s} x={sc.railX + 4} y={sc.shelfY - sc.jarH} h={sc.jarH} tone="honey" />
               <Canister s={s} x={sc.railX + dress * 0.36} y={sc.shelfY - sc.jarH} h={sc.jarH} tone="#C9DDF2" />
               <StoreJar s={s} x={sc.railX + dress * 0.68} y={sc.shelfY - sc.jarH * 0.9} h={sc.jarH * 0.9} tone="herbs" />
-              {jug.x > 96 ? (
-                <UtensilRail s={s} x={6} y={8} w={Math.min(150, jug.x - 16)} />
-              ) : null}
-              <CounterRun s={s} w={w} y={sc.counterY} h={sc.counterH + 44} />
-              <CounterCrumbs s={s} x={cup.x + cup.w * 0.5} y={sc.counterY - 12} w={Math.max(70, dress + 40)} seed={5} />
-              {sc.counterY - (sc.readout.y + sc.readout.h) > 58 ? (
-                <>
-                  <HerbPot s={s} x={sc.railX + 4} y={sc.counterY - 52} h={50} />
-                  <MixingBowls s={s} x={Math.min(w - 70, sc.railX + dress * 0.42)} y={sc.counterY - 40} w={62} />
-                </>
-              ) : null}
+              {jug.x > 96 ? <UtensilRail s={s} x={6} y={8} w={Math.min(150, jug.x - 16)} /> : null}
+              {jug.x > 84 && cup.y > 120 ? <PinnedNote s={s} x={10} y={16} w={Math.min(72, jug.x - 22)} /> : null}
+              <CounterRun s={s} w={w} y={sc.counterY} h={sc.counterH + 44} deck={sc.deck} />
+              {/* things STANDING on that worktop, staggered back to front */}
+              <HerbPot s={s} x={Math.min(w - 60, sc.railX + dress * 0.06)} y={sc.baseY - 52} h={50} />
+              <MixingBowls s={s} x={Math.min(w - 76, sc.railX + dress * 0.44)} y={sc.baseY - 42} w={66} />
+              <CounterCrumbs s={s} x={cup.x + cup.w * 0.6} y={sc.counterY - 24} w={Math.max(80, dress)} seed={5} />
+              {/* what the cup lays on the wood */}
+              <ContactPatch s={s} cx={cup.x + cup.w * 0.5} y={sc.baseY - 2} rx={cup.w * 0.5} strength={0.7} />
 
               {/* --- the measuring cup ---------------------------- */}
               <Animated.View style={[at(s, cup.x, cup.y, cup.w * 1.34, cup.h), cupWobble]} pointerEvents="none">

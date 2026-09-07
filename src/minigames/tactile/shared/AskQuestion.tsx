@@ -68,7 +68,8 @@ function AskQuestionCard({ question, es, options, correct, ageBand, countGlyph =
   }, []);
 
   useEffect(() => {
-    sfx.play('robot-beep', { volume: 0.7 });
+    /* Captain Bea is the station's radio; there is no robot in the cast */
+    sfx.play('radio', { volume: 0.55 });
     speech.say(question, { speaker: 'bea' });
   }, [question]);
 
@@ -108,8 +109,20 @@ function AskQuestionCard({ question, es, options, correct, ageBand, countGlyph =
   const list = useMemo(() => Array.from(options), [options]);
 
   return (
-    <Animated.View entering={FadeIn.duration(180)} style={styles.scrim}>
-      <Animated.View entering={ZoomIn.springify().damping(15)} style={[styles.card, shadows.card, compact && styles.cardCompact]}>
+    /*
+     * `box-none`, not the default. A full-frame scrim at zIndex 60 with
+     * `pointerEvents: auto` is a wall: it sat over the TaskBar and ate every
+     * tap on the Back button, so a child could not LEAVE a game while a
+     * question was up. "A child can always finish" is a house rule; so is
+     * being able to stop. The scrim still tints, the card still takes taps —
+     * it just no longer catches the ones that were never aimed at it.
+     */
+    <Animated.View entering={FadeIn.duration(180)} style={styles.scrim} pointerEvents="box-none">
+      <Animated.View
+        entering={ZoomIn.springify().damping(15)}
+        style={[styles.card, shadows.card, compact && styles.cardCompact]}
+        pointerEvents="auto"
+      >
         <View style={styles.head}>
           <CharacterPortrait id="bea" emotion="think" size={compact ? 52 : 64} />
           <View style={styles.headText}>

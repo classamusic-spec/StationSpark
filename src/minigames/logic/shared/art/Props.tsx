@@ -560,25 +560,73 @@ export function RoadworkPile({ size = 60 }: { size?: number }) {
 /* Bins & crates (gear sort, listen & count)                          */
 /* ================================================================= */
 
+/**
+ * A moulded gear bin: rim, tapered body, two mould ribs, a label card and a
+ * contact shadow.
+ *
+ * It used to be a cream tub with a coloured strip on top — one tone, no
+ * material, no fixing, and nothing to say which bin it was. A bin a child is
+ * asked to aim at deserves a lid AND a label.
+ */
 export function BinBox({ width, height, tint }: { width: number; height: number; tint: string }) {
   return (
-    <Svg width={width} height={height} viewBox="0 0 120 100">
+    <Svg width={width} height={height} viewBox="0 0 120 106">
+      {/* contact shadow — ry ≈ rx × 0.22 */}
+      <Ellipse cx={60} cy={100} rx={52} ry={11} fill={palette.navy} opacity={0.12} />
+      {/* body: base fill, shade side, highlight side */}
       <Path d="M8 22h104l-9 66a10 10 0 0 1-10 9H27a10 10 0 0 1-10-9z" fill={palette.panel} />
-      <Path d="M8 22h104l-2 14H10z" fill={tint} opacity={0.35} />
-      <Rect x={2} y={8} width={116} height={18} rx={9} fill={tint} />
-      <Rect x={6} y={11} width={108} height={5} rx={2.5} fill="rgba(255,255,255,0.4)" />
-      <Path d="M17 97l-9-66h6l9 66z" fill={SHADE} />
+      <Path d="M8 22h30l-6 75h-5a10 10 0 0 1-10-9z" fill="rgba(255,255,255,0.5)" />
+      <Path d="M92 22h20l-9 66a10 10 0 0 1-10 9h-9z" fill={SHADE} />
+      {/* the tint washes down the body, so the bin has its colour and not just
+          a coloured hat */}
+      <Path d="M8 22h104l-4 30H11z" fill={tint} opacity={0.24} />
+      {/* the mouth: an open bin is dark just inside its rim. This is what says
+          "put things in here" — it replaced a dashed cut-out that read as a
+          hole punched in the artwork. */}
+      <Path d="M11 24h98l-2 15H13z" fill="rgba(31,42,90,0.3)" />
+      <Path d="M13 33h94l-1 6H14z" fill="rgba(31,42,90,0.14)" />
+      {/* mould ribs low on the body */}
+      <Path d="M27 76h66v3.4H27z M29 86h62v3.4H29z" fill={SHADE} opacity={0.5} />
+      {/* label card on the front */}
+      <Rect x={36} y={48} width={48} height={22} rx={5} fill={palette.white} />
+      <Rect x={36} y={48} width={48} height={7} rx={3.5} fill={tint} />
+      <Rect x={43} y={59} width={34} height={3.2} rx={1.6} fill={palette.navyMuted} opacity={0.35} />
+      <Rect x={43} y={64} width={23} height={3.2} rx={1.6} fill={palette.navyMuted} opacity={0.25} />
+      {/* rim: three tones, and a grab lip at each end */}
+      <Rect x={2} y={8} width={116} height={19} rx={9.5} fill={tint} />
+      <Rect x={2} y={22} width={116} height={5} rx={2.5} fill="rgba(31,42,90,0.18)" />
+      <Rect x={7} y={11} width={106} height={5.4} rx={2.7} fill="rgba(255,255,255,0.5)" />
+      <Rect x={-1} y={12} width={10} height={11} rx={5} fill={tint} />
+      <Rect x={111} y={12} width={10} height={11} rx={5} fill={tint} />
     </Svg>
   );
 }
 
+/**
+ * A slatted wooden crate: end battens, four boards with the gaps between them,
+ * a stencilled label and a contact shadow.
+ */
 export function CrateBox({ width, height }: { width: number; height: number }) {
   return (
-    <Svg width={width} height={height} viewBox="0 0 140 100">
+    <Svg width={width} height={height} viewBox="0 0 140 108">
+      <Ellipse cx={70} cy={101} rx={64} ry={13} fill={palette.navy} opacity={0.12} />
       <Path d="M6 20h128l-8 70a10 10 0 0 1-10 9H24a10 10 0 0 1-10-9z" fill={palette.wood} />
-      <Rect x={0} y={8} width={140} height={16} rx={8} fill={palette.woodDark} />
-      <Path d="M22 34h96l-5 46H27z" fill={palette.tan} />
-      <Path d="M22 34h96l-2 14H24z" fill={SHADE} />
+      {/* the boards: gaps drawn as shade, so the crate is slatted timber */}
+      <Path
+        d="M11 40h118l-1.6 6H12.6z M13 58h114l-1.6 6H14.6z M15 76h110l-1.6 6H16.6z"
+        fill="rgba(31,42,90,0.2)"
+      />
+      {/* end battens */}
+      <Path d="M6 20h20l-3 79h-2a10 10 0 0 1-10-9z" fill={palette.woodDark} opacity={0.5} />
+      <Path d="M114 20h20l-8 70a10 10 0 0 1-10 9h-5z" fill={SHADE} />
+      <Path d="M6 20h14l-2 79h-1a10 10 0 0 1-10-9z" fill="rgba(255,255,255,0.26)" />
+      {/* stencilled label */}
+      <Rect x={50} y={48} width={40} height={22} rx={4} fill={palette.creamDeep} />
+      <Rect x={56} y={55} width={28} height={3.4} rx={1.7} fill={palette.woodDark} opacity={0.5} />
+      <Rect x={56} y={61} width={18} height={3.4} rx={1.7} fill={palette.woodDark} opacity={0.35} />
+      {/* rim */}
+      <Rect x={0} y={8} width={140} height={17} rx={8.5} fill={palette.woodDark} />
+      <Rect x={5} y={11} width={130} height={5} rx={2.5} fill="rgba(255,255,255,0.3)" />
     </Svg>
   );
 }

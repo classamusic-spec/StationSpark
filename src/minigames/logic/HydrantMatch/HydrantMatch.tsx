@@ -130,7 +130,10 @@ export function HydrantMatch({ challenge, ageBand, onComplete, onEvent, compact 
   const count = Math.max(1, challenge.options.length);
   const bayWidth = (playWidth - spacing.sm * 2 - (count - 1) * 6) / count;
   const hydrantWidth = clamp(bayWidth - 14, 46, sideRail ? 128 : 104);
-  const coilSize = Math.max(hit.big, layout.s(76));
+  /* on a tablet the tray is a 320 px rail with ONE thing in it. A 76 px coil
+     floating in the middle of that column read as an accident; the hose end is
+     the tool the whole game is about, so on a rail it fills its column. */
+  const coilSize = sideRail ? 176 : Math.max(hit.big, layout.s(92));
   /* the ticket carries the sum, so the truck is scenery and stays out of the way */
   const truckWidth = clamp(playWidth * 0.46, 130, 320);
 
@@ -227,6 +230,7 @@ export function HydrantMatch({ challenge, ageBand, onComplete, onEvent, compact 
                 <SlotZone
                   key={value}
                   id={`hyd:${value}`}
+                  label={`hydrant ${value}`}
                   hitPad={layout.s(10)}
                   enabled={state.phase === 'connecting'}
                   highlight={hintLadder.highlight && value === challenge.correct}

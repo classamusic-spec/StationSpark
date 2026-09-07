@@ -5,6 +5,10 @@
  * cannot render — the mini-game is not registered yet, its generator threw, the
  * kitchen has not landed — we show this friendly card instead of a dead end,
  * and tapping it completes the beat with full marks.
+ *
+ * It stands in the station yard rather than on a rectangle of raw sky: a card
+ * floating in the middle of flat paint is the fault `src/world/Stage.tsx` warns
+ * about, and a beat that has gone wrong is the last place to look unfinished.
  */
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
@@ -13,6 +17,8 @@ import Svg, { Path, Rect } from 'react-native-svg';
 import { palette, radii, shadows, spacing } from '@/theme';
 import { Button, Panel, Text } from '@/ui';
 import { CharacterPortrait } from '@/characters';
+import { Stage } from '@/world';
+import { useScaledLayout } from '@/screens/shared';
 
 /** A traffic cone + planks: "under construction", Spark City style. */
 function ConeSign() {
@@ -51,9 +57,11 @@ export function UnderConstructionCard({
   onContinue,
   character = 'bea',
 }: UnderConstructionCardProps) {
+  const { contentWidth } = useScaledLayout();
   return (
     <View style={styles.wrap}>
-      <Animated.View entering={FadeInDown.springify().damping(15)} style={styles.inner}>
+      <Stage variant="yard" />
+      <Animated.View entering={FadeInDown.springify().damping(15)} style={[styles.inner, { width: contentWidth }]}>
         <Panel tone="white" radius="panel" style={[styles.card, shadows.card]}>
           <ConeSign />
           <Text variant="h1" center>
@@ -74,7 +82,7 @@ export function UnderConstructionCard({
 
 const styles = StyleSheet.create({
   wrap: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: spacing.md },
-  inner: { width: '100%', maxWidth: 480 },
+  inner: { paddingHorizontal: spacing.md },
   card: { alignItems: 'center', gap: spacing.sm, borderRadius: radii.panel },
   row: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: spacing.xs },
   cta: { flex: 1 },

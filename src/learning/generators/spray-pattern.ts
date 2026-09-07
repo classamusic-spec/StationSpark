@@ -5,21 +5,36 @@ type SprayIcon = ChallengeOf<'spray-pattern'>['answer'];
 
 const symbols: SprayIcon[] = ['fire', 'water', 'cone', 'star'];
 
-/** Repeating units. Letters map to distinct symbols, so the rule is unambiguous. */
+/**
+ * Repeating units. Letters map to distinct symbols, so the rule is unambiguous
+ * — and because they are distinct, a unit can never accidentally repeat at a
+ * shorter period than its own length (AB can only ever read as AB).
+ *
+ * Every row below repeats often enough that the visible part of the wall is at
+ * least one and a half whole units long, which is the promise `validateChallenge`
+ * checks: a child can always *see* the rule before being asked to finish it.
+ */
 const units: Record<'A' | 'B' | 'C', { unit: string; repeats: number }[]> = {
   A: [
     { unit: 'AB', repeats: 3 },
+    { unit: 'AB', repeats: 4 },
     { unit: 'AABB', repeats: 2 },
+    { unit: 'ABB', repeats: 3 },
   ],
   B: [
     { unit: 'AB', repeats: 4 },
     { unit: 'AABB', repeats: 2 },
     { unit: 'ABC', repeats: 3 },
+    { unit: 'ABB', repeats: 3 },
+    { unit: 'ABBA', repeats: 2 },
   ],
   C: [
     { unit: 'ABC', repeats: 3 },
     { unit: 'ABB', repeats: 3 },
     { unit: 'AABB', repeats: 3 },
+    { unit: 'ABAC', repeats: 3 },
+    { unit: 'ABBA', repeats: 3 },
+    { unit: 'ABCC', repeats: 2 },
   ],
 };
 

@@ -85,8 +85,16 @@ export function AskQuestion({
   const tileSize = ageBand === 'A' ? 'lg' : 'md';
 
   return (
-    <Animated.View entering={FadeIn} exiting={FadeOut} style={styles.scrim} pointerEvents="auto">
-      <Animated.View entering={ZoomIn.springify().damping(15)} style={[styles.card, shadows.card]}>
+    /*
+     * `box-none`, NOT `auto`. A full-frame scrim that takes touches also takes
+     * the Back button in the task bar underneath it, and six games open on a
+     * question — so a child who wanted to leave was held on the screen until
+     * they answered. A child can always finish; a child can also always stop.
+     * The card below still takes its own taps, and every game disables its own
+     * controls while its question phase is up.
+     */
+    <Animated.View entering={FadeIn} exiting={FadeOut} style={styles.scrim} pointerEvents="box-none">
+      <Animated.View entering={ZoomIn.springify().damping(15)} style={[styles.card, shadows.card]} pointerEvents="auto">
         <Text variant="h2" center>
           {prompt}
         </Text>

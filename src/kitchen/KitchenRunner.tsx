@@ -249,6 +249,7 @@ function StepGame({
       kind,
       success: true,
       attempts: 1,
+      correct: 1,
       hintsUsed: 0,
       durationMs: 0,
       stars: 3,

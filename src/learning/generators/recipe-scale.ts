@@ -1,7 +1,11 @@
 import type { ChallengeGenerator } from '../types';
 import { wordById } from '../vocabulary';
+import { distinctIcons } from './shared';
 
-const pantry = ['tomato', 'cheese', 'egg', 'apple', 'mushroom', 'pepper', 'olive', 'strawberry', 'banana'];
+const pantry = [
+  'tomato', 'cheese', 'egg', 'apple', 'mushroom', 'pepper', 'olive', 'strawberry', 'banana',
+  'lemon', 'onion', 'carrot', 'potato', 'tortilla', 'grape', 'corn', 'pear', 'chili',
+];
 
 /**
  * RECIPE SCALE — more mouths at the table, so grow the recipe.
@@ -26,9 +30,10 @@ export const generateRecipeScale: ChallengeGenerator<'recipe-scale'> = (ctx) => 
     amounts = Array.from({ length: lineCount }, () => rng.int(1, ageBand === 'A' ? 3 : 5));
   }
 
-  const items = rng.shuffle(pantry).slice(0, lineCount);
+  /* two lines of the same drawing would read as one line written twice */
+  const items = distinctIcons(rng.shuffle(pantry).map(wordById)).slice(0, lineCount);
   const lines = amounts.map((amount, i) => ({
-    item: wordById(items[i] ?? 'tomato'),
+    item: items[i] ?? wordById('tomato'),
     amount,
     scaled: (amount * eating) / serves,
   }));

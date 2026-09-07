@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
-import { GestureDetector } from 'react-native-gesture-handler';
-import Animated from 'react-native-reanimated';
-import { palette, radii, roles } from '@/theme';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import Animated, { runOnJS } from 'react-native-reanimated';
+import { palette, radii, roles, shadows } from '@/theme';
+import { useDragArena } from './DragArena';
 import { useDragToSlot, type DropOutcome } from './useDragToSlot';
 
 /**
@@ -69,7 +70,8 @@ export function Draggable({
   accessibilityLabel,
   chrome = 'none',
 }: DraggableProps) {
-  const { gesture, animatedStyle, dragging, nodeRef } = useDragToSlot({
+  const arena = useDragArena();
+  const { gesture, animatedStyle, dragging, nodeRef, placeAt } = useDragToSlot({
     group,
     disabled,
     snapRadius,
@@ -77,18 +79,64 @@ export function Draggable({
     onPickUp,
   });
 
+  const label = accessibilityLabel ?? id;
+  const picked = arena.selected?.id === id;
+
+  /*
+   * THE TAP TWIN. Dragging is the fast path; tapping is the one a child using
+   * VoiceOver, TalkBack or a switch has. Tap once to pick the token up, then
+   * tap the place it goes — the landing runs through the same `placeAt`, so
+   * both paths sound, feel and animate identically.
+   */
+  const toggle = useCallback(() => {
+    if (disabled) return;
+    if (picked) {
+      arena.select(null);
+      return;
+    }
+    onPickUp?.();
+    arena.select({
+      id,
+      label,
+      group,
+      place: (slotId: string) => {
+        arena.select(null);
+        placeAt(slotId);
+      },
+    });
+  }, [arena, disabled, group, id, label, onPickUp, picked, placeAt]);
+
+  const composed = useMemo(
+    () =>
+      Gesture.Race(
+        gesture,
+        Gesture.Tap()
+          .enabled(!disabled)
+          .maxDistance(12)
+          .onEnd((_e, ok) => {
+            if (ok) runOnJS(toggle)();
+          }),
+      ),
+    [disabled, gesture, toggle],
+  );
+
   return (
-    <GestureDetector gesture={gesture}>
+    <GestureDetector gesture={composed}>
       <Animated.View
         ref={nodeRef}
         collapsable={false}
         testID={`drag:${id}`}
-        accessibilityLabel={accessibilityLabel ?? id}
+        accessibilityRole="button"
+        accessibilityLabel={label}
+        accessibilityHint={picked ? 'Now tap where it goes' : 'Tap to pick up, then tap where it goes'}
+        accessibilityState={{ disabled: !!disabled, selected: picked }}
         accessible={!disabled}
+        focusable={!disabled}
         style={[
           styles.base,
           chrome === 'token' && styles.token,
           chrome === 'token' && disabled && styles.tokenDone,
+          picked && styles.picked,
           dragging && styles.dragging,
           style,
           animatedStyle,
@@ -96,6 +144,9 @@ export function Draggable({
       >
         {chrome === 'token' ? <DragGrip /> : null}
         {children}
+        {/* picked up by tap: a gold rim so a sighted child sees the same state
+            the screen reader is announcing */}
+        {picked ? <View style={styles.pickedRing} pointerEvents="none" /> : null}
       </Animated.View>
     </GestureDetector>
   );
@@ -122,6 +173,17 @@ const styles = StyleSheet.create({
     ...roles.lift.interactive,
   },
   tokenDone: { opacity: 0.55 },
+  picked: { zIndex: 55, ...shadows.glowGold },
+  pickedRing: {
+    position: 'absolute',
+    left: -3,
+    right: -3,
+    top: -3,
+    bottom: -3,
+    borderRadius: radii.card,
+    borderWidth: 4,
+    borderColor: palette.safetyYellow,
+  },
   grip: { position: 'absolute', top: 5, left: 0, right: 0, alignItems: 'center', gap: 2 },
   gripBar: { height: 3, borderRadius: 2, opacity: 0.55 },
   dragging: { zIndex: 60, elevation: 14 },

@@ -6,7 +6,7 @@
  * (Firehouse → Dispatch → Mission → Kitchen → Dispatch), so it cannot live
  * inside any one screen's component tree.
  */
-import { useCallback, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { createActor, type Actor } from 'xstate';
 import { useSelector } from '@xstate/react';
 import type { AgeBand } from '@/learning/types';
@@ -133,6 +133,34 @@ export function useShift(): UseShift {
 
   const context = snapshot.context;
   const state = dotted(snapshot.value);
+
+  /*
+   * THE SHIFT HAS TO END IN THE STORE, NOT JUST IN THE MACHINE.
+   *
+   * When the last mission of a board lands, the machine's `willReachTarget`
+   * guard takes it straight to `shiftComplete` and runs its own `endShift`
+   * action. That updates the machine. Nothing updated the STORE — `endShift()`
+   * on the hook is exported and was called by no screen anywhere in the app.
+   *
+   * So `progress.shiftDays` never grew (the `team-player` badge was therefore
+   * unearnable, not merely hard), `progress.streak` was written by nothing at
+   * all, and `shift.active` stayed persisted `true` forever, which is a lie the
+   * next launch reads back.
+   *
+   * The ref makes this idempotent: the effect must fire once per completion,
+   * not once per re-render while the machine sits in `shiftComplete`, or a
+   * child banks the same day repeatedly.
+   */
+  const banked = useRef(false);
+  useEffect(() => {
+    if (state !== 'shiftComplete') {
+      banked.current = false;
+      return;
+    }
+    if (banked.current) return;
+    banked.current = true;
+    storeEndShift();
+  }, [state, storeEndShift]);
 
   const startShift = useCallback<UseShift['startShift']>(
     (opts) => {

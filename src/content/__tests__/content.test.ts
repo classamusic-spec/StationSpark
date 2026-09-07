@@ -8,16 +8,26 @@ import {
   badgeById,
   badges,
   earnedSkillBadges,
+  learnedSpanishWordIds,
+  learnedWordIds,
   newlyEarnedBadges,
   TOTAL_MISSIONS,
   TOTAL_RECIPES,
+  vocabIdForLearned,
   type BadgeProgressLike,
 } from '@/content/badges';
 import { buildDispatchBoard, dispatchBoardMissions, daySeed, rustiestSubject, subjectPractice } from '@/content/dispatchBoard';
 import { missionById, missions, unlockedMissions } from '@/content/missions';
 import { nextRank, rankForXp, rankProgress, ranks } from '@/content/ranks';
 import { badgesForRecipes, recipeById, recipes } from '@/content/recipes';
-import { affordableUpgrades, upgradeById, upgrades, upgradesForRoom } from '@/content/upgrades';
+import {
+  affordableUpgrades,
+  dearestUpgradeCost,
+  shopTotalCost,
+  upgradeById,
+  upgrades,
+  upgradesForRoom,
+} from '@/content/upgrades';
 import type { BadgeId, StationUpgradeId } from '@/content/types';
 
 const BANDS: AgeBand[] = ['A', 'B', 'C'];
@@ -35,12 +45,14 @@ const ALL_UPGRADE_IDS: StationUpgradeId[] = [
   'kitchen-2', 'truck-bay-2', 'garden', 'library-corner', 'training-tower', 'map-room-2',
   'pet-area', 'roof-garden', 'community-table', 'flag-gold', 'bell-brass', 'mural',
   'reading-nook', 'world-map', 'festival-lights', 'garden-pond',
+  'herb-boxes', 'spice-rack', 'shell-shelf', 'tool-wall', 'welcome-arch', 'weather-vane',
 ];
 
 const ALL_RECIPE_IDS = [
   'bread', 'pancakes', 'pizza', 'smoothie', 'soup', 'tacos',
   'quesadillas', 'fruit-salad', 'lemonade', 'garden-salsa',
   'veggie-caldo', 'agua-fresca', 'esquites',
+  'garden-pizza', 'arroz-con-leche', 'banana-bread', 'paletas', 'frijoles-de-olla',
 ];
 
 const BADGE_ICONS = new Set([
@@ -111,10 +123,30 @@ describe('badges', () => {
     expect(TOTAL_RECIPES).toBe(recipes.length);
   });
 
-  it('gives every mission its own badge', () => {
-    const missionBadges = missions.map((m) => m.badge);
-    expect(new Set(missionBadges).size).toBe(missions.length);
-    for (const id of missionBadges) expect(badges.some((b) => b.id === id)).toBe(true);
+  /*
+   * Every call hands out a keepsake, and the twelve original calls each hand
+   * out one of their own. The five newest calls borrow a skill badge that fits
+   * their story (Moving Day gives Map Master, the playground gives Shape
+   * Shaper) because a brand-new BadgeId cannot ship without a matching entry in
+   * `badgeLook` over in `src/ui/kit/BadgeArt.tsx`, which content does not own.
+   * The moment those five entries exist, swap `BORROWED_BADGES` for five ids of
+   * their own and this test tightens back up to "every mission, its own badge".
+   */
+  const BORROWED_BADGES: Record<string, BadgeId> = {
+    'moving-day': 'map-master',
+    'garden-grow-day': 'pattern-pro',
+    'playground-build': 'shape-shaper',
+    'beach-day': 'time-traveler',
+    'station-open-day': 'team-player',
+  };
+
+  it('gives every mission a badge, and every original call one of its own', () => {
+    for (const mission of missions) expect(badges.some((b) => b.id === mission.badge)).toBe(true);
+    const own = missions.filter((m) => !(m.id in BORROWED_BADGES));
+    expect(new Set(own.map((m) => m.badge)).size).toBe(own.length);
+    for (const [id, badge] of Object.entries(BORROWED_BADGES)) {
+      expect(missionById(id)?.badge).toBe(badge);
+    }
   });
 
   it('awards Time Traveller at five clocks, after Time Keeper at three', () => {
@@ -141,12 +173,65 @@ describe('badges', () => {
   });
 
   it('awards Bilingual Buddy at thirty Spanish words', () => {
-    const words = vocabulary.slice(0, 29).map((w) => w.id);
+    const words = vocabulary.slice(0, 29).map((w) => w.es);
     expect(earnedSkillBadges({ ...emptyProgress(), words })).not.toContain('bilingual-buddy');
-    const thirty = vocabulary.slice(0, 30).map((w) => w.id);
+    const thirty = vocabulary.slice(0, 30).map((w) => w.es);
     expect(earnedSkillBadges({ ...emptyProgress(), words: thirty })).toEqual(
       expect.arrayContaining(['spanish-speaker', 'bilingual-buddy']),
     );
+  });
+
+  /*
+   * THE WORD LEDGER.
+   *
+   * `session.learnedWord()` records the word a child met as TEXT, in whichever
+   * language was on screen — Word Tap records both halves of the same word, and
+   * a couple of games record a skill name that is not a word at all. The badges
+   * have to read that bag of strings correctly:
+   *   · Word Watcher counts WORDS, so agua and water are one word, not two;
+   *   · the Spanish badges count only entries that really are Spanish.
+   */
+  describe('the word ledger reads what the games actually record', () => {
+    const bilingual = (n: number) => vocabulary.slice(0, n).flatMap((w) => [w.en, w.es]);
+
+    it('never counts an English word toward a Spanish badge', () => {
+      const englishOnly = { ...emptyProgress(), words: vocabulary.slice(0, 40).map((w) => w.en) };
+      const earned = earnedSkillBadges(englishOnly);
+      expect(earned).toContain('word-watcher');
+      expect(earned).not.toContain('spanish-speaker');
+      expect(earned).not.toContain('bilingual-buddy');
+    });
+
+    it('counts a bilingual pair as one word, not two', () => {
+      /* 30 strings, but only 15 words: half of Word Watcher's twenty */
+      expect(earnedSkillBadges({ ...emptyProgress(), words: bilingual(15) })).not.toContain('word-watcher');
+      expect(earnedSkillBadges({ ...emptyProgress(), words: bilingual(20) })).toContain('word-watcher');
+    });
+
+    it('earns the Spanish badges from the Spanish half of those pairs', () => {
+      const ten = earnedSkillBadges({ ...emptyProgress(), words: bilingual(10) });
+      expect(ten).toContain('spanish-speaker');
+      expect(ten).not.toContain('bilingual-buddy');
+      expect(earnedSkillBadges({ ...emptyProgress(), words: bilingual(30) })).toContain('bilingual-buddy');
+    });
+
+    it('ignores the strings that were never words at all', () => {
+      const junk = { ...emptyProgress(), words: ['subtraction', 'counting', '', 'not-a-word'] };
+      expect(earnedSkillBadges(junk)).toEqual([]);
+      expect(learnedWordIds(junk.words)).toEqual([]);
+      expect(learnedSpanishWordIds(junk.words)).toEqual([]);
+    });
+
+    it('resolves a recorded string back to the word it came from, either way round', () => {
+      expect(vocabIdForLearned('agua')).toBe('water');
+      expect(vocabIdForLearned('water')).toBe('water');
+      expect(vocabIdForLearned('Manguera')).toBe('hose');
+      expect(vocabIdForLearned('subtraction')).toBeUndefined();
+      expect(learnedWordIds(['agua', 'water', 'manguera'])).toEqual(['water', 'hose']);
+      expect(learnedSpanishWordIds(['agua', 'water', 'manguera'])).toEqual(['water', 'hose']);
+      // "water" alone is English: it is a word, but not a Spanish one
+      expect(learnedSpanishWordIds(['water'])).toEqual([]);
+    });
   });
 
   it('counts number games, fractions, ladders, hoses, routes, patterns and clocks', () => {
@@ -171,12 +256,13 @@ describe('badges', () => {
   });
 
   it('needs 20 words for Word Watcher and 10 Spanish words for Spanish Speaker', () => {
-    const nine = { ...emptyProgress(), words: ['hose', 'ladder', 'cone', 'helmet', 'water', 'apple', 'bread', 'milk', 'cat'] };
+    const spanish = (n: number) => vocabulary.slice(0, n).map((w) => w.es);
+    const nine = { ...emptyProgress(), words: spanish(9) };
     expect(earnedSkillBadges(nine)).not.toContain('spanish-speaker');
-    const ten = { ...nine, words: [...nine.words, 'dog'] };
+    const ten = { ...emptyProgress(), words: spanish(10) };
     expect(earnedSkillBadges(ten)).toContain('spanish-speaker');
     expect(earnedSkillBadges(ten)).not.toContain('word-watcher');
-    const twenty = { ...nine, words: Array.from({ length: 20 }, (_, i) => `w${i}`) };
+    const twenty = { ...emptyProgress(), words: spanish(20) };
     expect(earnedSkillBadges(twenty)).toContain('word-watcher');
   });
 
@@ -242,13 +328,48 @@ describe('station upgrades', () => {
     expect(upgrades.map((u) => u.id).sort()).toEqual([...ALL_UPGRADE_IDS].sort());
   });
 
-  it('costs between 20 and 120 Sparks', () => {
+  it('costs between 15 and 85 Sparks', () => {
     for (const upgrade of upgrades) {
-      expect(upgrade.cost).toBeGreaterThanOrEqual(20);
-      expect(upgrade.cost).toBeLessThanOrEqual(120);
+      expect(upgrade.cost).toBeGreaterThanOrEqual(15);
+      expect(upgrade.cost).toBeLessThanOrEqual(85);
       expect(upgrade.name.trim().length).toBeGreaterThan(0);
       expect(upgrade.description.trim().length).toBeGreaterThan(0);
     }
+  });
+
+  /*
+   * THE ECONOMY. Sparks come from missions and nowhere else — the Kitchen and
+   * the Training Yard pay XP and badges — so a tour of the town is the whole
+   * income, and these four numbers are the ones `upgrades.ts` describes in
+   * prose. They are recomputed here so the prose cannot drift.
+   */
+  describe('the shop closes', () => {
+    const tour = missions.reduce((sum, m) => sum + m.sparks, 0);
+
+    it('pays 265 Sparks for one tour of the town and charges 940 for the whole station', () => {
+      expect(tour).toBe(265);
+      expect(shopTotalCost).toBe(940);
+      expect(upgrades).toHaveLength(22);
+    });
+
+    it('never asks a child to save more than a third of a tour for one thing', () => {
+      expect(dearestUpgradeCost).toBe(85);
+      expect(dearestUpgradeCost * 3).toBeLessThanOrEqual(tour);
+    });
+
+    it('fills the whole station inside four tours, and missions pay again on a replay', () => {
+      expect(shopTotalCost).toBeLessThanOrEqual(tour * 4);
+      expect(shopTotalCost).toBeGreaterThan(tour * 2);
+    });
+
+    it('opens the shop early: the first two calls already buy something', () => {
+      const twoCalls = (missions[0]?.sparks ?? 0) + (missions[1]?.sparks ?? 0);
+      expect(affordableUpgrades(twoCalls, []).length).toBeGreaterThan(0);
+    });
+
+    it('leaves every single upgrade reachable inside one tour', () => {
+      for (const upgrade of upgrades) expect(upgrade.cost).toBeLessThanOrEqual(tour);
+    });
   });
 
   it('is affordable by playing: two missions buy the first decoration', () => {
@@ -634,6 +755,112 @@ describe('dispatch board', () => {
         const ids = buildDispatchBoard({ completed: missions.map((m) => m.id), ageBand, seed: size, size });
         expect(ids).toHaveLength(Math.min(size, missions.length));
         expect(new Set(ids).size).toBe(ids.length);
+      }
+    }
+  });
+});
+
+/* ------------------------------------------------------------------ */
+/* The five dishes the seventeen-call town added                        */
+/* ------------------------------------------------------------------ */
+
+describe('the five newest recipes', () => {
+  const NEW_DISHES = ['garden-pizza', 'arroz-con-leche', 'banana-bread', 'paletas', 'frijoles-de-olla'];
+
+  it('are all in the book, all safe, and all worth cooking', () => {
+    for (const id of NEW_DISHES) {
+      const recipe = recipeById(id as (typeof recipes)[number]['id']);
+      expect(recipe).toBeDefined();
+      expect(recipe?.grownUp).toBe(true);
+      expect(recipe?.xp).toBeGreaterThanOrEqual(20);
+      expect(recipe?.steps.length).toBeGreaterThanOrEqual(3);
+      // the crew-does-the-hot-bit promise is said out loud, every time
+      const said = (recipe?.intro ?? []).map((l) => l.text).join(' ');
+      expect(said).toContain('ask a grown-up');
+    }
+  });
+
+  it('gives the huerta pizza thirds for band C, and halves for band A', () => {
+    const step = recipeById('garden-pizza')?.steps.find((s) => s.game === 'pizza-fractions');
+    const young = step?.challenge({ ageBand: 'A', rng: createRng(3) });
+    const old = step?.challenge({ ageBand: 'C', rng: createRng(3) });
+    if (young?.kind !== 'pizza-fractions' || old?.kind !== 'pizza-fractions') throw new Error('expected pizza-fractions');
+    expect(young.toppings.map((t) => t.fraction.den)).toEqual([2, 2]);
+    expect([young.cutInto, young.shareAmong, young.each]).toEqual([4, 2, 2]);
+    expect(old.toppings.map((t) => t.fraction.den)).toEqual([3, 3, 3]);
+    expect([old.cutInto, old.shareAmong, old.each]).toEqual([12, 4, 3]);
+    // a third of twelve slices is four, three times over — exactly one pizza
+    for (const t of old.toppings) expect((t.fraction.num * old.cutInto) / t.fraction.den).toBe(4);
+  });
+
+  it('cooks the beans in an order a cook would recognise, chile last', () => {
+    const step = recipeById('frijoles-de-olla')?.steps.find((s) => s.game === 'soup-pot');
+    for (const band of BANDS) {
+      const pot = step?.challenge({ ageBand: band, rng: createRng(5) });
+      if (pot?.kind !== 'soup-pot') throw new Error('expected soup-pot');
+      expect(pot.steps.map((s) => s.item.id)).toEqual(
+        band === 'A' ? ['garlic', 'carrot', 'tomato'] : ['garlic', 'carrot', 'tomato', 'chili'],
+      );
+      expect(pot.spokenEs).toBe(true);
+      const inPot = new Set(pot.steps.map((s) => s.item.id));
+      expect(pot.extras.some((e) => inPot.has(e.id))).toBe(false);
+      if (band === 'C') expect(pot.askTotal).toBe(pot.steps.reduce((sum, s) => sum + s.count, 0));
+      else expect(pot.askTotal).toBeUndefined();
+    }
+  });
+
+  it('sends the paleta crew shopping, then counting, then sharing, then waiting', () => {
+    const recipe = recipeById('paletas');
+    expect(recipe?.steps.map((s) => s.game)).toEqual([
+      'market-money',
+      'count-ingredients',
+      'divide-share',
+      'clock-watch',
+    ]);
+    const bought = recipe?.steps[0]?.challenge({ ageBand: 'C', rng: createRng(7) });
+    const frozen = recipe?.steps[3]?.challenge({ ageBand: 'C', rng: createRng(7) });
+    if (bought?.kind !== 'market-money' || frozen?.kind !== 'clock-watch') throw new Error('unexpected kinds');
+    expect(bought.item.es).toBe('sandía');
+    expect(bought.solutions.length).toBeGreaterThan(0);
+    expect(bought.askChange?.change).toBe((bought.askChange?.paid ?? 0) - bought.price);
+    expect(frozen.event).toContain('paletas');
+  });
+
+  it('scales the arroz con leche only for the oldest, and keeps every amount whole', () => {
+    const scale = recipeById('arroz-con-leche')?.steps.find((s) => s.game === 'recipe-scale');
+    expect(scale?.bands).toEqual(['C']);
+    const grown = scale?.challenge({ ageBand: 'C', rng: createRng(9) });
+    if (grown?.kind !== 'recipe-scale') throw new Error('expected recipe-scale');
+    expect([grown.serves, grown.eating]).toEqual([4, 6]);
+    for (const line of grown.lines) {
+      expect(Number.isInteger(line.scaled)).toBe(true);
+      expect(line.scaled * grown.serves).toBe(line.amount * grown.eating);
+    }
+  });
+
+  it('labels the banana bread tin with a word that has its own picture', () => {
+    const expected: Record<AgeBand, string> = { A: 'PAN', B: 'BANANA', C: 'HUEVO' };
+    for (const band of BANDS) {
+      const spelled = recipeById('banana-bread')?.steps[2]?.challenge({ ageBand: band, rng: createRng(11) });
+      if (spelled?.kind !== 'word-builder') throw new Error('expected word-builder');
+      expect(spelled.letters.join('')).toBe(expected[band]);
+      for (const letter of spelled.letters.slice(spelled.prefilled)) expect(spelled.tiles).toContain(letter);
+    }
+  });
+
+  it('runs every new dish through the validator for every band and seed', () => {
+    for (const id of NEW_DISHES) {
+      const recipe = recipeById(id as (typeof recipes)[number]['id']);
+      for (const band of BANDS) {
+        for (const seed of [1, 42, 512, 9001]) {
+          const ctx: GeneratorContext = { ageBand: band, rng: createRng(seed) };
+          for (const step of recipe?.steps ?? []) {
+            if (step.bands && !step.bands.includes(band)) continue;
+            const challenge = step.challenge(ctx);
+            expect(challenge.kind).toBe(step.game);
+            expect(validateChallenge(challenge)).toEqual([]);
+          }
+        }
       }
     }
   });

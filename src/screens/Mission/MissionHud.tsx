@@ -1,9 +1,14 @@
 /**
  * MissionHud — the slim beat progress strip that sits under the TopBar.
  *
- * One dot per beat of the mission, in order. Done beats are solid navy, the
- * current one is a glowing gold pill, still-to-come beats are soft. It is a
- * map, not a score: nothing here can ever say "you are behind".
+ * One dot per beat of the mission, in order. It is a map, not a score: nothing
+ * here can ever say "you are behind".
+ *
+ * State is never colour alone (docs/ARCHITECTURE.md), so the three states differ
+ * in *shape* first: a beat still to come is an open ring, a beat that is done is
+ * a filled dot, and the one being played is a gold pill carrying that beat's own
+ * drawn mark. The strip also carries the position as a spoken label, because a
+ * row of dots says nothing to a screen reader.
  */
 import React, { useEffect } from 'react';
 import { StyleSheet, View } from 'react-native';
@@ -47,6 +52,9 @@ function Dot({ beat, state }: { beat: MissionBeat; state: 'done' | 'current' | '
   return <View style={[styles.dot, state === 'done' ? styles.done : styles.todo]} />;
 }
 
+/** the strip has to hold up to fourteen beats on a 360 px phone */
+const gapFor = (n: number) => (n > 11 ? 5 : 7);
+
 export interface MissionHudProps {
   beats: MissionBeat[];
   /** index of the beat being played (-1 while on the brief) */
@@ -57,9 +65,13 @@ export interface MissionHudProps {
 
 export function MissionHud({ beats, index, hidden }: MissionHudProps) {
   if (hidden || beats.length === 0) return null;
+  const at = Math.min(Math.max(index, 0), beats.length - 1) + 1;
   return (
     <Animated.View entering={FadeIn.duration(220)} style={styles.wrap} pointerEvents="none">
-      <View style={[styles.strip, shadows.soft]}>
+      <View
+        style={[styles.strip, shadows.soft, { gap: gapFor(beats.length) }]}
+        accessibilityLabel={`Step ${at} of ${beats.length}`}
+      >
         {beats.map((b, i) => (
           <Dot key={i} beat={b} state={i < index ? 'done' : i === index ? 'current' : 'todo'} />
         ))}
@@ -73,15 +85,16 @@ const styles = StyleSheet.create({
   strip: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 7,
+    maxWidth: '94%',
     backgroundColor: 'rgba(255,255,255,0.86)',
     borderRadius: radii.pill,
     paddingHorizontal: spacing.sm,
     paddingVertical: 6,
   },
-  dot: { width: 10, height: 10, borderRadius: 5 },
+  dot: { width: 11, height: 11, borderRadius: 6 },
+  /* filled = behind us, open ring = still to come: shape, not just colour */
   done: { backgroundColor: palette.navySoft },
-  todo: { backgroundColor: palette.slateLight },
+  todo: { borderWidth: 2, borderColor: palette.slateLight, backgroundColor: 'rgba(255,255,255,0.55)' },
   current: {
     minWidth: 30,
     height: 26,

@@ -26,6 +26,7 @@ import { CrewFigure } from '@/world/scenes';
 import { FluidStage, at, type FluidBox } from '../../parts/Stage';
 import { RecipeCardFrame } from '../../parts/RecipeCardFrame';
 import {
+  ContactPatch,
   CounterCrumbs,
   CounterRun,
   HerbPot,
@@ -330,17 +331,23 @@ function StirScene({
   simmering: boolean;
 }) {
   const { s, w, h } = box;
-  const counterH = Math.max(40, Math.min(78, h * 0.13));
+  /* the counter is a SURFACE: `deck` is the worktop drawn receding above its
+     front edge, so the hob stands on wood instead of on the counter's lip */
+  const counterH = Math.max(26, Math.min(52, h * 0.09));
   const counterY = h - counterH;
-  const availH = counterY - 6;
+  const deck = Math.max(52, Math.min(132, h * 0.22));
+  const deckTop = counterY - deck;
+  const availH = deckTop + deck * 0.62 - 6;
 
-  const potW = Math.min(w * 0.8, (availH - 44) * POT_ASPECT);
+  const potW = Math.min(w * 0.74, (availH - 40) * POT_ASPECT);
   const potH = potW / POT_ASPECT;
-  const hobW = Math.min(w * 0.96, potW * 1.24);
+  const hobW = Math.min(w - 32, potW * 1.28);
   const hobH = hobW * 0.3;
-  const deckY = counterY - hobH * 0.62;
-  const pot = { x: (w - potW) / 2, y: deckY + hobH * 0.16 - potH * 0.94, w: potW, h: potH };
-  const side = (w - hobW) / 2 + hobW * 0.06;
+  const hobX = (w - hobW) / 2;
+  const deckY = counterY - deck * 0.34;
+  const hobY = deckY - hobH * 0.88;
+  const pot = { x: (w - potW) / 2, y: hobY + hobH * 0.3 - potH * 0.94, w: potW, h: potH };
+  const side = hobX + hobW * 0.06;
 
   const swirl = useSwirlGesture({ cx: (potW * s) / 2, cy: (potH * s) / 2, turnRadians: Math.PI, onStir });
   const spoonStyle = useAnimatedStyle(() => ({
@@ -353,24 +360,25 @@ function StirScene({
 
   return (
     <>
-      <SplashbackBand s={s} x={0} y={counterY - 58} w={w} depth={58} />
-      {pot.y > 96 ? (
+      <SplashbackBand s={s} x={0} y={4} w={w} depth={Math.max(26, deckTop - 4)} />
+      {deckTop > 100 ? (
         <>
-          <Shelf s={s} x={8} y={pot.y - 30} w={Math.max(84, side + 40)} />
-          <StoreJar s={s} x={12} y={pot.y - 72} h={42} tone="jam" />
-          <StoreJar s={s} x={50} y={pot.y - 76} h={46} tone="oats" />
-          <KitchenWindow s={s} x={w - Math.min(110, side + 56) - 8} y={6} w={Math.min(110, side + 56)} />
-          <UtensilRail s={s} x={8} y={6} w={Math.min(140, w * 0.32)} />
+          <Shelf s={s} x={8} y={deckTop - 46} w={Math.max(84, side + 40)} />
+          <StoreJar s={s} x={12} y={deckTop - 88} h={42} tone="jam" />
+          <StoreJar s={s} x={50} y={deckTop - 92} h={46} tone="oats" />
         </>
       ) : null}
-      <CounterRun s={s} w={w} y={counterY} h={counterH + 44} />
-      <CounterCrumbs s={s} x={(w - hobW) / 2} y={counterY - 10} w={hobW} seed={4} />
-      <HerbPot s={s} x={Math.max(6, (w - hobW) / 2 - 48)} y={counterY - 48} h={46} />
-      {w - ((w - hobW) / 2 + hobW) > 78 ? (
-        <MixingBowls s={s} x={(w - hobW) / 2 + hobW + 6} y={counterY - 46} w={66} />
+      <KitchenWindow s={s} x={w - Math.min(112, side + 56) - 8} y={6} w={Math.min(112, side + 56)} />
+      <UtensilRail s={s} x={8} y={6} w={Math.min(140, w * 0.32)} />
+      <CounterRun s={s} w={w} y={counterY} h={counterH + 44} deck={deck} />
+      <CounterCrumbs s={s} x={hobX} y={counterY - 24} w={hobW} seed={4} />
+      <HerbPot s={s} x={Math.max(6, hobX - 50)} y={counterY - deck * 0.06 - 48} h={46} />
+      {w - (hobX + hobW) > 78 ? <MixingBowls s={s} x={hobX + hobW + 6} y={counterY - deck * 0.08 - 42} w={66} /> : null}
+      <ContactPatch s={s} cx={w / 2} y={hobY + hobH * 0.92} rx={hobW * 0.5} />
+      <Hob s={s} x={hobX} y={hobY} w={hobW} lit={bubbling} />
+      {bubbling || simmering ? (
+        <Steam s={s} x={pot.x + pot.w * 0.28} y={pot.y - pot.w * 0.2} w={pot.w * 0.44} strength={simmering ? 1 : 0.7} />
       ) : null}
-      <Hob s={s} x={(w - hobW) / 2} y={deckY - hobH * 0.12} w={hobW} lit={bubbling} />
-      {simmering ? <Steam s={s} x={pot.x + pot.w * 0.28} y={pot.y - pot.w * 0.24} w={pot.w * 0.44} /> : null}
 
       {interactive ? (
         <GestureDetector gesture={swirl.gesture}>

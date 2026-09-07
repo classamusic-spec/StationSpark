@@ -92,15 +92,30 @@ export function ActivityFrame({
 
       {/* the bar clears the notch itself, so hosts need no top chrome at all */}
       <View style={{ height: insets.top }} pointerEvents="none" />
-      <TaskBar
-        task={task}
-        detail={detail}
-        es={es}
-        onBack={onBack}
-        onReplay={onReplay}
-        progress={progress}
-        compact={compact}
-      />
+      {/*
+        THE WAY OUT IS ALWAYS ON TOP.
+
+        `overlay` is rendered last, so a question card's full-frame scrim used to
+        paint and hit-test above this bar. Measured with `elementFromPoint` on a
+        game that opens with a question, the thing under the centre of the Back
+        button was the scrim — not the button. "A child can always finish" is a
+        house rule and it held; "a child can always stop" quietly did not.
+
+        Lifting the bar above every overlay layer fixes it for all 27 activities
+        at once, and it is the right precedence anyway: nothing an activity draws
+        should be able to trap a five-year-old inside it.
+      */}
+      <View style={styles.bar}>
+        <TaskBar
+          task={task}
+          detail={detail}
+          es={es}
+          onBack={onBack}
+          onReplay={onReplay}
+          progress={progress}
+          compact={compact}
+        />
+      </View>
 
       {side ? (
         <View style={styles.splitBody}>
@@ -145,6 +160,8 @@ export function ActivityFrame({
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
+  /* above `overlay` (games use 60–80) so the way out is never covered */
+  bar: { zIndex: 100 },
   splitBody: { flex: 1, flexDirection: 'row', alignItems: 'stretch', gap: spacing.sm, paddingHorizontal: spacing.sm },
   play: { flex: 1, justifyContent: 'flex-end', paddingTop: activity.playGutter },
   rail: { width: activity.sidePanelWidth },

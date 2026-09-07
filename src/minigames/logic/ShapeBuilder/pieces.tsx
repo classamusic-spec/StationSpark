@@ -187,25 +187,81 @@ export function BlueprintSheet({ size }: { size: number }) {
  * on it and a plank floor, so the game never sits on raw sky.
  */
 export function WorkshopWall({ width }: { width: number }) {
-  const dots = Array.from({ length: 7 }, (_, r) => Array.from({ length: 9 }, (_, c) => [c, r] as [number, number])).flat();
+  /* the peg holes, as one path: 63 circles would be 63 nodes behind every frame */
+  const holes = Array.from({ length: 5 }, (_, r) =>
+    Array.from({ length: 9 }, (_, c) => {
+      const cx = 40 + c * 35;
+      const cy = 34 + r * 20;
+      return `M ${cx - 2.2} ${cy} a 2.2 2.2 0 1 0 4.4 0 a 2.2 2.2 0 1 0 -4.4 0 z`;
+    }).join(' '),
+  ).join(' ');
   return (
     <Svg width={width} height={width * 0.62} viewBox="0 0 360 224" preserveAspectRatio="xMidYMin slice">
       <Rect x={0} y={0} width={360} height={224} fill={palette.creamDeep} />
       <Rect x={0} y={0} width={360} height={10} fill="rgba(31,42,90,0.08)" />
-      {dots.map(([c, r]) => (
-        <Circle key={`${c}-${r}`} cx={26 + c * 39} cy={34 + r * 26} r={2.4} fill="rgba(158,106,54,0.22)" />
-      ))}
-      {/* a saw and two clamps hanging on the board */}
+      {/*
+       * A REAL PEGBOARD, NOT A FIELD OF DOTS. The tools all used to hang in the
+       * top 60 px and the rest of the wall was one flat cream slab with a
+       * scatter of holes on it. The board is now a bounded panel with a frame,
+       * and the wall under it carries a paint shelf, the workshop clock and a
+       * dado rail — so something happens at every height.
+       */}
+      <Rect x={14} y={14} width={332} height={112} rx={10} fill="rgba(158,106,54,0.28)" />
+      <Rect x={14} y={14} width={332} height={107} rx={10} fill={palette.tan} />
+      <Rect x={14} y={14} width={332} height={7} rx={3.5} fill={SHEEN} />
+      <Path d={holes} fill="rgba(158,106,54,0.3)" />
+      {/* a saw, a square and a mallet hanging on the board */}
       <G>
-        <Rect x={22} y={20} width={58} height={9} rx={4.5} fill={palette.slateLight} />
-        <Path d="M22 29h58l-6 12H28z" fill={palette.slate} />
-        <Rect x={72} y={14} width={26} height={9} rx={4.5} fill={palette.wood} />
+        <Rect x={30} y={26} width={62} height={9} rx={4.5} fill={palette.slateLight} />
+        <Path d="M30 35h62l-7 13H37z" fill={palette.slate} />
+        <Rect x={82} y={20} width={28} height={9} rx={4.5} fill={palette.wood} />
       </G>
       <G>
-        <Rect x={280} y={16} width={12} height={44} rx={6} fill={palette.engineRed} />
-        <Rect x={300} y={16} width={12} height={54} rx={6} fill={palette.waterCyanDark} />
-        <Rect x={320} y={16} width={12} height={36} rx={6} fill={palette.safetyYellow} />
+        <Path d="M150 26h11v58h-11z" fill={palette.waterCyanDark} />
+        <Path d="M150 73h58v11h-58z" fill={palette.waterCyanDark} />
+        <Path d="M150 26h4v58h-4z" fill={SHEEN} />
       </G>
+      <G>
+        <Rect x={250} y={24} width={10} height={54} rx={5} fill={palette.wood} />
+        <Rect x={238} y={20} width={34} height={17} rx={6} fill={palette.woodDark} />
+        <Rect x={238} y={20} width={34} height={6} rx={3} fill={SHEEN} />
+      </G>
+      <G>
+        <Rect x={296} y={26} width={11} height={40} rx={5.5} fill={palette.engineRed} />
+        <Rect x={314} y={26} width={11} height={50} rx={5.5} fill={palette.safetyYellow} />
+        <Rect x={296} y={26} width={4} height={40} rx={2} fill={SHEEN} />
+      </G>
+      {/* a paint shelf with three tins standing on it */}
+      <G>
+        <Rect x={22} y={162} width={150} height={9} rx={4.5} fill={palette.wood} />
+        <Rect x={22} y={162} width={150} height={3.4} rx={1.7} fill={SHEEN} />
+        <Path d="M40 171h12l-4 14H44z M126 171h12l-4 14h-8z" fill={palette.woodDark} />
+        {[
+          { x: 34, c: palette.engineRedLight },
+          { x: 74, c: palette.waterCyan },
+          { x: 114, c: palette.leafGreen },
+        ].map((t) => (
+          <G key={t.x}>
+            <Rect x={t.x} y={134} width={30} height={28} rx={4} fill={t.c} />
+            <Rect x={t.x} y={134} width={9} height={28} rx={4} fill={SHEEN} />
+            <Rect x={t.x - 2} y={130} width={34} height={7} rx={3.5} fill={palette.slateLight} />
+            <Rect x={t.x + 4} y={146} width={22} height={6} rx={3} fill={palette.cream} opacity={0.75} />
+          </G>
+        ))}
+      </G>
+      {/* the workshop clock */}
+      <G>
+        <Circle cx={288} cy={152} r={23} fill={SHADE} />
+        <Circle cx={288} cy={150} r={23} fill={palette.engineRed} />
+        <Circle cx={288} cy={150} r={19} fill={palette.cream} />
+        <Path d="M288 150l11-8" stroke={palette.navy} strokeWidth={3} strokeLinecap="round" />
+        <Path d="M288 150l-3-13" stroke={palette.navy} strokeWidth={2.4} strokeLinecap="round" />
+        <Circle cx={288} cy={150} r={2.6} fill={palette.safetyYellow} />
+      </G>
+      {/* dado rail and the half-tone below it */}
+      <Rect x={0} y={192} width={360} height={32} fill="rgba(31,42,90,0.055)" />
+      <Rect x={0} y={192} width={360} height={6} rx={3} fill={palette.tanDark} />
+      <Rect x={0} y={192} width={360} height={2.4} rx={1.2} fill={SHEEN} />
     </Svg>
   );
 }

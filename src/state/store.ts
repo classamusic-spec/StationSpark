@@ -70,7 +70,7 @@ export interface Shift {
   board: string[];
 }
 
-interface GameState {
+export interface GameState {
   profile: Profile;
   progress: Progress;
   station: Station;
@@ -95,6 +95,30 @@ interface GameState {
 }
 
 const todayKey = () => new Date().toISOString().slice(0, 10);
+
+/**
+ * How many days in a row, ending today, the child has finished a shift.
+ *
+ * Deliberately counted from the recorded days rather than kept as a running
+ * tally: a counter drifts the moment anything is missed, edited, or restored
+ * from an older save, and this is a number a parent sees. Counted backwards
+ * from today, so a gap ends the run and a day missed cannot be un-missed.
+ *
+ * Note this is REPORTING, not pressure — nothing in the app punishes a broken
+ * streak or nags to keep one. It exists so the Grown-Ups screen can say
+ * "four days this week", which is the honest use of it.
+ */
+export function streakFrom(days: readonly string[], today = todayKey()): number {
+  const seen = new Set(days);
+  if (!seen.has(today)) return 0;
+  const cursor = new Date(`${today}T00:00:00Z`);
+  let run = 0;
+  while (seen.has(cursor.toISOString().slice(0, 10))) {
+    run += 1;
+    cursor.setUTCDate(cursor.getUTCDate() - 1);
+  }
+  return run;
+}
 
 const initialProfile: Profile = {
   name: 'Rookie',
@@ -135,6 +159,53 @@ const initialSettings: Settings = {
 
 const initialShift: Shift = { active: false, startedAt: null, missionsDone: 0, board: [] };
 
+/** Schema version of the persisted slice. See `migrate` and `merge` below. */
+const PERSIST_VERSION = 1;
+
+
+/**
+ * Merge a persisted slice over a fresh state.
+ *
+ * Exported so it can be tested directly: this is the code that decides whether
+ * a child's save survives an update, and testing it only through a real
+ * rehydration means testing it almost never.
+ */
+export function mergePersisted(persisted: unknown, current: GameState): GameState {
+  const p = (persisted ?? {}) as Partial<GameState>;
+  const slice = <T extends object>(fresh: T, stored: unknown): T =>
+    stored && typeof stored === 'object' && !Array.isArray(stored)
+      ? { ...fresh, ...(stored as Partial<T>) }
+      : fresh;
+  return {
+    ...current,
+    ...current,
+    profile: slice(current.profile, p.profile),
+    progress: {
+      ...slice(current.progress, p.progress),
+      /* the collections are what screens map over, so they must be arrays
+         and objects even if the stored value is null or the wrong type */
+      stats: slice(current.progress.stats, (p.progress as Progress | undefined)?.stats),
+      missions: slice(current.progress.missions, (p.progress as Progress | undefined)?.missions),
+      mastery: slice(current.progress.mastery, (p.progress as Progress | undefined)?.mastery),
+      gamesPlayed: slice(current.progress.gamesPlayed, (p.progress as Progress | undefined)?.gamesPlayed),
+      badges: Array.isArray(p.progress?.badges) ? p.progress.badges : current.progress.badges,
+      words: Array.isArray(p.progress?.words) ? p.progress.words : current.progress.words,
+      recipes: Array.isArray(p.progress?.recipes) ? p.progress.recipes : current.progress.recipes,
+      shiftDays: Array.isArray(p.progress?.shiftDays) ? p.progress.shiftDays : current.progress.shiftDays,
+    },
+    station: {
+      ...slice(current.station, p.station),
+      truck: slice(current.station.truck, (p.station as Station | undefined)?.truck),
+      unlocked: Array.isArray(p.station?.unlocked) ? p.station.unlocked : current.station.unlocked,
+    },
+    settings: slice(current.settings, p.settings),
+    shift: {
+      ...slice(current.shift, p.shift),
+      board: Array.isArray(p.shift?.board) ? p.shift.board : current.shift.board,
+    },
+  };
+}
+
 export const useGame = create<GameState>()(
   persist(
     (set, get) => ({
@@ -155,18 +226,30 @@ export const useGame = create<GameState>()(
         set((s) => {
           const day = todayKey();
           const days = s.progress.shiftDays.includes(day) ? s.progress.shiftDays : [...s.progress.shiftDays, day];
-          return { shift: { ...initialShift }, progress: { ...s.progress, shiftDays: days } };
+          /* `streak` was declared, initialised to 0, and then written by
+             nothing anywhere in the app. It is derived here, where the day is
+             banked, so the two can never disagree. */
+          return { shift: { ...initialShift }, progress: { ...s.progress, shiftDays: days, streak: streakFrom(days, day) } };
         }),
 
       recordMiniGame: (r) =>
         set((s) => {
+          /*
+           * Mastery only moves on a real play. A synthesised result — a skipped
+           * beat, a game that could not render — arrives with no `correct`
+           * count, and the honest thing to do with an unknown is nothing.
+           * Recording it as a miss would punish a child for our bug; recording
+           * it as a win would inflate the number a parent reads.
+           */
           const mastery = { ...s.progress.mastery };
-          for (const skill of r.skills) {
-            const m = mastery[skill] ?? { attempts: 0, correct: 0 };
-            mastery[skill] = {
-              attempts: m.attempts + r.attempts,
-              correct: m.correct + Math.max(1, r.attempts - (r.attempts - 1)),
-            };
+          if (r.correct !== undefined) {
+            for (const skill of r.skills) {
+              const m = mastery[skill] ?? { attempts: 0, correct: 0 };
+              mastery[skill] = {
+                attempts: m.attempts + r.attempts,
+                correct: m.correct + Math.min(Math.max(0, r.correct), r.attempts),
+              };
+            }
           }
           const words = Array.from(new Set([...s.progress.words, ...(r.wordsLearned ?? [])]));
           const gamesPlayed = { ...s.progress.gamesPlayed, [r.kind]: (s.progress.gamesPlayed[r.kind] ?? 0) + 1 };
@@ -252,6 +335,11 @@ export const useGame = create<GameState>()(
     {
       name: 'station-spark-v1',
       storage: createJSONStorage(() => AsyncStorage),
+      /**
+       * Bump this whenever a persisted shape changes in a way `merge` below
+       * cannot absorb on its own, and add the matching step to `migrate`.
+       */
+      version: PERSIST_VERSION,
       partialize: (s) => ({
         profile: s.profile,
         progress: s.progress,
@@ -259,6 +347,33 @@ export const useGame = create<GameState>()(
         settings: s.settings,
         shift: s.shift,
       }),
+      /**
+       * Saves written before this store was versioned arrive as version 0.
+       * There is nothing to rewrite in them — `merge` fills whatever they are
+       * missing — so this exists to name that fact rather than to do work, and
+       * to give the next schema change somewhere obvious to hang its step.
+       */
+      migrate: (persisted, from) => {
+        if (from < 1) return persisted as Partial<GameState>;
+        return persisted as Partial<GameState>;
+      },
+      /**
+       * THIS IS THE ONE THAT PROTECTS A CHILD'S SAVE.
+       *
+       * zustand's default merge is SHALLOW: a stored `progress` object replaces
+       * the whole fresh one. So the first time anyone adds a field to `Progress`
+       * and ships it, every existing save rehydrates with `undefined` in the new
+       * slot — and a screen that reads, say, `progress.words.length` renders a
+       * blank white page instead of the Badge Wall. The save is not corrupt; it
+       * is simply older than the code, which is the normal case for every update
+       * after the first.
+       *
+       * Merging each slice over its defaults means a missing field always falls
+       * back to the value a brand-new player would have. Old saves keep every
+       * field they do have, new fields appear at their default, and a partial or
+       * truncated read degrades to "some progress lost" rather than to a crash.
+       */
+      merge: (persisted, current) => mergePersisted(persisted, current),
       onRehydrateStorage: () => () => {
         // runs after the async read completes; useGame is defined by then
         useGame.setState({ hydrated: true });

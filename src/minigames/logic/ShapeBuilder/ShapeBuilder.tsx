@@ -485,6 +485,7 @@ export function ShapeBuilder({ challenge, ageBand, onComplete, onEvent, compact 
                 <SlotZone
                   key={slot.id}
                   id={slot.id}
+                  label={`the ${shapeName[slot.shape].en} outline`}
                   enabled={state.phase === 'building' && !placedId}
                   highlight={state.focus === slot.id || (hintLadder.highlight && nextSlot === slot.id)}
                   hitPad={layout.s(7)}
@@ -586,13 +587,20 @@ const styles = StyleSheet.create({
   pieceRow: { rowGap: spacing.xs },
   actions: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: spacing.md },
   token: { alignItems: 'center', justifyContent: 'center', shadowColor: palette.navy, shadowOffset: { width: 0, height: 5 } },
+  /*
+   * A cut piece is often tan or cream, and a cream piece on a white card
+   * inside a white tray had almost nothing to read against. The token is a
+   * steel cutting mat instead: every piece colour in the set — tan, cream,
+   * gold, red, cyan, charcoal — separates from it.
+   */
   tokenFace: {
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: palette.white,
+    backgroundColor: '#EAEFF9',
     borderRadius: radii.tile,
     borderWidth: 3,
-    borderColor: palette.creamDeep,
+    borderColor: palette.white,
+    borderTopColor: '#D6DEEE',
   },
   tokenHighlight: { borderColor: palette.safetyYellow },
   turnBadge: { position: 'absolute', right: 2, top: 2 },

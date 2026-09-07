@@ -15,6 +15,7 @@ import { ActivityFrame, AnswerTile, Button, CheckIcon, Text, TrayRow, VocabIcon 
 import { FluidStage, at, type FluidBox } from '../../parts/Stage';
 import {
   Canister,
+  ContactPatch,
   CounterCrumbs,
   CounterRun,
   HerbPot,
@@ -52,6 +53,9 @@ interface Scene {
   h: number;
   counterY: number;
   counterH: number;
+  /** how much worktop SURFACE is drawn above the counter's front edge */
+  deck: number;
+  deckTop: number;
   pot: { x: number; y: number; w: number; h: number };
   /** the surface of the broth, where a piece lands */
   broth: { x: number; y: number };
@@ -67,22 +71,30 @@ interface Scene {
  */
 function layout(box: FluidBox): Scene {
   const { s, w, h } = box;
-  const counterH = Math.max(40, Math.min(78, h * 0.13));
+  /* the counter is a SURFACE: `deck` is the worktop drawn receding above its
+     front edge, and the hob stands ON that wood — before this the hob's feet
+     were level with the counter's nose, so a two-ring stove was balanced on a
+     20-unit lip with wall behind it */
+  const counterH = Math.max(26, Math.min(52, h * 0.09));
   const counterY = h - counterH;
+  const deck = Math.max(52, Math.min(132, h * 0.22));
+  const deckTop = counterY - deck;
   const top = 6;
-  const availH = counterY - top;
+  const availH = deckTop + deck * 0.62 - top;
 
   /* the pot is sized first — it is the subject — and the hob is built to fit
      under it, rather than a giant stove squeezing the pan it is there to hold */
-  const potW = Math.min(w * 0.8, (availH - 44) * POT_ASPECT);
+  const potW = Math.min(w * 0.74, (availH - 40) * POT_ASPECT);
   const potH = potW / POT_ASPECT;
-  const hobW = Math.min(w * 0.96, potW * 1.24);
+  /* the hob never runs to the frame edge: a stove sliced by the screen reads as
+     a bug, not as a room carrying on */
+  const hobW = Math.min(w - 32, potW * 1.28);
   const hobH = hobW * 0.3;
-  const deckY = counterY - hobH * 0.62;
-  const hob = { x: (w - hobW) / 2, y: deckY - hobH * 0.12, w: hobW };
+  const deckY = counterY - deck * 0.34;
+  const hob = { x: (w - hobW) / 2, y: deckY - hobH * 0.88, w: hobW };
   /* the drawing's feet sit at 0.94 of its box, so the pot lands ON the ring
      instead of hovering a finger's width above it */
-  const pot = { x: (w - potW) / 2, y: deckY + hobH * 0.16 - potH * 0.94, w: potW, h: potH };
+  const pot = { x: (w - potW) / 2, y: hob.y + hobH * 0.3 - potH * 0.94, w: potW, h: potH };
 
   return {
     s,
@@ -90,6 +102,8 @@ function layout(box: FluidBox): Scene {
     h,
     counterY,
     counterH,
+    deck,
+    deckTop,
     pot,
     broth: { x: pot.x + potW / 2, y: pot.y + potH * 0.28 },
     piece: Math.max(26, potW * 0.13),
@@ -342,28 +356,30 @@ export function SoupPot({ challenge, ageBand, onComplete, onEvent, compact }: Mi
             const sc = layout(box);
             const { s, w, pot } = sc;
             const side = (w - sc.hob.w) / 2 + sc.hob.w * 0.06;
+            const deckFoot = sc.deck * 0.06;
             return (
               <>
                 {/* --- the room ------------------------------------- */}
-                <SplashbackBand s={s} x={0} y={sc.counterY - 58} w={w} depth={58} />
-                {pot.y > 96 ? (
+                <SplashbackBand s={s} x={0} y={4} w={w} depth={Math.max(26, sc.deckTop - 4)} />
+                {sc.deckTop > 100 ? (
                   <>
-                    <Shelf s={s} x={8} y={pot.y - 30} w={Math.max(84, side + 40)} />
-                    <StoreJar s={s} x={12} y={pot.y - 72} h={42} tone="herbs" />
-                    <Canister s={s} x={48} y={pot.y - 76} h={46} tone="#E8C89B" />
+                    <Shelf s={s} x={8} y={sc.deckTop - 46} w={Math.max(84, side + 40)} />
+                    <StoreJar s={s} x={12} y={sc.deckTop - 46 - 42} h={42} tone="herbs" />
+                    <Canister s={s} x={48} y={sc.deckTop - 46 - 46} h={46} tone="#E8C89B" />
                   </>
                 ) : null}
-                <KitchenWindow s={s} x={w - Math.min(110, side + 56) - 8} y={6} w={Math.min(110, side + 56)} />
+                <KitchenWindow s={s} x={w - Math.min(112, side + 56) - 8} y={6} w={Math.min(112, side + 56)} />
                 <UtensilRail s={s} x={8} y={6} w={Math.min(140, w * 0.32)} />
-                <CounterRun s={s} w={w} y={sc.counterY} h={sc.counterH + 44} />
-                <CounterCrumbs s={s} x={sc.hob.x} y={sc.counterY - 10} w={sc.hob.w} seed={3} />
-                <HerbPot s={s} x={Math.max(6, sc.hob.x - 48)} y={sc.counterY - 48} h={46} />
-                <TeaTowel s={s} x={w - 42} y={Math.max(8, sc.counterY - 190)} w={34} />
+                <TeaTowel s={s} x={w - 46} y={Math.max(8, sc.deckTop - 92)} w={34} />
+                <CounterRun s={s} w={w} y={sc.counterY} h={sc.counterH + 44} deck={sc.deck} />
+                <CounterCrumbs s={s} x={sc.hob.x} y={sc.counterY - 24} w={sc.hob.w} seed={3} />
+                <HerbPot s={s} x={Math.max(6, sc.hob.x - 50)} y={sc.counterY - deckFoot - 48} h={46} />
 
                 {/* --- the hob and the pot -------------------------- */}
+                <ContactPatch s={s} cx={w / 2} y={sc.hob.y + sc.hob.w * 0.3 * 0.92} rx={sc.hob.w * 0.5} />
                 <Hob s={s} x={sc.hob.x} y={sc.hob.y} w={sc.hob.w} lit={bubbling} />
-                {phase === 'simmering' ? (
-                  <Steam s={s} x={pot.x + pot.w * 0.28} y={pot.y - pot.w * 0.24} w={pot.w * 0.44} />
+                {bubbling || phase === 'simmering' ? (
+                  <Steam s={s} x={pot.x + pot.w * 0.28} y={pot.y - pot.w * 0.2} w={pot.w * 0.44} strength={phase === 'simmering' ? 1 : 0.7} />
                 ) : null}
 
                 <Animated.View style={[at(s, pot.x, pot.y, pot.w, pot.h), potStyle]} pointerEvents="none">

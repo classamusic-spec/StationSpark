@@ -14,13 +14,13 @@ import { palette } from '@/theme';
 import { useReducedMotion } from '@/hooks';
 import type { HintText } from './useHintLadder';
 
-/** Beacon's bubble, wired to the hint ladder. Tap it to dismiss. */
+/** Captain Bea's bubble, wired to the hint ladder. Tap it to dismiss. */
 export function CaptainHint({ hint, onDismiss }: { hint: HintText | null; onDismiss: () => void }) {
   return <HintBubble visible={hint !== null} text={hint?.text ?? ''} es={hint?.es} onDismiss={onDismiss} />;
 }
 
 /**
- * The pulsing gold ring Beacon points at the next thing to touch.
+ * The pulsing gold ring Captain Bea points at the next thing to touch.
  * Absolutely positioned by the caller; never intercepts touches.
  */
 export function PulseRing({

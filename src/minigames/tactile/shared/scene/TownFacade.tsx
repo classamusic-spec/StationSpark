@@ -286,6 +286,44 @@ export const TownFacade = memo(function TownFacade({
         </G>
       ) : null}
 
+      {/* A wall lamp on the blank stretch of wall the ladder climbs. Both
+          ladder games leave that side free for the stack, so the brick has
+          nothing on it until a child starts building; one piece of real
+          architecture stops it reading as wallpaper. */}
+      {gutter > 24 ? (
+        (() => {
+          /* a gooseneck street lamp on the bracket: arm out of the wall, a
+             curve, a wide shade and the warm pool of light under it */
+          const lx = gutter * 0.34;
+          const ly = bodyTop + (height - bodyTop) * 0.28;
+          const arm = Math.max(14, 22 * s);
+          const shade = Math.max(16, 26 * s);
+          return (
+            <G>
+              <Ellipse cx={lx + arm} cy={ly + shade * 0.8} rx={shade * 1.5} ry={shade * 1.1} fill={palette.safetyYellow} opacity={0.12} />
+              <Rect x={lx - 3 * s} y={ly - 6 * s} width={7 * s} height={22 * s} rx={3 * s} fill={palette.charcoal} />
+              <Rect x={lx - 1.4 * s} y={ly - 6 * s} width={2.4 * s} height={22 * s} fill={HILITE} />
+              <Path
+                d={`M ${lx + 2 * s} ${ly} h ${arm * 0.6} a ${arm * 0.4} ${arm * 0.4} 0 0 1 ${arm * 0.4} ${arm * 0.4}`}
+                stroke={palette.charcoal}
+                strokeWidth={Math.max(2.4, 4 * s)}
+                fill="none"
+                strokeLinecap="round"
+              />
+              <Path
+                d={`M ${lx + arm - shade * 0.5} ${ly + arm * 0.4} h ${shade} l ${-shade * 0.22} ${shade * 0.46} h ${-shade * 0.56} z`}
+                fill={palette.charcoalDark}
+              />
+              <Path
+                d={`M ${lx + arm - shade * 0.5} ${ly + arm * 0.4} h ${shade * 0.3} l ${-shade * 0.07} ${shade * 0.46} h ${-shade * 0.17} z`}
+                fill={HILITE}
+              />
+              <Ellipse cx={lx + arm} cy={ly + arm * 0.4 + shade * 0.46} rx={shade * 0.29} ry={shade * 0.1} fill="#FFE9A8" />
+            </G>
+          );
+        })()
+      ) : null}
+
       {/* plinth: the building meets the pavement on something */}
       <Rect x={-2} y={bodyBottom} width={front + 4} height={plinthH} rx={3 * s} fill={t.wallB} />
       <Rect x={-2} y={bodyBottom} width={front + 4} height={Math.max(3, 4 * s)} fill={SHADE} />
