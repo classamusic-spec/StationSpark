@@ -111,7 +111,7 @@ const captain = {
     ['legR', [10, 12]],
     ['handL', [13]],
     ['handR', [14]],
-    ['torso', [15, 18, 19, 20, 21, 22, 23, 24, 57, 58, 59, 60, 61]],
+    ['torso', [15, 18, 19, 20, 21, 22, 23, 24, 58, 59, 60, 61, 62]],
     ['cuffL', [16]],
     ['cuffR', [17]],
     ['neck', [25]],
@@ -119,14 +119,19 @@ const captain = {
     ['hair', [28, 29, 30, 31, 32, 33]],
     ['browL', [34, 35]],
     ['browR', [36]],
-    ['hat', [0, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46]],
-    ['earL', [47]],
-    ['earR', [48]],
-    ['cheekL', [49]],
-    ['cheekR', [50]],
-    ['eyeL', [51, 52]],
-    ['eyeR', [53, 54]],
-    ['mouth', [55, 56]],
+    /* 37 is the cap's white crown. The authored art drew the crown as a pale
+       RIM only, with nothing inside it, so on a light page the Captain's hat
+       looked see-through — you read her hair straight through the top of her
+       cap. The crown is now filled, and the old rim reads as its shaded edge.
+       Every index from here on is one higher than it was. */
+    ['hat', [0, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47]],
+    ['earL', [48]],
+    ['earR', [49]],
+    ['cheekL', [50]],
+    ['cheekR', [51]],
+    ['eyeL', [52, 53]],
+    ['eyeR', [54, 55]],
+    ['mouth', [56, 57]],
   ],
   /* Measured from the authored art: the joints the rig rotates around. */
   anchors: {
