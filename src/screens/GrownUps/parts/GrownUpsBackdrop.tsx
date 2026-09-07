@@ -40,7 +40,20 @@ export function GrownUpsBackdrop({ bea = false }: { bea?: boolean }) {
     <View style={StyleSheet.absoluteFill} pointerEvents="none">
       <TownBackdrop hills={APRON + 150} cloudCount={2} sun={false} />
       {stationW > 0 ? (
-        <View style={[styles.station, { right: -Math.round(stationW * 0.18), bottom: APRON - 6 }]}>
+        /* explicit width AND height: `StationFacade`'s root Svg is itself
+           absolutely positioned, so a wrapper left to size itself collapses to
+           nothing and the building never draws */
+        <View
+          style={[
+            styles.station,
+            {
+              width: stationW,
+              height: Math.round((stationW * FACADE_VB.h) / FACADE_VB.w),
+              right: -Math.round(stationW * 0.18),
+              bottom: APRON - 6,
+            },
+          ]}
+        >
           <StationFacade width={stationW} />
         </View>
       ) : null}
