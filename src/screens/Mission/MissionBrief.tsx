@@ -113,21 +113,35 @@ const CTA_HEIGHT = 85;
 const HERO_ASPECT = { min: 0.5, max: 1.1 } as const;
 
 /**
- * How high above the bottom of a scene box the neighbour's feet belong.
+ * WHAT THE PICTURE IS STANDING ON, MEASURED FROM THE PICTURE.
  *
- * A flat percentage put them out in the middle of the tarmac: the kerb sits at a
- * different height in every box, because `SceneHero` composes for the aspect it
- * is given. `sceneFrame` + `roadLine` are the very two functions it composes
- * with, so this is the picture's own kerb rather than a number that happened to
- * look right for one storefront, and the figure stands on the pavement in front
- * of the shop in every scene and at every size.
+ * Two numbers this screen used to guess, and got wrong:
+ *
+ *  - `foot` — how far above the bottom of the box the neighbour's feet belong.
+ *    A flat percentage put them out in the middle of the tarmac, because the
+ *    kerb sits at a different height in every box: `SceneHero` composes for the
+ *    aspect it is given rather than scaling one drawing.
+ *  - `surface` — the colour the band under the picture has to be. It was
+ *    painted in the scene's *pavement* tone, but the bottom edge of the picture
+ *    is the road beyond the kerb, so the two met in a hard grey step straight
+ *    across the screen.
+ *
+ * `sceneFrame`, `roadLine` and `mix` are the very functions `SceneHero` and its
+ * `GroundPlane` compose with, so both answers are the picture's own — and they
+ * follow it if it is ever retuned.
  */
-function pavementInset(scene: SceneId, w: number, h: number): number {
+function sceneFoot(scene: SceneId, w: number, h: number): { foot: number; surface: string } {
   const def = sceneDefs[scene] ?? sceneDefs.bakery;
+  const style = sceneStyles[scene] ?? sceneStyles.bakery;
   const f = sceneFrame(w, h, def.height, true, true, def.spill);
   const kerb = Math.min(roadLine(f), h - 6 * f.s);
-  /* a step back from the edge, so nobody is drawn balancing on the kerbstone */
-  return Math.max(0, Math.round(h - kerb + 5 * f.s));
+  const road = def.ground !== 'grass' && kerb < h - 10 * f.s;
+  return {
+    /* a step back from the edge, so nobody is left balancing on the kerbstone */
+    foot: Math.max(0, Math.round(h - kerb + 5 * f.s)),
+    /* GroundPlane's own tarmac mix, or the near ground where there is no road */
+    surface: road ? mix(style.ground, palette.charcoal, 0.46) : style.ground,
+  };
 }
 
 function AddressPin({ size = 18 }: { size?: number }) {
@@ -142,39 +156,31 @@ function AddressPin({ size = 18 }: { size?: number }) {
 /**
  * THE GROUND THE BRIEF STANDS ON (portrait only).
  *
- * The storefront's own pavement, carried on down to the bottom edge of the
- * screen in the scene's own colours, so the foot of the brief is a near plane
- * with paving seams and a soft contact shadow rather than a band of raw sky.
+ * The street outside the shop, carried on down to the bottom edge of the screen,
+ * so the foot of the brief is a near plane with a soft contact shadow on it
+ * rather than a band of raw sky.
  *
- * It picks the pavement up exactly where the picture put it down, and
- * deliberately draws no kerb lip of its own: a second edge across the same
- * pavement reads as a step. Landscape has no band at all — see the header.
+ * It picks the surface up in the picture's own colour (`sceneFoot`) and draws
+ * no kerb of its own: a second edge across the same road reads as a step, which
+ * is precisely the fault it exists to remove. Landscape has no band at all —
+ * there the picture is the whole screen. See the header.
  */
-function GroundBand({ scene, width, height }: { scene: SceneId; width: number; height: number }) {
-  const s = sceneStyles[scene] ?? sceneStyles.bakery;
+function GroundBand({ surface, width, height }: { surface: string; width: number; height: number }) {
   const w = Math.max(1, Math.round(width));
   const h = Math.max(1, Math.round(height));
-
-  /* every repeated shape in one Path — the shape budget in Stage.tsx */
-  const seams = useMemo(() => {
-    let d = `M 0 ${Math.round(h * 0.46)} L ${w} ${Math.round(h * 0.46)} `;
-    const step = Math.max(84, Math.round(w / 5));
-    for (let x = step; x < w; x += step) d += `M ${x} 0 L ${x} ${h} `;
-    return d;
-  }, [h, w]);
 
   return (
     <Svg width={w} height={h} style={styles.ground} pointerEvents="none">
       <Defs>
         <LinearGradient id="briefGround" x1="0" y1="0" x2="0" y2="1">
-          <Stop offset="0" stopColor={s.ground} />
-          <Stop offset="1" stopColor={s.groundShade} />
+          <Stop offset="0" stopColor={surface} />
+          {/* one value step down towards the viewer, like every plane above it */}
+          <Stop offset="1" stopColor={darker(surface, 0.16)} />
         </LinearGradient>
       </Defs>
       <Rect x={0} y={0} width={w} height={h} fill="url(#briefGround)" />
-      <Path d={seams} stroke="rgba(31,42,90,0.06)" strokeWidth={2} fill="none" />
-      {/* the card's contact shadow, pooling on the pavement under its lower edge */}
-      <Ellipse cx={w / 2} cy={10} rx={w * 0.44} ry={16} fill={palette.navy} opacity={0.07} />
+      {/* the card's contact shadow, pooling on the road under its lower edge */}
+      <Ellipse cx={w / 2} cy={10} rx={w * 0.44} ry={16} fill={palette.navy} opacity={0.09} />
     </Svg>
   );
 }
@@ -359,7 +365,7 @@ export function MissionBrief({ mission, onStart }: MissionBriefProps) {
         <Animated.View entering={FadeIn.duration(360)} style={StyleSheet.absoluteFill}>
           <SceneHero scene={mission.scene} radius={0} bleed style={styles.fill} />
         </Animated.View>
-        <View style={[styles.wideNpc, { bottom: pavementInset(mission.scene, width, height) }]} pointerEvents="none">
+        <View style={[styles.wideNpc, { bottom: sceneFoot(mission.scene, width, height).foot }]} pointerEvents="none">
           <Npc variant={npc} size={npcSize} emotion="worried" pose="wave" />
         </View>
 
@@ -384,18 +390,19 @@ export function MissionBrief({ mission, onStart }: MissionBriefProps) {
     );
   }
 
-  /* ---- stacked: picture, card, pavement, CTA ---- */
+  /* ---- stacked: picture, card, street, CTA ---- */
+  const ground = sceneFoot(mission.scene, width, heroH);
   return (
     <View style={[styles.root, { backgroundColor: sky }]}>
       <Animated.View entering={FadeIn.duration(360)} style={{ height: heroH }}>
         <SceneHero scene={mission.scene} radius={0} bleed style={styles.fill} />
-        <View style={[styles.npc, { bottom: pavementInset(mission.scene, width, heroH) }]} pointerEvents="none">
+        <View style={[styles.npc, { bottom: ground.foot }]} pointerEvents="none">
           <Npc variant={npc} size={Math.round(Math.min(heroH * 0.36, width * 0.32))} emotion="worried" pose="wave" />
         </View>
       </Animated.View>
 
       <View style={styles.below}>
-        <GroundBand scene={mission.scene} width={width} height={Math.max(1, height - heroH)} />
+        <GroundBand surface={ground.surface} width={width} height={Math.max(1, height - heroH)} />
         {/* the lap over the picture is the *scroller's* offset, not the card's:
             a ScrollView clips its content, so a negative margin inside it took
             the top off the headline instead of lifting the card. */}

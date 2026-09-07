@@ -65,9 +65,11 @@ export const clamp = (v: number, lo: number, hi: number): number => Math.max(lo,
  */
 export function sceneFrame(w: number, h: number, sceneH: number, detail: boolean, bleed = false, spill = 1): SceneFrame {
   const a = w / Math.max(1, h);
-  /* horizon: high on a portrait phone (the storefront wants the top half),
-     low on a short wide panel (or the roof has nowhere to go) */
-  const gy = Math.round(h * clamp(0.605 + (a - 0.5) * 0.1 + (bleed ? 0.015 : 0), 0.6, 0.82));
+  /* The horizon. Two thirds down on a portrait phone and lower still on a
+     short wide panel — a ground line drawn halfway up leaves a third of the
+     frame as featureless pavement, which is the same failure as an empty sky
+     and reads worse, because the eye expects the ground to be near. */
+  const gy = Math.round(h * clamp(0.665 + (a - 0.5) * 0.085 + (bleed ? 0.015 : 0), 0.64, 0.84));
   /* How much of the width the hero building may take.
      On a tall portrait box the building is allowed to run *wider than the
      frame*: a 300 × 240 design box capped at the frame width can only ever
@@ -172,6 +174,23 @@ export function fanJoints(w: number, gy: number, yTop: number, yBot: number, n: 
       `L ${(bx + hw1).toFixed(1)} ${yBot.toFixed(1)} L ${(bx - hw1).toFixed(1)} ${yBot.toFixed(1)} Z`;
   }
   return d;
+}
+
+/**
+ * One tapered strip on the receding plane — a painted guide line, thin at the
+ * back and wide at the front, aimed at the same horizon the joints converge on.
+ */
+export function fanStripe(w: number, gy: number, yTop: number, yBot: number, xFrac: number, tw: number): string {
+  const depth = Math.max(1, yBot - gy);
+  const t0 = clamp((yTop - gy) / depth, 0, 1);
+  const vx = w / 2;
+  const bx = w * xFrac;
+  const x0 = vx + (bx - vx) * t0;
+  const hw0 = Math.max(0.4, (tw * t0) / 2);
+  return (
+    `M ${(x0 - hw0).toFixed(1)} ${yTop.toFixed(1)} L ${(x0 + hw0).toFixed(1)} ${yTop.toFixed(1)} ` +
+    `L ${(bx + tw / 2).toFixed(1)} ${yBot.toFixed(1)} L ${(bx - tw / 2).toFixed(1)} ${yBot.toFixed(1)} Z`
+  );
 }
 
 /**

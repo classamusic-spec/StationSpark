@@ -15,7 +15,7 @@
 import React from 'react';
 import { Circle, Ellipse, G, Path, Rect } from 'react-native-svg';
 import { palette } from '@/theme';
-import { courseLines, darker, fanJoints, lighter, mix, rowOf, rp, vary, type SceneFrame } from './frame';
+import { courseLines, darker, fanJoints, fanStripe, lighter, mix, rowOf, rp, vary, type SceneFrame } from './frame';
 import { HIGHLIGHT, SHADE, SHADE_SOFT } from './parts';
 
 const HILITE = HIGHLIGHT;
@@ -341,7 +341,7 @@ function hatch(w: number, y: number, hgt: number, tw: number, step: number): str
  * own dressing on it; the road is the strip beyond the kerb that closes the
  * picture, and a road given half the near plane is simply a hole in it.
  */
-export const roadLine = (f: SceneFrame): number => f.gy + Math.max(40 * f.s, (f.h - f.gy) * 0.6);
+export const roadLine = (f: SceneFrame): number => f.gy + Math.max(38 * f.s, (f.h - f.gy) * 0.62);
 
 /**
  * THE NEAR GROUND PLANE.
@@ -383,13 +383,28 @@ export function GroundPlane({ f, near, lip, kind = 'paving' }: { f: SceneFrame; 
     );
   }
 
-  const joints = fanJoints(w, gy, gy + 14 * s, front, kind === 'apron' ? 7 : 9, 2.8 * s);
-  const courses = courseLines(w, gy + 12 * s, front, kind === 'apron' ? 2 : 3, 2.6 * s);
+  const apron = kind === 'apron';
+  const joints = fanJoints(w, gy, gy + 14 * s, front, apron ? 5 : 9, apron ? 3.4 * s : 2.8 * s);
+  const courses = courseLines(w, gy + 12 * s, front, apron ? 2 : 3, 2.6 * s);
+  /* The station's forecourt is one continuous surface from the bay doors to the
+     kerb. Drawn inside the building's design box it stopped a third of the way
+     down and left a second, slightly different grey behind it — two grounds
+     where the child should read one. In px space it always reaches the kerb. */
+  const surface = apron ? lighter(near, 0.16) : near;
+  const surfaceLip = apron ? lighter(lip, 0.2) : lip;
   return (
     <G>
-      <Path d={`${edge} L ${w} ${h} L 0 ${h} Z`} fill={near} />
-      <Path d={`${edge} L ${w} ${gy + 15 * s} Q ${w / 2} ${gy + 3 * s} 0 ${gy + 15 * s} Z`} fill={lip} />
+      <Path d={`${edge} L ${w} ${h} L 0 ${h} Z`} fill={surface} />
+      <Path d={`${edge} L ${w} ${gy + 15 * s} Q ${w / 2} ${gy + 3 * s} 0 ${gy + 15 * s} Z`} fill={surfaceLip} />
       <Path d={joints + courses} fill={SHADE_SOFT} />
+      {apron ? (
+        /* the two guide lines the engines line up on, receding with the surface */
+        <Path
+          d={fanStripe(w, gy, gy + 18 * s, front - 4 * s, 0.26, 9 * s) + fanStripe(w, gy, gy + 18 * s, front - 4 * s, 0.74, 9 * s)}
+          fill={palette.safetyYellow}
+          opacity={0.5}
+        />
+      ) : null}
       {hasRoad ? (
         <G>
           {/* tarmac, a full value step below the pavement */}

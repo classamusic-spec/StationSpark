@@ -595,17 +595,12 @@ function stationYardArt(detail: boolean) {
       <Ellipse cx={77} cy={170} rx={18} ry={10} fill={palette.safetyYellow} opacity={0.16} />
       <Ellipse cx={223} cy={170} rx={18} ry={10} fill={palette.safetyYellow} opacity={0.16} />
 
-      {/* the apron the engines roll out onto — it runs *past* the ground line,
-          so the forecourt joins the near plane instead of stopping at a seam */}
-      <Path d="M 6 220 L 294 220 Q 300 244 322 286 L -22 286 Q 0 244 6 220 Z" fill="#BAC1D6" />
-      <Path d="M 6 220 L 294 220 Q 295 224 296 228 L 4 228 Q 5 224 6 220 Z" fill="#EDF1F8" />
-      <Rect x={2} y={220} width={296} height={11} fill={SHADE_SOFT} />
+      {/* the threshold the engines cross. The apron itself is the near ground
+          plane (see GroundPlane's 'apron' kind), so there is one forecourt from
+          the bay doors to the kerb rather than two greys meeting at a seam. */}
+      <Path d="M -20 220 L 320 220 L 320 240 L -20 240 Z" fill="#EDF1F8" />
+      <Rect x={-20} y={220} width={340} height={9} fill={SHADE_SOFT} />
       <BaseShadow cx={150} y={224} rx={146} />
-      <Path
-        d={rp(146, 236, 8, 13) + rp(146, 256, 8, 15) + rp(146, 279, 8, 17)}
-        fill={palette.safetyYellow}
-        opacity={0.85}
-      />
 
       {/* the flag mast (its flag is the swaying element) */}
       <Rect x={276} y={34} width={4.4} height={188} rx={2.2} fill={palette.slateLight} />

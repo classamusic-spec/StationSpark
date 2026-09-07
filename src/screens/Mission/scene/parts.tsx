@@ -650,15 +650,22 @@ export function Hedge({ x, y, w, h, back = '#3E8F58', front = '#57A96C' }: { x: 
   );
 }
 
-/** A yellow bollard guarding an apron. */
+/**
+ * A yellow bollard guarding an apron. A fully rounded capsule with a white band
+ * across it reads as a pill dropped on the ground, so this one has a plinth it
+ * stands on and a cap it wears — the two things that say "post", not "pill".
+ */
 export function Bollard({ x, y, h = 24, s = 1 }: { x: number; y: number; h?: number; s?: number }) {
   return (
     <G x={x} y={y} scale={s}>
-      <Contact cx={0} cy={0} rx={7} />
-      <Rect x={-5} y={-h} width={10} height={h} rx={5} fill={palette.safetyYellow} />
-      <Rect x={1} y={-h + 2} width={3.4} height={h - 4} rx={1.7} fill={SHADE} />
-      <Rect x={-4} y={-h + 3} width={2.4} height={h - 7} rx={1.2} fill={HIGHLIGHT} />
-      <Rect x={-5} y={-h * 0.62} width={10} height={4.4} fill={palette.white} opacity={0.85} />
+      <Contact cx={0} cy={0} rx={9} />
+      <Rect x={-7.4} y={-5} width={14.8} height={5.4} rx={2.4} fill={palette.goldDark} />
+      <Rect x={-5.4} y={-h} width={10.8} height={h - 4} rx={2.6} fill={palette.safetyYellow} />
+      <Rect x={1.4} y={-h + 3} width={3.6} height={h - 9} fill={SHADE} />
+      <Rect x={-4.4} y={-h + 3} width={2.4} height={h - 9} fill={HIGHLIGHT} />
+      <Rect x={-7} y={-h - 3.4} width={14} height={5} rx={2.4} fill={palette.goldDark} />
+      <Rect x={-7} y={-h - 3.4} width={14} height={2} rx={1} fill={HIGHLIGHT} />
+      <Rect x={-5.4} y={-h * 0.58} width={10.8} height={4.6} fill={palette.white} opacity={0.9} />
     </G>
   );
 }

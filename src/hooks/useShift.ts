@@ -13,7 +13,7 @@ import type { AgeBand } from '@/learning/types';
 import type { MissionDef } from '@/content/types';
 import type { Stars } from '@/minigames/types';
 import { missions, missionById } from '@/content/missions';
-import { buildDispatchBoard } from '@/content/dispatchBoard';
+import { buildDispatchBoard, type BoardProgress } from '@/content/dispatchBoard';
 import { DEFAULT_SHIFT_TARGET, remainingBoard, shiftMachine, shiftProgress, type ShiftContext, type ShiftMachine } from '@/machines/shiftMachine';
 import { useGame } from '@/state/store';
 
@@ -45,6 +45,11 @@ export function resetShiftActor(): void {
 export interface DispatchBoardInput {
   /** mission ids the child has already finished (any shift) */
   completed: string[];
+  /**
+   * The real progress slice. Without it `buildDispatchBoard` silently drops two
+   * of its six rules — see the note at the call site in `startShift`.
+   */
+  progress?: BoardProgress;
   ageBand: AgeBand;
   /** how many slips to put on the board */
   size: number;
@@ -127,6 +132,7 @@ export function useShift(): UseShift {
   // Select the stable record, derive the key list with useMemo — a selector that
   // returns a fresh array each call makes zustand's snapshot comparison loop.
   const missionsRecord = useGame((s) => s.progress.missions);
+  const masteryRecord = useGame((s) => s.progress.mastery);
   const completedIds = useMemo(() => Object.keys(missionsRecord), [missionsRecord]);
   const storeStartShift = useGame((s) => s.startShift);
   const storeEndShift = useGame((s) => s.endShift);
@@ -165,7 +171,24 @@ export function useShift(): UseShift {
   const startShift = useCallback<UseShift['startShift']>(
     (opts) => {
       const wanted = opts?.target ?? DEFAULT_SHIFT_TARGET;
+      /*
+       * TWO OF THE SIX BOARD RULES WERE NEVER RUNNING.
+       *
+       * `buildDispatchBoard` documents six rules; rules 4 and 5 — "then the ones
+       * with the fewest stars" and "lead with the subject the child has
+       * practised least" — both read `options.progress`. This, its only caller,
+       * passed `completed` ids instead. With no `progress`, the builder
+       * synthesises a flat 3 stars for everything (so the star tiebreak is
+       * inert) and leaves `mastery` undefined (so the rusty-subject pass is
+       * skipped entirely). The adaptive board was not adapting.
+       *
+       * It reads the real slice now. Worth noting this only became meaningful
+       * once the mastery arithmetic was fixed — before that, `mastery` was a
+       * constant dressed up as data, and pointing the board at it would have
+       * made the ordering worse, not better.
+       */
       const board = makeBoard({
+        progress: { missions: missionsRecord, mastery: masteryRecord },
         completed: completedIds,
         ageBand,
         size: opts?.size ?? wanted,
@@ -178,7 +201,7 @@ export function useShift(): UseShift {
       storeStartShift(board);
       return board;
     },
-    [actor, ageBand, completedIds, storeStartShift],
+    [actor, ageBand, completedIds, masteryRecord, missionsRecord, storeStartShift],
   );
 
   const endShift = useCallback(() => {
