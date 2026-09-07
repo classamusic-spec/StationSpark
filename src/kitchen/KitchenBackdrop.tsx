@@ -148,10 +148,22 @@ export function KitchenBackdrop({ still }: KitchenBackdropProps) {
   const deckTop = counterY - deck;
   const baseY = counterY - deck * 0.34;
 
-  /* the wall band above it, and the strip of it the plaque needs kept clear */
+  /*
+   * The wall band above it, and the strip of it the plaque needs kept clear.
+   *
+   * THE ROOM HAS TO LIVE WHERE IT CAN BE SEEN. The middle band used to hang
+   * 210 px above the worktop, which is right for an empty room and wrong for
+   * this one: the recipe box covers everything below the halfway line, so the
+   * window, the shelf of jars and the chalk menu were drawn every frame and
+   * never once looked at. The worktop staying behind the box is fine — a warm
+   * sheet of recipes standing on a counter is what it is meant to read as —
+   * but the furniture is not, so the band is also capped into the upper third.
+   */
   const side = Math.min(200, w * 0.24);
-  const midY = Math.max(70, deckTop - 210);
+  const midY = Math.max(70, Math.min(deckTop - 210, h * 0.34));
   const lampLen = Math.max(90, Math.min(210, h * 0.2));
+  /* the rail and towel hang with the band, not with the counter under it */
+  const railY = Math.min(deckTop - 132, midY + 170);
 
   return (
     <View style={[StyleSheet.absoluteFill, styles.root]} pointerEvents="none" onLayout={onLayout}>
@@ -172,8 +184,8 @@ export function KitchenBackdrop({ still }: KitchenBackdropProps) {
           {/* right: the window onto the yard, the chalk menu and the tools */}
           <KitchenWindow s={1} x={w - side - w * 0.03} y={midY - 130} w={side} />
           <ChalkMenu s={1} x={w - side - w * 0.03} y={midY + 44} w={Math.min(170, side * 0.9)} />
-          <UtensilRail s={1} x={w * 0.5 - Math.min(190, w * 0.22)} y={deckTop - 132} w={Math.min(190, w * 0.22) * 2} />
-          <TeaTowel s={1} x={w - side - w * 0.03 - 56} y={deckTop - 120} w={44} />
+          <UtensilRail s={1} x={w * 0.5 - Math.min(190, w * 0.22)} y={railY} w={Math.min(190, w * 0.22) * 2} />
+          <TeaTowel s={1} x={w - side - w * 0.03 - 56} y={railY + 12} w={44} />
 
           {/* ---- the worktop ---------------------------------------- */}
           <CounterRun s={1} w={w} y={counterY} h={counterH + 40} deck={deck} />

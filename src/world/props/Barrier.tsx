@@ -3,7 +3,7 @@ import { StyleSheet, View } from 'react-native';
 import Svg, { Circle, Ellipse, G, Path, Rect } from 'react-native-svg';
 import { palette } from '@/theme';
 import { Text } from '@/ui';
-import { HIGHLIGHT, SHADE, SHADOW_FILL, SHADOW_OPACITY, shadowRy } from '../tone';
+import { HIGHLIGHT, SHADE, SHADE_DEEP, SHADOW_FILL, SHADOW_OPACITY, shadowRy } from '../tone';
 import { FlameArt } from './Flame';
 import type { RingSlot } from './ringLayout';
 
@@ -40,19 +40,36 @@ const underPath = (x: number, y: number, w: number, h: number) => {
   return `M${x} ${y + r}a${r} ${r} 0 0 0 ${r} ${r}h${Math.max(0, w - 2 * r)}a${r} ${r} 0 0 0 ${r} -${r}z`;
 };
 
-/** An A-frame foot: post, splayed feet, a contact shadow. */
+/**
+ * An A-frame foot: post, splayed legs, a contact shadow.
+ *
+ * The legs used to be one flat navy silhouette — the only object in the tray
+ * with no light on it at all. They are round steel tube, so each leg now takes
+ * the same treatment every other part of this world gets: base fill, a white
+ * strip down the lit (left) side, a navy strip down the shaded (right) one,
+ * and a darker sole under the base rail so the frame stands on the ground
+ * rather than floating over its own shadow.
+ */
 function Foot({ x, top, bottom, color }: { x: number; top: number; bottom: number; color: string }) {
   const h = bottom - top;
   const spread = Math.min(12, h * 0.55);
+  /** how far along each splayed leg the light strip runs */
+  const lit = (dx: number, w: number) =>
+    `M${x + dx} ${top}l${spread * (dx < 0 ? -1 : 1) * 0.94} ${h * 0.94}h${w}l${-spread * (dx < 0 ? -1 : 1) * 0.94} ${-h * 0.94}z`;
   return (
     <G>
       <Ellipse cx={x} cy={bottom} rx={spread + 3} ry={shadowRy(spread + 3)} fill={SHADOW_FILL} opacity={SHADOW_OPACITY} />
       <Path d={`M${x - 2.6} ${top}h5.2l${spread} ${h}h-5z`} fill={color} />
       <Path d={`M${x - 2.6} ${top}h5.2l-${spread} ${h}h-5z`} fill={color} />
+      {/* the light down the left of both legs, the shade down the right */}
+      <Path d={`${lit(-2.4, 1.5)}${lit(0.9, 1.5)}`} fill={HIGHLIGHT} />
+      <Path d={`${lit(2.6, -1.6)}${lit(-0.9, -1.6)}`} fill={SHADE} />
       <Rect x={x - spread - 3} y={bottom - 4} width={spread * 2 + 6} height={4.5} rx={2.2} fill={color} />
+      <Rect x={x - spread - 3} y={bottom - 1.4} width={spread * 2 + 6} height={1.9} rx={0.95} fill={SHADE_DEEP} />
       <Rect x={x - spread - 3} y={bottom - 4} width={spread * 2 + 6} height={1.6} rx={0.8} fill={HIGHLIGHT} />
       <Rect x={x - 2.6} y={top} width={5.2} height={h * 0.5} rx={1.5} fill={color} />
       <Rect x={x - 1.6} y={top} width={1.6} height={h * 0.5} fill={HIGHLIGHT} />
+      <Rect x={x + 0.9} y={top} width={1.7} height={h * 0.5} fill={SHADE} />
     </G>
   );
 }
@@ -100,7 +117,11 @@ export function BarrierPiece({
             opacity={tone === 'ghost' && i % 2 === 1 ? 0.8 : 1}
           />
         ))}
+        {/* the underside: one wash over the bottom half, then a darker core
+            along the very bottom, so the bar reads as a round rail rather than
+            a flat stripe with a shine painted on it */}
         <Path d={underPath(0, barY, width, barH)} fill={SHADE} />
+        <Rect x={r * 0.6} y={barY + barH * 0.76} width={Math.max(0, width - r * 1.2)} height={barH * 0.2} rx={barH * 0.1} fill={SHADE_DEEP} opacity={0.55} />
         <Rect x={r} y={barY + barH * 0.14} width={Math.max(0, width - 2 * r)} height={barH * 0.26} rx={barH * 0.13} fill={HIGHLIGHT} />
       </Svg>
       {showLabel ? (

@@ -172,6 +172,37 @@ export function WindowArt({ rect, theme, lit, u }: WindowArtProps) {
 }
 
 /* ------------------------------------------------------------------ */
+/* Wall material                                                       */
+/* ------------------------------------------------------------------ */
+
+/**
+ * RENDERED BLOCK COURSES, batched into one path.
+ *
+ * The subject of this screen was the only wall in the frame with no material
+ * on it: a flat plane between two neighbour blocks that both had coursing and
+ * a light side. A wall needs tooth to be a wall — horizontal joints every
+ * course, staggered verticals between them — and the whole field costs one
+ * `<Path/>` however many blocks it has.
+ */
+function wallCourses(x: number, y: number, w: number, h: number, u: number): string {
+  const bh = Math.max(6, u * 1.5);
+  const bw = Math.max(14, u * 3.4);
+  const t = Math.max(0.8, u * 0.11);
+  let d = '';
+  for (let r = 1; bh * r < h - 2; r += 1) {
+    const ry = y + r * bh;
+    d += `M${x.toFixed(1)} ${ry.toFixed(1)}h${w.toFixed(1)}v${t.toFixed(1)}h${(-w).toFixed(1)}z`;
+    const off = r % 2 === 0 ? 0 : bw / 2;
+    for (let c = 0; off + c * bw < w - 2; c += 1) {
+      const cx = x + off + c * bw;
+      if (cx <= x + 1) continue;
+      d += `M${cx.toFixed(1)} ${ry.toFixed(1)}h${t.toFixed(1)}v${bh.toFixed(1)}h${(-t).toFixed(1)}z`;
+    }
+  }
+  return d;
+}
+
+/* ------------------------------------------------------------------ */
 /* Facade                                                              */
 /* ------------------------------------------------------------------ */
 
@@ -234,7 +265,14 @@ export function BuildingFacade({ scene, layout, width, height, litSlots, hideSig
           fill="rgba(31,42,90,0.14)"
         />
         <Rect x={body.x} y={body.y} width={body.w} height={body.h} rx={u * 0.7} fill="url(#ss-wall)" />
-        <Rect x={body.x} y={body.y} width={body.w * 0.16} height={body.h} fill={palette.white} opacity={0.14} />
+        {/* the courses, then the light across the wall: a lit strip down the
+            left, a shaded one down the right, and the ambient darkening where
+            the wall meets its own pavement */}
+        <Path d={wallCourses(body.x, body.y, body.w, body.h, u)} fill="rgba(31,42,90,0.07)" />
+        <Rect x={body.x} y={body.y} width={body.w * 0.09} height={body.h} fill={palette.white} opacity={0.2} />
+        <Rect x={body.x + body.w * 0.09} y={body.y} width={body.w * 0.11} height={body.h} fill={palette.white} opacity={0.1} />
+        <Rect x={body.x + body.w * 0.82} y={body.y} width={body.w * 0.18} height={body.h} fill="rgba(31,42,90,0.09)" />
+        <Rect x={body.x} y={body.y + body.h - u * 1.6} width={body.w} height={u * 1.6} fill="rgba(31,42,90,0.08)" />
 
         {/* roof */}
         <Path

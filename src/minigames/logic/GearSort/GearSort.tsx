@@ -9,7 +9,7 @@ import { useShowTranslation } from '@/hooks';
 import { sfx } from '@/services/audio';
 import { haptics } from '@/services/haptics';
 import { speech } from '@/services/speech';
-import { EquipmentIcon, Text, TrayRow, equipmentLabel, useSideRail } from '@/ui';
+import { EquipmentIcon, Text, TrayRow, VocabIcon, equipmentLabel, useSideRail } from '@/ui';
 
 import { Draggable } from '../shared/Draggable';
 import { GameFrame } from '../shared/GameFrame';
@@ -66,6 +66,24 @@ const PROMPTS: Record<GearSortChallenge['by'], { title: string; es: string; rule
 const SIZE_SCALE: Record<'S' | 'M' | 'L', number> = { S: 0.78, M: 1, L: 1.2 };
 
 const itemLabel = (item: Item) => item.label ?? equipmentLabel(item.equipment);
+
+/**
+ * THE PICTURE ON A SORT TOKEN.
+ *
+ * A gear sort is not always about gear. `item.icon` is how a themed sort — beach
+ * day, books by genre, recycling day — names any drawing in the vocabulary set,
+ * and `item.label` names it in words. Drawing `item.equipment` regardless put
+ * the right caption under the wrong object (a juice carton came out as a fire
+ * extinguisher labelled "Juice"), which is worse than no picture at all: the
+ * child is being asked to sort by what they can SEE.
+ *
+ * `VocabIcon` forwards equipment ids to `EquipmentIcon` itself and falls back to
+ * a friendly "?" tile for a word we have not drawn, so a themed sort can never
+ * crash the screen either.
+ */
+function ItemArt({ item, size }: { item: Item; size: number }) {
+  return item.icon ? <VocabIcon id={item.icon} size={size} /> : <EquipmentIcon id={item.equipment} size={size} />;
+}
 
 export function GearSort({ challenge, ageBand, onComplete, onEvent, compact }: MiniGameProps<'gear-sort'>) {
   const session = useMiniGameSession('gear-sort', onComplete, onEvent);
@@ -210,7 +228,7 @@ export function GearSort({ challenge, ageBand, onComplete, onEvent, compact }: M
                   style={{ width: tokenWidth }}
                 >
                   <View style={{ height: tokenIcon * 1.24, justifyContent: 'flex-end' }}>
-                    <EquipmentIcon id={item.equipment} size={tokenIcon * SIZE_SCALE[item.size ?? 'M']} />
+                    <ItemArt item={item} size={tokenIcon * SIZE_SCALE[item.size ?? 'M']} />
                   </View>
                   {/* two lines, so "Extinguisher" and "First Aid Kit" are never clipped */}
                   <Text variant="tiny" center numberOfLines={2} style={styles.tokenLabel}>
@@ -254,7 +272,7 @@ export function GearSort({ challenge, ageBand, onComplete, onEvent, compact }: M
                   <View style={styles.binContents} pointerEvents="none">
                     {contents.map((it) => (
                       <Animated.View key={it.id} entering={ZoomIn.springify().damping(11)}>
-                        <EquipmentIcon id={it.equipment} size={Math.max(20, binWidth * 0.28)} />
+                        <ItemArt item={it} size={Math.max(20, binWidth * 0.28)} />
                       </Animated.View>
                     ))}
                   </View>

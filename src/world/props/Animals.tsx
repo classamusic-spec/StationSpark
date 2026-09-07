@@ -56,6 +56,26 @@ const hex = (cx: number, cy: number, r: number) => {
   return `${d}Z`;
 };
 
+/**
+ * A SCALLOPED FUR EDGE.
+ *
+ * Where two coat tones meet, a clean arc reads as vinyl and a run of soft
+ * scallops reads as hair. Returns a closed strip: the scallops bulge to `drop`
+ * (negative = upwards) and the strip closes back along a straight edge just the
+ * other side of `y`, so it can be filled with either coat tone and sit exactly
+ * on the join. One `<Path>` for a whole chest.
+ */
+const scallops = (x0: number, x1: number, y: number, n: number, drop: number) => {
+  const step = (x1 - x0) / n;
+  let d = `M${f(x0)} ${f(y)}`;
+  for (let i = 0; i < n; i += 1) {
+    const a = x0 + i * step;
+    d += `Q${f(a + step * 0.5)} ${f(y + drop)} ${f(a + step)} ${f(y)}`;
+  }
+  const back = y - Math.sign(drop) * Math.abs(drop) * 0.42;
+  return `${d}L${f(x1)} ${f(back)}L${f(x0)} ${f(back)}Z`;
+};
+
 /* ------------------------------------------------------------------ */
 /* Light kit — ONE direction (top-left), ONE shade, ONE highlight       */
 /* ------------------------------------------------------------------ */
@@ -278,6 +298,17 @@ const KittenBody = memo(function KittenBody() {
       <Path d="M50 47c15.5 0 26 13.5 26 29 0 9.5-11 15-26 15s-26-5.5-26-15c0-15.5 10.5-29 26-29z" fill={KITTEN_COAT} />
       <Rim cx={50} cy={76} rx={26} ry={20} />
       <Path d="M50 64c8.4 0 14.2 6.6 14.2 14.2 0 6.4-5.8 9.8-14.2 9.8s-14.2-3.4-14.2-9.8C35.8 70.6 41.6 64 50 64z" fill={palette.cream} />
+      {/* the bib's fur edge, and tabby banding over both shoulders: a coat is
+          a flat fill until something breaks its silhouette into hair */}
+      <Path d={scallops(37, 63, 65.6, 7, -2.8)} fill={palette.cream} />
+      <Path
+        d="M27.6 67q4 5.2 3 11M33.2 64.6q4.2 5.6 3.2 11.6M72.4 67q-4 5.2-3 11M66.8 64.6q-4.2 5.6-3.2 11.6"
+        stroke={KITTEN_STRIPE}
+        strokeWidth={3}
+        strokeLinecap="round"
+        opacity={0.24}
+        fill="none"
+      />
       <Path d="M36.4 81c1.8 4 7.2 6.2 13.6 6.2s11.8-2.2 13.6-6.2c-0.8 5.4-6.4 8-13.6 8s-12.8-2.6-13.6-8z" fill={SHADE} opacity={0.4} />
     </G>
   );
@@ -330,6 +361,16 @@ const PuppyBody = memo(function PuppyBody() {
       <Rim cx={50} cy={76} rx={26.5} ry={20} />
       <Path d={ell(31.5, 76, 7, 6)} fill={PUPPY_EAR} opacity={0.7} />
       <Path d="M50 63c8.8 0 15 7 15 15 0 6.6-6.2 10.2-15 10.2s-15-3.6-15-10.2C35 70 41.2 63 50 63z" fill={palette.creamDeep} />
+      <Path d={scallops(36.2, 63.8, 64.6, 7, -2.6)} fill={palette.creamDeep} />
+      {/* short fur lying along both haunches, in the ear's warmer tone */}
+      <Path
+        d="M28.4 67.4q3.4 5-0.2 10M33.8 64.6q3.6 5.2 0.2 10.4M71.6 67.4q-3.4 5 0.2 10M66.2 64.6q-3.6 5.2-0.2 10.4"
+        stroke={PUPPY_EAR}
+        strokeWidth={3}
+        strokeLinecap="round"
+        opacity={0.22}
+        fill="none"
+      />
       <Path d="M35.6 81c1.8 4.2 7.4 6.5 14.4 6.5s12.6-2.3 14.4-6.5c-0.9 5.6-6.8 8.3-14.4 8.3s-13.5-2.7-14.4-8.3z" fill={SHADE} opacity={0.38} />
     </G>
   );
@@ -392,6 +433,16 @@ const BunnyBody = memo(function BunnyBody() {
       <Path d="M50 52c14 0 24.5 12.5 24.5 26.5 0 8.6-10.5 13.6-24.5 13.6s-24.5-5-24.5-13.6C25.5 64.5 36 52 50 52z" fill={BUNNY_COAT} />
       <Rim cx={50} cy={78} rx={24.5} ry={19} tone="softShade" opacity={0.6} />
       <Path d="M50 68c7 0 12 5.8 12 12.2 0 5.4-5 8.2-12 8.2s-12-2.8-12-8.2C38 73.8 43 68 50 68z" fill={palette.creamDeep} opacity={0.45} />
+      <Path d={scallops(38.8, 61.2, 69, 6, -2.4)} fill={palette.creamDeep} opacity={0.45} />
+      {/* white on white needs the shade to carry the fur, not the fill */}
+      <Path
+        d="M30.6 69.6q3.2 4.8 0.2 9.4M35.4 67q3.4 5 0.2 9.8M69.4 69.6q-3.2 4.8-0.2 9.4M64.6 67q-3.4 5-0.2 9.8"
+        stroke={SHADE}
+        strokeWidth={2.6}
+        strokeLinecap="round"
+        opacity={0.55}
+        fill="none"
+      />
       {/* big hind feet, set forward the way a sitting rabbit's are */}
       <Path d={`${ell(35, 87.5, 11, 6.4)}${ell(65, 87.5, 11, 6.4)}`} fill={BUNNY_COAT} />
       <Path d={`${ell(35, 90, 8.4, 3.4)}${ell(65, 90, 8.4, 3.4)}`} fill={SHADE} opacity={0.55} />
@@ -464,6 +515,8 @@ const DucklingBody = memo(function DucklingBody({ held }: { held: boolean }) {
       <Path d="M52 44c15 0 26 12 26 26.6 0 11-11 17.8-26 17.8s-26-6.8-26-17.8C26 56 37 44 52 44z" fill={DUCK_COAT} />
       <Rim cx={52} cy={70} rx={26} ry={19} />
       <Path d={ell(52, 77, 14, 10)} fill={palette.cream} opacity={0.42} />
+      {/* two rows of down across the breast — a duckling is not a smooth egg */}
+      <Path d={`${scallops(35, 69, 61.5, 8, 3)}${scallops(33, 71, 69.5, 9, 3.2)}`} fill={DUCK_WING} opacity={0.22} />
       {/* wings, with feather tips along the trailing edge */}
       {held ? (
         <G>

@@ -97,6 +97,18 @@ export function LadderPiece({ units, unitPx, width = 68, tone = 'yellow', showLa
   const rungH = Math.max(5, unitPx * 0.26);
   const capH = Math.max(5, Math.min(rail * 0.95, unitPx * 0.32));
   const seam = tone === 'placed' || stackIndex !== undefined;
+  /*
+   * THE BADGE HAS TO FIT THE PIECE.
+   *
+   * It used to be a fixed 38 px disc (44 with its ring) centred on the piece,
+   * which is *taller than a 1-unit ladder* — so the shortest tokens in the
+   * tray, the ones a child most needs to count, were a number with the ladder
+   * hidden underneath it. It is now measured off the piece: never taller than
+   * the piece minus a margin, never wider than half its width, and the type
+   * steps down with it so a small badge is still legible rather than clipped.
+   */
+  const badge = Math.round(Math.max(17, Math.min(labelSize === 'lg' ? 38 : 28, height - 8, width * 0.52)));
+  const badgeText: 'h2' | 'buttonSmall' | 'tiny' = badge >= 32 ? 'h2' : badge >= 23 ? 'buttonSmall' : 'tiny';
 
   return (
     <View style={[styles.wrap, { width, height }]}>
@@ -114,8 +126,20 @@ export function LadderPiece({ units, unitPx, width = 68, tone = 'yellow', showLa
         {seam ? <Rect x={0} y={0} width={width} height={Math.min(6, unitPx * 0.22)} fill={SHADE} /> : null}
       </Svg>
       {showLabel ? (
-        <View style={[styles.badge, { backgroundColor: t.ink === palette.slate ? palette.white : palette.navy }]}>
-          <Text variant={labelSize === 'lg' ? 'h2' : 'buttonSmall'} color={t.ink === palette.slate ? palette.slate : palette.white}>
+        <View
+          style={[
+            styles.badge,
+            {
+              backgroundColor: t.ink === palette.slate ? palette.white : palette.navy,
+              minWidth: badge,
+              height: badge,
+              borderRadius: badge / 2,
+              borderWidth: Math.max(1.5, badge * 0.08),
+              paddingHorizontal: badge * 0.16,
+            },
+          ]}
+        >
+          <Text variant={badgeText} color={t.ink === palette.slate ? palette.slate : palette.white} allowFontScaling={false}>
             {n}
           </Text>
         </View>
@@ -246,13 +270,8 @@ const styles = StyleSheet.create({
   wrap: { alignItems: 'center', justifyContent: 'center' },
   badge: {
     position: 'absolute',
-    minWidth: 38,
-    height: 38,
-    borderRadius: 19,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 3,
     borderColor: 'rgba(255,255,255,0.55)',
-    paddingHorizontal: 6,
   },
 });

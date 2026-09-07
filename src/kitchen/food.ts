@@ -7,6 +7,8 @@
  * (art critique item #21: emoji are banned from the world layer).
  */
 import type { ToppingId, VocabWord } from '@/learning/types';
+import type { RecipeId } from '@/content/types';
+import type { VocabIconId } from '@/ui/kit/VocabIcon';
 
 const food = (id: string, en: string, es: string, icon: string): VocabWord => ({ id, en, es, icon, category: 'food' });
 
@@ -97,18 +99,43 @@ export const toppingLabel = (id: ToppingId): string => {
 };
 
 /** Which sticker stands in for a finished dish on the dinner table. */
-export const recipeGlyph: Record<string, string> = {
+/**
+ * The picture on a recipe's card in the Kitchen.
+ *
+ * EXHAUSTIVE, AND TYPED TO THE ICON SHEET, on purpose. This was
+ * `Record<string, string>` read through a `?? 'soup'` fallback, so eleven of
+ * the twenty-four dishes — every one added after the map was written — quietly
+ * drew the same bowl of soup, and nothing anywhere said so. Keying it to
+ * `RecipeId` means the next dish will not compile until it has been given a
+ * face; typing the value to `VocabIconId` means a typo cannot reach the shelf.
+ *
+ * Where the sheet has no true match the choice is the dish's *signature* rather
+ * than its base — bibimbap by the egg on top, arroz con leche by the milk —
+ * because at 56 px a third identical bowl of rice tells a child nothing.
+ */
+export const recipeGlyph: Record<RecipeId, VocabIconId> = {
   pancakes: 'bread',
   pizza: 'pizza',
+  'garden-pizza': 'pizza',
   tacos: 'taco',
   smoothie: 'strawberry',
   soup: 'soup',
   bread: 'bread',
+  'banana-bread': 'banana',
   quesadillas: 'quesadilla',
   'fruit-salad': 'grape',
   lemonade: 'lemon',
   'garden-salsa': 'tomato',
   'veggie-caldo': 'carrot',
+  'frijoles-de-olla': 'beans',
+  'arroz-con-leche': 'milk',
   'agua-fresca': 'watermelon',
+  paletas: 'strawberry',
   esquites: 'corn',
+  'tres-leches': 'cake',
+  sopes: 'tortilla',
+  arepas: 'bread',
+  onigiri: 'rice',
+  minestrone: 'soup',
+  bibimbap: 'egg',
 };

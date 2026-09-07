@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { StyleSheet, View, type LayoutChangeEvent } from 'react-native';
 import Svg, { Ellipse, G, Path, Rect } from 'react-native-svg';
 import Animated, { FadeIn, FadeInDown, useAnimatedStyle, useSharedValue, withDelay, withRepeat, withSequence, withSpring } from 'react-native-reanimated';
-import type { CharacterId } from '@/content/types';
+import type { CharacterId, RecipeId } from '@/content/types';
 import { palette, spacing, springs } from '@/theme';
 import { sfx } from '@/services/audio';
 import { haptics } from '@/services/haptics';
@@ -33,7 +33,7 @@ export function DinnerTable({
   recipeName,
   onNext,
 }: {
-  recipeId: string;
+  recipeId: RecipeId;
   recipeName: string;
   onNext: () => void;
 }) {
@@ -94,7 +94,7 @@ export function DinnerTable({
  * the centre. It scales with the room, so a tablet gets a bigger table rather
  * than the same small one in more space.
  */
-function TableTop({ width, recipeId }: { width: number; recipeId: string }) {
+function TableTop({ width, recipeId }: { width: number; recipeId: RecipeId }) {
   const h = width * 0.423;
   const places: [number, number][] = [
     [66, 34],
@@ -132,7 +132,7 @@ function TableTop({ width, recipeId }: { width: number; recipeId: string }) {
         ))}
       </Svg>
       <View style={styles.dish} pointerEvents="none">
-        <VocabIcon id={recipeGlyph[recipeId] ?? 'soup'} size={width * 0.3} />
+        <VocabIcon id={recipeGlyph[recipeId]} size={width * 0.3} />
       </View>
     </View>
   );

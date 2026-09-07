@@ -14,9 +14,32 @@ const HI_STRONG = 'rgba(255,255,255,0.55)';
 const dk = (c: string, a = 0.18) => mix(c, palette.navy, a);
 const lt = (c: string, a = 0.3) => mix(c, '#FFFFFF', a);
 
-/** rule 3 — every grounded object gets a contact ellipse, ry ≈ rx × 0.22. */
+/**
+ * rule 3 — every grounded object gets a contact ellipse, ry ≈ rx × 0.22.
+ *
+ * TWO ellipses, not one. A single pass at `SHADOW_OPACITY` is the right weight
+ * for a prop drawn at scene size; these icons are drawn at 28–44 px in a tray,
+ * where the same 12 % wash spreads too thin to read at all and every onion,
+ * grape and cupcake floated like a sticker.
+ *
+ * So: the wide soft pass stays exactly as it was — the ambient occlusion — and
+ * a tight darker core goes under it, where the object actually touches. That
+ * core is what the eye reads as contact, and it costs one node.
+ *
+ * The house constants are untouched, so nothing outside this sheet moves.
+ */
 const Ground = ({ cy = 44, rx = 15, cx = 24 }: { cy?: number; rx?: number; cx?: number }) => (
-  <Ellipse cx={cx} cy={cy} rx={rx} ry={shadowRy(rx)} fill={SHADOW_FILL} opacity={SHADOW_OPACITY} />
+  <>
+    <Ellipse cx={cx} cy={cy} rx={rx} ry={shadowRy(rx)} fill={SHADOW_FILL} opacity={SHADOW_OPACITY} />
+    <Ellipse
+      cx={cx}
+      cy={cy + shadowRy(rx) * 0.22}
+      rx={rx * 0.56}
+      ry={shadowRy(rx) * 0.62}
+      fill={SHADOW_FILL}
+      opacity={SHADOW_OPACITY * 1.5}
+    />
+  </>
 );
 
 /** Sky objects float — they get no contact ellipse. */
