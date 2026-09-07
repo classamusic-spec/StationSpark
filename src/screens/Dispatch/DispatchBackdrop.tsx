@@ -165,16 +165,155 @@ export function BellTower({ swing, top = 30 }: { swing: SharedValue<number>; top
 
 /* ── the backdrop ─────────────────────────────────────────────────── */
 
+/* ── the wall the board hangs on ──────────────────────────────────── */
+
+/**
+ * THE MIDDLE OF THE SCREEN WAS PAPER.
+ *
+ * Dispatch draws sky and a station roof at the top, the console and Captain Bea
+ * at the foot, and between them it drew a plain cream rectangle for the slips
+ * to sit on. With two jobs on today's board that left a quarter of a tablet as
+ * a flat field with nothing in it — the same "band of raw paint across the
+ * middle" the art direction calls the blandest thing a backdrop can do.
+ *
+ * So the board hangs in a room. A dado rail and a skirting give the wall a
+ * floor to stand on, and the watch room's own furniture stands on it: the gear
+ * pegs by the door, the bench the crew wait on, the wall clock, a plant on the
+ * sill. It is drawn quiet on purpose — one value step from the wall, no
+ * saturated hue — because the slips are what the child is reading, and this is
+ * only what stops them floating.
+ */
+const WallDressing = memo(function WallDressing({ w, h, furniture }: { w: number; h: number; furniture: boolean }) {
+  /*
+   * The dado sits LOW. First attempt put it halfway up, which is where it would
+   * be in a real room — and gave the screen 280 px of empty floor instead of
+   * 280 px of empty page. Wall is a surface that is allowed to be plain; floor
+   * that stretches away with nothing on it is not. So the room is a shallow
+   * shelf just above the console: the crew's furniture stands on it, and
+   * everything above is wall, which is exactly where the slips want to be.
+   */
+  const rail = Math.round(h * 0.78);
+  const floor = h - rail;
+  const floorTone = '#E9D6B2';
+  const lit = 'rgba(255,255,255,0.4)';
+  const ink = 'rgba(31,42,90,0.12)';
+
+  /* everything stands ON the dado line, spread across the width we are given */
+  const lockerW = Math.min(180, w * 0.2);
+  const lockerH = Math.min(rail * 0.62, 138);
+  const lockerX = Math.max(16, w * 0.045);
+  const benchW = Math.min(240, w * 0.24);
+  const benchX = w * 0.42;
+  const plantX = w - Math.max(80, w * 0.1);
+  const hoseX = w - Math.max(210, w * 0.24);
+
+  return (
+    <Svg width={w} height={h} pointerEvents="none">
+      {/* the wall is the board's own cream — painting it again only made a
+          seam across the page — so only the floor plane is drawn */}
+      <Rect x={0} y={rail} width={w} height={floor} fill={floorTone} />
+      {/* the dado rail itself, with its lit top edge */}
+      <Rect x={0} y={rail - 9} width={w} height={11} rx={3} fill={palette.tanDark} />
+      <Rect x={0} y={rail - 9} width={w} height={4} rx={2} fill={lit} />
+      <Rect x={0} y={rail + 2} width={w} height={5} fill={ink} />
+      {/* skirting, where the floor meets the console */}
+      <Rect x={0} y={h - 12} width={w} height={12} fill={palette.tanDark} opacity={0.5} />
+
+      {/*
+        The furniture, when the board leaves room for it. The two full-width
+        bands above always draw — a floor plane cannot be sliced badly, it is a
+        stripe — but a locker with a mission slip through its middle reads as a
+        rendering bug, so on a long board the room is simply bare.
+      */}
+      {!furniture ? null : (
+        <G>
+      {/* a bank of lockers, standing on the dado line like the Locker room's */}
+      <Rect x={lockerX} y={rail - lockerH} width={lockerW} height={lockerH} rx={9} fill={palette.navySoft} />
+      <Rect x={lockerX} y={rail - lockerH} width={lockerW} height={lockerH * 0.1} rx={5} fill={lit} opacity={0.5} />
+      {[0, 1, 2].map((i) => (
+        <G key={`lk${i}`}>
+          <Rect
+            x={lockerX + 7 + i * ((lockerW - 14) / 3)}
+            y={rail - lockerH + 8}
+            width={(lockerW - 14) / 3 - 5}
+            height={lockerH - 16}
+            rx={6}
+            fill="#4E5C93"
+          />
+          <Rect
+            x={lockerX + 7 + i * ((lockerW - 14) / 3)}
+            y={rail - lockerH + 8}
+            width={(lockerW - 14) / 3 - 5}
+            height={(lockerH - 16) * 0.34}
+            rx={6}
+            fill={lit}
+            opacity={0.18}
+          />
+          {/* name card and handle */}
+          <Rect
+            x={lockerX + 13 + i * ((lockerW - 14) / 3)}
+            y={rail - lockerH + 22}
+            width={(lockerW - 14) / 3 - 17}
+            height={11}
+            rx={3}
+            fill={palette.cream}
+            opacity={0.9}
+          />
+          <Circle cx={lockerX + 13 + i * ((lockerW - 14) / 3)} cy={rail - lockerH * 0.42} r={3.6} fill={palette.safetyYellow} />
+        </G>
+      ))}
+      <Ellipse cx={lockerX + lockerW / 2} cy={rail + 5} rx={lockerW * 0.52} ry={5} fill={SHADOW_FILL} opacity={SHADOW_OPACITY} />
+
+      {/* the bench the crew wait on, with a helmet left on it */}
+      <Rect x={benchX} y={rail - 46} width={benchW} height={13} rx={6} fill={palette.wood} />
+      <Rect x={benchX} y={rail - 46} width={benchW} height={5} rx={2.5} fill={lit} />
+      <Rect x={benchX + 14} y={rail - 34} width={9} height={34} rx={4.5} fill={palette.woodDark} />
+      <Rect x={benchX + benchW - 23} y={rail - 34} width={9} height={34} rx={4.5} fill={palette.woodDark} />
+      <Path d={`M ${benchX + benchW * 0.6} ${rail - 46} a 23 18 0 0 1 46 0 z`} fill={palette.engineRed} />
+      <Path d={`M ${benchX + benchW * 0.6} ${rail - 46} a 23 18 0 0 1 20 -17 l 0 17 z`} fill={palette.engineRedLight} opacity={0.55} />
+      <Rect x={benchX + benchW * 0.6 - 5} y={rail - 50} width={56} height={8} rx={4} fill={palette.engineRedDark} />
+      <Ellipse cx={benchX + benchW / 2} cy={rail + 4} rx={benchW * 0.5} ry={5} fill={SHADOW_FILL} opacity={SHADOW_OPACITY} />
+
+      {/* a coiled hose on its stand */}
+      <Rect x={hoseX} y={rail - 14} width={62} height={14} rx={5} fill={palette.slate} />
+      <Circle cx={hoseX + 31} cy={rail - 40} r={26} fill={palette.charcoal} />
+      <Circle cx={hoseX + 31} cy={rail - 40} r={20} fill={palette.safetyYellow} />
+      <Circle cx={hoseX + 31} cy={rail - 40} r={13} fill={palette.goldDark} />
+      <Circle cx={hoseX + 31} cy={rail - 40} r={6} fill={palette.slateLight} />
+      <Path d={`M ${hoseX + 22} ${rail - 47} a 12 12 0 0 1 8 -6`} stroke={lit} strokeWidth={3} fill="none" strokeLinecap="round" />
+      <Ellipse cx={hoseX + 31} cy={rail + 3} rx={36} ry={5} fill={SHADOW_FILL} opacity={SHADOW_OPACITY} />
+
+      {/* and a plant, because every station has one nobody remembers watering */}
+      <Path d={`M ${plantX - 20} ${rail - 34} h 40 l -6 34 h -28 z`} fill={palette.tanDark} />
+      <Path d={`M ${plantX - 20} ${rail - 34} h 13 l -4 34 h -9 z`} fill={ink} />
+      <Rect x={plantX - 23} y={rail - 39} width={46} height={11} rx={5} fill={palette.wood} />
+      <Ellipse cx={plantX - 12} cy={rail - 48} rx={17} ry={12} fill={LEAF_BACK} />
+      <Ellipse cx={plantX + 11} cy={rail - 53} rx={18} ry={13} fill={LEAF} />
+      <Ellipse cx={plantX - 1} cy={rail - 65} rx={15} ry={11} fill={LEAF_LIT} />
+      <Ellipse cx={plantX} cy={rail + 3} rx={28} ry={5} fill={SHADOW_FILL} opacity={SHADOW_OPACITY} />
+        </G>
+      )}
+    </Svg>
+  );
+});
+
 export interface DispatchBackdropProps {
   /** height of the hero band; the cream board starts just under it */
   hero?: number;
+  /** height of the console strip at the foot — the wall stops on top of it */
+  desk?: number;
+  /** the board is short enough that the room's furniture will not be sliced */
+  room?: boolean;
 }
 
 /** Hero band + the cream board the dispatch slips are pinned to. */
-export function DispatchBackdrop({ hero }: DispatchBackdropProps) {
+export function DispatchBackdrop({ hero, desk, room = false }: DispatchBackdropProps) {
   const { width, height } = useWindowDimensions();
   const tablet = Math.min(width, height) >= 600;
   const h = hero ?? heroHeight(tablet, height);
+  const deskH = desk ?? deskHeight(tablet, height);
+  /* the wall runs from under the hero band down onto the console */
+  const wallH = Math.max(0, height - (h - 14) - deskH);
   const drift = useLoop(idle.cloudDriftMs);
   const clouds = useAnimatedStyle(() => ({ transform: [{ translateX: -30 + drift.value * 60 }] }));
 
@@ -200,6 +339,13 @@ export function DispatchBackdrop({ hero }: DispatchBackdropProps) {
       {/* the board: a cream page with a soft top edge, so the slips are pinned
           to something instead of floating on raw sky (rules #7 and #10) */}
       <View style={[styles.board, { top: h - 14 }]} />
+
+      {/* the watch room the board hangs in — see `WallDressing` */}
+      {wallH > 170 ? (
+        <View style={[styles.wall, { top: h - 14 + wallH - Math.min(wallH, 300), height: Math.min(wallH, 300) }]}>
+          <WallDressing w={width} h={Math.min(wallH, 300)} furniture={room} />
+        </View>
+      ) : null}
     </View>
   );
 }
@@ -345,6 +491,7 @@ export function DispatchDesk({ line, safeBottom = 0 }: DispatchDeskProps) {
 
 const styles = StyleSheet.create({
   cloudBand: { position: 'absolute', left: -30, top: 0 },
+  wall: { position: 'absolute', left: 0, right: 0, overflow: 'hidden' },
   hero: { position: 'absolute', left: 0, right: 0, top: 0 },
   board: {
     position: 'absolute',

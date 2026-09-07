@@ -228,9 +228,12 @@ export function DispatchScreen() {
   const cols = layout.columns(340, 3);
   const cellWidth = (layout.gridWidth - spacing.md * 2 - GRID_GAP * (cols - 1)) / cols;
   const roomy = cellWidth >= 400;
+  /* one row of slips leaves the watch room behind them visible; more than one
+     and the backdrop keeps its floor but puts the furniture away */
+  const showRoom = Math.ceil(list.length / cols) <= 1;
 
   return (
-    <ScreenFrame backdrop={<DispatchBackdrop hero={hero} />} chrome={<TopBar right={<StarCounter stars={shift.starsEarned} />} />} safeBottom={false}>
+    <ScreenFrame backdrop={<DispatchBackdrop hero={hero} desk={desk} room={showRoom} />} chrome={<TopBar right={<StarCounter stars={shift.starsEarned} />} />} safeBottom={false}>
       <BellTower swing={swing} top={hero - 182} />
       <DingDing visible={ding} />
 

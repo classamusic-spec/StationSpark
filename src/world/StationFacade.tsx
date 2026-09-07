@@ -281,9 +281,17 @@ function AddressPlate({ x, y }: { x: number; y: number }) {
 }
 
 export interface StationFacadeProps {
+  /** the CORE façade's width in px — the wings are extra, on top of this */
   width: number;
   /** station upgrades the child has bought — they change the art */
   unlocked?: readonly StationUpgradeId[];
+  /**
+   * How far the side blocks reach past the core, in design units per side.
+   * 0 on a phone, where the core already fills the frame; on a wider window
+   * this is what turns a portrait building into a landscape one. See
+   * `StationWings`.
+   */
+  wings?: number;
 }
 
 /**
@@ -292,14 +300,201 @@ export interface StationFacadeProps {
  * screen) and two big red garage doors. Purely static art — memoized, because
  * the whole station lives under drifting clouds and animated crew.
  */
-export const StationFacade = memo(function StationFacade({ width, unlocked = [] }: StationFacadeProps) {
+/* ------------------------------------------------------------------ *
+ * The wings
+ * ------------------------------------------------------------------ */
+
+/**
+ * THE STATION IS PORTRAIT, AND A TABLET IS NOT.
+ *
+ * The façade is 360 × 548, so on a landscape window it is the HEIGHT that caps
+ * how big the building can be: even with the road band taken to nothing, an
+ * uncropped façade tops out near half the width of a 1024 px screen. The
+ * building was tall and thin with the town parked either side of it, and no
+ * amount of spacing was going to fix that — the shape was wrong for the frame.
+ *
+ * The answer is not to crop the bell tower or the name board off the top. It is
+ * to give the firehouse the two side blocks a real one has, so the BUILDING is
+ * landscape when the window is. They are drawn in the same design units as the
+ * core, from the core's own edges outward, so nothing inside the façade moves:
+ * the six doors, the sign, the bell and the bays keep every coordinate they had.
+ *
+ * Massing steps up towards the middle — low outer block, taller inner block,
+ * tallest core — so the eye still lands on the bell gable, and both wings stop
+ * a long way below the main eaves. They stand on the core's own base line and
+ * carry its base course across, so the frontage reads as one building rather
+ * than three that happen to touch.
+ */
+function StationWings({ w }: { w: number }) {
+  /** the inner block is fixed; the outer one takes what is left */
+  const INNER = 78;
+  const outer = w - INNER - 4;
+  const showOuter = outer >= 34;
+  /* wall foot, base-course top: shared with the core, which is the point */
+  const FOOT = 488;
+  const BASE = 412;
+  const R = FACADE_VB.w;
+  /* the outer blocks' near edges */
+  const lOut = -w;
+  const rOut = R + INNER - 2;
+
+  return (
+    <G>
+      {/* ── the masses, back to front ────────────────────────────────── */}
+
+      {/* left: the hose tower. A real firehouse hangs its wet hose in one, and
+          it is the only vertical on this side — stopped a long way below the
+          main eaves so it can never compete with the bell gable. */}
+      <Rect x={-INNER} y={244} width={INNER + 10} height={FOOT - 244} rx={6} fill="url(#wallGrad)" />
+      <Rect x={-INNER + 8} y={254} width={INNER - 10} height={FOOT - 264} rx={8} fill={palette.creamDeep} />
+      <Rect x={-INNER} y={244} width={INNER + 10} height={15} rx={6} fill="url(#soffit)" />
+      <Path d={`M ${-INNER - 10} 246 L ${-INNER / 2} 214 L 16 246 Z`} fill="url(#roofGrad)" />
+      <Path d={`M ${-INNER / 2} 214 L 16 246 L 8 246 L ${-INNER / 2 + 5} 218 Z`} fill={SHADE} />
+      <Rect x={-INNER - 12} y={240} width={INNER + 30} height={13} rx={5} fill={palette.engineRedDark} />
+      <Rect x={-INNER - 12} y={240} width={INNER + 30} height={4} rx={2} fill={palette.engineRedLight} opacity={0.6} />
+      {/* the louvres it breathes through */}
+      <Rect x={-INNER + 16} y={276} width={46} height={64} rx={5} fill={palette.tanDark} />
+      {[0, 1, 2, 3, 4].map((i) => (
+        <Rect key={`lv${i}`} x={-INNER + 20} y={282 + i * 12} width={38} height={7} rx={3} fill={palette.charcoal} opacity={0.5} />
+      ))}
+      <Rect x={-INNER + 18} y={356} width={42} height={40} rx={6} fill={palette.tanDark} />
+      <Rect x={-INNER + 22} y={360} width={34} height={32} rx={4} fill="#204A86" />
+      <Rect x={-INNER + 22} y={360} width={34} height={14} rx={4} fill="#3C6FB4" />
+
+      {/* left outer: the low store, running off towards the neighbours */}
+      {showOuter ? (
+        <G>
+          <Rect x={lOut} y={338} width={outer + 8} height={FOOT - 338} rx={6} fill="url(#wallGrad)" />
+          <Rect x={lOut} y={338} width={outer + 8} height={13} rx={6} fill="url(#soffit)" />
+          <Rect x={lOut - 6} y={326} width={outer + 22} height={15} rx={6} fill={palette.engineRedDark} />
+          <Rect x={lOut - 6} y={326} width={outer + 22} height={4} rx={2} fill={palette.engineRedLight} opacity={0.6} />
+          <Rect x={lOut + outer * 0.18} y={356} width={outer * 0.58} height={26} rx={5} fill={palette.tanDark} />
+          <Rect x={lOut + outer * 0.18 + 4} y={360} width={outer * 0.58 - 8} height={18} rx={3} fill="#204A86" />
+          <Rect x={lOut + outer * 0.18 + 4} y={360} width={outer * 0.58 - 8} height={8} rx={3} fill="#3C6FB4" />
+        </G>
+      ) : null}
+
+      {/* right: the training annex */}
+      <Rect x={R - 10} y={256} width={INNER + 10} height={FOOT - 256} rx={6} fill="url(#wallGrad)" />
+      <Rect x={R + 2} y={266} width={INNER - 10} height={FOOT - 276} rx={8} fill={palette.creamDeep} />
+      <Rect x={R - 10} y={256} width={INNER + 10} height={15} rx={6} fill="url(#soffit)" />
+      <Path d={`M ${R - 16} 258 L ${R + INNER / 2} 228 L ${R + INNER + 12} 258 Z`} fill="url(#roofGrad)" />
+      <Path d={`M ${R + INNER / 2} 228 L ${R + INNER + 12} 258 L ${R + INNER + 4} 258 L ${R + INNER / 2 + 5} 232 Z`} fill={SHADE} />
+      <Rect x={R - 18} y={252} width={INNER + 32} height={13} rx={5} fill={palette.engineRedDark} />
+      <Rect x={R - 18} y={252} width={INNER + 32} height={4} rx={2} fill={palette.engineRedLight} opacity={0.6} />
+      {[0, 1].map((i) => (
+        <G key={`rw${i}`}>
+          <Rect x={R + 6 + i * 36} y={288} width={30} height={44} rx={6} fill={palette.tanDark} />
+          <Rect x={R + 10 + i * 36} y={292} width={22} height={36} rx={4} fill="#204A86" />
+          <Rect x={R + 10 + i * 36} y={292} width={22} height={15} rx={4} fill="#3C6FB4" />
+        </G>
+      ))}
+      {/* the drill board — a training annex has one */}
+      <Rect x={R + 8} y={348} width={62} height={46} rx={5} fill={palette.woodDark} />
+      <Rect x={R + 12} y={352} width={54} height={38} rx={4} fill="#2E3A46" />
+      <Rect x={R + 12} y={352} width={54} height={11} rx={4} fill={HIGHLIGHT} opacity={0.5} />
+      <Rect x={R + 18} y={368} width={32} height={4} rx={2} fill={palette.white} opacity={0.55} />
+      <Rect x={R + 18} y={377} width={22} height={4} rx={2} fill={palette.white} opacity={0.45} />
+
+      {/* right outer: the lean-to the crew eat under */}
+      {showOuter ? (
+        <G>
+          <Rect x={rOut} y={344} width={outer + 8} height={FOOT - 344} rx={6} fill="url(#wallGrad)" />
+          <Rect x={rOut} y={344} width={outer + 8} height={13} rx={6} fill="url(#soffit)" />
+          <Rect x={rOut - 6} y={332} width={outer + 22} height={15} rx={6} fill={palette.engineRedDark} />
+          <Rect x={rOut - 6} y={332} width={outer + 22} height={4} rx={2} fill={palette.engineRedLight} opacity={0.6} />
+        </G>
+      ) : null}
+
+      {/*
+        ── the base course, in ONE run ─────────────────────────────────
+        This band is what makes the frontage a building instead of three that
+        happen to touch: the core's own brick base, carried the whole way out
+        under both wings at exactly its height. Drawn after every wall and
+        before every opening, so the doors below sit *in* it.
+      */}
+      <Rect x={-w - 2} y={BASE} width={w * 2 + FACADE_VB.w + 4} height={FOOT - BASE} rx={8} fill="#C96A3A" />
+      <Rect x={-w - 2} y={BASE} width={w * 2 + FACADE_VB.w + 4} height={8} rx={4} fill="#A2512A" />
+
+      {/* ── the openings and the ground-level props ──────────────────── */}
+
+      {/* a crew door in each inner block */}
+      {[-INNER + 14, R + 18].map((dx, i) => (
+        <G key={`door${i}`}>
+          <Rect x={dx} y={424} width={46} height={FOOT - 424} rx={6} fill="#4A2214" />
+          <Rect x={dx + 4} y={428} width={38} height={FOOT - 428} rx={5} fill={palette.tan} />
+          <Rect x={dx + 4} y={428} width={38} height={7} rx={3} fill={HIGHLIGHT} />
+          <Circle cx={dx + (i === 0 ? 36 : 8)} cy={458} r={3.4} fill={palette.charcoalDark} />
+        </G>
+      ))}
+
+      {showOuter ? (
+        <G>
+          {/* the store's roller shutter */}
+          <Rect x={lOut + outer * 0.16} y={424} width={outer * 0.62} height={FOOT - 424} rx={5} fill="#4A2214" />
+          <Rect x={lOut + outer * 0.16 + 4} y={428} width={outer * 0.62 - 8} height={FOOT - 428} rx={4} fill={palette.slate} />
+          {[0, 1, 2].map((i) => (
+            <Rect
+              key={`sh${i}`}
+              x={lOut + outer * 0.16 + 7}
+              y={436 + i * 18}
+              width={outer * 0.62 - 14}
+              height={4}
+              rx={2}
+              fill={palette.slateLight}
+              opacity={0.7}
+            />
+          ))}
+
+          {/* the awning, and the bench under it */}
+          <Path d={`M ${rOut + 4} 388 h ${outer} l -7 26 h ${-(outer - 14)} Z`} fill={palette.cream} />
+          {[0, 1, 2].map((i) => (
+            <Path
+              key={`aw${i}`}
+              d={`M ${rOut + 8 + i * ((outer - 8) / 3)} 388 h ${(outer - 8) / 6} l -7 26 h ${-((outer - 8) / 6)} Z`}
+              fill={palette.engineRed}
+              opacity={0.85}
+            />
+          ))}
+          <Rect x={rOut + 2} y={412} width={outer + 4} height={5} rx={2.5} fill={palette.tanDark} />
+          <Rect x={rOut + 14} y={452} width={Math.max(30, outer - 32)} height={8} rx={4} fill={palette.wood} />
+          <Rect x={rOut + 18} y={460} width={6} height={26} rx={3} fill={palette.woodDark} />
+          <Rect x={rOut + Math.max(36, outer - 26)} y={460} width={6} height={26} rx={3} fill={palette.woodDark} />
+        </G>
+      ) : null}
+
+      {/* seated on the ground, like everything else in this world */}
+      <Ellipse cx={-w / 2} cy={FOOT + 3} rx={w / 2} ry={5} fill={SHADOW_FILL} opacity={SHADOW_OPACITY} />
+      <Ellipse cx={FACADE_VB.w + w / 2} cy={FOOT + 3} rx={w / 2} ry={5} fill={SHADOW_FILL} opacity={SHADOW_OPACITY} />
+    </G>
+  );
+}
+
+export const StationFacade = memo(function StationFacade({ width, unlocked = [], wings = 0 }: StationFacadeProps) {
   const has = (id: StationUpgradeId) => unlocked.includes(id);
   const height = (FACADE_VB.h / FACADE_VB.w) * width;
+  const scale = width / FACADE_VB.w;
   const tileW = (GRID.w - GRID.gap * (GRID.cols - 1)) / GRID.cols;
   const tileH = (GRID.h - GRID.gap * (GRID.rows - 1)) / GRID.rows;
 
+  /*
+   * The wings grow OUTWARD from the core's own box, so the viewBox widens and
+   * its origin moves left while every coordinate inside stays exactly where it
+   * was. The screen positions this by the core's width, so the drawing is
+   * pulled back by the same amount it gained — the core stays put and the
+   * building simply reaches further either side.
+   */
+  const vbX = -wings;
+  const vbW = FACADE_VB.w + wings * 2;
+
   return (
-    <Svg width={width} height={height} viewBox={`0 0 ${FACADE_VB.w} ${FACADE_VB.h}`} pointerEvents="none">
+    <Svg
+      width={vbW * scale}
+      height={height}
+      viewBox={`${vbX} 0 ${vbW} ${FACADE_VB.h}`}
+      style={{ position: 'absolute', left: -wings * scale, top: 0 }}
+      pointerEvents="none"
+    >
       <Defs>
         <LinearGradient id="wallGrad" x1="0" y1="0" x2="0" y2="1">
           <Stop offset="0" stopColor="#F8E2B6" />
@@ -324,6 +519,9 @@ export const StationFacade = memo(function StationFacade({ width, unlocked = [] 
           <Stop offset="1" stopColor="#1F2A5A" stopOpacity={0} />
         </LinearGradient>
       </Defs>
+
+      {/* the side blocks, behind the core so its return overlaps them */}
+      {wings > 0 ? <StationWings w={wings} /> : null}
 
       {/* ── training tower (upgrade) — behind everything ─────────────── */}
       {has('training-tower') ? (

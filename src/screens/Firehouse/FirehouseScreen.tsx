@@ -93,6 +93,10 @@ const TOP_MIN = 28;
 /** the CTA and its caption, plus the air the road keeps around them */
 const CTA_BLOCK = 138;
 const CTA_AIR = 42;
+/** the widest the side blocks may reach, in façade design units, per side */
+const WING_MAX = 152;
+/** below this they read as a stray edge rather than a building — so: none */
+const WING_MIN = 40;
 
 const clamp = (n: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, n));
 
@@ -188,6 +192,19 @@ export function FirehouseScreen() {
     const width = clamp(Math.min(W - sideGap * 2, (H - wanted - topAir) * ratio, 900), 260, 900);
     const station = facadeLayout(width);
     const left = (W - width) / 2;
+
+    /*
+     * How far the side blocks may reach. The façade is portrait, so on a wide
+     * window the core is capped by HEIGHT and there is nothing to be gained by
+     * letting it grow sideways — it simply cannot. The wings take that room
+     * instead: they fill whatever is left beside the core, up to the point where
+     * the building would start to look like a terrace rather than a station.
+     * Below ~40 units they would read as a stray edge, so they are off — which
+     * is every phone, where the core already runs nearly frame to frame.
+     */
+    const roomEachSide = (W - width) / 2 - 4;
+    const wingUnits = Math.min(WING_MAX, roomEachSide / (width / FACADE_VB.w));
+    const wings = wingUnits >= WING_MIN ? Math.round(wingUnits) : 0;
     /* on a short window the road gives way before the roof does */
     const road = Math.round(
       Math.max(roadFloor, Math.min(wanted, H - topAir - KERB - station.height)),
@@ -211,6 +228,7 @@ export function FirehouseScreen() {
       pave,
       left,
       station,
+      wings,
       crossing,
       crew,
       crewBottom,
@@ -309,7 +327,7 @@ export function FirehouseScreen() {
                 zoomStyle,
               ]}
             >
-              <StationFacade width={scene.station.width} unlocked={unlocked} />
+              <StationFacade width={scene.station.width} unlocked={unlocked} wings={scene.wings} />
 
               {/* living details, anchored to the façade */}
               <View style={[styles.abs, { left: scene.station.bell.x, top: scene.station.bell.y }]} pointerEvents="none">
