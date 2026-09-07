@@ -49,6 +49,10 @@ export function StallFront({ width }: { width: number }) {
           <Stop offset="0" stopColor="#1F2A5A" stopOpacity={0} />
           <Stop offset="1" stopColor="#1F2A5A" stopOpacity={0.22} />
         </LinearGradient>
+        <LinearGradient id="stallAwnCast" x1="0" y1="0" x2="0" y2="1">
+          <Stop offset="0" stopColor="#1F2A5A" stopOpacity={0.16} />
+          <Stop offset="1" stopColor="#1F2A5A" stopOpacity={0} />
+        </LinearGradient>
       </Defs>
       {/* back wall of the stall — warm tan planks so the cream awning reads */}
       <Rect x={16} y={30} width={308} height={140} rx={10} fill={palette.tanDark} />
@@ -98,7 +102,10 @@ export function StallFront({ width }: { width: number }) {
       {scallops(stripes, w, 30, w / stripes / 2)}
       <Rect x={0} y={0} width={w} height={8} rx={4} fill={SHEEN} />
       <Rect x={0} y={26} width={w} height={11} fill="url(#stallAwnFold)" />
-      <Rect x={16} y={37} width={308} height={26} fill={SHADE} opacity={0.55} />
+      {/* the shade the canvas throws down the stall front — it starts BELOW
+          the scallops (which reach y=47), or it washes over the valance and
+          cuts a straight line across the middle of the awning */}
+      <Rect x={16} y={48} width={308} height={22} fill="url(#stallAwnCast)" />
 
       {/* hanging price board */}
       <Path d={`M${STALL_SIGN.x + 14} 32 v 18 M${STALL_SIGN.x + STALL_SIGN.w - 14} 32 v 18`} stroke={palette.woodDark} strokeWidth={3} />
@@ -325,6 +332,31 @@ export function CounterGrain() {
         <Rect x={0} y={0} width={100} height={100} fill="url(#ctrTop)" />
         <Path d={grain} fill="rgba(140,88,40,0.3)" />
         <Path d="M 8 34 Q 50 30 94 35 Q 50 33 8 37 z" fill="rgba(255,232,196,0.22)" />
+      </Svg>
+    </View>
+  );
+}
+
+/**
+ * The cash tray sunk into the counter top. A flat cream rectangle is a hole in
+ * the drawing; a well is dark under the lip it is cut into and bright where
+ * the light reaches its far edge.
+ */
+export function TrayWell({ radius }: { radius?: number }) {
+  return (
+    <View
+      style={radius === undefined ? StyleSheet.absoluteFill : [StyleSheet.absoluteFill, { borderRadius: radius, overflow: 'hidden' }]}
+      pointerEvents="none"
+    >
+      <Svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none">
+        <Defs>
+          <LinearGradient id="trayWell" x1="0" y1="0" x2="0.4" y2="1">
+            <Stop offset="0" stopColor="#1F2A5A" stopOpacity={0.17} />
+            <Stop offset="0.36" stopColor="#1F2A5A" stopOpacity={0.03} />
+            <Stop offset="1" stopColor="#FFFFFF" stopOpacity={0.55} />
+          </LinearGradient>
+        </Defs>
+        <Rect x={0} y={0} width={100} height={100} fill="url(#trayWell)" />
       </Svg>
     </View>
   );

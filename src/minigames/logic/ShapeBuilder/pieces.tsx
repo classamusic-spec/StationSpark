@@ -166,10 +166,13 @@ export function BlueprintSheet({ size }: { size: number }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 100 100">
       <Defs>
-        <RadialGradient id="bpLamp" cx="24%" cy="14%" r="92%">
-          <Stop offset="0" stopColor="#7C8CC8" stopOpacity={0.55} />
-          <Stop offset="0.55" stopColor="#5A6AA8" stopOpacity={0.18} />
-          <Stop offset="1" stopColor={palette.navy} stopOpacity={0.32} />
+        {/* the drawing-office lamp, off to the upper left: the plate is
+            washed out under it and sinks into the far corner of the board */}
+        <RadialGradient id="bpLamp" cx="22%" cy="12%" r="98%">
+          <Stop offset="0" stopColor="#8C9CD6" stopOpacity={0.6} />
+          <Stop offset="0.42" stopColor="#6474B4" stopOpacity={0.24} />
+          <Stop offset="0.75" stopColor={palette.navy} stopOpacity={0.14} />
+          <Stop offset="1" stopColor={palette.navy} stopOpacity={0.38} />
         </RadialGradient>
         <LinearGradient id="bpEdge" x1="0" y1="0" x2="1" y2="1">
           <Stop offset="0" stopColor="#FFFFFF" stopOpacity={0.4} />
@@ -181,10 +184,6 @@ export function BlueprintSheet({ size }: { size: number }) {
       <Rect x={0} y={0} width={100} height={100} rx={4} fill={palette.navySoft} />
       <Rect x={0} y={0} width={100} height={100} rx={4} fill={palette.navy} opacity={0.25} />
       <Rect x={0} y={0} width={100} height={100} rx={4} fill="url(#bpLamp)" />
-      {/* the unevenness of cheap stock: two soft patches, not a hatch — a
-          drawn hatch at this size reads as stripes printed on the plan */}
-      <Ellipse cx={30} cy={26} rx={38} ry={30} fill="#FFFFFF" opacity={0.05} />
-      <Ellipse cx={76} cy={72} rx={32} ry={26} fill={palette.navy} opacity={0.07} />
       {/* the print */}
       {lines.map((v) => (
         <G key={v}>

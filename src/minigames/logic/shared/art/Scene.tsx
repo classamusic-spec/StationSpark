@@ -570,6 +570,16 @@ export function BoardFrame({
     <View style={[{ width, height }, style]}>
       <View style={StyleSheet.absoluteFill} pointerEvents="none">
         <Svg width={width} height={height} viewBox={`0 0 ${width} ${height}`}>
+          <Defs>
+            {/* the board is a mounted panel under the room's light: its face is
+                brighter where the light lands and sinks into its own frame in
+                the far corner. A flat face made the frame read as a sticker. */}
+            <LinearGradient id="bfFace" x1="0" y1="0" x2="1" y2="1">
+              <Stop offset="0" stopColor="#FFFFFF" stopOpacity={0.5} />
+              <Stop offset="0.5" stopColor="#FFFFFF" stopOpacity={0.06} />
+              <Stop offset="1" stopColor={palette.navy} stopOpacity={0.09} />
+            </LinearGradient>
+          </Defs>
           <Rect x={2} y={5} width={width - 4} height={height - 4} rx={r} fill={SHADE_SOFT} />
           <Rect x={0} y={0} width={width} height={height} rx={r} fill={t.frameDark} />
           <Rect x={0} y={0} width={width} height={height - 5} rx={r} fill={t.frame} />
@@ -590,6 +600,16 @@ export function BoardFrame({
             rx={Math.max(6, r - 8)}
             fill={t.face}
           />
+          <Rect
+            x={pad * 0.62}
+            y={pad * 0.62}
+            width={width - pad * 1.24}
+            height={height - pad * 1.24 - 3}
+            rx={Math.max(6, r - 8)}
+            fill="url(#bfFace)"
+          />
+          {/* the frame casts onto its own recessed face along the lit edges */}
+          <Rect x={pad * 0.62} y={pad * 0.62} width={width - pad * 1.24} height={Math.max(3, pad * 0.3)} rx={pad * 0.15} fill={SHADE_SOFT} />
           {[
             [pad * 0.62 + bolt * 2.2, pad * 0.62 + bolt * 2.2],
             [width - pad * 0.62 - bolt * 2.2, pad * 0.62 + bolt * 2.2],
@@ -975,13 +995,15 @@ export const StoreRoom = memo(function StoreRoom({
           <Stop offset="1" stopColor="#DCC69C" />
         </LinearGradient>
         {/*
-         * The store room is lit by one high window on the left. This is the
-         * shaft of it across the boarding — the thing that turns the biggest
-         * flat surface in the game into a wall that a light is falling on.
+         * The store room is lit by one high window off to the left. This is
+         * that light lying across the boarding — the thing that turns the
+         * biggest flat surface in the game into a wall a light falls on. It is
+         * a wash and not a shaft on purpose: a drawn shaft has an edge, and an
+         * edge in the middle of a wall reads as a mistake rather than as light.
          */}
-        <LinearGradient id="srShaft" x1="0" y1="0" x2="1" y2="1">
-          <Stop offset="0" stopColor="#FFFFFF" stopOpacity={0.34} />
-          <Stop offset="0.55" stopColor="#FFFFFF" stopOpacity={0.08} />
+        <LinearGradient id="srShaft" x1="0" y1="0" x2="0.9" y2="0.55">
+          <Stop offset="0" stopColor="#FFFFFF" stopOpacity={0.4} />
+          <Stop offset="0.45" stopColor="#FFFFFF" stopOpacity={0.1} />
           <Stop offset="1" stopColor="#FFFFFF" stopOpacity={0} />
         </LinearGradient>
       </Defs>
@@ -994,7 +1016,7 @@ export const StoreRoom = memo(function StoreRoom({
           <Rect x={0} y={(floorTop / 7) * (i + 1) + 0.4} width={w} height={1.6} rx={0.8} fill={HILITE_SOFT} />
         </G>
       ))}
-      <Path d={`M 0 0 L ${w * 0.62} 0 L ${w * 0.14} ${floorTop} L 0 ${floorTop} z`} fill="url(#srShaft)" />
+      <Rect x={0} y={0} width={w} height={floorTop + 4} fill="url(#srShaft)" />
 
       {/* pegboard of gear */}
       <G>
@@ -1281,6 +1303,22 @@ export const ClockTower = memo(function ClockTower({
             fill={side === 0 ? HILITE_SOFT : SHADE_SOFT}
           />
         ))}
+        {/*
+         * DENTILS. The band of shaft the child stares past on the way to the
+         * dial was bare ashlar. A carved course under the cornice is what a
+         * clock tower actually has there, it runs the full width so it can
+         * never collide with the dial at any size, and it costs one path.
+         */}
+        <Path
+          d={Array.from({ length: Math.max(6, Math.round(towerW / (26 * s))) }, (_, i) => {
+            const step = (towerW + 24 * s) / Math.max(6, Math.round(towerW / (26 * s)));
+            const dx = tx - 12 * s + i * step + step * 0.22;
+            return `M ${dx.toFixed(1)} ${(capY + 18 * s).toFixed(1)} h ${(step * 0.52).toFixed(1)} v ${(9 * s).toFixed(1)} h ${(-step * 0.52).toFixed(1)} z `;
+          }).join('')}
+          fill="#D9C199"
+        />
+        <Rect x={tx - 12 * s} y={capY + 27 * s} width={towerW + 24 * s} height={4 * s} rx={2 * s} fill={SHADE_SOFT} />
+
         {/* cornice above the dial */}
         <Rect x={tx - 12 * s} y={capY} width={towerW + 24 * s} height={13 * s} rx={6 * s} fill="#E2CDA6" />
         <Rect x={tx - 12 * s} y={capY + 13 * s} width={towerW + 24 * s} height={5 * s} rx={2.5 * s} fill={SHADE} />
@@ -1670,8 +1708,9 @@ export const Classroom = memo(function Classroom({ box }: { box: PlayBox }) {
     <SceneLayer box={box}>
       <Defs>
         <LinearGradient id="clWall" x1="0" y1="0" x2="0" y2="1">
-          <Stop offset="0" stopColor="#F6EEDC" />
-          <Stop offset="1" stopColor="#EADCC0" />
+          <Stop offset="0" stopColor="#FBF4E5" />
+          <Stop offset="0.4" stopColor="#F2E8D0" />
+          <Stop offset="1" stopColor="#DFCFAC" />
         </LinearGradient>
         {/* the chalk that never quite comes off the foot of a board */}
         <LinearGradient id="clDust" x1="0" y1="0" x2="0" y2="1">
@@ -1895,11 +1934,19 @@ export const EngineBay = memo(function EngineBay({ box }: { box: PlayBox }) {
     <SceneLayer box={box}>
       <Defs>
         <LinearGradient id="ebWall" x1="0" y1="0" x2="0" y2="1">
-          <Stop offset="0" stopColor="#F2E5CB" />
-          <Stop offset="1" stopColor="#E1CFAB" />
+          <Stop offset="0" stopColor="#FAEFD9" />
+          <Stop offset="0.36" stopColor="#EFE1C1" />
+          <Stop offset="1" stopColor="#D6C29C" />
+        </LinearGradient>
+        {/* the fitting is above and to the left: the wall is washed under it */}
+        <LinearGradient id="ebLit" x1="0.1" y1="0" x2="0.9" y2="0.8">
+          <Stop offset="0" stopColor="#FFFFFF" stopOpacity={0.3} />
+          <Stop offset="0.5" stopColor="#FFFFFF" stopOpacity={0.07} />
+          <Stop offset="1" stopColor="#FFFFFF" stopOpacity={0} />
         </LinearGradient>
       </Defs>
       <Rect x={0} y={0} width={w} height={floorTop + 4} fill="url(#ebWall)" />
+      <Rect x={0} y={0} width={w} height={floorTop + 4} fill="url(#ebLit)" />
       {/* block coursing on the bay wall — the surface gets a size, in one path */}
       <Path
         d={Array.from({ length: Math.max(2, Math.round(floorTop / (38 * s))) }, (_, i) => {
@@ -2008,6 +2055,11 @@ function Shopfront({
   return (
     <G>
       <Rect x={x} y={top} width={w} height={h} rx={6} fill={wall} />
+      {/* EACH BUILDING IS ITS OWN MASS. A terrace of flat fills reads as one
+          painted strip; giving every façade its own falloff — bright where the
+          sun catches the parapet, sinking into the street — is what separates
+          them into three buildings standing side by side. */}
+      <Rect x={x} y={top} width={w} height={h} rx={6} fill="url(#sfWall)" />
       <Path d={`M ${x + w - side} ${top} L ${x + w} ${top + 7 * s} L ${x + w} ${base} L ${x + w - side} ${base} Z`} fill={SHADE_SOFT} />
       <Rect x={x} y={top} width={w * 0.1} height={h} fill={HILITE_SOFT} />
       {/* cornice + roof slab */}
@@ -2135,6 +2187,11 @@ export const StreetBlock = memo(function StreetBlock({ box }: { box: PlayBox }) 
         <LinearGradient id="stCast" x1="0" y1="0" x2="0" y2="1">
           <Stop offset="0" stopColor={palette.navy} stopOpacity={0.2} />
           <Stop offset="1" stopColor={palette.navy} stopOpacity={0} />
+        </LinearGradient>
+        <LinearGradient id="sfWall" x1="0.1" y1="0" x2="0.75" y2="1">
+          <Stop offset="0" stopColor="#FFFFFF" stopOpacity={0.34} />
+          <Stop offset="0.42" stopColor="#FFFFFF" stopOpacity={0.02} />
+          <Stop offset="1" stopColor={palette.navy} stopOpacity={0.1} />
         </LinearGradient>
       </Defs>
       <Rect x={0} y={0} width={w} height={roadTop + 6} fill="url(#stSky)" />

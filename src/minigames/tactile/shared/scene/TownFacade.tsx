@@ -20,7 +20,7 @@
  * `unitPx` the game uses, so a rung and a tick can never disagree.
  */
 import React, { memo } from 'react';
-import Svg, { Defs, Ellipse, G, LinearGradient, Path, Rect, Stop } from 'react-native-svg';
+import Svg, { Defs, Ellipse, G, LinearGradient, Path, RadialGradient, Rect, Stop } from 'react-native-svg';
 import { palette } from '@/theme';
 import { CONTACT, HILITE, HILITE_SOFT, SHADE, SHADE_DEEP, SHADE_SOFT } from './tones';
 
@@ -43,13 +43,17 @@ export const WallLedge = memo(function WallLedge({ width, thickness = 15 }: { wi
     <Svg width={width} height={h} pointerEvents="none">
       {/* what the board throws on the wall under it */}
       <Rect x={t * 0.4} y={t * 0.9} width={Math.max(0, width - t * 0.4)} height={t * 0.72} rx={t * 0.3} fill={SHADE_DEEP} opacity={0.5} />
-      {/* the brackets, before the board, so the board sits on them */}
-      {[0.18, 0.82].map((f) => (
-        <Path
-          key={f}
-          d={`M ${width * f - b * 0.5} ${t * 0.9} h ${b} l ${-b * 0.5} ${b * 1.5} z`}
-          fill={palette.charcoal}
-        />
+      {/* the iron gussets under it — a mirrored pair leaning in towards the
+          middle, so they read as brackets holding a shelf up rather than as
+          two pennants hanging off it */}
+      {([[0.12, 1], [0.88, -1]] as const).map(([f, dir]) => (
+        <G key={f}>
+          <Path
+            d={`M ${width * f} ${t * 0.88} h ${dir * b * 0.8} l ${-dir * b * 0.8} ${b * 0.8} z`}
+            fill={palette.charcoal}
+            opacity={0.85}
+          />
+        </G>
       ))}
       {/* the board: body, lit top face, front edge */}
       <Rect x={0} y={0} width={width} height={t} rx={t * 0.42} fill={palette.woodDark} />
@@ -148,9 +152,10 @@ export const TownFacade = memo(function TownFacade({
    * Every pane used to be the same navy rectangle, so five storeys read as
    * wallpaper rather than as a building somebody lives in. `dressing` picks one
    * of four things per window off a hash of its own position — a blind pulled
-   * half down, a pair of curtains, a cat on the sill, or clear glass — so the
-   * grid never repeats, and it costs at most three nodes on the windows that
-   * get one.
+   * half down, a pair of curtains, a plant on the sill, or clear glass — so the
+   * grid never repeats, and it costs at most four nodes on the windows that
+   * get one. Nothing with a face: at 20 px a drawn cat reads as an orange
+   * blob, which is exactly what the first attempt looked like.
    */
   const dressing = (x: number, y: number, wW: number, pick: number) => {
     if (pick === 0) return null;
@@ -166,30 +171,29 @@ export const TownFacade = memo(function TownFacade({
       );
     }
     if (pick === 2) {
-      /* curtains, drawn back to the reveals */
+      /* curtains: two panels drawn back to the reveals under a pelmet */
+      const p = wW * 0.21;
       return (
         <G>
-          <Path d={`M ${x} ${y} h ${wW * 0.26} q ${-wW * 0.1} ${winH * 0.5} 0 ${winH} h ${-wW * 0.26} z`} fill={palette.white} opacity={0.8} />
-          <Path d={`M ${x + wW} ${y} h ${-wW * 0.26} q ${wW * 0.1} ${winH * 0.5} 0 ${winH} h ${wW * 0.26} z`} fill={palette.white} opacity={0.62} />
+          <Rect x={x} y={y} width={p} height={winH} rx={p * 0.3} fill={palette.cream} opacity={0.92} />
+          <Rect x={x + wW - p} y={y} width={p} height={winH} rx={p * 0.3} fill={palette.cream} opacity={0.78} />
+          <Rect x={x + p * 0.6} y={y} width={p * 0.28} height={winH} fill={SHADE} opacity={0.5} />
+          <Rect x={x + wW - p * 0.32} y={y} width={p * 0.28} height={winH} fill={SHADE} opacity={0.4} />
+          <Rect x={x} y={y} width={wW} height={winH * 0.14} rx={winH * 0.05} fill={palette.creamDeep} />
         </G>
       );
     }
-    /* somebody's cat, watching the street from the sill */
-    const cx = x + wW * 0.68;
-    const cy = y + winH - 2 * s;
-    const r = Math.min(wW * 0.16, winH * 0.22);
+    /* a plant on the sill — a pot and two leaves reads at 8 px, which is more
+       than can be said for anything with a face on it at this size */
+    const px = x + wW * 0.7;
+    const py = y + winH - 2 * s;
+    const r = Math.max(3, Math.min(wW * 0.15, winH * 0.2));
     return (
       <G>
-        <Path
-          d={`M ${cx - r} ${cy} v ${-r * 0.9} a ${r} ${r} 0 0 1 ${r * 2} 0 v ${r * 0.9} z`}
-          fill={palette.orange}
-        />
-        <Path d={`M ${cx - r * 0.9} ${cy - r * 0.8} l ${r * 0.34} ${-r * 0.7} l ${r * 0.34} ${r * 0.5} z`} fill={palette.orange} />
-        <Path d={`M ${cx + r * 0.9} ${cy - r * 0.8} l ${-r * 0.34} ${-r * 0.7} l ${-r * 0.34} ${r * 0.5} z`} fill={palette.orange} />
-        <Path
-          d={`M ${cx - r * 0.42} ${cy - r * 0.6} a ${r * 0.17} ${r * 0.2} 0 1 0 ${r * 0.01} 0 M ${cx + r * 0.42} ${cy - r * 0.6} a ${r * 0.17} ${r * 0.2} 0 1 0 ${r * 0.01} 0`}
-          fill={palette.navy}
-        />
+        <Path d={`M ${px - r} ${py - r * 1.1} h ${r * 2} l ${-r * 0.3} ${r * 1.1} h ${-r * 1.4} z`} fill={palette.wood} />
+        <Rect x={px - r * 1.12} y={py - r * 1.34} width={r * 2.24} height={r * 0.42} rx={r * 0.2} fill={palette.woodDark} />
+        <Path d={`M ${px} ${py - r * 1.4} q ${-r * 1.2} ${-r * 0.3} ${-r * 0.9} ${-r * 1.3} q ${r * 1.1} ${r * 0.2} ${r * 0.9} ${r * 1.3} z`} fill={palette.leafGreen} />
+        <Path d={`M ${px} ${py - r * 1.4} q ${r * 1.1} ${-r * 0.5} ${r * 0.8} ${-r * 1.5} q ${-r * 1} ${r * 0.5} ${-r * 0.8} ${r * 1.5} z`} fill={palette.grass} />
       </G>
     );
   };
@@ -325,6 +329,11 @@ export const TownFacade = memo(function TownFacade({
             falling away into the shade the street floor sits in. A wall lit
             only left-to-right is a colour swatch; this is what makes it a
             plane standing in daylight. */}
+        <RadialGradient id="ss-facade-lamp" cx="0.5" cy="0.5" r="0.5">
+          <Stop offset="0" stopColor="#FFE9A8" stopOpacity={0.42} />
+          <Stop offset="0.5" stopColor={palette.safetyYellow} stopOpacity={0.14} />
+          <Stop offset="1" stopColor={palette.safetyYellow} stopOpacity={0} />
+        </RadialGradient>
         <LinearGradient id="ss-facade-sky" x1="0" y1="0" x2="0" y2="1">
           <Stop offset="0" stopColor="#FFFFFF" stopOpacity={0.22} />
           <Stop offset="0.42" stopColor="#FFFFFF" stopOpacity={0.02} />
@@ -415,7 +424,10 @@ export const TownFacade = memo(function TownFacade({
           const shade = Math.max(16, 26 * s);
           return (
             <G>
-              <Ellipse cx={lx + arm} cy={ly + shade * 0.8} rx={shade * 1.5} ry={shade * 1.1} fill={palette.safetyYellow} opacity={0.12} />
+              {/* the pool of light under the lamp. A flat yellow ellipse at 12 %
+                  read as a stain on the brick; light has to fall off, so this
+                  is a radial that reaches nothing at its rim. */}
+              <Ellipse cx={lx + arm} cy={ly + shade * 0.9} rx={shade * 1.7} ry={shade * 1.3} fill="url(#ss-facade-lamp)" />
               <Rect x={lx - 3 * s} y={ly - 6 * s} width={7 * s} height={22 * s} rx={3 * s} fill={palette.charcoal} />
               <Rect x={lx - 1.4 * s} y={ly - 6 * s} width={2.4 * s} height={22 * s} fill={HILITE} />
               <Path

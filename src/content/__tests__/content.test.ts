@@ -53,6 +53,8 @@ const ALL_RECIPE_IDS = [
   'quesadillas', 'fruit-salad', 'lemonade', 'garden-salsa',
   'veggie-caldo', 'agua-fresca', 'esquites',
   'garden-pizza', 'arroz-con-leche', 'banana-bread', 'paletas', 'frijoles-de-olla',
+  /* ---- the world shelf ---- */
+  'tres-leches', 'sopes', 'arepas', 'onigiri', 'minestrone', 'bibimbap',
 ];
 
 const BADGE_ICONS = new Set([
@@ -125,12 +127,18 @@ describe('badges', () => {
 
   /*
    * Every call hands out a keepsake, and the twelve original calls each hand
-   * out one of their own. The five newest calls borrow a skill badge that fits
-   * their story (Moving Day gives Map Master, the playground gives Shape
-   * Shaper) because a brand-new BadgeId cannot ship without a matching entry in
-   * `badgeLook` over in `src/ui/kit/BadgeArt.tsx`, which content does not own.
-   * The moment those five entries exist, swap `BORROWED_BADGES` for five ids of
-   * their own and this test tightens back up to "every mission, its own badge".
+   * out one of their own. Every call added since then BORROWS a skill badge
+   * that fits its story (Moving Day gives Map Master, the playground gives
+   * Shape Shaper, the storm shelter gives Recipe Rescuer) because a brand-new
+   * BadgeId cannot ship without a matching entry in `badgeLook` over in
+   * `src/ui/kit/BadgeArt.tsx` — an exhaustive `Record<BadgeId, …>` that content
+   * does not own, and which would fail to compile the moment a new id appeared.
+   *
+   * Two calls may share a borrowed badge, but never two calls at the SAME
+   * PLACE — `missions.test.ts` keeps that rule, so a child never earns the same
+   * keepsake twice from one building. The moment those seventeen entries exist
+   * in `badgeLook`, swap this map for ids of their own and the test tightens
+   * back up to "every mission, its own badge".
    */
   const BORROWED_BADGES: Record<string, BadgeId> = {
     'moving-day': 'map-master',
@@ -138,6 +146,19 @@ describe('badges', () => {
     'playground-build': 'shape-shaper',
     'beach-day': 'time-traveler',
     'station-open-day': 'team-player',
+    /* ---- and all twelve second calls, for the same reason ---- */
+    'snow-day-shift': 'recipe-rescuer',
+    'bakery-birthday': 'number-navigator',
+    'pizzeria-blackout': 'fraction-firefighter',
+    'park-bandstand': 'pattern-pro',
+    'library-book-sale': 'word-watcher',
+    'market-delivery-run': 'map-master',
+    'garden-harvest': 'kitchen-pro',
+    'apartment-alarm-check': 'ladder-legend',
+    'school-sports-day': 'time-keeper',
+    'freight-yard-count': 'number-navigator',
+    'harbour-boat-rescue': 'map-master',
+    'festival-lantern-parade': 'shape-shaper',
   };
 
   it('gives every mission a badge, and every original call one of its own', () => {
@@ -346,8 +367,8 @@ describe('station upgrades', () => {
   describe('the shop closes', () => {
     const tour = missions.reduce((sum, m) => sum + m.sparks, 0);
 
-    it('pays 265 Sparks for one tour of the town and charges 940 for the whole station', () => {
-      expect(tour).toBe(265);
+    it('pays 436 Sparks for one tour of the town and charges 940 for the whole station', () => {
+      expect(tour).toBe(436);
       expect(shopTotalCost).toBe(940);
       expect(upgrades).toHaveLength(22);
     });
@@ -357,7 +378,15 @@ describe('station upgrades', () => {
       expect(dearestUpgradeCost * 3).toBeLessThanOrEqual(tour);
     });
 
-    it('fills the whole station inside four tours, and missions pay again on a replay', () => {
+    /*
+     * The town outgrew the shop. Twenty-nine calls pay 436 Sparks a tour
+     * against 940 of decorations, so a child owns the whole station in a
+     * little over two tours rather than three and a half. It still takes more
+     * than one tour — which is the property that actually matters — but the
+     * honest fix is more upgrades, and that needs a drawing per id in
+     * `UpgradeArt` (see the note in `src/content/upgrades.ts`).
+     */
+    it('still takes more than one tour to fill the station, and under four', () => {
       expect(shopTotalCost).toBeLessThanOrEqual(tour * 4);
       expect(shopTotalCost).toBeGreaterThan(tour * 2);
     });
@@ -851,6 +880,162 @@ describe('the five newest recipes', () => {
   it('runs every new dish through the validator for every band and seed', () => {
     for (const id of NEW_DISHES) {
       const recipe = recipeById(id as (typeof recipes)[number]['id']);
+      for (const band of BANDS) {
+        for (const seed of [1, 42, 512, 9001]) {
+          const ctx: GeneratorContext = { ageBand: band, rng: createRng(seed) };
+          for (const step of recipe?.steps ?? []) {
+            if (step.bands && !step.bands.includes(band)) continue;
+            const challenge = step.challenge(ctx);
+            expect(challenge.kind).toBe(step.game);
+            expect(validateChallenge(challenge)).toEqual([]);
+          }
+        }
+      }
+    }
+  });
+});
+
+/* ------------------------------------------------------------------ */
+/* The world shelf — six dishes from six kitchens                       */
+/* ------------------------------------------------------------------ */
+
+describe('the world shelf', () => {
+  const WORLD = ['tres-leches', 'sopes', 'arepas', 'onigiri', 'minestrone', 'bibimbap'] as const;
+
+  it('are all in the book, all safe, and all worth cooking', () => {
+    for (const id of WORLD) {
+      const recipe = recipeById(id);
+      expect(recipe).toBeDefined();
+      expect(recipe?.grownUp).toBe(true);
+      expect(recipe?.xp).toBeGreaterThanOrEqual(28);
+      expect(recipe?.steps.length).toBeGreaterThanOrEqual(3);
+      expect(recipe?.nameEs?.trim().length).toBeGreaterThan(0);
+      const said = (recipe?.intro ?? []).map((l) => l.text).join(' ');
+      expect(said.toLowerCase()).toContain('ask a grown-up');
+      expect(said.toLowerCase()).toContain('crew handles');
+    }
+  });
+
+  /*
+   * The reason these six exist. Eleven of the eighteen older dishes reached for
+   * `measure-pour` and sixteen for `count-ingredients`, so the room taught the
+   * same two moves over and over. Each of these leads with a different idea, and
+   * between them they use every one of the six kitchen games.
+   */
+  it('each leads with a different game, and together they use all six', () => {
+    const lead: Record<string, ChallengeKind> = {
+      'tres-leches': 'recipe-scale',
+      sopes: 'pizza-fractions',
+      arepas: 'market-money',
+      onigiri: 'divide-share',
+      minestrone: 'soup-pot',
+      bibimbap: 'measure-pour',
+    };
+    const used = new Set<ChallengeKind>();
+    for (const id of WORLD) {
+      const games = (recipeById(id)?.steps ?? []).map((s) => s.game);
+      expect(games).toContain(lead[id]);
+      games.forEach((g) => used.add(g));
+    }
+    for (const game of ['pizza-fractions', 'measure-pour', 'count-ingredients', 'divide-share', 'recipe-scale', 'soup-pot']) {
+      expect(used.has(game as ChallengeKind)).toBe(true);
+    }
+  });
+
+  it('scales the tres leches for every band, never just the oldest', () => {
+    const step = recipeById('tres-leches')?.steps.find((s) => s.game === 'recipe-scale');
+    expect(step?.bands).toBeUndefined();
+    for (const band of BANDS) {
+      const grown = step?.challenge({ ageBand: band, rng: createRng(3) });
+      if (grown?.kind !== 'recipe-scale') throw new Error('expected recipe-scale');
+      expect(grown.eating).toBeGreaterThan(grown.serves);
+      for (const line of grown.lines) {
+        expect(Number.isInteger(line.scaled)).toBe(true);
+        expect(line.scaled * grown.serves).toBe(line.amount * grown.eating);
+      }
+    }
+  });
+
+  it('gives the sopes halves, quarters and then eighths', () => {
+    const step = recipeById('sopes')?.steps.find((s) => s.game === 'pizza-fractions');
+    const dens = BANDS.map((band) => {
+      const sope = step?.challenge({ ageBand: band, rng: createRng(5) });
+      if (sope?.kind !== 'pizza-fractions') throw new Error('expected pizza-fractions');
+      expect(sope.each).toBe(sope.cutInto / sope.shareAmong);
+      for (const topping of sope.toppings) {
+        expect(Number.isInteger((topping.fraction.num * sope.cutInto) / topping.fraction.den)).toBe(true);
+      }
+      return Math.max(...sope.toppings.map((t) => t.fraction.den));
+    });
+    expect(dens).toEqual([2, 4, 8]);
+  });
+
+  it('sends the arepa crew shopping before it lets them cook', () => {
+    const recipe = recipeById('arepas');
+    expect(recipe?.steps[0]?.game).toBe('market-money');
+    for (const band of BANDS) {
+      const bought = recipe?.steps[0]?.challenge({ ageBand: band, rng: createRng(7) });
+      if (bought?.kind !== 'market-money') throw new Error('expected market-money');
+      expect(bought.item.id).toBe('flour');
+      expect(bought.solutions.length).toBeGreaterThan(0);
+      for (const way of bought.solutions) expect(way.reduce((a, b) => a + b, 0)).toBe(bought.price);
+    }
+  });
+
+  it('shares the onigiri with nothing left over, then labels the box', () => {
+    const recipe = recipeById('onigiri');
+    expect(recipe?.steps.map((s) => s.game)).toEqual(['count-ingredients', 'divide-share', 'word-builder']);
+    const expected: Record<AgeBand, string> = { A: 'RICE', B: 'ARROZ', C: 'SEAWEED' };
+    for (const band of BANDS) {
+      const shared = recipe?.steps[1]?.challenge({ ageBand: band, rng: createRng(9) });
+      if (shared?.kind !== 'divide-share') throw new Error('expected divide-share');
+      expect(shared.total).toBe(shared.among * shared.each);
+
+      const spelled = recipe?.steps[2]?.challenge({ ageBand: band, rng: createRng(9) });
+      if (spelled?.kind !== 'word-builder') throw new Error('expected word-builder');
+      expect(spelled.letters.join('')).toBe(expected[band]);
+      for (const letter of spelled.letters.slice(spelled.prefilled)) expect(spelled.tiles).toContain(letter);
+    }
+  });
+
+  it('cooks the minestrone in a cook’s order, garlic first, and adds it up for band C', () => {
+    const step = recipeById('minestrone')?.steps.find((s) => s.game === 'soup-pot');
+    for (const band of BANDS) {
+      const pot = step?.challenge({ ageBand: band, rng: createRng(11) });
+      if (pot?.kind !== 'soup-pot') throw new Error('expected soup-pot');
+      expect(pot.steps[0]?.item.id).toBe('garlic');
+      expect(pot.spokenEs).toBe(true);
+      const inPot = new Set(pot.steps.map((s) => s.item.id));
+      expect(pot.extras.some((e) => inPot.has(e.id))).toBe(false);
+      /* two things drawn the same in one pot would be an unanswerable question */
+      const icons = [...pot.steps.map((s) => s.item.icon), ...pot.extras.map((e) => e.icon)];
+      expect(new Set(icons).size).toBe(icons.length);
+      if (band === 'C') expect(pot.askTotal).toBe(pot.steps.reduce((sum, s) => sum + s.count, 0));
+      else expect(pot.askTotal).toBeUndefined();
+    }
+    const simmer = recipeById('minestrone')?.steps.find((s) => s.game === 'clock-watch');
+    const clock = simmer?.challenge({ ageBand: 'B', rng: createRng(11) });
+    if (clock?.kind !== 'clock-watch') throw new Error('expected clock-watch');
+    expect(clock.event).toContain('minestrone');
+  });
+
+  it('measures the rice bowl in two different units', () => {
+    const pours = (recipeById('bibimbap')?.steps ?? []).filter((s) => s.game === 'measure-pour');
+    expect(pours).toHaveLength(2);
+    for (const band of BANDS) {
+      const units = pours.map((step) => {
+        const pour = step.challenge({ ageBand: band, rng: createRng(13) });
+        if (pour.kind !== 'measure-pour') throw new Error('expected measure-pour');
+        expect(pour.step).toEqual({ num: 1, den: pour.ticks });
+        return pour.unit;
+      });
+      expect([...units].sort()).toEqual(['cup', 'spoon']);
+    }
+  });
+
+  it('runs every world dish through the validator for every band and seed', () => {
+    for (const id of WORLD) {
+      const recipe = recipeById(id);
       for (const band of BANDS) {
         for (const seed of [1, 42, 512, 9001]) {
           const ctx: GeneratorContext = { ageBand: band, rng: createRng(seed) };

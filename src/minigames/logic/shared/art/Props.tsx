@@ -22,29 +22,34 @@ export function PaperGrain({
   ruled = true,
   margin = true,
   rules = [30, 70],
+  radius,
 }: {
   ruled?: boolean;
   margin?: boolean;
   rules?: number[];
+  /** clip the sheet to the card's own corner radius */
+  radius?: number;
 }) {
   return (
-    <View style={StyleSheet.absoluteFill} pointerEvents="none">
+    <View
+      style={radius === undefined ? StyleSheet.absoluteFill : [StyleSheet.absoluteFill, { borderRadius: radius, overflow: 'hidden' }]}
+      pointerEvents="none"
+    >
       <Svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none">
         <Defs>
+          {/*
+           * What paper does that a swatch does not: it takes the light unevenly
+           * across its face and lifts very slightly away from what it is pinned
+           * to on the shaded side. A drawn hatch was tried here first and came
+           * out as stripes — at this size a "tooth" is a pattern, not a
+           * texture, so the material is all in the falloff.
+           */}
           <LinearGradient id="ppLight" x1="0" y1="0" x2="1" y2="1">
-            <Stop offset="0" stopColor="#FFFFFF" stopOpacity={0.55} />
-            <Stop offset="0.5" stopColor="#FFFFFF" stopOpacity={0} />
-            <Stop offset="1" stopColor={palette.navy} stopOpacity={0.075} />
+            <Stop offset="0" stopColor="#FFFFFF" stopOpacity={0.6} />
+            <Stop offset="0.45" stopColor="#FFFFFF" stopOpacity={0.1} />
+            <Stop offset="1" stopColor={palette.navy} stopOpacity={0.085} />
           </LinearGradient>
         </Defs>
-        {/*
-          * The unevenness of the stock. A diagonal hatch was tried here and it
-          * came out as visible stripes — at this scale a "tooth" is a pattern,
-          * not a texture. What reads instead is what paper actually does: it
-          * takes the light in soft patches, warmer where the sheet lifts.
-          */}
-        <Ellipse cx={26} cy={22} rx={40} ry={30} fill={palette.white} opacity={0.5} />
-        <Ellipse cx={82} cy={78} rx={34} ry={26} fill={palette.navy} opacity={0.035} />
         {ruled
           ? rules.map((t) => (
               <Rect key={t} x={6} y={t} width={88} height={0.9} fill={palette.creamDeep} />

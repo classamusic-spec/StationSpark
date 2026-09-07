@@ -424,9 +424,17 @@ export function GroundPlane({ f, near, lip, kind = 'paving' }: { f: SceneFrame; 
         <Path d={joints + courses} fill={SHADE_SOFT} />
       </G>
       {apron ? (
-        /* the two guide lines the engines line up on, receding with the surface */
+        /* The two guide lines the engines line up on, receding with the surface.
+           They are the *bays'* lines, so they are quoted off the building's own
+           box rather than off the frame: 87.5 and 212.5 are the shutter centres
+           in `stationYardArt`'s design units. Drawn at a fixed fraction of the
+           frame they landed outside the doors on a phone and inside them on a
+           tablet, which is the one thing a guide line may not do. */
         <Path
-          d={fanStripe(w, gy, gy + 18 * s, front - 4 * s, 0.26, 9 * s) + fanStripe(w, gy, gy + 18 * s, front - 4 * s, 0.74, 9 * s)}
+          d={
+            fanStripe(w, gy, gy + 18 * s, front - 4 * s, (f.ox + 87.5 * f.k) / w, 9 * s) +
+            fanStripe(w, gy, gy + 18 * s, front - 4 * s, (f.ox + 212.5 * f.k) / w, 9 * s)
+          }
           fill={palette.safetyYellow}
           opacity={0.5}
         />

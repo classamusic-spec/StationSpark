@@ -39,8 +39,14 @@ export function Contact({ cx, cy, rx, o = SHADOW_OPACITY }: { cx: number; cy: nu
 export function BaseShadow({ cx, y, rx }: { cx: number; y: number; rx: number }) {
   return (
     <G>
-      <Ellipse cx={cx + rx * 0.05} cy={y} rx={rx} ry={Math.max(3, rx * 0.062)} fill={SHADOW_FILL} opacity={0.13} />
-      <Ellipse cx={cx + rx * 0.08} cy={y - 1} rx={rx * 0.82} ry={Math.max(2, rx * 0.034)} fill={SHADOW_FILL} opacity={0.1} />
+      {/* three bands, each fainter and further right than the last: the light
+          is top-left, so the pool a wall sits in leans away from it. A shadow
+          drawn symmetrically under a building says "sticker"; the same shadow
+          leaning one way says where the sun is, and every object in the frame
+          is already shaded as if it knew. */}
+      <Ellipse cx={cx + rx * 0.2} cy={y + rx * 0.02} rx={rx * 1.02} ry={Math.max(4, rx * 0.085)} fill={SHADOW_FILL} opacity={0.055} />
+      <Ellipse cx={cx + rx * 0.07} cy={y} rx={rx} ry={Math.max(3, rx * 0.062)} fill={SHADOW_FILL} opacity={0.13} />
+      <Ellipse cx={cx + rx * 0.09} cy={y - 1} rx={rx * 0.82} ry={Math.max(2, rx * 0.034)} fill={SHADOW_FILL} opacity={0.1} />
     </G>
   );
 }

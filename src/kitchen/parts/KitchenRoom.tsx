@@ -109,7 +109,7 @@ function TileField() {
           y={t.r * 10}
           width={10}
           height={10}
-          fill={t.light ? 'rgba(255,255,255,0.34)' : 'rgba(31,42,90,0.035)'}
+          fill={t.light ? 'rgba(255,255,255,0.13)' : 'rgba(31,42,90,0.022)'}
         />
       ))}
       {Array.from({ length: rows }, (_, r) => (
@@ -594,12 +594,28 @@ export function MixingBowls({ s, x, y, w }: { s: number; x: number; y: number; w
   return (
     <View style={at(s, x, y, w, h)} pointerEvents="none">
       <Svg width={w * s} height={h * s} viewBox="0 0 100 72">
-        <Ellipse cx={50} cy={66} rx={40} ry={5} fill="rgba(31,42,90,0.10)" />
-        <Path d="M6 28h88c0 24-16 38-44 38S6 52 6 28z" fill="#2E63B8" />
+        <Defs>
+          {/* glazed ceramic: lit on the shoulder, deepest where it curves away */}
+          <LinearGradient id="mbBlue" x1="0.15" y1="0" x2="0.75" y2="1">
+            <Stop offset="0" stopColor="#4C8FDC" />
+            <Stop offset="0.55" stopColor="#2E63B8" />
+            <Stop offset="1" stopColor="#1E4A92" />
+          </LinearGradient>
+          <LinearGradient id="mbCream" x1="0.15" y1="0" x2="0.75" y2="1">
+            <Stop offset="0" stopColor="#FFFDF6" />
+            <Stop offset="1" stopColor="#EAD6B2" />
+          </LinearGradient>
+        </Defs>
+        <Ellipse cx={51} cy={67} rx={45} ry={6} fill="rgba(31,42,90,0.06)" />
+        <Ellipse cx={50} cy={66} rx={34} ry={4.5} fill="rgba(31,42,90,0.17)" />
+        <Path d="M6 28h88c0 24-16 38-44 38S6 52 6 28z" fill="url(#mbBlue)" />
         <Ellipse cx={50} cy={28} rx={44} ry={9} fill="#5AA0E8" />
         <Ellipse cx={50} cy={28} rx={36} ry={6} fill="#2B5FB0" opacity={0.5} />
-        <Path d="M17 40c4 11 14 19 25 20-15 1-27-7-31-18z" fill="rgba(255,255,255,0.26)" />
-        <Path d="M22 14h56c0 13-9 20-28 20S22 27 22 14z" fill="#FFF3DC" />
+        {/* one specular where the glaze catches the light, one bounce below it */}
+        <Path d="M17 40c4 11 14 19 25 20-15 1-27-7-31-18z" fill="rgba(255,255,255,0.32)" />
+        <Path d="M12 32a38 8 0 0 1 16 -7c-8 3-13 6-14 9z" fill="rgba(255,255,255,0.6)" />
+        <Path d="M80 44c-3 10-11 17-21 19 14-1 23-8 26-17z" fill="rgba(255,255,255,0.14)" />
+        <Path d="M22 14h56c0 13-9 20-28 20S22 27 22 14z" fill="url(#mbCream)" />
         <Ellipse cx={50} cy={14} rx={28} ry={6} fill={palette.white} />
         <Ellipse cx={50} cy={14} rx={22} ry={4} fill="#F0DFBE" />
         <Path d="M28 20c3 6 9 10 16 11-9 1-16-4-19-11z" fill="rgba(255,255,255,0.55)" />

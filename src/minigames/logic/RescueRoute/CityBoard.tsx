@@ -13,7 +13,7 @@
  */
 import React, { memo } from 'react';
 import { StyleSheet, View } from 'react-native';
-import Svg, { Circle, G, Path, Rect } from 'react-native-svg';
+import Svg, { Circle, Defs, G, LinearGradient, Path, Rect, Stop } from 'react-native-svg';
 import type { GridPos, Heading, RescueRouteChallenge } from '@/learning/types';
 import { palette, radii, roles } from '@/theme';
 import { Text } from '@/ui';
@@ -128,6 +128,13 @@ export const CityBoard = memo(function CityBoard({
   return (
     <View style={{ width, height }}>
       <Svg width={width} height={height}>
+        <Defs>
+          <LinearGradient id="cbTar" x1="0" y1="0" x2="1" y2="1">
+            <Stop offset="0" stopColor="#FFFFFF" stopOpacity={0.13} />
+            <Stop offset="0.45" stopColor="#FFFFFF" stopOpacity={0.02} />
+            <Stop offset="1" stopColor={palette.navy} stopOpacity={0.16} />
+          </LinearGradient>
+        </Defs>
         {/* the town's pavement frame, then the tarmac inside it */}
         <Rect x={0} y={0} width={width} height={height} rx={radii.card} fill={ROAD.frame} />
         <Rect
@@ -139,6 +146,9 @@ export const CityBoard = memo(function CityBoard({
           fill={ROAD.kerbLip}
         />
         <Rect x={margin} y={margin} width={cols * cell} height={rows * cell} rx={cell * 0.13} fill={ROAD.tarmac} />
+        {/* the tarmac is asphalt under a sun, not a grey swatch: the sheet of
+            it is lit across the top-left and falls away into the far corner */}
+        <Rect x={margin} y={margin} width={cols * cell} height={rows * cell} rx={cell * 0.13} fill="url(#cbTar)" />
         <Rect x={margin} y={margin} width={cols * cell} height={cell * 0.1} rx={cell * 0.05} fill="rgba(255,255,255,0.06)" />
 
         {/* lane markings */}
@@ -211,6 +221,17 @@ export const CityBoard = memo(function CityBoard({
           const yard = inner.h - houseH;
           return (
             <G key={`plot-${i}`}>
+              {/* every block throws its own shadow across the street it stands
+                  on — without it the plots sit on the tarmac like decals */}
+              <Rect
+                x={box.x + swell * 0.5}
+                y={box.y + swell * 0.75}
+                width={box.w}
+                height={box.h}
+                rx={plotRadius}
+                fill={palette.navy}
+                opacity={0.14}
+              />
               <PlotSlab
                 x={box.x}
                 y={box.y}

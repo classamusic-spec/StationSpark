@@ -22,7 +22,7 @@ import {
   TeaTowel,
   UtensilRail,
 } from './parts/KitchenRoom';
-import { PotArt } from './parts/SceneBits';
+import { POT_ASPECT, StockPot } from './parts/Cookware';
 import { useRise, useSwing } from './parts/motion';
 
 /* ------------------------------------------------------------------ */
@@ -184,8 +184,10 @@ export function KitchenBackdrop({ still }: KitchenBackdropProps) {
           <MixingBowls s={1} x={w * 0.16} y={baseY - 52} w={84} />
           <SaltAndPepper s={1} x={w * 0.74} y={baseY - 30} h={30} />
           <ContactPatch s={1} cx={w * 0.62} y={baseY - 2} rx={62} strength={0.85} />
-          <View style={at(1, w * 0.62 - 62, baseY - 84)}>
-            <PotArt size={124} bubbling={!still} />
+          {/* the station's one stock pot — the hub used to simmer a charcoal
+              pan nobody cooks in anywhere else in the kitchen */}
+          <View style={at(1, w * 0.62 - 66, baseY - 132 / POT_ASPECT + 4)}>
+            <StockPot size={132} bubbling={!still} level="low" />
           </View>
           {still ? null : (
             <>

@@ -346,14 +346,28 @@ export interface BadgeProgressLike {
   shiftDays: readonly string[];
 }
 
+/*
+ * WHAT COUNTS AS WHAT.
+ *
+ * These lists are read straight off `challengeSkills` in
+ * `src/learning/types.ts` — a game belongs on a list when it genuinely
+ * exercises that skill, not when it would be convenient. Three of them grew
+ * when the town did: `divide-share` moved out of the Kitchen and into six
+ * missions, `recipe-scale` is where equivalent fractions actually live, and
+ * `shape-builder` is the shape game, so a child who only ever plays the newest
+ * content still earns the badges those skills are named after.
+ */
+
 /** Games that count as "number games" for Number Navigator. */
-export const numberGameKinds = ['number-ladder', 'hydrant-match', 'ladder-builder', 'build-barrier', 'equipment-check'];
+export const numberGameKinds = [
+  'number-ladder', 'hydrant-match', 'ladder-builder', 'build-barrier', 'equipment-check', 'divide-share',
+];
 /** Games that count as "fraction games" for Fraction Firefighter. */
-export const fractionGameKinds = ['water-tank', 'pizza-fractions', 'measure-pour'];
+export const fractionGameKinds = ['water-tank', 'pizza-fractions', 'measure-pour', 'recipe-scale'];
 /** Games that count as "ladder games" for Ladder Legend. */
 export const ladderGameKinds = ['ladder-builder', 'number-ladder'];
 /** Games that count as "shape games" for Shape Shaper (see `challengeSkills`). */
-export const geometryGameKinds = ['hose-path', 'build-barrier', 'pizza-fractions'];
+export const geometryGameKinds = ['hose-path', 'build-barrier', 'pizza-fractions', 'shape-builder'];
 
 const played = (progress: BadgeProgressLike, kinds: readonly string[]): number =>
   kinds.reduce((total, kind) => total + (progress.gamesPlayed[kind] ?? 0), 0);
@@ -363,10 +377,10 @@ const played = (progress: BadgeProgressLike, kinds: readonly string[]): number =
  * Kept as a constant (not `missions.length`) so this module stays free of the
  * mission graph — `content.test.ts` asserts the two never drift apart.
  */
-export const TOTAL_MISSIONS = 17;
+export const TOTAL_MISSIONS = 29;
 
 /** Every recipe in the kitchen book; chef-de-station needs all of them. */
-export const TOTAL_RECIPES = 18;
+export const TOTAL_RECIPES = 24;
 
 /**
  * Every skill badge the child has earned right now. Pure — call it after

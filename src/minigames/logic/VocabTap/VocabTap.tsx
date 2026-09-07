@@ -163,7 +163,7 @@ export function VocabTap({ challenge, ageBand, onComplete, onEvent, compact }: M
             </View>
             {/* the card is index paper: a margin rule, two feint lines, the
                 tooth of the stock and the light falling across it */}
-            <PaperGrain />
+            <PaperGrain radius={radii.panel} />
             {state.phase === 'solved' ? (
               <Animated.View entering={ZoomIn.springify()} style={styles.sparkle} pointerEvents="none">
                 <SparkleBurst size={layout.s(90)} />

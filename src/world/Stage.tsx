@@ -106,6 +106,61 @@ function rp(x: number, y: number, w: number, h: number): string {
   return `M ${x.toFixed(1)} ${y.toFixed(1)} h ${w.toFixed(1)} v ${h.toFixed(1)} h ${(-w).toFixed(1)} z`;
 }
 
+/**
+ * PAVING JOINTS THAT RECEDE.
+ *
+ * A ground plane ruled with parallel vertical lines reads as a wall lying
+ * down. The same plane ruled with lines that fan out towards the viewer and
+ * converge on the horizon reads as ground — and that is the whole difference
+ * between a grey area and a surface a child believes they could walk on. All
+ * of them in one path: each joint is a tapered quad, thin at the horizon and
+ * full width at the front.
+ */
+function fanJoints(w: number, gy: number, yTop: number, yBot: number, n: number, tw: number): string {
+  const depth = Math.max(1, yBot - gy);
+  const t0 = Math.max(0, Math.min(1, (yTop - gy) / depth));
+  const vx = w / 2;
+  let d = '';
+  for (let i = 0; i <= n; i += 1) {
+    /* the front edge spreads wider than the frame, so the outermost joints
+       leave the picture at the sides rather than crowding into the middle */
+    const bx = -w * 0.42 + (i / n) * w * 1.84;
+    const x0 = vx + (bx - vx) * t0;
+    const hw0 = Math.max(0.35, (tw * t0) / 2);
+    d +=
+      `M ${(x0 - hw0).toFixed(1)} ${yTop.toFixed(1)} L ${(x0 + hw0).toFixed(1)} ${yTop.toFixed(1)} ` +
+      `L ${(bx + tw / 2).toFixed(1)} ${yBot.toFixed(1)} L ${(bx - tw / 2).toFixed(1)} ${yBot.toFixed(1)} Z`;
+  }
+  return d;
+}
+
+/** The joints running *across* it: closer at the back, wider at the front. */
+function crossCourses(w: number, yTop: number, yBot: number, n: number, th: number): string {
+  let d = '';
+  for (let i = 1; i <= n; i += 1) {
+    const t = (i / (n + 1)) ** 1.85;
+    d += rp(-2, yTop + (yBot - yTop) * t, w + 4, th * (0.5 + t));
+  }
+  return d;
+}
+
+/**
+ * A bevelled paved surface: every slab lit along its far edge and shaded along
+ * its near one. A joint drawn as a single dark line is a scratch; a joint drawn
+ * as a bevel is a paving slab.
+ */
+function paving(w: number, gy: number, yTop: number, yBot: number, n = 9, cross = 3, tw = 3) {
+  const d = fanJoints(w, gy, yTop, yBot, n, tw) + crossCourses(w, yTop, yBot, cross, 2.6);
+  return (
+    <G>
+      <Path d={d} fill="rgba(255,255,255,0.5)" />
+      <G y={1.7}>
+        <Path d={d} fill={SHADE_SOFT} />
+      </G>
+    </G>
+  );
+}
+
 /** The soft-topped ground plane with its lighter lip (consistency rule #7). */
 function groundPlane(w: number, h: number, gy: number, near: string, lip: string) {
   const edge = `M 0 ${gy + 9} Q ${w / 2} ${gy - 5} ${w} ${gy + 9}`;
@@ -1029,11 +1084,8 @@ function streetArt(w: number, h: number, gy: number, s: number) {
       <Rect x={0} y={roadY} width={w} height={7} rx={3.5} fill="#E7EBF4" />
       <Rect x={0} y={roadY + 7} width={w} height={5} fill={SHADE} />
       <Path d={`M 0 ${roadY + 40} H ${w}`} stroke={palette.white} strokeWidth={4} strokeDasharray="22 20" strokeLinecap="round" opacity={0.8} />
-      {/* paving joints, batched */}
-      <Path
-        d={Array.from({ length: Math.ceil(w / 64) + 1 }, (_, i) => rp(i * 64, gy + 16, 3, roadY - gy - 18)).join('')}
-        fill={SHADE_SOFT}
-      />
+      {/* the footpath, receding — never a row of parallel scratches */}
+      {paving(w, gy, gy + 14, roadY - 2, 9, 3)}
       {/* drain grate */}
       <G>
         <Rect x={w * 0.62} y={roadY + 12} width={40 * s} height={15 * s} rx={5} fill="#6F7893" />
@@ -1163,6 +1215,7 @@ function yardArt(w: number, h: number, gy: number, s: number) {
       {/* bunting from the tower back to the wall */}
       {bunting(w * 0.5, wallTop + 26, w * 0.8, towerTop - 20, 36, [palette.engineRed, palette.white, palette.safetyYellow, palette.white])}
       {groundPlane(w, h, gy, grounds.yard.near, grounds.yard.lip)}
+      {paving(w, gy, gy + 14, h, 5, 2, 3.4)}
       {/* chalk practice lines on the apron */}
       <G opacity={0.55}>
         <Path d={`M ${w * 0.1} ${gy + 46} H ${w * 0.92}`} stroke={palette.white} strokeWidth={5} strokeLinecap="round" strokeDasharray="26 18" />
@@ -1723,9 +1776,7 @@ function storeRoomArt(w: number, h: number, gy: number, s: number) {
         ))}
       </G>
       {groundPlane(w, h, gy, grounds['store-room'].near, grounds['store-room'].lip)}
-      <G opacity={0.4}>
-        <Path d={Array.from({ length: Math.ceil(w / 70) + 1 }, (_, c) => rp(c * 70, gy + 12, 4, h - gy)).join('')} fill="#9AA3BC" />
-      </G>
+      {paving(w, gy, gy + 12, h, 7, 3, 3.4)}
       {/* a painted floor lane, so the concrete has a direction */}
       <Path d={`M ${w * 0.04} ${gy + 46} H ${w * 0.96}`} stroke={palette.safetyYellow} strokeWidth={6} strokeLinecap="round" opacity={0.4} strokeDasharray="30 22" />
       {/* a flat boot mat by the bench */}
@@ -1785,6 +1836,7 @@ function towerArt(w: number, h: number, gy: number, s: number) {
         <Rect x={tx - 12} y={top + 126} width={towerW + 24} height={5} rx={2.5} fill={SHADE} />
       </G>
       {groundPlane(w, h, gy, grounds.tower.near, grounds.tower.lip)}
+      {paving(w, gy, gy + 14, gy + 60, 8, 2)}
       <Rect x={0} y={gy + 62} width={w} height={Math.max(0, h - gy - 62)} fill="#8E96AE" />
       <Rect x={0} y={gy + 62} width={w} height={7} rx={3.5} fill="#E7EBF4" />
       {lampPost(w * 0.1, gy + 4, 150 * s)}

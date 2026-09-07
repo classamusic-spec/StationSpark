@@ -9,7 +9,9 @@
  *     not enough, because an unregistered kind renders an empty screen;
  *   · every `scene` is a real `SceneId` and every `location` a real `LocationId`;
  *   · every word a child is asked to pick out of a shelf has a picture on the
- *     `VocabIcon` sheet, and no two things on the same shelf share one.
+ *     `VocabIcon` sheet, and no two things on the same shelf share one — which
+ *     holds both for the shelves a generator BUILDS and for the named shelves
+ *     in `src/learning/shelves.ts` that a mission can point a beat at.
  *
  * The registry is read from the group index files as SOURCE rather than
  * imported, so this stays a pure-logic test: importing the registry would drag
@@ -22,6 +24,7 @@ import type { AgeBand, ChallengeKind, GeneratorContext, SceneId, VocabWord } fro
 import { beatsForBand } from '@/machines/missionMachine';
 import { missions } from '@/content/missions';
 import { recipes } from '@/content/recipes';
+import { shelfWords, shelves } from '@/learning/shelves';
 import type { LocationId } from '@/content/types';
 
 const BANDS: AgeBand[] = ['A', 'B', 'C'];
@@ -138,6 +141,25 @@ const describeShelf = (where: string, words: readonly VocabWord[]): string[] => 
   }
   return problems;
 };
+
+describe('the named shelves a mission can point at', () => {
+  /*
+   * `src/learning/shelves.ts` is the one place a mission can say "ask about
+   * harbour words" and get a coherent board back. It is only usable by EVERY
+   * game — including the ones a child picks from by picture alone — if no two
+   * words on a shelf are drawn the same, so that promise is checked here at the
+   * content ↔ app boundary as well as in the shelf's own unit test.
+   */
+  it('draws every word, and never draws two of them the same', () => {
+    const problems: string[] = [];
+    for (const shelf of shelves) problems.push(...describeShelf(`shelf/${shelf.id}`, shelfWords(shelf.id)));
+    expect(problems).toEqual([]);
+  });
+
+  it('has enough on every shelf to fill a four-picture board', () => {
+    for (const shelf of shelves) expect(shelfWords(shelf.id).length).toBeGreaterThanOrEqual(4);
+  });
+});
 
 describe('nothing on a shelf is drawn the same as anything else on it', () => {
   it('holds across every mission beat, every band, every seed', () => {

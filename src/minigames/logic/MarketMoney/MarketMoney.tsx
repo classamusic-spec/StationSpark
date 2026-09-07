@@ -26,7 +26,7 @@ import { useGameLayout } from '../shared/layout';
 import { useCaptainLine } from '../shared/speak';
 import { useHintLadder } from '../shared/useHintLadder';
 import { useDragToSlot, type DropOutcome } from '../shared/useDragToSlot';
-import { CoinDisc, CounterGrain, PaperBag, StallFront, stallRects } from './Stall';
+import { CoinDisc, CounterGrain, PaperBag, StallFront, TrayWell, stallRects } from './Stall';
 import { MarketStreet, RoomWash, clamp, marketMetrics, usePlayBox } from '../shared/art/Scene';
 
 /* ---------------- state machine ---------------- */
@@ -475,7 +475,7 @@ export function MarketMoney({ challenge, ageBand, onComplete, onEvent, compact }
           <View style={styles.counterLip} pointerEvents="none" />
           <CounterGrain />
           <View style={styles.counterInner}>
-            <View style={styles.counterWell} pointerEvents="none" />
+            <TrayWell radius={radii.tile} />
             {state.counter.length === 0 ? (
               <Text variant="small" color={palette.woodDark} center>
                 Drop your coins here
@@ -562,14 +562,6 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   /* the felt bed the coins are counted onto */
-  counterWell: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    top: 0,
-    height: '38%',
-    backgroundColor: 'rgba(31,42,90,0.05)',
-  },
   strip: {
     flexDirection: 'row',
     alignItems: 'center',

@@ -279,7 +279,7 @@ export function Signals({ challenge, ageBand, onComplete, onEvent, compact }: Mi
         <View style={[styles.clipboard, { width: sheetWidth }]}>
           {/* the form is paper: it takes the room's light across its face and
               lifts off the board in the shaded corner */}
-          <PaperGrain ruled={false} margin={false} />
+          <PaperGrain ruled={false} margin={false} radius={radii.panel} />
           <View style={styles.clip} />
           <View style={styles.clipInner} />
           {/* the sheet's own printed head: a red index tab and two rules, so
@@ -429,7 +429,6 @@ const styles = StyleSheet.create({
   clipboard: {
     backgroundColor: palette.creamDeep,
     borderRadius: radii.panel,
-    overflow: 'hidden',
     paddingHorizontal: spacing.md,
     paddingTop: spacing.lg,
     paddingBottom: spacing.md,

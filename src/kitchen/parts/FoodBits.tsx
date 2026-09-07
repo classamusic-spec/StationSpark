@@ -71,8 +71,8 @@ export function FoodThumb({ id, size }: { id: string; size: number }) {
         <Path d="M13 76a39 12 0 0 1 30 -9 39 12 0 0 0 -25 11z" fill="rgba(255,255,255,0.9)" />
         <Path d="M87 82a39 12 0 0 1 -26 9 39 12 0 0 0 21 -11z" fill="rgba(31,42,90,0.08)" />
       </Svg>
-      <View style={[styles.thumbFood, { bottom: size * 0.2 }]} pointerEvents="none">
-        <VocabIcon id={id} size={size * 0.82} noShadow />
+      <View style={[styles.thumbFood, { bottom: size * 0.23 }]} pointerEvents="none">
+        <VocabIcon id={id} size={size * 0.88} noShadow />
       </View>
     </View>
   );

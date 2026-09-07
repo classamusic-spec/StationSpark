@@ -33,7 +33,7 @@
  */
 import React, { memo, useCallback, useMemo, useState } from 'react';
 import { StyleSheet, View, type LayoutChangeEvent, type StyleProp, type ViewStyle } from 'react-native';
-import Svg, { Defs, G, LinearGradient, Rect, Stop } from 'react-native-svg';
+import Svg, { Defs, G, LinearGradient, RadialGradient, Rect, Stop } from 'react-native-svg';
 import type { SceneId } from '@/learning/types';
 import { palette, radii, shadows } from '@/theme';
 import {
@@ -200,10 +200,21 @@ const SceneArt = memo(function SceneArt({ scene, w, h, compact, bleed }: { scene
           <Stop offset="0" stopColor={s.sky[1]} stopOpacity={0} />
           <Stop offset="1" stopColor={s.sky[1]} stopOpacity={0.9} />
         </LinearGradient>
+        {/* Where the light comes from. Every object in this world is lit from
+            the top left and shaded down its right — but the sky itself was a
+            flat two-stop ramp, so nothing in the frame said *why*. One warm
+            bloom in the upper left costs a single node and makes the whole
+            composition agree with its own shading. */}
+        <RadialGradient id={`sbloom-${scene}`} cx="0.14" cy="0.06" r="0.85">
+          <Stop offset="0" stopColor={palette.white} stopOpacity={0.5} />
+          <Stop offset="0.42" stopColor="#FFF6E5" stopOpacity={0.16} />
+          <Stop offset="1" stopColor="#FFF6E5" stopOpacity={0} />
+        </RadialGradient>
       </Defs>
 
       {/* sky, all the way down to the ground line — never a gap */}
       <Rect x={0} y={0} width={w} height={f.gy + 4} fill={`url(#ssky-${scene})`} />
+      <Rect x={0} y={0} width={w} height={f.gy + 4} fill={`url(#sbloom-${scene})`} />
       <SkyFurniture f={f} seed={def.height} />
 
       {/* far distance */}

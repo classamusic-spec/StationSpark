@@ -1,12 +1,11 @@
 import React, { useMemo } from 'react';
 import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 import Svg, { Circle, Defs, Ellipse, G, LinearGradient, Path, Rect, Stop } from 'react-native-svg';
-import Animated, { FadeIn, useAnimatedStyle } from 'react-native-reanimated';
+import Animated, { FadeIn } from 'react-native-reanimated';
 import { palette, radii, shadows, spacing } from '@/theme';
 import { Text } from '@/ui/Text';
 import { Button } from '@/ui/Button';
 import { ChevronRightIcon } from '@/ui/icons';
-import { useRise } from './motion';
 
 /* ------------------------------------------------------------------ */
 /* Wooden peel (the board the pizza sits on)                             */
@@ -353,40 +352,6 @@ export function CookCTA({
 }
 
 /* ------------------------------------------------------------------ */
-/* Bubbling pot                                                          */
-/* ------------------------------------------------------------------ */
-
-export function PotArt({ size, bubbling }: { size: number; bubbling?: boolean }) {
-  const rise = useRise(1800);
-  const bubbleStyle = useAnimatedStyle(() => ({
-    opacity: bubbling ? 1 - rise.value : 0,
-    transform: [{ translateY: -rise.value * 20 * (size / 120) }],
-  }));
-  return (
-    <View style={{ width: size, height: size * 0.82 }}>
-      <Animated.View style={[styles.bubbles, bubbleStyle]} pointerEvents="none">
-        <Svg width={size * 0.5} height={size * 0.3} viewBox="0 0 60 36">
-          <Circle cx={14} cy={22} r={7} fill="rgba(255,255,255,0.75)" />
-          <Circle cx={32} cy={13} r={5} fill="rgba(255,255,255,0.65)" />
-          <Circle cx={47} cy={24} r={6} fill="rgba(255,255,255,0.7)" />
-        </Svg>
-      </Animated.View>
-      <View style={{ position: 'absolute', bottom: 0 }}>
-        <Svg width={size} height={size * 0.62} viewBox="0 0 120 74">
-          <Ellipse cx={60} cy={70} rx={52} ry={6} fill="rgba(31,42,90,0.12)" />
-          <Rect x={14} y={12} width={92} height={58} rx={16} fill={palette.charcoal} />
-          <Rect x={14} y={12} width={92} height={14} rx={7} fill={palette.slate} />
-          <Rect x={0} y={26} width={18} height={10} rx={5} fill={palette.slate} />
-          <Rect x={102} y={26} width={18} height={10} rx={5} fill={palette.slate} />
-          <Rect x={26} y={17} width={68} height={7} rx={3.5} fill="#F0A24B" />
-          <Rect x={30} y={40} width={54} height={8} rx={4} fill="rgba(255,255,255,0.16)" />
-        </Svg>
-      </View>
-    </View>
-  );
-}
-
-/* ------------------------------------------------------------------ */
 /* Checkered cloth corner                                                */
 /* ------------------------------------------------------------------ */
 
@@ -420,5 +385,4 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     minWidth: 160,
   },
-  bubbles: { position: 'absolute', top: 0, alignSelf: 'center' },
 });

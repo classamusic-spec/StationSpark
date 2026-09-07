@@ -59,8 +59,14 @@ const FLOW_FAST = 2.6;
 /** the jug rests here the moment it is picked up, before any tilting */
 const TILT_REST = -22;
 const TILT_MAX = -68;
-/** past this the cup is overflowing and the jug closes itself */
-const BRIM = 1.25;
+/**
+ * How far past the tallest marked line the cup can be filled before it spills.
+ *
+ * This used to be a flat 1.25 CUPS, which made "pour 1 ½ spoons" impossible:
+ * the jug shut itself at 1 ¼ and the Done button said "keep pouring up to the
+ * 1 ½ line" for ever. Headroom belongs to the measure being asked for.
+ */
+const BRIM_OVER = 1.25;
 
 /**
  * `tin` is the colour of the container the ingredient is *in*.
@@ -100,7 +106,7 @@ interface Scene {
   cup: Box;
   /** the glass inside the cup, where the liquid lives */
   inner: Box;
-  /** the "1 cup" line sits this far up the glass, leaving headroom to overfill */
+  /** the TOPMOST line sits this far up the glass, leaving headroom to overfill */
   span: number;
   jug: Box;
   readout: Box;
@@ -216,6 +222,13 @@ export function MeasurePour({ challenge, onComplete, onEvent, compact }: MiniGam
 
   const target = challenge.target;
   const targetN = toNumber(target);
+  /**
+   * The tallest line the glass is marked to — never less than a whole cup, and
+   * always at least the target, so every measure a recipe can ask for has a
+   * line to pour up to ON THE GLASS rather than one drawn across the rim.
+   */
+  const topLine = Math.max(1, targetN);
+  const brim = topLine * BRIM_OVER;
   const pouredN = toNumber(poured);
   const look = liquidLook[challenge.ingredient.id] ?? DEFAULT_LOOK;
   const unitWord = challenge.unit === 'cup' ? 'cup' : 'spoon';
@@ -226,8 +239,8 @@ export function MeasurePour({ challenge, onComplete, onEvent, compact }: MiniGam
   );
 
   useEffect(() => {
-    level.value = withSpring(Math.min(1.35, pouredN), springs.gentle);
-  }, [level, pouredN]);
+    level.value = withSpring(Math.min(brim + 0.1, pouredN), springs.gentle);
+  }, [brim, level, pouredN]);
 
   const stopPour = useCallback(() => {
     if (ticker.current) clearInterval(ticker.current);
@@ -244,7 +257,7 @@ export function MeasurePour({ challenge, onComplete, onEvent, compact }: MiniGam
   /** One more measure out of the jug. Returns false when the cup is at the brim. */
   const addChunk = useCallback(() => {
     const next = add(pourRef.current, challenge.step);
-    if (toNumber(next) > BRIM) {
+    if (toNumber(next) > brim) {
       if (!warnedFull.current) {
         warnedFull.current = true;
         wobble.value = withSequence(
@@ -262,7 +275,7 @@ export function MeasurePour({ challenge, onComplete, onEvent, compact }: MiniGam
     setPoured(next);
     kitchenFeel.pour();
     return true;
-  }, [assist, challenge.step, wobble]);
+  }, [assist, brim, challenge.step, wobble]);
 
   /* ------------------------------------------------------------------ */
   /* Tilt the jug to pour                                                 */
@@ -422,6 +435,8 @@ export function MeasurePour({ challenge, onComplete, onEvent, compact }: MiniGam
           const sc = layout(box);
           const { s, w, cup, inner, jug } = sc;
           const dress = sc.dressW;
+          /* the glass is marked to `topLine`, so one whole cup is this tall */
+          const unitSpan = sc.span / topLine;
           return (
             <>
               {/* --- the room ------------------------------------- */}
@@ -461,7 +476,7 @@ export function MeasurePour({ challenge, onComplete, onEvent, compact }: MiniGam
                 style={[at(s, inner.x, inner.y, inner.w, inner.h), styles.clip, { borderRadius: inner.w * 0.12 * s }]}
                 pointerEvents="none"
               >
-                <Liquid s={s} span={sc.span} level={level} width={inner.w} look={look} />
+                <Liquid s={s} span={unitSpan} level={level} width={inner.w} look={look} />
               </View>
 
               {/* …and the front wall of the glass over the top of it */}
@@ -494,7 +509,7 @@ export function MeasurePour({ challenge, onComplete, onEvent, compact }: MiniGam
               <View style={at(s, cup.x, cup.y, cup.w * 1.34, cup.h)} pointerEvents="none">
                 {ticks.map((t) => {
                   const lit = pouredN >= t - 1e-6;
-                  const y = inner.y - cup.y + inner.h - t * sc.span;
+                  const y = inner.y - cup.y + inner.h - t * unitSpan;
                   const isTarget = Math.abs(t - targetN) < 1e-6;
                   const tickH = (isTarget ? 5 : 3) * s;
                   return (

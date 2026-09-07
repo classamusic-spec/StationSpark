@@ -15,7 +15,7 @@ import { PaperGrain } from '../shared/art/Props';
  * the light falling across it as well, so it reads as paper pinned to a board.
  */
 export function BoardRules() {
-  return <PaperGrain margin={false} rules={[16, 34, 52, 70, 88]} />;
+  return <PaperGrain margin={false} rules={[16, 34, 52, 70, 88]} radius={radii.panel} />;
 }
 
 /** The pinned picture card at the top of the board. */

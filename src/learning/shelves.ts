@@ -195,7 +195,7 @@ export const shelves: readonly VocabShelf[] = [
     id: 'sports-day',
     label: 'Sports day',
     labelEs: 'Día deportivo',
-    words: ['race', 'win', 'field', 'whistle', 'coach', 'fast', 'slow', 'jump'],
+    words: ['race', 'win', 'field', 'whistle', 'jump', 'slow', 'big', 'small'],
   },
 ];
 

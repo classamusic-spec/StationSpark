@@ -377,7 +377,13 @@ export function LadderBuilder({ challenge, ageBand, onComplete, onEvent, compact
             <WallLedge width={geo.gaugeX + geo.gaugeW + 26 - geo.stackX} />
           </View>
           {!animalOnShoulder ? (
-            <View style={[styles.animal, { left: geo.stackX + 2, top: geo.ledgeY - stage.s(66) }]} pointerEvents="none">
+            /* the rig's feet are 93 % down its own box, and the plank's top
+               face is 10 px above `ledgeY`: seat the box on that line or the
+               animal stands ankle-deep in the timber */
+            <View
+              style={[styles.animal, { left: geo.stackX + 2, top: geo.ledgeY - 9 - stage.s(66) * 0.93 }]}
+              pointerEvents="none"
+            >
               <Animal id={challenge.animal} size={stage.s(66)} mood="help" />
             </View>
           ) : null}

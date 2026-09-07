@@ -251,7 +251,7 @@ const MOWN = (() => {
   let d = '';
   for (let i = -4; i < 12; i += 1) {
     const x = i * 64;
-    d += `M ${x} -10 L ${x + 31} -10 L ${x + 31 + 210} 610 L ${x + 210} 610 Z`;
+    d += `M ${x} -10 L ${x + 40} -10 L ${x + 40 + 210} 610 L ${x + 210} 610 Z`;
   }
   return d;
 })();
@@ -836,7 +836,7 @@ const MapArt = memo(function MapArt({ width, height }: { width: number; height: 
 
       {/* ground */}
       <Rect x={0} y={0} width={MAP_VB.w} height={MAP_VB.h} fill="url(#mapGrass)" />
-      <Path d={MOWN} fill={palette.white} opacity={0.075} />
+      <Path d={MOWN} fill={palette.white} opacity={0.05} />
       {/* soft meadow patches */}
       <Ellipse cx={58} cy={392} rx={54} ry={30} fill="#B4E693" opacity={0.5} />
       <Ellipse cx={242} cy={430} rx={42} ry={30} fill="#B4E693" opacity={0.45} />

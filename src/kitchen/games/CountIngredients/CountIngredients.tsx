@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
-import Svg, { Circle, Defs, Ellipse, LinearGradient, Path, Rect, Stop } from 'react-native-svg';
+import Svg, { Circle, Defs, Ellipse, G, LinearGradient, Path, Rect, Stop } from 'react-native-svg';
 import { GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   FadeInDown,
@@ -841,10 +841,10 @@ function BlenderArt({ width, fill, blended, whirl }: { width: number; fill: numb
             silhouette. It used to be near-white on a cream wall, so the hero
             object of this game had almost no edge at all. */}
         <LinearGradient id="ciGlass" x1="0" y1="0" x2="1" y2="0">
-          <Stop offset="0" stopColor="#A9B8D4" />
-          <Stop offset="0.2" stopColor="#DCE5F3" />
-          <Stop offset="0.74" stopColor="#CBD6E9" />
-          <Stop offset="1" stopColor="#A3B2CE" />
+          <Stop offset="0" stopColor="#8FA1C4" />
+          <Stop offset="0.2" stopColor="#CFDAEC" />
+          <Stop offset="0.74" stopColor="#BAC8E0" />
+          <Stop offset="1" stopColor="#8B9CBF" />
         </LinearGradient>
         <LinearGradient id="ciDepth" x1="0" y1="0" x2="0" y2="1">
           <Stop offset="0" stopColor="#1F2A5A" stopOpacity={0} />
@@ -903,31 +903,36 @@ function BlenderArt({ width, fill, blended, whirl }: { width: number; fill: numb
         />
       ) : null}
 
-      {/* glass sheen: two strips, not a wash over the whole jug */}
-      <Path d="M36 44h13l-4 92h-9z" fill="url(#ciJar)" />
-      <Path d="M104 44h9l-6 92h-6z" fill="rgba(255,255,255,0.45)" />
+      {/* glass sheen: two narrow strips, not a wash over the whole jug — a
+          wide one bleached the jug back to the white void it used to be */}
+      <Path d="M37 46h10l-3 88h-8z" fill="url(#ciJar)" />
+      <Path d="M105 46h7l-5 88h-5z" fill="rgba(255,255,255,0.34)" />
 
-      {/* measurement marks, with a longer tick at the halfway line */}
+      {/* measurement marks: moulded into the glass, so each cut takes the
+          shade and the lip under it takes the light */}
       {[0, 1, 2, 3, 4].map((i) => (
-        <Rect key={`m${i}`} x={56} y={58 + i * 17} width={i === 2 ? 26 : 15} height={3} rx={1.5} fill="rgba(31,42,90,0.26)" />
+        <G key={`m${i}`}>
+          <Rect x={56} y={58 + i * 17} width={i === 2 ? 26 : 15} height={3} rx={1.5} fill="rgba(31,42,90,0.28)" />
+          <Rect x={56} y={61 + i * 17} width={i === 2 ? 26 : 15} height={2} rx={1} fill="rgba(255,255,255,0.6)" />
+        </G>
       ))}
 
       {/* handle, in front of the glass so it reads as a handle */}
-      <Path d="M112 58q30 6 30 32t-30 34" fill="none" stroke="#DCE3F0" strokeWidth={16} strokeLinecap="round" />
-      <Path d="M112 58q30 6 30 32t-30 34" fill="none" stroke={palette.white} strokeWidth={10} strokeLinecap="round" />
-      <Path d="M114 64q22 6 23 26" fill="none" stroke="rgba(255,255,255,0.9)" strokeWidth={4} strokeLinecap="round" />
+      <Path d="M112 58q30 6 30 32t-30 34" fill="none" stroke="#9FAFCC" strokeWidth={16} strokeLinecap="round" />
+      <Path d="M112 58q30 6 30 32t-30 34" fill="none" stroke="#E8EDF7" strokeWidth={10} strokeLinecap="round" />
+      <Path d="M114 64q22 6 23 26" fill="none" stroke="rgba(255,255,255,0.95)" strokeWidth={4} strokeLinecap="round" />
 
       {/* glass edge: bright where the light strikes it, cool where it turns
           away — a white outline all the way round is what flattened it */}
-      <Path d="M32 40L41 140" fill="none" stroke="rgba(255,255,255,0.9)" strokeWidth={5} strokeLinecap="round" />
+      <Path d="M32 40L41 140" fill="none" stroke="rgba(255,255,255,0.6)" strokeWidth={4} strokeLinecap="round" />
       <Path d="M116 40L107 140" fill="none" stroke="rgba(255,255,255,0.4)" strokeWidth={4} strokeLinecap="round" />
       <Path d="M41 140h66" fill="none" stroke="rgba(31,42,90,0.16)" strokeWidth={4} strokeLinecap="round" />
       <Path d="M40 50q5 12 4 30" fill="none" stroke="rgba(255,255,255,0.9)" strokeWidth={7} strokeLinecap="round" />
       <Path d="M26 40h16l-4 12z" fill="#E7EDF7" />
 
       {/* lid */}
-      <Rect x={26} y={26} width={96} height={16} rx={8} fill="#C3CEE4" />
-      <Rect x={26} y={25} width={96} height={13} rx={6.5} fill={palette.white} />
+      <Rect x={26} y={26} width={96} height={16} rx={8} fill="#A5B4D0" />
+      <Rect x={26} y={25} width={96} height={13} rx={6.5} fill="#E4EAF5" />
       <Rect x={32} y={27} width={40} height={4} rx={2} fill="rgba(255,255,255,0.95)" />
       <Rect x={58} y={12} width={32} height={16} rx={8} fill={palette.slateLight} />
       <Rect x={64} y={16} width={14} height={4} rx={2} fill="rgba(255,255,255,0.8)" />

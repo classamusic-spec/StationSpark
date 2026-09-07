@@ -36,6 +36,18 @@
  * new word points at a glyph that already exists, borrowing the nearest drawn
  * cousin where it has no portrait of its own (ajo → onion, durazno → apple,
  * palomitas → corn, abeja → honey) — exactly the rule naranja → apple used.
+ *
+ * THIRD WORD LIST (the twelve second calls) adds 31: the bandstand, the storm
+ * night, the harbour, sports day, the birthday and what the world shelf of
+ * recipes is made of. Same rule again — every icon on the sheet is now spoken
+ * for at least once, so a new word can only ever borrow.
+ *
+ * WHICH IS WHY `src/learning/shelves.ts` EXISTS. Borrowing is fine on a Word
+ * Tap tile, where the word is printed under the picture, and fatal on a Count
+ * Ingredients shelf, where a child picks by picture alone. `shelves.ts` groups
+ * the bank into small named sets that are guaranteed icon-distinct, so a
+ * mission can hand any game a coherent handful of words and know the board is
+ * answerable.
  */
 import type { Rng } from '@/utils/rng';
 import type { VocabWord } from './types';
@@ -424,6 +436,9 @@ export const vocabulary: VocabWord[] = [
   { id: 'cinnamon', en: 'cinnamon', es: 'canela', icon: 'salt', category: 'food' },
   { id: 'vanilla', en: 'vanilla', es: 'vainilla', icon: 'honey', category: 'food' },
   { id: 'oats', en: 'oats', es: 'avena', icon: 'flour', category: 'food' },
+
+  /* ---- the reading corner (+1) ---- */
+  { id: 'book', en: 'book', es: 'libro', icon: 'library', category: 'equipment' },
 ];
 
 const byId = new Map(vocabulary.map((w) => [w.id, w]));
@@ -533,7 +548,7 @@ const gender: Record<string, 'm' | 'f'> = {
   boat: 'm', harbour: 'm', net: 'f', anchor: 'm', sailor: 'm', whale: 'f',
   race: 'f', field: 'f', stage: 'm',
   cream: 'f', seaweed: 'm', celery: 'm', spinach: 'f', cinnamon: 'f',
-  vanilla: 'f', oats: 'f',
+  vanilla: 'f', oats: 'f', book: 'm',
 };
 
 /** Plurals that the regular rule would get wrong (accents, compounds). */
@@ -685,7 +700,7 @@ export const countableIds: readonly string[] = [
   'star', 'window', 'door',
   /* ---- third word list ---- */
   'drum', 'guitar', 'trumpet', 'candle', 'gift', 'blanket', 'net', 'boat',
-  'whale', 'song', 'race',
+  'whale', 'song', 'race', 'book',
 ];
 
 export const countableWords = (): VocabWord[] => countableIds.map((id) => wordById(id));

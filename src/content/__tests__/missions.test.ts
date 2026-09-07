@@ -28,21 +28,33 @@ const linesOf = (beat: MissionBeat): DialogueLine[] => {
 const allLines = (mission: MissionDef): DialogueLine[] => mission.beats.flatMap(linesOf);
 
 const ALL_MISSION_IDS = [
+  'apartment-alarm-check',
   'bakery-bell',
+  'bakery-birthday',
   'beach-day',
   'clock-tower-cat',
   'community-cleanup',
   'festival-exchange',
+  'festival-lantern-parade',
+  'freight-yard-count',
   'garden-grow-day',
+  'garden-harvest',
+  'harbour-boat-rescue',
+  'library-book-sale',
   'library-lights',
+  'market-delivery-run',
   'market-morning',
   'moving-day',
   'museum-mystery',
+  'park-bandstand',
   'park-picnic',
   'pet-shop-parade',
   'pizza-shop-panic',
+  'pizzeria-blackout',
   'playground-build',
   'school-fair',
+  'school-sports-day',
+  'snow-day-shift',
   'station-open-day',
   'train-timetable',
 ];
@@ -50,10 +62,36 @@ const ALL_MISSION_IDS = [
 /** The five newest calls — see `content.test.ts` for why they borrow a badge. */
 const NEW_CALLS = ['moving-day', 'garden-grow-day', 'station-open-day', 'playground-build', 'beach-day'];
 
+/**
+ * THE SECOND CALLS.
+ *
+ * Twelve places on the map now hold two stories instead of one. They are
+ * listed here paired with the call they stand beside, because the thing worth
+ * testing about them is not that they exist — it is that a second call at the
+ * bakery is not the first call at the bakery with different numbers.
+ */
+const SECOND_CALLS: { id: string; beside: string }[] = [
+  { id: 'snow-day-shift', beside: 'station-open-day' },
+  { id: 'bakery-birthday', beside: 'bakery-bell' },
+  { id: 'pizzeria-blackout', beside: 'pizza-shop-panic' },
+  { id: 'park-bandstand', beside: 'park-picnic' },
+  { id: 'library-book-sale', beside: 'library-lights' },
+  { id: 'market-delivery-run', beside: 'market-morning' },
+  { id: 'garden-harvest', beside: 'garden-grow-day' },
+  { id: 'apartment-alarm-check', beside: 'moving-day' },
+  { id: 'school-sports-day', beside: 'school-fair' },
+  { id: 'freight-yard-count', beside: 'train-timetable' },
+  { id: 'harbour-boat-rescue', beside: 'beach-day' },
+  { id: 'festival-lantern-parade', beside: 'festival-exchange' },
+];
+
+const gamesOf = (mission: MissionDef): Set<ChallengeKind> =>
+  new Set(mission.beats.flatMap((b) => (b.type === 'minigame' ? [b.game] : [])));
+
 describe('mission set', () => {
-  it('ships the seventeen calls of Spark City with unique ids', () => {
-    expect(missions).toHaveLength(17);
-    expect(new Set(missions.map((m) => m.id)).size).toBe(17);
+  it('ships the twenty-nine calls of Spark City with unique ids', () => {
+    expect(missions).toHaveLength(29);
+    expect(new Set(missions.map((m) => m.id)).size).toBe(29);
     expect(missions.map((m) => m.id).sort()).toEqual([...ALL_MISSION_IDS].sort());
   });
 
@@ -94,7 +132,7 @@ describe('mission set', () => {
     expect(done).toHaveLength(missions.length);
   });
 
-  it('fans out instead of queueing: seventeen missions open in five rounds', () => {
+  it('fans out instead of queueing: twenty-nine missions open in five rounds', () => {
     const rounds: number[] = [];
     let done: string[] = [];
     for (let pass = 0; pass < 10 && done.length < missions.length; pass++) {
@@ -330,14 +368,39 @@ const beatFor = (missionId: string, game: ChallengeKind, index = 0) => {
 };
 
 describe('the twelve-mission town', () => {
-  it('never puts two missions in the same room of the town, except the pet shop', () => {
-    const byLocation = new Map<string, string[]>();
+  /*
+   * The town used to hold one call per building. It now holds two at most of
+   * them, which is only an improvement if the second one is a DIFFERENT STORY —
+   * "the bakery again with bigger numbers" would be worse than no mission at
+   * all. So the rule this test keeps is no longer "one per room"; it is:
+   *
+   *   · at most two calls stand at any one place,
+   *   · every place on the map has at least one,
+   *   · and two calls at the same place never share a badge, a tagline, or the
+   *     same set of mini-games.
+   *
+   * That last clause is the one that bites: it is exactly what a padded mission
+   * would fail.
+   */
+  it('puts at most two calls at any one place, and never the same call twice', () => {
+    const byLocation = new Map<string, MissionDef[]>();
     for (const mission of missions) {
-      byLocation.set(mission.location, [...(byLocation.get(mission.location) ?? []), mission.id]);
+      byLocation.set(mission.location, [...(byLocation.get(mission.location) ?? []), mission]);
     }
-    for (const [location, ids] of byLocation) {
-      if (location === 'pet-shop') expect(ids.sort()).toEqual(['community-cleanup', 'pet-shop-parade']);
-      else expect(ids).toHaveLength(1);
+    expect(byLocation.size).toBe(16);
+    for (const [location, list] of byLocation) {
+      expect(list.length).toBeGreaterThanOrEqual(1);
+      expect(list.length).toBeLessThanOrEqual(2);
+      if (list.length !== 2) continue;
+      const [first, second] = list as [MissionDef, MissionDef];
+      expect(first.badge).not.toBe(second.badge);
+      expect(first.tagline).not.toBe(second.tagline);
+      const a = gamesOf(first);
+      const b = gamesOf(second);
+      const shared = [...a].filter((k) => b.has(k));
+      if (shared.length === a.size && shared.length === b.size) {
+        throw new Error(`both calls at the ${location} play exactly the same games`);
+      }
     }
   });
 
@@ -594,5 +657,195 @@ describe('the five newest calls', () => {
       'station→school',
       'school→station',
     ]);
+  });
+});
+
+/* ------------------------------------------------------------------ */
+/* The twelve second calls that doubled the town                        */
+/* ------------------------------------------------------------------ */
+
+describe('the second calls', () => {
+  it('all exist, and each stands beside a call that was already there', () => {
+    for (const { id, beside } of SECOND_CALLS) {
+      const mission = missionById(id);
+      const older = missionById(beside);
+      expect(mission).toBeDefined();
+      expect(older).toBeDefined();
+      expect(mission?.location).toBe(older?.location);
+    }
+  });
+
+  it('is a different story, not the same one renumbered', () => {
+    for (const { id, beside } of SECOND_CALLS) {
+      const mission = missionById(id) as MissionDef;
+      const older = missionById(beside) as MissionDef;
+      expect(mission.tagline).not.toBe(older.tagline);
+      expect(mission.brief).not.toBe(older.brief);
+      expect(mission.badge).not.toBe(older.badge);
+      /* at least one mini-game the older call never plays */
+      const fresh = [...gamesOf(mission)].filter((k) => !gamesOf(older).has(k));
+      expect(fresh.length).toBeGreaterThan(0);
+    }
+  });
+
+  it('gives every one of them a band-restricted swap covering all three bands', () => {
+    for (const { id } of SECOND_CALLS) {
+      const swaps = (missionById(id)?.beats ?? []).filter((b) => b.type === 'minigame' && b.bands);
+      expect(swaps.length).toBeGreaterThanOrEqual(1);
+      const covered = new Set(swaps.flatMap((b) => (b.type === 'minigame' ? (b.bands ?? []) : [])));
+      expect([...covered].sort()).toEqual(['A', 'B', 'C']);
+    }
+  });
+
+  it('never gates another second call, so the town still opens in five rounds', () => {
+    const ids = new Set(SECOND_CALLS.map((c) => c.id));
+    for (const { id } of SECOND_CALLS) {
+      const requires = missionById(id)?.requires ?? [];
+      expect(requires.length).toBeGreaterThan(0); // never open on day one
+      expect(requires.length).toBeLessThanOrEqual(2);
+      for (const need of requires) expect(ids.has(need)).toBe(false);
+    }
+  });
+
+  /*
+   * THE HOLE THE TOWN USED TO HAVE.
+   *
+   * Before these twelve calls, `divide-share`, `recipe-scale` and
+   * `pizza-fractions` were Kitchen-only: a child could play every mission in
+   * Spark City and never once be asked to share something out equally or to
+   * grow a recipe. Division and equivalent fractions were the only two skills
+   * in `challengeSkills` that no mission beat reached, at any band.
+   */
+  it('brings division, scaling and fractions out of the Kitchen and into the town', () => {
+    const played = new Map<ChallengeKind, string[]>();
+    for (const mission of missions) {
+      for (const beat of mission.beats) {
+        if (beat.type === 'minigame') played.set(beat.game, [...(played.get(beat.game) ?? []), mission.id]);
+      }
+    }
+    expect((played.get('divide-share') ?? []).length).toBeGreaterThanOrEqual(3);
+    expect((played.get('recipe-scale') ?? []).length).toBeGreaterThanOrEqual(1);
+    expect((played.get('pizza-fractions') ?? []).length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('reaches every skill the games can teach, for every band', () => {
+    const everySkill = new Set(Object.values(challengeSkills).flat());
+    for (const band of BANDS) {
+      const reached = new Set<string>();
+      for (const mission of missions) {
+        for (const beat of beatsForBand(mission, band)) {
+          if (beat.type !== 'minigame') continue;
+          for (const skill of challengeSkills[beat.game]) reached.add(skill);
+        }
+      }
+      /* `estimation` has no game at all yet — see docs/CURRICULUM.md §2. */
+      const missing = [...everySkill].filter((s) => s !== 'estimation' && !reached.has(s));
+      expect(missing).toEqual([]);
+    }
+  });
+
+  it('shares out an amount that really divides, in every band of every sharing beat', () => {
+    for (const mission of missions) {
+      for (const band of BANDS) {
+        for (const beat of beatsForBand(mission, band)) {
+          if (beat.type !== 'minigame' || beat.game !== 'divide-share') continue;
+          const challenge = beat.challenge({ ageBand: band, rng: createRng(77), scene: mission.scene });
+          if (challenge.kind !== 'divide-share') throw new Error('expected divide-share');
+          expect(challenge.total).toBe(challenge.among * challenge.each);
+          expect(challenge.among).toBeGreaterThanOrEqual(2);
+          expect(Number.isInteger(challenge.each)).toBe(true);
+        }
+      }
+    }
+  });
+
+  it('counts the storm shelter blankets out in whole families', () => {
+    const beat = beatFor('snow-day-shift', 'divide-share');
+    const expected: Record<AgeBand, [number, number, number]> = { A: [8, 2, 4], B: [12, 4, 3], C: [24, 6, 4] };
+    for (const band of BANDS) {
+      const share = beat.challenge({ ageBand: band, rng: createRng(3) });
+      if (share.kind !== 'divide-share') throw new Error('expected divide-share');
+      expect([share.total, share.among, share.each]).toEqual(expected[band]);
+      expect(share.item.id).toBe('blanket');
+    }
+    /* the shelter never leaves the station, so it has no travel beat at all */
+    expect(missionById('snow-day-shift')?.beats.some((b) => b.type === 'travel')).toBe(false);
+  });
+
+  it('grows the birthday recipe for every band, and always by whole amounts', () => {
+    const beat = beatFor('bakery-birthday', 'recipe-scale');
+    for (const band of BANDS) {
+      const grown = beat.challenge({ ageBand: band, rng: createRng(5) });
+      if (grown.kind !== 'recipe-scale') throw new Error('expected recipe-scale');
+      expect(grown.eating).toBeGreaterThan(grown.serves);
+      for (const line of grown.lines) {
+        expect(Number.isInteger(line.scaled)).toBe(true);
+        expect(line.scaled * grown.serves).toBe(line.amount * grown.eating);
+      }
+    }
+  });
+
+  it('cuts the blackout pizzas into eighths for the oldest crew only', () => {
+    const beat = beatFor('pizzeria-blackout', 'pizza-fractions');
+    const dens = BANDS.map((band) => {
+      const pie = beat.challenge({ ageBand: band, rng: createRng(9) });
+      if (pie.kind !== 'pizza-fractions') throw new Error('expected pizza-fractions');
+      /* every topping lands on whole slices and the pie is exactly covered */
+      for (const topping of pie.toppings) {
+        expect(Number.isInteger((topping.fraction.num * pie.cutInto) / topping.fraction.den)).toBe(true);
+      }
+      expect(pie.each).toBe(pie.cutInto / pie.shareAmong);
+      return Math.max(...pie.toppings.map((t) => t.fraction.den));
+    });
+    expect(dens).toEqual([2, 4, 8]);
+  });
+
+  it('reads the alarm round as a times table a child can walk along', () => {
+    const beat = beatFor('apartment-alarm-check', 'hydrant-match');
+    const answers = BANDS.map((band) => {
+      const tag = beat.challenge({ ageBand: band, rng: createRng(13) });
+      if (tag.kind !== 'hydrant-match') throw new Error('expected hydrant-match');
+      expect(tag.options.filter((o) => o === tag.correct)).toHaveLength(1);
+      return tag.correct;
+    });
+    expect(answers).toEqual([6, 24, 72]);
+  });
+
+  it('names the harbour lanes and Carmen’s streets, one per row', () => {
+    for (const id of ['harbour-boat-rescue', 'market-delivery-run']) {
+      const beat = beatFor(id, 'rescue-route');
+      for (const band of BANDS) {
+        const route = beat.challenge({ ageBand: band, rng: createRng(17) });
+        if (route.kind !== 'rescue-route') throw new Error('expected rescue-route');
+        expect(route.streetNames?.length).toBe(route.grid.rows);
+        for (const street of route.streetNames ?? []) expect(street.name.trim().length).toBeGreaterThan(0);
+      }
+    }
+  });
+
+  it('runs the lantern parade in Spanish for the youngest crew', () => {
+    const beat = beatFor('festival-lantern-parade', 'vocab-tap');
+    const tap = beat.challenge({ ageBand: 'A', rng: createRng(19) });
+    if (tap.kind !== 'vocab-tap') throw new Error('expected vocab-tap');
+    expect(tap.promptLang).toBe('es');
+    expect(tap.options.filter((o) => o.id === tap.word.id)).toHaveLength(1);
+  });
+
+  it('pulls every word-tap board off one shelf, so no two pictures repeat', () => {
+    for (const { id } of SECOND_CALLS) {
+      const mission = missionById(id) as MissionDef;
+      const beats = mission.beats.filter((b) => b.type === 'minigame' && b.game === 'vocab-tap');
+      for (const beat of beats) {
+        if (beat.type !== 'minigame') continue;
+        for (const band of BANDS) {
+          for (const seed of SEEDS) {
+            const tap = beat.challenge({ ageBand: band, rng: createRng(seed), scene: mission.scene });
+            if (tap.kind !== 'vocab-tap') throw new Error('expected vocab-tap');
+            const icons = tap.options.map((o) => o.icon);
+            expect(new Set(icons).size).toBe(icons.length);
+          }
+        }
+      }
+    }
   });
 });

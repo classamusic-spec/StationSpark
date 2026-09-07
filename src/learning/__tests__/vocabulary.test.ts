@@ -25,8 +25,8 @@ const ICON_IDS = (() => {
 const CATEGORIES = ['equipment', 'food', 'colors', 'numbers', 'places', 'actions', 'people', 'animals'] as const;
 
 describe('vocabulary bank', () => {
-  it('has at least 160 words', () => {
-    expect(vocabulary.length).toBeGreaterThanOrEqual(160);
+  it('has at least 320 words', () => {
+    expect(vocabulary.length).toBeGreaterThanOrEqual(320);
   });
 
   it('gives every category enough words for a four-picture question', () => {
@@ -44,6 +44,20 @@ describe('vocabulary bank', () => {
       'enfermera', 'policía', 'cartero', 'granjero', 'veterinaria', // helpers
       'museo', 'estación de tren', 'festival', // the new places
       'limón', 'cebolla', 'cilantro', 'tortilla', 'quesadilla', // the new food
+    ]) {
+      expect(spanish).toContain(word);
+    }
+  });
+
+  it('knows the band, the storm, the harbour and the sports field', () => {
+    const spanish = new Set(vocabulary.map((w) => w.es));
+    for (const word of [
+      'tambor', 'guitarra', 'trompeta', 'canción', 'bailar', // the bandstand
+      'manta', 'vela', 'derretir', 'congelar', // the storm night
+      'barco', 'puerto', 'ancla', 'marinero', 'ballena', // the harbour
+      'carrera', 'ganar', 'cancha', // sports day
+      'libro', 'cuento', 'regalo', 'público', // the book sale and the party
+      'crema', 'canela', 'espinaca', 'apio', 'avena', 'alga', // what the new dishes are made of
     ]) {
       expect(spanish).toContain(word);
     }
@@ -155,6 +169,26 @@ describe('Spanish counting phrases', () => {
   it('knows its Spanish number words', () => {
     expect(numberWordEs(7)).toBe('siete');
     expect(numberWordEs(12)).toBe('doce');
+  });
+
+  /*
+   * `el ancla` and `el alga` are feminine nouns that take the masculine article
+   * in the singular, because the noun starts with a stressed A. Filing them as
+   * masculine is what makes `countPhraseEs` say "un ancla" rather than the
+   * incorrect "una ancla" — and the plural rule still gives "dos anclas".
+   */
+  it('gets the new words’ articles and plurals right', () => {
+    expect(countPhraseEs(1, wordById('anchor'))).toBe('un ancla');
+    expect(countPhraseEs(2, wordById('anchor'))).toBe('dos anclas');
+    expect(countPhraseEs(1, wordById('blanket'))).toBe('una manta');
+    expect(countPhraseEs(3, wordById('blanket'))).toBe('tres mantas');
+    expect(countPhraseEs(1, wordById('candle'))).toBe('una vela');
+    expect(countPhraseEs(4, wordById('drum'))).toBe('cuatro tambores');
+    expect(countPhraseEs(2, wordById('book'))).toBe('dos libros');
+    expect(countPhraseEs(5, wordById('song'))).toBe('cinco canciones');
+    expect(countPhraseEn(2, wordById('whale'))).toBe('two whales');
+    expect(pluralEn(wordById('celery'))).toBe('celery');
+    expect(pluralEs(wordById('spinach'))).toBe('espinacas');
   });
 
   it('every countable word makes a clean phrase in both languages', () => {

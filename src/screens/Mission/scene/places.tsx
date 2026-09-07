@@ -577,13 +577,17 @@ function RoomGrid() {
     <G>
       <Path d={reveal} fill="#E4C48E" />
       <Path d={lintel} fill={SHADE} />
-      <Path d={pane} fill="#204A86" />
-      <Path d={top} fill="#3C6FB4" />
+      {/* sky-reflecting glass, not office navy: the home screen's wall is a
+          light cream field with six pale panels in it, and six dark rectangles
+          would drop the whole façade a value step below the one the child
+          knows */}
+      <Path d={pane} fill={GLASS} />
+      <Path d={top} fill="#A8D2F0" />
       {/* one room is lit, the way one always is in a station that never closes */}
-      <Rect x={cols[1] ?? 0} y={rows[0] ?? 0} width={tw} height={th} rx={0} fill="#F0C463" />
-      <Rect x={cols[1] ?? 0} y={rows[0] ?? 0} width={tw} height={th * 0.34} fill="#FFDF9A" />
-      <Path d={shine} fill={palette.white} opacity={0.18} />
-      <Path d={bars} fill="#E4C48E" opacity={0.9} />
+      <Rect x={cols[1] ?? 0} y={rows[0] ?? 0} width={tw} height={th} fill="#F7C766" />
+      <Rect x={cols[1] ?? 0} y={rows[0] ?? 0} width={tw} height={th * 0.34} fill="#FFE0A0" />
+      <Path d={shine} fill={palette.white} opacity={0.3} />
+      <Path d={bars} fill={palette.cream} opacity={0.92} />
       <Path d={sill} fill="#F3DCAF" />
       <Path d={sillShade} fill={SHADE} />
     </G>
@@ -638,12 +642,6 @@ function stationYardArt(detail: boolean) {
       <Rect x={fx(34)} y={49} width={fx(66) - fx(34)} height={8} rx={3.5} fill="#A2512A" />
       <Rect x={fx(34)} y={49} width={fx(66) - fx(34)} height={2.6} rx={1.3} fill={HIGHLIGHT} />
 
-      {/* the flag mast, bracketed to the gable wall (its flag is the sway) */}
-      <Rect x={fx(282)} y={18} width={4} height={90} rx={2} fill={palette.slateLight} />
-      <Rect x={fx(282)} y={18} width={1.6} height={90} fill={HIGHLIGHT} />
-      <Circle cx={fx(282) + 2} cy={17} r={3.2} fill={palette.gold} />
-      <Rect x={fx(282) - 4} y={100} width={12} height={9} rx={3} fill={palette.charcoal} />
-
       {/* ── the main hip, over its red eaves band ───────────────────── */}
       <HippedRoof x={fx(8)} y={124} w={fx(352) - fx(8)} rise={32} inset={fx(34) - fx(8)} over={fx(8) - fx(2)} tone={palette.engineRed} toneLight={palette.engineRedLight} toneDark={palette.engineRedDark} />
       <Path d={tiles} fill={SHADE} opacity={0.26} />
@@ -658,6 +656,13 @@ function stationYardArt(detail: boolean) {
       {/* the pilasters between the three room bays */}
       <Path d={rp(fx(125), 144, 3.7, 64) + rp(fx(230), 144, 3.7, 64)} fill={palette.tanDark} opacity={0.45} />
       <RoomGrid />
+
+      {/* the flag mast: charcoal, in front of the roof, ending at the board —
+          the same mast, in the same place, as the one on the home screen */}
+      <Rect x={fx(282)} y={16} width={5} height={112} rx={2.5} fill={palette.charcoalDark} />
+      <Rect x={fx(282)} y={16} width={1.8} height={112} fill={HIGHLIGHT} />
+      <Circle cx={fx(282) + 2.5} cy={15} r={4} fill={palette.gold} />
+      <Circle cx={fx(282) + 1.4} cy={13.6} r={1.4} fill={HIGHLIGHT} />
 
       {/* the STATION SPARK board, straddling the eaves band */}
       <SignBoard x={fx(64)} y={112} w={fx(296) - fx(64)} h={26} label="STATION SPARK" ink={palette.navy} size={15} />

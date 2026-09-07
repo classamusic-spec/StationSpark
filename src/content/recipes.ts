@@ -6,7 +6,7 @@
  * intro, including the "ask a grown-up at home" line.
  */
 import type { BadgeId, DialogueLine, RecipeDef, RecipeId } from './types';
-import type { AgeBand, Challenge, GeneratorContext, VocabWord } from '@/learning/types';
+import type { AgeBand, Challenge, Fraction, GeneratorContext, ToppingId, VocabWord } from '@/learning/types';
 import {
   generateClockWatch,
   generateCountIngredients,
@@ -114,6 +114,49 @@ const potOf = (
       /* only the oldest crew adds the pot up at the end */
       ...(ctx.ageBand === 'C' ? { askTotal: steps.reduce((sum, s) => sum + s.count, 0) } : {}),
     };
+  };
+
+/**
+ * Grow a recipe by a fixed ratio, with the amounts pinned by the dish.
+ *
+ * `generateRecipeScale` picks its own pantry; a real recipe knows what is in
+ * it. Every line is checked here the way the validator checks it — the scaled
+ * amount is a whole number and `scaled × serves === amount × eating` — so a
+ * child is never asked for two and a half eggs.
+ */
+const scaleTo = (
+  plan: Record<AgeBand, { serves: number; eating: number; lines: { item: VocabWord; amount: number }[] }>,
+) =>
+  (ctx: GeneratorContext): Challenge => {
+    const { serves, eating, lines } = plan[ctx.ageBand];
+    return {
+      ...generateRecipeScale(ctx),
+      serves,
+      eating,
+      lines: lines.map((l) => ({ item: l.item, amount: l.amount, scaled: (l.amount * eating) / serves })),
+    };
+  };
+
+/** Cut and dress a round thing — the fractions always cover exactly one whole. */
+const cutInto = (
+  plan: Record<AgeBand, { toppings: { topping: ToppingId; fraction: Fraction }[]; cutInto: number; shareAmong: number }>,
+) =>
+  (ctx: GeneratorContext): Challenge => {
+    const { toppings, cutInto: slices, shareAmong } = plan[ctx.ageBand];
+    return {
+      ...generatePizzaFractions(ctx),
+      toppings,
+      cutInto: slices,
+      shareAmong,
+      each: slices / shareAmong,
+    };
+  };
+
+/** Share `total` between `among`, pinned per band. */
+const shareOut = (item: VocabWord, plan: Record<AgeBand, { total: number; among: number }>) =>
+  (ctx: GeneratorContext): Challenge => {
+    const { total, among } = plan[ctx.ageBand];
+    return { ...generateDivideShare(ctx), item, total, among, each: total / among };
   };
 
 /**
@@ -993,6 +1036,426 @@ export const recipes: RecipeDef[] = [
         bands: ['B', 'C'],
         challenge: measure('salt', 1, 2, 'spoon'),
         intro: [bea('Half a spoon of salt. Taste it after.')],
+      },
+    ],
+  },
+
+  /* ------------------------------------------------------------------ *
+   * THE WORLD SHELF — six dishes from six kitchens.
+   *
+   * The book could already measure, count, share and scale, but eleven of the
+   * eighteen dishes reached for `measure-pour` and sixteen for
+   * `count-ingredients`, so the room taught the same two moves over and over.
+   * These six each lead with a DIFFERENT idea and a different game, and none of
+   * them is another jug of something:
+   *
+   *   tres-leches   scaling            recipe-scale, every band, not just C
+   *   sopes         fractions          pizza-fractions on a round masa base
+   *   arepas        money              market-money at the corner shop
+   *   onigiri       division           divide-share, then spell the label
+   *   minestrone    order + addition   soup-pot, then a real simmer on the clock
+   *   bibimbap      measurement        two units in one bowl, cups and spoons
+   * ------------------------------------------------------------------ */
+  {
+    id: 'tres-leches',
+    name: 'Tres Leches Cake',
+    nameEs: 'Pastel de tres leches',
+    blurb: 'Three milks, one cake — and twice as many people as the card says.',
+    subjects: ['cooking', 'math'],
+    grownUp: true,
+    xp: 32,
+    intro: [
+      bea('Tres leches means three milks. Rosa taught us.', 'Tres leches.'),
+      grownUpLine('hot oven'),
+    ],
+    steps: [
+      {
+        game: 'count-ingredients',
+        challenge: countByBand(
+          {
+            A: [
+              { item: foodWords.egg, count: 3 },
+              { item: foodWords.milk, count: 2 },
+            ],
+            B: [
+              { item: foodWords.egg, count: 4 },
+              { item: foodWords.milk, count: 3 },
+              { item: foodWords.butter, count: 2 },
+            ],
+            C: [
+              { item: foodWords.egg, count: 5 },
+              { item: foodWords.milk, count: 3 },
+              { item: foodWords.butter, count: 3 },
+            ],
+          },
+          [foodWords.apple, foodWords.lemon, foodWords.strawberry],
+        ),
+        intro: [radio('Huevos, leche, mantequilla. Count them onto the tray!', 'Huevos, leche y mantequilla.')],
+      },
+      {
+        game: 'measure-pour',
+        challenge: measureByBand('sugar', 'cup'),
+        intro: [bea('Sugar to the line, then stop. Slowly.')],
+      },
+      {
+        /*
+         * The kitchen's only scaling step for EVERY band. `recipe-scale` used
+         * to be a band-C-only treat, so a seven year old never once met
+         * "twice as much" — which is the first real multiplication a child
+         * meets in a kitchen.
+         */
+        game: 'recipe-scale',
+        challenge: scaleTo({
+          A: {
+            serves: 2,
+            eating: 4,
+            lines: [
+              { item: foodWords.egg, amount: 2 },
+              { item: foodWords.milk, amount: 1 },
+            ],
+          },
+          B: {
+            serves: 3,
+            eating: 6,
+            lines: [
+              { item: foodWords.egg, amount: 2 },
+              { item: foodWords.milk, amount: 1 },
+              { item: foodWords.sugar, amount: 2 },
+            ],
+          },
+          C: {
+            serves: 4,
+            eating: 6,
+            lines: [
+              { item: foodWords.egg, amount: 4 },
+              { item: foodWords.milk, amount: 2 },
+              { item: foodWords.sugar, amount: 2 },
+            ],
+          },
+        }),
+        intro: [bea('More neighbours came. Grow the whole card.')],
+      },
+      {
+        game: 'divide-share',
+        challenge: shareOut(wordById('cake'), { A: { total: 8, among: 2 }, B: { total: 12, among: 4 }, C: { total: 18, among: 6 } }),
+        intro: [radio('One slice each, all the way round the table.')],
+      },
+    ],
+  },
+  {
+    id: 'sopes',
+    name: 'Corn Sopes',
+    nameEs: 'Sopes de maíz',
+    blurb: 'Little round masa boats: half beans, and the rest split fairly.',
+    subjects: ['cooking', 'math', 'spanish'],
+    grownUp: true,
+    xp: 30,
+    intro: [
+      bea('Sopes are round, so fractions are easy to see.'),
+      grownUpLine('hot griddle'),
+    ],
+    steps: [
+      {
+        game: 'count-ingredients',
+        challenge: countByBand(
+          {
+            A: [
+              { item: wordById('beans'), count: 2 },
+              { item: foodWords.cheese, count: 2 },
+            ],
+            B: [
+              { item: wordById('beans'), count: 3 },
+              { item: foodWords.cheese, count: 2 },
+              { item: foodWords.onion, count: 2 },
+            ],
+            C: [
+              { item: wordById('beans'), count: 4 },
+              { item: foodWords.cheese, count: 3 },
+              { item: foodWords.onion, count: 2 },
+            ],
+          },
+          [foodWords.apple, foodWords.banana, foodWords.grape],
+        ),
+        intro: [radio('Frijoles, queso, cebolla. Say them with me!', 'Frijoles, queso y cebolla.')],
+      },
+      {
+        /*
+         * Band C meets EIGHTHS here — ½ + ¼ + ⅛ + ⅛ — which is the first time
+         * the kitchen asks a child to add three different denominators and
+         * still land on one whole sope.
+         */
+        game: 'pizza-fractions',
+        challenge: cutInto({
+          A: {
+            toppings: [
+              { topping: 'cheese', fraction: { num: 1, den: 2 } },
+              { topping: 'tomato', fraction: { num: 1, den: 2 } },
+            ],
+            cutInto: 4,
+            shareAmong: 2,
+          },
+          B: {
+            toppings: [
+              { topping: 'cheese', fraction: { num: 1, den: 2 } },
+              { topping: 'tomato', fraction: { num: 1, den: 4 } },
+              { topping: 'pepper', fraction: { num: 1, den: 4 } },
+            ],
+            cutInto: 8,
+            shareAmong: 4,
+          },
+          C: {
+            toppings: [
+              { topping: 'cheese', fraction: { num: 1, den: 2 } },
+              { topping: 'tomato', fraction: { num: 1, den: 4 } },
+              { topping: 'pepper', fraction: { num: 1, den: 8 } },
+              { topping: 'olive', fraction: { num: 1, den: 8 } },
+            ],
+            cutInto: 8,
+            shareAmong: 4,
+          },
+        }),
+        intro: [bea('Half the sope is beans. Then split the rest.')],
+      },
+      {
+        game: 'measure-pour',
+        challenge: measure('salt', 1, 2, 'spoon'),
+        intro: [radio('Half a spoon of sal. Sal means salt.', 'Sal.')],
+      },
+    ],
+  },
+  {
+    id: 'arepas',
+    name: 'Arepas',
+    nameEs: 'Arepas',
+    blurb: 'Buy the harina, pat the rounds, and count the change on the way home.',
+    subjects: ['cooking', 'math', 'spanish'],
+    grownUp: true,
+    xp: 30,
+    intro: [
+      bea('Arepas come from Venezuela and Colombia.'),
+      grownUpLine('hot griddle'),
+    ],
+    steps: [
+      {
+        /* Money first: the shopping is the maths, the cooking is the reward. */
+        game: 'market-money',
+        challenge: (ctx) => ({ ...marketMoneyFor('flour', ctx), item: foodWords.flour }),
+        intro: [
+          {
+            speaker: 'npc',
+            npcName: 'Abuela Carmen',
+            text: 'Harina for arepas. Count it out for me!',
+            es: 'Harina para las arepas. ¡Cuéntamelo bien!',
+            emotion: 'happy',
+          },
+        ],
+      },
+      {
+        game: 'count-ingredients',
+        challenge: countByBand(
+          {
+            A: [
+              { item: foodWords.flour, count: 2 },
+              { item: foodWords.cheese, count: 2 },
+            ],
+            B: [
+              { item: foodWords.flour, count: 3 },
+              { item: foodWords.cheese, count: 3 },
+              { item: foodWords.butter, count: 1 },
+            ],
+            C: [
+              { item: foodWords.flour, count: 4 },
+              { item: foodWords.cheese, count: 3 },
+              { item: foodWords.butter, count: 2 },
+            ],
+          },
+          [foodWords.tomato, foodWords.banana, foodWords.grape],
+        ),
+        intro: [radio('Harina, queso, mantequilla. On the board!', 'Harina, queso y mantequilla.')],
+      },
+      {
+        game: 'measure-pour',
+        challenge: measureByBand('water', 'cup'),
+        intro: [bea('Warm water into the harina. To the line.')],
+      },
+      {
+        game: 'divide-share',
+        challenge: shareOut(foodWords.bread, { A: { total: 6, among: 2 }, B: { total: 12, among: 3 }, C: { total: 15, among: 5 } }),
+        intro: [radio('Everyone gets the same number of arepas.')],
+      },
+    ],
+  },
+  {
+    id: 'onigiri',
+    name: 'Rice Balls',
+    nameEs: 'Bolas de arroz',
+    blurb: 'Press the rice, wrap the seaweed, share them out and label the box.',
+    subjects: ['cooking', 'math', 'reading'],
+    grownUp: true,
+    xp: 28,
+    intro: [
+      bea('Onigiri! Cold hands, warm rice. Press gently.'),
+      grownUpLine('hot rice pot'),
+    ],
+    steps: [
+      {
+        game: 'count-ingredients',
+        challenge: countByBand(
+          {
+            A: [
+              { item: foodWords.rice, count: 3 },
+              { item: wordById('seaweed'), count: 2 },
+            ],
+            B: [
+              { item: foodWords.rice, count: 4 },
+              { item: wordById('seaweed'), count: 3 },
+              { item: foodWords.egg, count: 2 },
+            ],
+            C: [
+              { item: foodWords.rice, count: 6 },
+              { item: wordById('seaweed'), count: 4 },
+              { item: foodWords.egg, count: 2 },
+            ],
+          },
+          [foodWords.apple, foodWords.banana, foodWords.strawberry],
+        ),
+        intro: [radio('Arroz, alga, huevo. Count them onto the mat!', 'Arroz, alga y huevo.')],
+      },
+      {
+        /*
+         * Straight division, no leftovers: the whole point of a lunch box is
+         * that everybody opens the same one.
+         */
+        game: 'divide-share',
+        challenge: shareOut(foodWords.rice, { A: { total: 8, among: 2 }, B: { total: 12, among: 4 }, C: { total: 21, among: 7 } }),
+        intro: [bea('Same number in every box. Count them out.')],
+      },
+      {
+        game: 'word-builder',
+        challenge: (ctx) =>
+          ctx.ageBand === 'A'
+            ? spell(foodWords.rice, 'en', 1, 0)(ctx)
+            : ctx.ageBand === 'B'
+              ? spell(foodWords.rice, 'es', 0, 1)(ctx)
+              : spell(wordById('seaweed'), 'en', 0, 2)(ctx),
+        intro: [bea('Now the label, so nobody takes the wrong box.')],
+      },
+    ],
+  },
+  {
+    id: 'minestrone',
+    name: 'Minestrone',
+    nameEs: 'Sopa minestrone',
+    blurb: 'Everything in its turn, then twenty minutes of doing nothing at all.',
+    subjects: ['cooking', 'math', 'logic'],
+    grownUp: true,
+    xp: 32,
+    intro: [
+      bea('A pot has an order. Garlic first, always.'),
+      grownUpLine('hot stove'),
+    ],
+    steps: [
+      {
+        game: 'measure-pour',
+        challenge: measureByBand('water', 'cup'),
+        intro: [bea('Water first, so the pot never runs dry.')],
+      },
+      {
+        game: 'soup-pot',
+        challenge: potOf(
+          {
+            A: [
+              { item: wordById('garlic'), count: 1 },
+              { item: foodWords.carrot, count: 2 },
+              { item: foodWords.tomato, count: 2 },
+            ],
+            B: [
+              { item: wordById('garlic'), count: 2 },
+              { item: wordById('celery'), count: 2 },
+              { item: foodWords.carrot, count: 3 },
+              { item: foodWords.tomato, count: 2 },
+            ],
+            C: [
+              { item: wordById('garlic'), count: 2 },
+              { item: wordById('celery'), count: 3 },
+              { item: foodWords.carrot, count: 3 },
+              { item: foodWords.tomato, count: 3 },
+              { item: wordById('beans'), count: 4 },
+            ],
+          },
+          [foodWords.apple, foodWords.banana, wordById('cookie')],
+        ),
+        intro: [radio('Ajo, apio, zanahoria, tomate. In that order!', 'Ajo, apio, zanahoria y tomate.')],
+      },
+      {
+        game: 'clock-watch',
+        challenge: (ctx) => ({ ...generateClockWatch(ctx), event: 'the minestrone has simmered long enough' }),
+        intro: [bea('Twenty minutes. Set the clock and wait.')],
+      },
+      {
+        game: 'divide-share',
+        bands: ['B', 'C'],
+        challenge: shareOut(foodWords.soup, { A: { total: 6, among: 2 }, B: { total: 12, among: 4 }, C: { total: 16, among: 4 } }),
+        intro: [radio('Bowls out. Same soup in every one.')],
+      },
+    ],
+  },
+  {
+    id: 'bibimbap',
+    name: 'Rainbow Rice Bowl',
+    nameEs: 'Tazón de arroz de colores',
+    blurb: 'Rice by the cup, oil by the spoon, and every colour in its own quarter.',
+    subjects: ['cooking', 'math', 'spanish'],
+    grownUp: true,
+    xp: 30,
+    intro: [
+      bea('Bibimbap means mixed rice. Every colour in one bowl.'),
+      grownUpLine('hot pan'),
+    ],
+    steps: [
+      {
+        /*
+         * Two units in one dish. Every other recipe pours in cups OR spoons;
+         * this one asks the child to notice that the jug changed.
+         */
+        game: 'measure-pour',
+        challenge: measureByBand('rice', 'cup'),
+        intro: [bea('Rice by the cup. Watch the big line.')],
+      },
+      {
+        game: 'measure-pour',
+        challenge: (ctx) =>
+          ctx.ageBand === 'A' ? measure('honey', 1, 2, 'spoon')(ctx) : measure('honey', 1, 4, 'spoon')(ctx),
+        intro: [bea('Now a spoon, not a cup. Much smaller.')],
+      },
+      {
+        game: 'count-ingredients',
+        challenge: countByBand(
+          {
+            A: [
+              { item: foodWords.carrot, count: 2 },
+              { item: wordById('spinach'), count: 2 },
+            ],
+            B: [
+              { item: foodWords.carrot, count: 3 },
+              { item: wordById('spinach'), count: 2 },
+              { item: foodWords.mushroom, count: 2 },
+            ],
+            C: [
+              { item: foodWords.carrot, count: 4 },
+              { item: wordById('spinach'), count: 3 },
+              { item: foodWords.mushroom, count: 3 },
+            ],
+          },
+          [foodWords.apple, foodWords.banana, foodWords.olive],
+        ),
+        intro: [radio('Zanahoria, espinaca, champiñón. Into the bowl!', 'Zanahoria, espinaca y champiñón.')],
+      },
+      {
+        game: 'divide-share',
+        bands: ['B', 'C'],
+        challenge: shareOut(foodWords.rice, { A: { total: 6, among: 2 }, B: { total: 10, among: 5 }, C: { total: 24, among: 6 } }),
+        intro: [radio('Six bowls, and every one the same.')],
       },
     ],
   },

@@ -60,7 +60,14 @@ export type RecipeId =
   | 'garden-pizza'
   | 'banana-bread'
   | 'paletas'
-  | 'frijoles-de-olla';
+  | 'frijoles-de-olla'
+  /* ---- the world shelf: six dishes from six kitchens ---- */
+  | 'tres-leches'
+  | 'sopes'
+  | 'arepas'
+  | 'onigiri'
+  | 'minestrone'
+  | 'bibimbap';
 
 export type MissionBeat =
   | { type: 'dialogue'; lines: DialogueLine[]; backdrop?: SceneId }

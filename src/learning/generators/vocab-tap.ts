@@ -1,5 +1,6 @@
 import type { ChallengeGenerator, ChallengeOf, GeneratorContext, VocabWord } from '../types';
 import { randomWords, vocabulary, wordsByCategory } from '../vocabulary';
+import { shelfWords, type ShelfId } from '../shelves';
 
 /**
  * A tile shows a picture AND the word under it. Two tiles that print the same
@@ -92,5 +93,42 @@ export function vocabTapFor(
     promptLang: lang,
     word,
     options: ctx.rng.shuffle(pickOptions(pool, word, optionCount, lang)),
+  };
+}
+
+/**
+ * A word tap where every picture on the board comes off ONE shelf.
+ *
+ * `vocabTapFor` pins the word the story wants but still fills the other tiles
+ * from the whole bank, so a harbour question can end up sitting next to a
+ * saucepan. This keeps the whole board inside one afternoon — harbour words
+ * against harbour words — which is both more coherent to look at and a harder,
+ * fairer question, because the distractors are genuinely near neighbours.
+ *
+ * Shelves are icon-distinct by construction (`src/learning/shelves.ts`), so a
+ * board built this way can never show the same drawing twice. If the shelf is
+ * smaller than the board wants, the rest of the bank tops it up rather than
+ * handing back a short board.
+ */
+export function vocabTapOnShelf(
+  shelf: ShelfId,
+  ctx: GeneratorContext,
+  options: { wordId?: string; promptLang?: 'en' | 'es' } = {},
+): ChallengeOf<'vocab-tap'> {
+  const base = generateVocabTap(ctx);
+  const onShelf = shelfWords(shelf);
+  if (onShelf.length === 0) return base;
+
+  const chosen = onShelf.find((w) => w.id === options.wordId) ?? ctx.rng.pick(onShelf);
+  const lang = options.promptLang ?? base.promptLang;
+  const pool = [
+    ...ctx.rng.shuffle(onShelf.filter((w) => w.id !== chosen.id)),
+    ...ctx.rng.shuffle(vocabulary.filter((w) => w.id !== chosen.id)),
+  ];
+  return {
+    ...base,
+    promptLang: lang,
+    word: chosen,
+    options: ctx.rng.shuffle(pickOptions(pool, chosen, base.options.length, lang)),
   };
 }

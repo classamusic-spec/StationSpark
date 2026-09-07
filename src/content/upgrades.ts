@@ -9,15 +9,22 @@
  *
  *   · Sparks come from ONE place — finishing a mission. The Kitchen and the
  *     Training Yard pay XP and badges, never Sparks.
- *   · One full tour of Spark City — all seventeen calls, once each — pays
- *     **265 Sparks**.
+ *   · One full tour of Spark City — all twenty-nine calls, once each — pays
+ *     **436 Sparks**.
  *   · The shop is twenty-two upgrades costing **940 Sparks** in total, so the
- *     station fills up over roughly three and a half tours of the town.
- *   · The dearest single upgrade is 85, which is under a third of one tour:
- *     whatever a child has their eye on is a handful of missions away, never a
- *     season's grind.
+ *     station fills up over a little more than two tours of the town.
+ *   · The dearest single upgrade is 85, which is a fifth of one tour: whatever a
+ *     child has their eye on is a handful of missions away, never a season's
+ *     grind.
  *   · Missions can be replayed and pay their Sparks again, so the shop always
  *     closes — a child who wants the mural can go and earn it.
+ *
+ * THE SHOP IS THE ONE THING THE TOWN OUTGREW. Twenty-nine calls now pay for
+ * twenty-two decorations, so a child who tours the whole town twice owns the
+ * station outright. Adding more would be the honest fix, and it cannot be done
+ * from here: `UpgradeArt` in `src/screens/Progress/parts/` draws each upgrade
+ * from an exhaustive `switch` over `StationUpgradeId`, so a new id ships as an
+ * empty square until that drawing exists.
  *
  * `content.test.ts` recomputes all four of those numbers from the data, so this
  * comment cannot quietly drift away from the game again.
