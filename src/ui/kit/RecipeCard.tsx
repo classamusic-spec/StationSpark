@@ -1,7 +1,7 @@
 import React from 'react';
 import { Pressable, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
-import { hit, palette, radii, roles, shadows, spacing, stagger, type SubjectId } from '@/theme';
+import { palette, radii, roles, shadows, spacing, stagger, type SubjectId } from '@/theme';
 import { useFeedbackAnim } from '@/hooks';
 import { Text } from '../Text';
 import { SubjectLine, subjectSentence } from '../SubjectPill';
@@ -58,7 +58,7 @@ export function RecipeCard({ title, titleEs, blurb, subjects, art, meta, resting
         {art ? <View style={styles.art}>{art}</View> : null}
         <View style={styles.text}>
           {blurb ? (
-            <Text variant="body" color={roles.ink.secondary} numberOfLines={2}>
+            <Text variant="body" color={roles.ink.secondary} numberOfLines={4}>
               {blurb}
             </Text>
           ) : null}
@@ -78,7 +78,7 @@ export function RecipeCard({ title, titleEs, blurb, subjects, art, meta, resting
             {/* always a chevron: the card always opens, so it must never wear
                 a padlock */}
             <View style={styles.chevron}>
-              <ChevronRightIcon size={28} />
+              <ChevronRightIcon size={24} />
             </View>
           </View>
         ) : null}
@@ -147,14 +147,20 @@ const styles = StyleSheet.create({
     maxWidth: '72%',
   },
   body: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, zIndex: 1 },
-  art: { width: 64, alignItems: 'center' },
+  art: { width: 56, alignItems: 'center' },
   text: { flex: 1, gap: 3 },
-  foot: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.xs, marginTop: 2 },
-  go: { width: hit.min, alignItems: 'flex-end' },
+  /* wraps on purpose. Side by side, "Cooking · Math" and "3 steps · +20 XP"
+     each got half of what was left of a phone card and BOTH ellipsised — the
+     subjects a parent chooses by and the XP a child plays for, gone to two
+     "…"s. Given a second row they both fit. */
+  foot: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.xs, marginTop: 2, flexWrap: 'wrap' },
+  /* the chevron is the affordance, not the target — the whole card is
+     pressable and comfortably over 56 px */
+  go: { width: 44, alignItems: 'flex-end' },
   chevron: {
-    width: hit.min,
-    height: hit.min,
-    borderRadius: hit.min / 2,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     backgroundColor: palette.leafGreen,
     alignItems: 'center',
     justifyContent: 'center',
