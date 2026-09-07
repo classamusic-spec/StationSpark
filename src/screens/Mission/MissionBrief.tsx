@@ -367,9 +367,26 @@ export function MissionBrief({ mission, onStart }: MissionBriefProps) {
   if (wide) {
     return (
       <View style={[styles.root, { backgroundColor: sky }]}>
-        {/* edge to edge, so every pixel the card does not use is the place
-            itself: sky, terrace, pavement and road, never a flat plate */}
-        <Animated.View entering={FadeIn.duration(360)} style={StyleSheet.absoluteFill}>
+        {/*
+          Edge to edge, so every pixel the card does not use is the place itself:
+          sky, terrace, pavement and road, never a flat plate.
+
+          BUT NOT CENTRED ON THE SCREEN — centred on the part of it you can see.
+          `SceneHero` centres its subject in the box it is given, and the box was
+          the whole window while the brief sheet stood in the right-hand column
+          of it. So the one building the child came to look at was reliably a
+          third behind the card: on the station-yard call, a "STATION S…" plaque
+          and one of the two engine bays.
+
+          Extending the box to the LEFT by the column's width puts the subject's
+          centre on the centre of the free area, and costs nothing but a strip of
+          street drawn off the left edge — which is exactly the sort of thing a
+          scene has plenty of.
+        */}
+        <Animated.View
+          entering={FadeIn.duration(360)}
+          style={[StyleSheet.absoluteFill, { left: -(colW + spacing.lg) }]}
+        >
           <SceneHero scene={mission.scene} radius={0} bleed style={styles.fill} />
         </Animated.View>
         <View style={[styles.wideNpc, { bottom: sceneFoot(mission.scene, width, height).foot }]} pointerEvents="none">
