@@ -18,14 +18,13 @@ import { sfx } from '@/services/audio';
 import { haptics } from '@/services/haptics';
 import { Button, CheckIcon, Chip, EquipmentIcon, ResetIcon, Text, TrayRow, equipmentLabel } from '@/ui';
 
-import { Stage } from '@/world';
-
 import { AskQuestion } from '../shared/AskQuestion';
 import { Draggable } from '../shared/Draggable';
 import { GameFrame } from '../shared/GameFrame';
 import { SlotZone } from '../shared/SlotZone';
 import { useGameLayout } from '../shared/layout';
 import { useCaptainLine } from '../shared/speak';
+import { EngineBay, RoomWash, bayMetrics, clamp, usePlayBox } from '../shared/art/Scene';
 import { useHintLadder } from '../shared/useHintLadder';
 import { TruckSide, truckBayRect } from '../shared/art/Props';
 
@@ -145,9 +144,19 @@ export function EquipmentCheck({ challenge, ageBand, onComplete, onEvent, compac
   });
 
   /* ----- geometry ----- */
-  // critique: the reference makes the engine full-bleed, filling the frame —
-  // ours was inset and read as a small cropped van.
-  const truckWidth = Math.min(layout.boxWidth, layout.s(430));
+  /*
+   * The reference makes the engine full-bleed, filling the frame. The play area
+   * is measured, the appliance takes the whole width it can (capped so a tablet
+   * gets a bigger bay rather than one absurd truck) and it is parked on a drawn
+   * bay floor instead of floating in sky.
+   */
+  const { box, onLayout } = usePlayBox();
+  const bay0 = bayMetrics(box);
+  const floorLift = box.h > 0 ? Math.max(spacing.xs, (box.h - bay0.floorTop) * 0.34) : spacing.md;
+  const truckWidth =
+    box.w > 0
+      ? clamp(Math.min(box.w - spacing.xs * 2, ((box.h - floorLift - spacing.sm) * 360) / 214), 240, 660)
+      : Math.min(layout.boxWidth, layout.s(430));
   const bay = truckBayRect(truckWidth);
   const rowHeight = bay.height / Math.max(1, challenge.items.length);
   /** each shelf sizes its own ghosts, so a row of 7 and a row of 2 both look right */
@@ -265,9 +274,7 @@ export function EquipmentCheck({ challenge, ageBand, onComplete, onEvent, compac
       title="Pack the Right Equipment"
       subtitle={ageBand === 'A' ? undefined : 'Drag the items into the truck.'}
       compact={compact}
-      backdrop={
-                  <Stage variant="yard" groundHeight={150} />
-      }
+      backdrop={<RoomWash top="#F2E5CB" bottom="#C6CEDF" />}
       hint={{ text: hintText, visible: hintLadder.showBubble && state.phase === 'packing', onDismiss: hintLadder.dismiss }}
       overlay={
         askItem ? (
@@ -337,7 +344,11 @@ export function EquipmentCheck({ challenge, ageBand, onComplete, onEvent, compac
         </View>
       }
     >
-      <View style={styles.stage}>
+      <View style={styles.stage} onLayout={onLayout}>
+        {/* the appliance bay the engine is parked in */}
+        <EngineBay box={box} />
+
+        <View style={[styles.deck, { paddingBottom: floorLift }]}>
         <Animated.View style={truckStyle}>
           <TruckSide width={truckWidth} />
           <View style={[styles.bay, { left: bay.x, top: bay.y, width: bay.width, height: bay.height }]}>
@@ -399,13 +410,15 @@ export function EquipmentCheck({ challenge, ageBand, onComplete, onEvent, compac
             </Text>
           </Animated.View>
         ) : null}
+        </View>
       </View>
     </GameFrame>
   );
 }
 
 const styles = StyleSheet.create({
-  stage: { alignItems: 'center', justifyContent: 'center' },
+  stage: { flex: 1, alignSelf: 'stretch' },
+  deck: { flex: 1, alignItems: 'center', justifyContent: 'flex-end' },
   bay: { position: 'absolute', overflow: 'hidden', borderRadius: 8 },
   bayLight: { position: 'absolute', left: 0, right: 0, top: 0, height: '38%', backgroundColor: 'rgba(255,255,255,0.14)' },
   shelf: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 4 },

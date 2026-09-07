@@ -27,6 +27,7 @@ import { GameFrame } from '../shared/GameFrame';
 import { SlotZone } from '../shared/SlotZone';
 import { useGameLayout } from '../shared/layout';
 import { useCaptainLine } from '../shared/speak';
+import { RoomWash, clamp, usePlayBox } from '../shared/art/Scene';
 import { useHintLadder } from '../shared/useHintLadder';
 import { useDragToSlot, type DropOutcome } from '../shared/useDragToSlot';
 import {
@@ -350,8 +351,12 @@ export function ShapeBuilder({ challenge, ageBand, onComplete, onEvent, compact 
     haptics.tap();
   }, [startTurns, state.phase]);
 
-  /* ----- geometry ----- */
-  const board = Math.min(layout.boxWidth - spacing.md * 2 - spacing.sm * 2, layout.s(298));
+  /* ----- geometry: the blueprint takes the bench, the bench takes the room --- */
+  const { box, onLayout } = usePlayBox();
+  const board =
+    box.w > 0
+      ? clamp(Math.min(box.w - spacing.md * 2 - spacing.sm * 2, box.h - box.h * 0.19 - spacing.lg), 190, 470)
+      : Math.min(layout.boxWidth - spacing.md * 2 - spacing.sm * 2, layout.s(298));
   const unit = board / 100;
   const biggest = useMemo(() => Math.max(...pieces.map((p) => Math.max(p.w, p.h))), [pieces]);
   const tokenBox = Math.max(68, layout.s(76));
@@ -403,6 +408,7 @@ export function ShapeBuilder({ challenge, ageBand, onComplete, onEvent, compact 
       subtitle={needsRotation ? 'Tap a piece to turn it, then drag it onto its outline.' : 'Drag each piece onto its dotted outline.'}
       es={`Plano: ${blueprintName[challenge.blueprint]?.es ?? ''}`}
       compact={compact}
+      backdrop={<RoomWash top="#F6EBD5" bottom="#C58B4E" />}
       hint={{ text: hintText, visible: hintLadder.showBubble && state.phase === 'building', onDismiss: hintLadder.dismiss }}
       overlay={
         challenge.askCount && askShape ? (
@@ -458,14 +464,14 @@ export function ShapeBuilder({ challenge, ageBand, onComplete, onEvent, compact 
         </View>
       }
     >
-      <View style={styles.stage}>
+      <View style={styles.stage} onLayout={onLayout}>
         {/* ---- the workshop around the bench ---- */}
         <View style={StyleSheet.absoluteFill} pointerEvents="none">
           <View style={styles.wall}>
-            <WorkshopWall width={layout.boxWidth} />
+            <WorkshopWall width={Math.max(box.w, layout.boxWidth)} />
           </View>
           <View style={styles.floor}>
-            <WorkshopFloor width={layout.boxWidth} />
+            <WorkshopFloor width={Math.max(box.w, layout.boxWidth)} />
           </View>
         </View>
 
@@ -539,7 +545,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: 0,
     right: 0,
-    top: '6%',
+    top: 0,
     bottom: '14%',
     overflow: 'hidden',
     backgroundColor: palette.creamDeep,

@@ -1,16 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import Svg, { Circle, Defs, Ellipse, LinearGradient, Path, Rect, Stop } from 'react-native-svg';
-import Animated, {
-  FadeIn,
-  FadeInDown,
-  ZoomIn,
-  useAnimatedStyle,
-  useSharedValue,
-  withRepeat,
-  withSequence,
-  withTiming,
-} from 'react-native-reanimated';
+import Animated, { FadeIn, FadeInDown, ZoomIn, useAnimatedStyle, useSharedValue, withSequence, withTiming } from 'react-native-reanimated';
 import type { VocabWord } from '@/learning/types';
 import type { MiniGameProps } from '@/minigames/types';
 import { useMiniGameSession } from '@/minigames/useMiniGameSession';
@@ -21,25 +12,90 @@ import { haptics } from '@/services/haptics';
 import { speech } from '@/services/speech';
 import { ActivityFrame, AnswerTile, Button, CheckIcon, Text, TrayRow, VocabIcon } from '@/ui';
 
-import { Stage as SceneStage } from '@/world';
-
-import { Stage, at } from '../../parts/Stage';
+import { FluidStage, at, type FluidBox } from '../../parts/Stage';
+import {
+  Canister,
+  CounterCrumbs,
+  CounterRun,
+  HerbPot,
+  Hob,
+  KitchenWall,
+  KitchenWindow,
+  Shelf,
+  SplashbackBand,
+  Steam,
+  StoreJar,
+  TeaTowel,
+  UtensilRail,
+} from '../../parts/KitchenRoom';
 import { countPhraseEn, countPhraseEs, orderPhraseEn, orderPhraseEs } from '../../spanish';
 import { answerOptions, potDrop, potState, potTotal } from '../../shareMath';
 import { kitchenFeel, useCaptainHint } from '../useKitchenGame';
 
-const D = { w: 390, h: 336 };
-const POT = { x: 195, y: 176, w: 300, h: 214 };
-/** The broth sits a quarter of the way down the pot drawing (viewBox cy 42 of 168). */
-const BROTH_Y = POT.y - POT.h * 0.25;
-const PIECE = 34;
+/** the pot drawing's width ÷ height */
+const POT_ASPECT = 236 / 168;
 
-/** Where a piece floats once it is in the broth (design units, from the broth centre). */
+/**
+ * Where a piece floats once it is in the broth, as a FRACTION of the pot's
+ * width — so the soup fills the pot at every size instead of clustering in the
+ * middle of a pot that has grown around it.
+ */
 const FLOAT: readonly { x: number; y: number }[] = [
-  { x: -38, y: -8 }, { x: 5, y: -13 }, { x: 46, y: -5 },
-  { x: -64, y: 5 }, { x: -18, y: 8 }, { x: 26, y: 10 },
-  { x: 66, y: 3 }, { x: -43, y: 19 }, { x: 3, y: 23 }, { x: 43, y: 17 },
+  { x: -0.16, y: -0.034 }, { x: 0.02, y: -0.055 }, { x: 0.19, y: -0.021 },
+  { x: -0.27, y: 0.021 }, { x: -0.076, y: 0.034 }, { x: 0.11, y: 0.042 },
+  { x: 0.28, y: 0.013 }, { x: -0.18, y: 0.08 }, { x: 0.013, y: 0.097 }, { x: 0.18, y: 0.072 },
 ];
+
+interface Scene {
+  s: number;
+  w: number;
+  h: number;
+  counterY: number;
+  counterH: number;
+  pot: { x: number; y: number; w: number; h: number };
+  /** the surface of the broth, where a piece lands */
+  broth: { x: number; y: number };
+  piece: number;
+  hob: { x: number; y: number; w: number };
+}
+
+/**
+ * Compose the room. The pot is the subject of the screen, so it takes the width
+ * the play area gives it and stands on a real hob; the wall behind it gets a
+ * shelf, a window and a rail rather than the flat beige field this game shipped
+ * with.
+ */
+function layout(box: FluidBox): Scene {
+  const { s, w, h } = box;
+  const counterH = Math.max(40, Math.min(78, h * 0.13));
+  const counterY = h - counterH;
+  const top = 6;
+  const availH = counterY - top;
+
+  /* the pot is sized first — it is the subject — and the hob is built to fit
+     under it, rather than a giant stove squeezing the pan it is there to hold */
+  const potW = Math.min(w * 0.8, (availH - 44) * POT_ASPECT);
+  const potH = potW / POT_ASPECT;
+  const hobW = Math.min(w * 0.96, potW * 1.24);
+  const hobH = hobW * 0.3;
+  const deckY = counterY - hobH * 0.62;
+  const hob = { x: (w - hobW) / 2, y: deckY - hobH * 0.12, w: hobW };
+  /* the drawing's feet sit at 0.94 of its box, so the pot lands ON the ring
+     instead of hovering a finger's width above it */
+  const pot = { x: (w - potW) / 2, y: deckY + hobH * 0.16 - potH * 0.94, w: potW, h: potH };
+
+  return {
+    s,
+    w,
+    h,
+    counterY,
+    counterH,
+    pot,
+    broth: { x: pot.x + potW / 2, y: pot.y + potH * 0.28 },
+    piece: Math.max(26, potW * 0.13),
+    hob,
+  };
+}
 
 /**
  * SOUP POT — the pot cooks in an order.
@@ -222,7 +278,7 @@ export function SoupPot({ challenge, ageBand, onComplete, onEvent, compact }: Mi
       detail={ageBand === 'A' ? 'Tap number 1 first.' : 'Left to right, like the card.'}
       onReplay={readOrder}
       compact={compact}
-      backdrop={<SceneStage variant="pantry" groundHeight={150} />}
+      backdrop={<KitchenWall />}
       overlay={
         <>
           
@@ -231,9 +287,6 @@ export function SoupPot({ challenge, ageBand, onComplete, onEvent, compact }: Mi
               <Animated.View entering={ZoomIn.springify().damping(13)} style={[styles.askCard, shadows.card]}>
                 <Text variant="h3" center>
                   How many pieces went in?
-                </Text>
-                <Text variant="small" center color={roles.ink.translation}>
-                  ¿Cuántos pedazos entraron?
                 </Text>
                 <View style={styles.askRow}>
                   {options.map((value, i) => (
@@ -284,41 +337,74 @@ export function SoupPot({ challenge, ageBand, onComplete, onEvent, compact }: Mi
       <View style={styles.play}>
         <PotCard steps={steps} added={added} step={state.step} />
 
-        <Stage design={D} style={styles.stage}>
-          {(s) => (
-            <>
-              <Animated.View style={[at(s, POT.x - POT.w / 2, POT.y - POT.h / 2, POT.w, POT.h), potStyle]} pointerEvents="none">
-                <PotArt size={POT.w * s} bubbling={bubbling} simmering={phase === 'simmering'} />
-              </Animated.View>
+        <FluidStage minH={280} maxScale={1.8} style={styles.stage}>
+          {(box) => {
+            const sc = layout(box);
+            const { s, w, pot } = sc;
+            const side = (w - sc.hob.w) / 2 + sc.hob.w * 0.06;
+            return (
+              <>
+                {/* --- the room ------------------------------------- */}
+                <SplashbackBand s={s} x={0} y={sc.counterY - 58} w={w} depth={58} />
+                {pot.y > 96 ? (
+                  <>
+                    <Shelf s={s} x={8} y={pot.y - 30} w={Math.max(84, side + 40)} />
+                    <StoreJar s={s} x={12} y={pot.y - 72} h={42} tone="herbs" />
+                    <Canister s={s} x={48} y={pot.y - 76} h={46} tone="#E8C89B" />
+                  </>
+                ) : null}
+                <KitchenWindow s={s} x={w - Math.min(110, side + 56) - 8} y={6} w={Math.min(110, side + 56)} />
+                <UtensilRail s={s} x={8} y={6} w={Math.min(140, w * 0.32)} />
+                <CounterRun s={s} w={w} y={sc.counterY} h={sc.counterH + 44} />
+                <CounterCrumbs s={s} x={sc.hob.x} y={sc.counterY - 10} w={sc.hob.w} seed={3} />
+                <HerbPot s={s} x={Math.max(6, sc.hob.x - 48)} y={sc.counterY - 48} h={46} />
+                <TeaTowel s={s} x={w - 42} y={Math.max(8, sc.counterY - 190)} w={34} />
 
-              {floats.map((piece, i) => {
-                const spot = FLOAT[i] ?? { x: 0, y: 0 };
-                return (
+                {/* --- the hob and the pot -------------------------- */}
+                <Hob s={s} x={sc.hob.x} y={sc.hob.y} w={sc.hob.w} lit={bubbling} />
+                {phase === 'simmering' ? (
+                  <Steam s={s} x={pot.x + pot.w * 0.28} y={pot.y - pot.w * 0.24} w={pot.w * 0.44} />
+                ) : null}
+
+                <Animated.View style={[at(s, pot.x, pot.y, pot.w, pot.h), potStyle]} pointerEvents="none">
+                  <PotArt size={pot.w * s} bubbling={bubbling} />
+                </Animated.View>
+
+                {floats.map((piece, i) => {
+                  const spot = FLOAT[i] ?? { x: 0, y: 0 };
+                  return (
+                    <Animated.View
+                      key={piece.key}
+                      entering={ZoomIn.springify().damping(12)}
+                      style={at(
+                        s,
+                        sc.broth.x + spot.x * pot.w - sc.piece / 2,
+                        sc.broth.y + spot.y * pot.w - sc.piece / 2,
+                        sc.piece,
+                        sc.piece,
+                      )}
+                      pointerEvents="none"
+                    >
+                      <VocabIcon id={piece.word.icon} size={sc.piece * s} noShadow />
+                    </Animated.View>
+                  );
+                })}
+
+                {phase === 'simmering' ? (
                   <Animated.View
-                    key={piece.key}
-                    entering={ZoomIn.springify().damping(12)}
-                    style={at(s, POT.x + spot.x - PIECE / 2, BROTH_Y + spot.y - PIECE / 2, PIECE, PIECE)}
+                    entering={FadeIn}
+                    style={[at(s, pot.x + pot.w / 2 - 100, Math.max(4, pot.y - 46), 200, 38), styles.banner]}
                     pointerEvents="none"
                   >
-                    <VocabIcon id={piece.word.icon} size={PIECE * s} noShadow />
+                    <Text variant="h3" center color={palette.leafGreenDark}>
+                      ¡Buen provecho!
+                    </Text>
                   </Animated.View>
-                );
-              })}
-
-              {phase === 'simmering' ? (
-                <Animated.View
-                  entering={FadeIn}
-                  style={[at(s, POT.x - 100, POT.y - POT.h / 2 - 44, 200, 38), styles.banner]}
-                  pointerEvents="none"
-                >
-                  <Text variant="h3" center color={palette.leafGreenDark}>
-                    ¡Buen provecho!
-                  </Text>
-                </Animated.View>
-              ) : null}
-            </>
-          )}
-        </Stage>
+                ) : null}
+              </>
+            );
+          }}
+        </FluidStage>
       </View>
     </ActivityFrame>
   );
@@ -355,12 +441,9 @@ function PotCard({
                   </Text>
                 )}
               </View>
-              <VocabIcon id={s.item.icon} size={28} noShadow />
+              <VocabIcon id={s.item.icon} size={34} noShadow />
               <Text variant="tiny" color={done ? palette.leafGreenDark : palette.navy} style={styles.chipCount}>
                 {have}/{s.count}
-              </Text>
-              <Text variant="tiny" color={roles.ink.translation} numberOfLines={1} style={styles.chipWord}>
-                {s.item.es}
               </Text>
             </View>
           );
@@ -402,12 +485,9 @@ function CounterTile({
           disabled && styles.tileOff,
         ]}
       >
-        <VocabIcon id={word.icon} size={38} />
+        <VocabIcon id={word.icon} size={44} />
         <Text variant="tiny" center numberOfLines={1} style={styles.tileLabel}>
           {word.en}
-        </Text>
-        <Text variant="tiny" center numberOfLines={1} color={roles.ink.translation} style={styles.tileLabel}>
-          {word.es}
         </Text>
       </Pressable>
     </Animated.View>
@@ -418,60 +498,63 @@ function CounterTile({
 /* The pot                                                              */
 /* ------------------------------------------------------------------ */
 
-function PotArt({ size, bubbling, simmering }: { size: number; bubbling: boolean; simmering: boolean }) {
-  const steam = useSharedValue(0);
-  useEffect(() => {
-    if (!simmering) return;
-    steam.value = withRepeat(withSequence(withTiming(1, { duration: 900 }), withTiming(0, { duration: 900 })), -1, true);
-  }, [simmering, steam]);
-  const steamStyle = useAnimatedStyle(() => ({ opacity: 0.25 + steam.value * 0.55, transform: [{ translateY: -steam.value * 8 }] }));
-
+/**
+ * The stock pot: enamelled red with a cream band, a heavy rolled rim, two
+ * riveted handles and a broth surface you can see the soup landing on. It used
+ * to carry its own little hob inside the drawing; the hob is a real object in
+ * the room now, so the pot is just a pot.
+ */
+function PotArt({ size, bubbling }: { size: number; bubbling: boolean }) {
   return (
-    <View style={styles.pot}>
-      {simmering ? (
-        <Animated.View style={[styles.steam, steamStyle]} pointerEvents="none">
-          <Svg width={size * 0.5} height={size * 0.3} viewBox="0 0 100 60">
-            <Path d="M24 56c-10-12 8-16 0-28s10-18 10-18" stroke="rgba(255,255,255,0.85)" strokeWidth={7} strokeLinecap="round" fill="none" />
-            <Path d="M56 56c-10-14 10-18 2-30s8-16 8-16" stroke="rgba(255,255,255,0.7)" strokeWidth={7} strokeLinecap="round" fill="none" />
-          </Svg>
-        </Animated.View>
+    <Svg width={size} height={size / POT_ASPECT} viewBox="0 0 236 168">
+      <Defs>
+        <LinearGradient id="potBody" x1="0" y1="0" x2="1" y2="0">
+          <Stop offset="0" stopColor={palette.engineRedDark} />
+          <Stop offset="0.34" stopColor={palette.engineRed} />
+          <Stop offset="1" stopColor={palette.engineRedDark} />
+        </LinearGradient>
+      </Defs>
+
+      <Ellipse cx={118} cy={160} rx={94} ry={9} fill="rgba(31,42,90,0.16)" />
+
+      {/* handles, with rivets */}
+      <Rect x={0} y={52} width={34} height={18} rx={9} fill="#6B76A8" />
+      <Rect x={4} y={55} width={22} height={5} rx={2.5} fill="rgba(255,255,255,0.35)" />
+      <Rect x={202} y={52} width={34} height={18} rx={9} fill="#6B76A8" />
+      <Rect x={206} y={55} width={22} height={5} rx={2.5} fill="rgba(255,255,255,0.35)" />
+      <Circle cx={32} cy={61} r={4} fill="#D9DDEC" />
+      <Circle cx={204} cy={61} r={4} fill="#D9DDEC" />
+
+      {/* body */}
+      <Path d="M25 40h186l-13 100a12 12 0 0 1-12 10H50a12 12 0 0 1-12-10z" fill="url(#potBody)" />
+      {/* enamel band */}
+      <Path d="M31 92h174l-3 22H34z" fill="#FFF3DC" />
+      <Circle cx={90} cy={103} r={5} fill={palette.engineRed} opacity={0.55} />
+      <Circle cx={118} cy={103} r={5} fill={palette.safetyYellow} />
+      <Circle cx={146} cy={103} r={5} fill={palette.engineRed} opacity={0.55} />
+      {/* lit edge and shade */}
+      <Path d="M43 56c5 30 7 58 7 84" stroke="rgba(255,255,255,0.30)" strokeWidth={8} strokeLinecap="round" fill="none" />
+      <Path d="M196 58c-4 28-6 54-6 80" stroke="rgba(31,42,90,0.14)" strokeWidth={9} strokeLinecap="round" fill="none" />
+      {/* foot */}
+      <Path d="M44 140h148l-2 8a10 10 0 0 1-10 8H56a10 10 0 0 1-10-8z" fill={palette.engineRedDark} />
+
+      {/* rolled rim */}
+      <Ellipse cx={118} cy={40} rx={97} ry={21} fill={palette.white} />
+      <Ellipse cx={118} cy={42} rx={97} ry={20} fill="#EDEFF6" />
+      <Ellipse cx={118} cy={39} rx={97} ry={20} fill={palette.white} />
+      {/* broth */}
+      <Ellipse cx={118} cy={41} rx={84} ry={15} fill="#E8952F" />
+      <Ellipse cx={118} cy={39} rx={84} ry={15} fill="#FFC463" />
+      <Ellipse cx={92} cy={35} rx={26} ry={5} fill="rgba(255,255,255,0.35)" />
+      {bubbling ? (
+        <>
+          <Circle cx={88} cy={46} r={4.6} fill="rgba(255,255,255,0.62)" />
+          <Circle cx={134} cy={50} r={3.4} fill="rgba(255,255,255,0.5)" />
+          <Circle cx={154} cy={44} r={3} fill="rgba(255,255,255,0.55)" />
+          <Circle cx={110} cy={51} r={2.6} fill="rgba(255,255,255,0.45)" />
+        </>
       ) : null}
-
-      <Svg width={size} height={size * (POT.h / POT.w)} viewBox="0 0 236 168">
-        <Defs>
-          <LinearGradient id="potBody" x1="0" y1="0" x2="1" y2="0">
-            <Stop offset="0" stopColor={palette.engineRedDark} />
-            <Stop offset="0.35" stopColor={palette.engineRed} />
-            <Stop offset="1" stopColor={palette.engineRedDark} />
-          </LinearGradient>
-        </Defs>
-
-        {/* the hob: warm, contained, no flames — the crew works the heat */}
-        <Ellipse cx={118} cy={156} rx={86} ry={11} fill="rgba(31,42,90,0.16)" />
-        <Rect x={38} y={140} width={160} height={14} rx={7} fill={palette.slate} />
-        <Rect x={54} y={143} width={128} height={8} rx={4} fill={bubbling ? '#F7A64B' : palette.slateLight} />
-
-        {/* handles */}
-        <Rect x={2} y={54} width={30} height={16} rx={8} fill={palette.slate} />
-        <Rect x={204} y={54} width={30} height={16} rx={8} fill={palette.slate} />
-
-        {/* body */}
-        <Path d="M26 44h184l-12 92a10 10 0 0 1-10 9H48a10 10 0 0 1-10-9z" fill="url(#potBody)" />
-        <Path d="M40 60c6 30 8 56 8 78" stroke="rgba(255,255,255,0.28)" strokeWidth={7} strokeLinecap="round" fill="none" />
-
-        {/* rim + broth */}
-        <Ellipse cx={118} cy={44} rx={94} ry={20} fill={palette.white} />
-        <Ellipse cx={118} cy={44} rx={82} ry={14} fill="#F2A93F" />
-        <Ellipse cx={118} cy={42} rx={82} ry={14} fill="#FFC463" />
-        {bubbling ? (
-          <>
-            <Circle cx={86} cy={40} r={5} fill="rgba(255,255,255,0.6)" />
-            <Circle cx={132} cy={45} r={4} fill="rgba(255,255,255,0.5)" />
-            <Circle cx={158} cy={38} r={3} fill="rgba(255,255,255,0.55)" />
-          </>
-        ) : null}
-      </Svg>
-    </View>
+    </Svg>
   );
 }
 
@@ -494,7 +577,7 @@ const styles = StyleSheet.create({
   chip: {
     alignItems: 'center',
     gap: 1,
-    width: 66,
+    width: 62,
     paddingHorizontal: 2,
     paddingVertical: 4,
     borderRadius: radii.card,
@@ -522,13 +605,11 @@ const styles = StyleSheet.create({
     backgroundColor: palette.mint,
     borderRadius: radii.pill,
   },
-  pot: { flex: 1, alignItems: 'center', justifyContent: 'flex-end' },
-  steam: { position: 'absolute', top: -6, alignItems: 'center' },
 
   tray: { gap: spacing.xs },
   helpRow: { flexDirection: 'row', justifyContent: 'center', marginTop: spacing.xs },
   tile: {
-    width: 80,
+    width: 84,
     minHeight: hit.big + 12,
     alignItems: 'center',
     justifyContent: 'center',

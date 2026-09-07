@@ -24,7 +24,8 @@ import { SlotZone } from '../shared/SlotZone';
 import { useGameLayout } from '../shared/layout';
 import { useHintLadder } from '../shared/useHintLadder';
 import { useDragToSlot, type DropOutcome } from '../shared/useDragToSlot';
-import { BoardRules, ChalkLedge, LetterSlotGhost, LetterTile, PictureCard, ReadyRoomFloor, ReadyRoomWall } from './WordBoard';
+import { BoardRules, LetterSlotGhost, LetterTile, PictureCard } from './WordBoard';
+import { Classroom, RoomWash, classroomMetrics, clamp, usePlayBox } from '../shared/art/Scene';
 
 /* ---------------- state machine ---------------- */
 
@@ -248,20 +249,24 @@ export function WordBuilder({ challenge, ageBand, onComplete, onEvent, compact }
     [expected, miss, place, state.phase, tiles],
   );
 
-  /* ----- geometry: the board and the letter bank both get room ----- */
+  /* ----- geometry: the word board hangs on the reading corner's board ----- */
   const sideRail = useSideRail();
-  const playWidth = sideRail
-    ? Math.min(layout.width - activity.sidePanelWidth - spacing.sm * 3, 820)
-    : layout.boxWidth;
-  const boardWidth = Math.min(playWidth - spacing.sm * 2, sideRail ? 580 : layout.s(360));
+  const { box, onLayout } = usePlayBox();
+  const room = classroomMetrics(box);
+  const playWidth = box.w > 0
+    ? box.w
+    : sideRail
+      ? Math.min(layout.width - activity.sidePanelWidth - spacing.sm * 3, 820)
+      : layout.boxWidth;
+  const boardWidth = box.w > 0 ? clamp(room.boardW - 22, 210, 640) : Math.min(playWidth - spacing.sm * 2, layout.s(360));
   const inner = boardWidth - spacing.md * 2 - 20;
   const perRow = letters.length <= 5 ? letters.length : Math.ceil(letters.length / 2);
   const slotGap = 10;
-  const slotSize = Math.max(34, Math.min(sideRail ? 82 : layout.s(62), (inner - (perRow - 1) * slotGap) / perRow));
+  const slotSize = Math.max(34, Math.min(sideRail ? 88 : 74, (inner - (perRow - 1) * slotGap) / perRow));
   /** pin the row width so a long word always wraps into two tidy lines */
   const rowWidth = perRow * (slotSize + slotGap) - slotGap;
   const tileSize = Math.max(hit.min, layout.s(tiles.length > 6 ? 58 : tiles.length > 4 ? 62 : 66));
-  const iconSize = layout.s(ageBand === 'A' ? 84 : 72);
+  const iconSize = box.w > 0 ? clamp(boardWidth * 0.24, 56, ageBand === 'A' ? 108 : 96) : layout.s(72);
 
   /* ----- copy ----- */
   const hintText = useMemo(() => {
@@ -273,7 +278,7 @@ export function WordBuilder({ challenge, ageBand, onComplete, onEvent, compact }
 
   /* the hint points at "the glowing space" — so the board moves up while the
      bubble is on screen instead of letting it sit on the answer slots */
-  const hintLane = hintLadder.showBubble && !solved ? layout.s(140) : 0;
+  const hintLane = hintLadder.showBubble && !solved ? clamp(box.h * 0.18, 80, 130) : 0;
 
   return (
     <GameFrame
@@ -281,6 +286,7 @@ export function WordBuilder({ challenge, ageBand, onComplete, onEvent, compact }
       subtitle="Tap or drag the letters."
       es={lang === 'es' ? 'Escucha y escribe la palabra.' : `En español: ${word.es}`}
       compact={compact}
+      backdrop={<RoomWash top="#F6EEDC" bottom="#C7B181" />}
       /* one hear-it-again, in the task bar — the tray's own "Hear it" button is gone */
       onReplay={sayWord}
       /* …and the "0 / 4 letters" chip is gone too: the bar draws the dots */
@@ -305,17 +311,19 @@ export function WordBuilder({ challenge, ageBand, onComplete, onEvent, compact }
         </TrayRow>
       }
     >
-      <View style={[styles.stage, { paddingBottom: spacing.lg + hintLane }]}>
-        {/* ---- the ready room the board hangs in ---- */}
-        <View style={StyleSheet.absoluteFill} pointerEvents="none">
-          <View style={styles.wall}>
-            <ReadyRoomWall width={playWidth} />
-          </View>
-          <View style={styles.floor}>
-            <ReadyRoomFloor width={playWidth} />
-          </View>
-        </View>
+      <View style={styles.stage} onLayout={onLayout}>
+        {/* ---- the station's reading corner the board hangs in ---- */}
+        <Classroom box={box} />
 
+        <View
+          style={[
+            styles.deck,
+            box.w > 0
+              ? { left: room.boardX, top: room.boardY, width: room.boardW, height: room.boardH, bottom: undefined }
+              : { left: 0, right: 0, top: 0, bottom: 0 },
+            { paddingBottom: hintLane },
+          ]}
+        >
         <View style={[styles.board, { width: boardWidth }]}>
           <BoardRules />
           <Animated.View style={cardStyle}>
@@ -367,8 +375,6 @@ export function WordBuilder({ challenge, ageBand, onComplete, onEvent, compact }
             </Animated.View>
           ) : null}
         </View>
-        <View style={{ width: boardWidth, height: Math.round(boardWidth * 0.075) }}>
-          <ChalkLedge width={boardWidth} />
         </View>
       </View>
     </GameFrame>
@@ -378,28 +384,8 @@ export function WordBuilder({ challenge, ageBand, onComplete, onEvent, compact }
 const styles = StyleSheet.create({
   /* the board sits just above the letter bank: a short drag, and the word and
      the letters read as one thing */
-  stage: { flex: 1, alignSelf: 'stretch', alignItems: 'center', justifyContent: 'flex-end' },
-  wall: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    top: '5%',
-    bottom: '12%',
-    overflow: 'hidden',
-    backgroundColor: '#D9EEF7',
-    borderTopLeftRadius: radii.panel,
-    borderTopRightRadius: radii.panel,
-  },
-  floor: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
-    height: '13%',
-    overflow: 'hidden',
-    backgroundColor: palette.tan,
-    justifyContent: 'flex-start',
-  },
+  stage: { flex: 1, alignSelf: 'stretch' },
+  deck: { position: 'absolute', alignItems: 'center', justifyContent: 'center' },
   board: {
     alignItems: 'center',
     gap: spacing.sm,

@@ -15,6 +15,7 @@ import { formatFraction, toNumber } from '@/utils/fractions';
 import { Stage } from '@/world';
 
 import { BuildingFacade, Flame, FractionBar, HoseRig, Hydrant, facadeLayout, sceneTheme, windowAt } from '@/world/props';
+import { NeighbourBlock, StreetApron } from './StreetDressing';
 import {
   AskQuestion,
   GameShell,
@@ -150,8 +151,15 @@ export function HoseHero({ challenge, ageBand, onComplete, onEvent, compact, mis
   const { box, ready, onLayout } = useMeasuredBox();
 
   /* ---- geometry ---- */
+  /* the shop is the subject: it takes every pixel it can, keeping only enough
+     pavement to stand on and enough sky for the rest of the block */
   const layout = useMemo(
-    () => facadeLayout(challenge.grid, { w: Math.max(1, box.w), h: Math.max(1, box.h) }, { maxWidth: stage.isTablet ? 620 : 520 }),
+    () =>
+      facadeLayout(
+        challenge.grid,
+        { w: Math.max(1, box.w), h: Math.max(1, box.h) },
+        { maxWidth: stage.isTablet ? 700 : 560, groundRatio: 0.115 },
+      ),
     [box.h, box.w, challenge.grid, stage.isTablet],
   );
   const nozzle = useMemo(() => ({ x: box.w * 0.18, y: box.h * 0.82 }), [box.h, box.w]);
@@ -423,6 +431,8 @@ export function HoseHero({ challenge, ageBand, onComplete, onEvent, compact, mis
     >
       {ready ? (
         <View style={StyleSheet.absoluteFill}>
+          {/* the rest of the block, behind the shop, so the sky has a street in it */}
+          <NeighbourBlock width={box.w} height={box.h} layout={layout} />
           <BuildingFacade scene={challenge.scene} layout={layout} width={box.w} height={box.h} litSlots={litSlots} />
 
           {/* flames sit in their windows */}
@@ -444,6 +454,9 @@ export function HoseHero({ challenge, ageBand, onComplete, onEvent, compact, mis
               </View>
             );
           })}
+
+          {/* kerb, drain, puddle and the hose coil the jet is fed from */}
+          <StreetApron width={box.w} height={box.h} groundY={layout.groundY} u={layout.u} nozzle={nozzle} />
 
           <View style={[styles.hydrant, { left: box.w * 0.03, top: layout.groundY - stage.s(58) }]} pointerEvents="none">
             <Hydrant size={stage.s(58)} />

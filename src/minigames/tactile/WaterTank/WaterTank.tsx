@@ -22,7 +22,8 @@ import { FractionBar, PumpLever, TankShell, WaterSurface } from '@/world/props';
 import { Stage } from '@/world';
 import { PUMPER_DECK, PUMPER_VB, PumperTruck } from '@/world/scenes';
 
-import { GameShell, clampNum, useClock, useHintLadder, useMeasuredBox, useSpokenPrompt, useStage } from '../shared';
+import { GameShell, PlayGround, clampNum, useClock, useHintLadder, useMeasuredBox, useSpokenPrompt, useStage } from '../shared';
+import { TankCradle, TankRig } from './TankRig';
 
 /* ------------------------------------------------------------------ */
 /* State machine: filling → confirming → (wrong → filling) | done       */
@@ -211,24 +212,35 @@ export function WaterTank({ challenge, ageBand, onComplete, onEvent, compact }: 
   const geo = useMemo(() => {
     const w = Math.max(1, box.w);
     const h = Math.max(1, box.h);
-    const truckW = Math.min(w * 1.04, stage.s(440));
+
+    /* the apron the engine is parked on — the wheels touch this line */
+    const groundY = h - Math.max(26, Math.min(h * 0.11, stage.s(58)));
+
+    const truckW = Math.min(w * 0.98, stage.s(500));
     const truckH = truckW * (PUMPER_VB.h / PUMPER_VB.w);
     const truckX = (w - truckW) / 2;
-    const truckY = h - truckH;
+    /* the truck's own contact ellipse sits at y = 140 of its 150-unit box */
+    const truckY = groundY - truckH * (140 / PUMPER_VB.h);
     const deckY = truckY + truckH * (PUMPER_DECK.y / PUMPER_VB.h);
 
-    const tankW = Math.min(w * 0.36, stage.s(150));
-    const tankH = Math.min(Math.max(120, deckY - 6), stage.s(250));
-    const tankX = Math.min(truckX + truckW * 0.9 - tankW, w - tankW - 6);
+    /* the tank grows into every pixel above the deck, so the engine and its
+       tank together fill the play area instead of hovering in it */
+    const tankW = Math.min(w * 0.4, stage.s(184), truckW * (PUMPER_DECK.w / PUMPER_VB.w) * 0.86);
+    const tankH = Math.max(140, Math.min(deckY - stage.s(10), stage.s(380)));
+    const tankX = truckX + truckW * 0.9 - tankW;
     const tankY = Math.max(0, deckY - tankH + 4);
     const inset = Math.max(6, tankW * 0.05);
-    const leverW = Math.min(w * 0.21, stage.s(84));
+
+    const leverW = Math.min(w * 0.2, stage.s(88));
     const leverH = leverW * 1.3;
     return {
+      w,
+      h,
+      groundY,
       truck: { x: truckX, y: truckY, w: truckW, h: truckH },
       tank: { x: tankX, y: tankY, w: tankW, h: tankH },
       inner: { w: tankW - inset * 2, h: tankH - inset * 2, inset },
-      lever: { x: truckX + truckW * 0.33, y: Math.max(0, deckY - leverH), w: leverW, h: leverH },
+      lever: { x: truckX + truckW * 0.4 - leverW / 2, y: Math.max(0, deckY - leverH), w: leverW, h: leverH },
     };
   }, [box.h, box.w, stage]);
 
@@ -297,6 +309,9 @@ export function WaterTank({ challenge, ageBand, onComplete, onEvent, compact }: 
     >
       {ready ? (
         <View style={StyleSheet.absoluteFill}>
+          {/* the station apron the engine is parked on */}
+          <PlayGround width={geo.w} height={geo.h} top={geo.groundY} variant="apron" dressed={false} />
+
           {/* the engine the tank is bolted to */}
           <View style={[styles.truck, { left: geo.truck.x, top: geo.truck.y, width: geo.truck.w }]} pointerEvents="none">
             <PumperTruck width={geo.truck.w} />
@@ -311,10 +326,30 @@ export function WaterTank({ challenge, ageBand, onComplete, onEvent, compact }: 
               <PumpLever width={geo.lever.w} height={geo.lever.h} />
             </Animated.View>
           </GestureDetector>
-          <View style={[styles.pipe, { left: geo.lever.x + geo.lever.w * 0.42, top: geo.lever.y + geo.lever.h * 0.86, width: Math.max(10, geo.tank.x - geo.lever.x - geo.lever.w * 0.3) }]} />
+          <View
+            style={[
+              styles.pipe,
+              {
+                left: geo.lever.x + geo.lever.w * 0.42,
+                top: geo.lever.y + geo.lever.h * 0.86,
+                width: Math.max(10, geo.tank.x - geo.lever.x - geo.lever.w * 0.3),
+              },
+            ]}
+          />
+          <View
+            style={[
+              styles.pipeLip,
+              {
+                left: geo.lever.x + geo.lever.w * 0.42,
+                top: geo.lever.y + geo.lever.h * 0.86,
+                width: Math.max(10, geo.tank.x - geo.lever.x - geo.lever.w * 0.3),
+              },
+            ]}
+          />
 
-          {/* tank */}
+          {/* tank: cradle, water, glass, then the fittings that bolt it down */}
           <Animated.View style={[styles.tank, { left: geo.tank.x, top: geo.tank.y, width: geo.tank.w, height: geo.tank.h }, tankStyle]}>
+            <TankCradle width={geo.tank.w} height={geo.tank.h} />
             <View style={[styles.tankInner, { margin: geo.inner.inset, borderRadius: radii.card }]}>
               <WaterSurface width={geo.inner.w} height={geo.inner.h} level={level} slosh={slosh} clock={clock} radius={radii.card} />
             </View>
@@ -326,9 +361,10 @@ export function WaterTank({ challenge, ageBand, onComplete, onEvent, compact }: 
               targetAt={targetValue}
               highlightTarget={hints.assist || state.phase === 'wrong'}
             />
+            <TankRig width={geo.tank.w} height={geo.tank.h} fill={Math.min(1, currentValue)} />
             {/* tick labels */}
             {tickList.map((f, i) => (
-              <View key={i} style={[styles.tickLabel, { top: geo.tank.h - f * geo.tank.h - 13, left: geo.tank.w * 0.4 }]}>
+              <View key={i} style={[styles.tickLabel, { top: geo.tank.h - f * geo.tank.h - 13, left: geo.tank.w * 0.36 }]}>
                 <Text variant="tiny" color={palette.navy}>
                   {formatFraction({ num: i + 1, den: challenge.ticks })}
                 </Text>
@@ -355,8 +391,9 @@ const styles = StyleSheet.create({
   truck: { position: 'absolute' },
   lever: { position: 'absolute', alignItems: 'center' },
   pipe: { position: 'absolute', height: 14, backgroundColor: palette.slate, borderRadius: 7 },
+  pipeLip: { position: 'absolute', height: 4, backgroundColor: 'rgba(255,255,255,0.32)', borderRadius: 2, marginTop: 2 },
   tank: { position: 'absolute', ...shadows.card },
-  tankInner: { position: 'absolute', left: 0, top: 0, overflow: 'hidden', backgroundColor: 'rgba(255,255,255,0.35)' },
+  tankInner: { position: 'absolute', left: 0, top: 0, overflow: 'hidden', backgroundColor: 'rgba(214,240,255,0.62)' },
   tickLabel: {
     position: 'absolute',
     minWidth: 30,

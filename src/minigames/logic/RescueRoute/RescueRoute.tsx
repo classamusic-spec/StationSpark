@@ -22,12 +22,12 @@ import { sfx } from '@/services/audio';
 import { haptics } from '@/services/haptics';
 import { Text, useSideRail } from '@/ui';
 
-import { Stage } from '@/world';
 
 import { AskQuestion } from '../shared/AskQuestion';
 import { GameFrame } from '../shared/GameFrame';
 import { useGameLayout } from '../shared/layout';
 import { useCaptainLine } from '../shared/speak';
+import { PlanRoom, RoomWash, usePlayBox } from '../shared/art/Scene';
 import { useHintLadder } from '../shared/useHintLadder';
 import { HEADING_ANGLE, bestNextCommand, commandLabel, optimalLength, traceRoute } from '../shared/routeSim';
 import { ForwardArrow, PlayGlyph, TurnArrow, UTurnArrow } from '../shared/art/Glyphs';
@@ -213,6 +213,7 @@ export function RescueRoute({ challenge, ageBand, onComplete, onEvent, compact }
   );
 
   /* ----- geometry: the town grows into whatever room the play area has ----- */
+  const { box, onLayout: onBoxLayout } = usePlayBox();
   const [stage, setStage] = useState({ w: 0, h: 0 });
   const onStageLayout = useCallback((e: LayoutChangeEvent) => {
     const { width, height } = e.nativeEvent.layout;
@@ -456,9 +457,7 @@ export function RescueRoute({ challenge, ageBand, onComplete, onEvent, compact }
       title={`Code the route to the ${goalName}`}
       subtitle={goalStreet ? `On ${goalStreet}. Build the steps, then press Go.` : 'Build the steps, then press Go.'}
       compact={compact}
-      backdrop={
-                  <Stage variant="street" groundHeight={140} />
-      }
+      backdrop={<RoomWash top="#C9D6E8" bottom="#A9BAD6" />}
       hint={{ text: hintText, visible: hintLadder.showBubble && state.phase !== 'running', onDismiss: hintLadder.dismiss }}
       overlay={
         challenge.compareRoutes ? (
@@ -589,6 +588,10 @@ export function RescueRoute({ challenge, ageBand, onComplete, onEvent, compact }
       }
     >
       <View style={styles.stage} onLayout={onStageLayout}>
+        {/* the planning room the route board is laid out in */}
+        <View style={StyleSheet.absoluteFill} pointerEvents="none" onLayout={onBoxLayout}>
+          <PlanRoom box={box} />
+        </View>
         <View style={[styles.boardWrap, { paddingBottom: hintLane }]}>
           <View style={shadows.card}>
             <CityBoard

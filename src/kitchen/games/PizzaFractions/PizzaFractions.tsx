@@ -28,7 +28,6 @@ import { ActivityFrame } from '@/ui/kit/ActivityFrame';
 import { AnswerTile } from '@/ui/kit/AnswerTile';
 import { GrownUpChip } from '@/ui/kit/Chip';
 
-import { Stage as SceneStage } from '@/world';
 import { CrewFigure } from '@/world/scenes';
 import { toppingLabel, toppings } from '../../food';
 import {
@@ -45,7 +44,19 @@ import {
   type Pt,
 } from '../../fractionMath';
 import { answerOptions, equationText, nextPlate, shareState } from '../../shareMath';
-import { Stage, at } from '../../parts/Stage';
+import { FluidStage, at, type FluidBox } from '../../parts/Stage';
+import {
+  CounterCrumbs,
+  CounterRun,
+  HerbPot,
+  KitchenWall,
+  KitchenWindow,
+  Shelf,
+  SplashbackBand,
+  StoreJar,
+  TeaTowel,
+  UtensilRail,
+} from '../../parts/KitchenRoom';
 import { useSwing } from '../../parts/motion';
 import { BowlCell, PieIndicator, PlateArt, ToppingRegion } from '../../parts/FoodBits';
 import { CheckerCloth, CookCTA, EquationStrip, PizzaCutter, RollingPin, WoodPeel } from '../../parts/SceneBits';
@@ -61,14 +72,83 @@ import {
 } from '../../gestures';
 import { kitchenFeel, nearestTarget, useCaptainHint, useDragSource, useSpokenTask, useTimers } from '../useKitchenGame';
 
-/* ---- the 390 × 430 design box the scene is painted in ---- */
-const D = { w: 390, h: 430 };
+/**
+ * THE PIZZA'S OWN COORDINATE SPACE.
+ *
+ * The maths — which wedge a finger is over, which cut a stroke matched — is all
+ * done in this fixed space, so none of it has to change when the drawing grows.
+ * `Geo.k` below is how many play-area units one pizza unit is worth, and the
+ * two conversions (`toPizza`, and the `s * k` handed to the gesture surfaces)
+ * are the only places the two spaces meet.
+ */
 const PC: Pt = { x: 150, y: 198 };
 const R_CRUST = 122;
 const R_SAUCE = 107;
-const RACK = { x: 284, y: 6, w: 100, h: 418 };
-/** the board the dough is rolled on — deliberately much wider than the dough */
-const BOARD = { x: 8, y: 56, w: 284, h: 284 };
+
+/** Where everything sits in the play area the stage actually got. */
+interface Geo {
+  s: number;
+  w: number;
+  h: number;
+  counterY: number;
+  counterH: number;
+  rack: { x: number; y: number; w: number; h: number };
+  board: { x: number; y: number; w: number; h: number };
+  /** the pizza's centre and crust radius, in play-area units */
+  cx: number;
+  cy: number;
+  r: number;
+  /** play-area units per pizza unit */
+  k: number;
+  plateY: number;
+  plateW: number;
+  pileY: number;
+  askY: number;
+}
+
+/**
+ * Compose the room. The peel and the pizza are the subject of the screen, so
+ * they take the biggest circle the play area can hold beside the ingredient
+ * rack; the wall behind gets a shelf, a window and a rail, and the counter runs
+ * across the foot. Nothing is a fixed 122-unit radius in the middle of a box
+ * half as big again any more.
+ */
+function pizzaLayout(box: FluidBox, wide: boolean): Geo {
+  const { s, w, h } = box;
+  const counterH = Math.max(38, Math.min(72, h * 0.1));
+  const counterY = h - counterH;
+
+  const rackW = Math.max(76, Math.min(104, w * 0.2));
+  const rack = { x: w - rackW - 6, y: 6, w: rackW, h: counterY - 16 };
+
+  const areaX = 8;
+  const areaW = rack.x - areaX - 8;
+  const areaTop = 6;
+  const areaH = counterY - areaTop - 6;
+  const r = Math.min(areaW * 0.5, areaH * 0.45);
+  const cx = areaX + areaW / 2;
+  const cy = areaTop + areaH * 0.44;
+  const k = r / R_CRUST;
+
+  const plateW = Math.max(70, Math.min(104, (w - 24) / 4 - 8));
+  return {
+    s,
+    w,
+    h,
+    counterY,
+    counterH,
+    rack,
+    board: { x: cx - r * 1.2, y: cy - r * 1.14, w: r * 2.4, h: r * 2.3 },
+    cx,
+    cy,
+    r,
+    k,
+    plateY: wide ? h * 0.46 : h * 0.44,
+    plateW,
+    pileY: Math.min(h - 76, counterY - 66),
+    askY: h * 0.16,
+  };
+}
 /** how many passes of the pin flatten the dough. A few honest sweeps, no more. */
 const ROLL_PASSES = 4;
 /** finger travel, in screen px, that counts as one pass */
@@ -322,6 +402,8 @@ export function PizzaFractions({ challenge, ageBand, onComplete, onEvent, compac
   const onPizzaTapAt = useCallback(
     (x: number, y: number, s: number) => {
       if (!Number.isFinite(x) || !Number.isFinite(y) || !s) return;
+      /* `s` here is screen px per PIZZA unit — the stage scale times the geo's
+         own `k`, so the sauce can grow without the maths noticing. */
       const p = { x: PC.x - R_SAUCE + x / s, y: PC.y - R_SAUCE + y / s };
       const region = regionAtPoint(p, PC, R_SAUCE, count);
       if (region === null || !Number.isInteger(region)) return;
@@ -455,11 +537,13 @@ export function PizzaFractions({ challenge, ageBand, onComplete, onEvent, compac
   /* Phase 3 — sharing                                                    */
   /* ------------------------------------------------------------------ */
 
-  const platePoints = useMemo(() => {
-    const w = 86;
-    const gap = (D.w - among * w) / (among + 1);
-    return Array.from({ length: among }, (_, i) => ({ x: gap + i * (w + gap) + w / 2, y: 250 }));
-  }, [among]);
+  const platePointsFor = useCallback(
+    (g: Geo): Pt[] => {
+      const gap = (g.w - among * g.plateW) / (among + 1);
+      return Array.from({ length: among }, (_, i) => ({ x: gap + i * (g.plateW + gap) + g.plateW / 2, y: g.plateY }));
+    },
+    [among],
+  );
 
   const giveSlice = useCallback(
     (plateIndex: number, sliceIndex?: number) => {
@@ -595,9 +679,7 @@ export function PizzaFractions({ challenge, ageBand, onComplete, onEvent, compac
       compact={compact}
       onReplay={replay}
       progress={{ done: STEP_OF[phase], total: 4 }}
-      backdrop={
-                  <SceneStage variant="counter" groundHeight={200} />
-      }
+      backdrop={<KitchenWall />}
       controls={controls}
       controlsTone="cream"
       hint={{ text: assist.text, es: assist.es, visible: assist.visible, onDismiss: assist.dismiss }}
@@ -654,14 +736,51 @@ export function PizzaFractions({ challenge, ageBand, onComplete, onEvent, compac
           </View>
         ) : null}
 
-        <Stage design={D} style={styles.stage}>
-          {(s) => (
+        <FluidStage minH={360} maxScale={1.8} style={styles.stage}>
+          {(box) => {
+            const g = pizzaLayout(box, box.w > box.h * 0.92);
+            const s = box.s;
+            const platePoints = platePointsFor(g);
+            /* play-area units → the pizza's own space, for the hit tests */
+            const toPizza = (fx: number, fy: number): Pt => ({
+              x: PC.x + (fx - g.cx) / g.k,
+              y: PC.y + (fy - g.cy) / g.k,
+            });
+            const side = Math.max(0, g.board.x - 8);
+            return (
             <>
-              <CheckerCloth width={104 * s} height={92 * s} style={at(s, -8, 336)} />
+              {/* --- the room ------------------------------------- */}
+              <SplashbackBand s={s} x={0} y={g.counterY - 52} w={g.w} depth={52} />
+              {g.board.y > 76 ? (
+                <>
+                  <Shelf s={s} x={8} y={g.board.y - 34} w={Math.max(76, side + 44)} />
+                  <StoreJar s={s} x={12} y={g.board.y - 74} h={40} tone="jam" />
+                  <KitchenWindow s={s} x={g.rack.x - 108} y={6} w={100} />
+                </>
+              ) : null}
+              <UtensilRail s={s} x={8} y={6} w={Math.min(126, g.w * 0.3)} />
+              {/* the rack column is scene, not just a control: when the bowls
+                  are away it is a shelf of store jars, so the pizza never sits
+                  beside a bare strip of wall */}
+              {phase === 'top' ? null : (
+                <>
+                  <Shelf s={s} x={g.rack.x - 4} y={g.rack.y + g.rack.h * 0.34} w={g.rack.w + 8} />
+                  <StoreJar s={s} x={g.rack.x} y={g.rack.y + g.rack.h * 0.34 - 46} h={46} tone="honey" />
+                  <StoreJar s={s} x={g.rack.x + g.rack.w * 0.5} y={g.rack.y + g.rack.h * 0.34 - 42} h={42} tone="herbs" />
+                  <Shelf s={s} x={g.rack.x - 4} y={g.rack.y + g.rack.h * 0.68} w={g.rack.w + 8} />
+                  <StoreJar s={s} x={g.rack.x} y={g.rack.y + g.rack.h * 0.68 - 44} h={44} tone="berry" />
+                  <StoreJar s={s} x={g.rack.x + g.rack.w * 0.5} y={g.rack.y + g.rack.h * 0.68 - 40} h={40} tone="oats" />
+                </>
+              )}
+              <CounterRun s={s} w={g.w} y={g.counterY} h={g.counterH + 44} />
+              <CounterCrumbs s={s} x={g.cx - g.r} y={g.counterY - 10} w={g.r * 2} seed={8} />
+              <HerbPot s={s} x={6} y={g.counterY - 44} h={42} />
+              <TeaTowel s={s} x={g.w - 46} y={Math.max(6, g.counterY - 160)} w={38} />
+              <CheckerCloth width={g.r * 0.8 * s} height={g.r * 0.7 * s} style={at(s, -8, g.counterY - g.r * 0.5)} />
 
               {phase === 'share' ? (
                 <ShareScene
-                  s={s}
+                  geo={g}
                   plates={plates}
                   each={each}
                   total={challenge.cutInto}
@@ -672,7 +791,7 @@ export function PizzaFractions({ challenge, ageBand, onComplete, onEvent, compac
                   onMiss={() => assist.cheer('Drop the slice right onto a plate.')}
                 />
               ) : phase === 'ask' ? (
-                <View style={[at(s, 20, 60, 350), styles.answerWrap]}>
+                <View style={[at(s, 12, g.askY, g.w - 24), styles.answerWrap]}>
                   {answerOptions(each).map((value, i) => (
                     <AnswerTile
                       key={value}
@@ -686,25 +805,25 @@ export function PizzaFractions({ challenge, ageBand, onComplete, onEvent, compac
                 </View>
               ) : (
                 <>
-                  <View style={at(s, 25, 70)} pointerEvents="none">
-                    <WoodPeel size={250 * s} />
+                  <View style={at(s, g.cx - g.r * 0.95, g.cy - g.r * 0.99, g.r * 1.9)} pointerEvents="none">
+                    <WoodPeel size={g.r * 1.9 * s} />
                   </View>
 
                   {phase === 'roll' ? (
                     <>
                       <Animated.View
-                        style={[at(s, PC.x - R_CRUST, PC.y - R_CRUST, R_CRUST * 2, R_CRUST * 2), doughStyle]}
+                        style={[at(s, g.cx - g.r, g.cy - g.r, g.r * 2, g.r * 2), doughStyle]}
                         pointerEvents="none"
                       >
-                        <DoughArt s={s} thick={1 - rolled} />
+                        <DoughArt size={g.r * 2 * s} thick={1 - rolled} />
                       </Animated.View>
-                      <RollSurface s={s} sweep={sweep} demo={demo} showHint={rollPasses === 0} />
+                      <RollSurface geo={g} sweep={sweep} demo={demo} showHint={rollPasses === 0} />
                     </>
                   ) : (
                     <>
-                      <View style={at(s, PC.x - R_CRUST, PC.y - R_CRUST)} pointerEvents="none">
+                      <View style={at(s, g.cx - g.r, g.cy - g.r, g.r * 2, g.r * 2)} pointerEvents="none">
                         <PizzaArt
-                          s={s}
+                          size={g.r * 2 * s}
                           count={count}
                           assigned={assigned}
                           cuts={cuts}
@@ -725,9 +844,9 @@ export function PizzaFractions({ challenge, ageBand, onComplete, onEvent, compac
                       </View>
 
                       {phase === 'top' ? (
-                        <PizzaSurface s={s} onTapAt={onPizzaTapAt} />
+                        <PizzaSurface geo={g} onTapAt={onPizzaTapAt} />
                       ) : phase === 'cut' ? (
-                        <CutSurface s={s} onStroke={onCutStroke} showHint={madeCuts === 0} angles={angles} cuts={cuts} />
+                        <CutSurface geo={g} onStroke={onCutStroke} showHint={madeCuts === 0} angles={angles} cuts={cuts} />
                       ) : null}
                     </>
                   )}
@@ -736,7 +855,7 @@ export function PizzaFractions({ challenge, ageBand, onComplete, onEvent, compac
 
               {phase === 'top' ? (
                 <ToppingRack
-                  s={s}
+                  geo={g}
                   selected={selected}
                   plan={status.perTopping}
                   onPick={pickUp}
@@ -745,12 +864,12 @@ export function PizzaFractions({ challenge, ageBand, onComplete, onEvent, compac
                       setHoverRegion(-1);
                       return;
                     }
-                    const region = regionAtPoint({ x: home.x + dx, y: home.y + dy }, PC, R_SAUCE, count);
+                    const region = regionAtPoint(toPizza(home.x + dx, home.y + dy), PC, R_SAUCE, count);
                     setHoverRegion(region === null ? -1 : region);
                   }}
                   onDrop={(topping, dx, dy, home) => {
                     setHoverRegion(-1);
-                    const p = { x: home.x + dx, y: home.y + dy };
+                    const p = toPizza(home.x + dx, home.y + dy);
                     const region = regionAtPoint(p, PC, R_SAUCE, count);
                     if (region === null) {
                       assist.cheer('Drop it right on the pizza!');
@@ -764,13 +883,14 @@ export function PizzaFractions({ challenge, ageBand, onComplete, onEvent, compac
               {/* the cutter lies on the counter beside the peel the whole time,
                   as in the reference — it is scene dressing, not a mode marker */}
               {phase === 'roll' ? null : (
-                <View style={at(s, 16, 344)} pointerEvents="none">
-                  <PizzaCutter size={(phase === 'cut' ? 96 : 82) * s} />
+                <View style={at(s, 12, g.counterY - g.r * 0.42)} pointerEvents="none">
+                  <PizzaCutter size={g.r * (phase === 'cut' ? 0.78 : 0.66) * s} />
                 </View>
               )}
             </>
-          )}
-        </Stage>
+            );
+          }}
+        </FluidStage>
       </View>
     </ActivityFrame>
   );
@@ -786,12 +906,12 @@ export function PizzaFractions({ challenge, ageBand, onComplete, onEvent, compac
  * `thick` (1 → 0) fades the dome and the shadow, which is what actually reads
  * as "this used to be a lump and now it is a base".
  */
-function DoughArt({ s, thick }: { s: number; thick: number }) {
-  const size = R_CRUST * 2;
-  const vb = `${PC.x - R_CRUST} ${PC.y - R_CRUST} ${size} ${size}`;
+function DoughArt({ size, thick }: { size: number; thick: number }) {
+  const box = R_CRUST * 2;
+  const vb = `${PC.x - R_CRUST} ${PC.y - R_CRUST} ${box} ${box}`;
   const dome = Math.max(0, Math.min(1, thick));
   return (
-    <Svg width={size * s} height={size * s} viewBox={vb}>
+    <Svg width={size} height={size} viewBox={vb}>
       <Defs>
         <RadialGradient id="dough" cx="42%" cy="36%" r="70%">
           <Stop offset="0" stopColor="#FBEED4" />
@@ -819,20 +939,21 @@ function DoughArt({ s, thick }: { s: number; thick: number }) {
 /* ------------------------------------------------------------------ */
 
 function RollSurface({
-  s,
+  geo,
   sweep,
   demo,
   showHint,
 }: {
-  s: number;
+  geo: Geo;
   sweep: ReturnType<typeof useSweepGesture>;
   demo: SharedValue<number>;
   showHint: boolean;
 }) {
-  const w = BOARD.w * s;
-  const h = BOARD.h * s;
-  const pinW = 170 * s;
-  const pinH = 71 * s;
+  const { s, board } = geo;
+  const w = board.w * s;
+  const h = board.h * s;
+  const pinW = geo.r * 1.4 * s;
+  const pinH = pinW * 0.42;
   const restX = w / 2;
   const restY = h * 0.46;
   /* the pin rocks over the dough on its own: the gesture, demonstrated, before
@@ -859,7 +980,7 @@ function RollSurface({
       <View
         accessibilityRole="button"
         accessibilityLabel="Dough — swipe the rolling pin back and forth to roll it out, or tap it"
-        style={at(s, BOARD.x, BOARD.y, BOARD.w, BOARD.h)}
+        style={at(s, board.x, board.y, board.w, board.h)}
       >
         {showHint ? <SweepHint width={w} height={h} /> : null}
         <Animated.View style={[styles.pin, pinStyle]} pointerEvents="none">
@@ -875,7 +996,7 @@ function RollSurface({
 /* ------------------------------------------------------------------ */
 
 function PizzaArt({
-  s,
+  size,
   count,
   assigned,
   cuts,
@@ -885,7 +1006,7 @@ function PizzaArt({
   highlightRegion,
   highlightCut,
 }: {
-  s: number;
+  size: number;
   count: number;
   assigned: (ToppingId | null)[];
   cuts: boolean[];
@@ -896,10 +1017,10 @@ function PizzaArt({
   highlightCut: number;
 }) {
   const wedges = buildWedges(count);
-  const size = R_CRUST * 2;
-  const vb = `${PC.x - R_CRUST} ${PC.y - R_CRUST} ${size} ${size}`;
+  const box = R_CRUST * 2;
+  const vb = `${PC.x - R_CRUST} ${PC.y - R_CRUST} ${box} ${box}`;
   return (
-    <Svg width={size * s} height={size * s} viewBox={vb}>
+    <Svg width={size} height={size} viewBox={vb}>
       <Defs>
         <RadialGradient id="sauce" cx="50%" cy="45%" r="65%">
           <Stop offset="0" stopColor="#F4604F" />
@@ -1020,22 +1141,25 @@ function PizzaArt({
 /* ------------------------------------------------------------------ */
 
 /** The tappable sauce. Reports view-relative coordinates on every platform. */
-function PizzaSurface({ s, onTapAt }: { s: number; onTapAt: (x: number, y: number, s: number) => void }) {
+function PizzaSurface({ geo, onTapAt }: { geo: Geo; onTapAt: (x: number, y: number, s: number) => void }) {
+  /* screen px per PIZZA unit — one number, and the maths stays in its own space */
+  const px = geo.s * geo.k;
+  const rSauce = R_SAUCE * geo.k;
   const gesture = useMemo(
     () =>
       Gesture.Tap()
         .maxDistance(20)
         .onEnd((e, ok) => {
-          if (ok) runOnJS(onTapAt)(e.x, e.y, s);
+          if (ok) runOnJS(onTapAt)(e.x, e.y, px);
         }),
-    [onTapAt, s],
+    [onTapAt, px],
   );
   return (
     <GestureDetector gesture={gesture}>
       <View
         accessibilityRole="button"
         accessibilityLabel="Pizza — tap a slice to add the ingredient you picked"
-        style={at(s, PC.x - R_SAUCE, PC.y - R_SAUCE, R_SAUCE * 2, R_SAUCE * 2)}
+        style={at(geo.s, geo.cx - rSauce, geo.cy - rSauce, rSauce * 2, rSauce * 2)}
       />
     </GestureDetector>
   );
@@ -1046,27 +1170,29 @@ function PizzaSurface({ s, onTapAt }: { s: number; onTapAt: (x: number, y: numbe
 /* ------------------------------------------------------------------ */
 
 function CutSurface({
-  s,
+  geo,
   onStroke,
   showHint,
   angles,
   cuts,
 }: {
-  s: number;
+  geo: Geo;
   onStroke: (stroke: Stroke, s: number) => void;
   showHint: boolean;
   angles: number[];
   cuts: boolean[];
 }) {
+  const s = geo.s;
+  const px = geo.s * geo.k;
   const box = R_CRUST * 2;
-  const report = useCallback((stroke: Stroke) => onStroke(stroke, s), [onStroke, s]);
-  const stroke = useStrokeGesture({ onStroke: report, tapSlop: CUT_TAP_SLOP * (s || 1) });
+  const report = useCallback((stroke: Stroke) => onStroke(stroke, px), [onStroke, px]);
+  const stroke = useStrokeGesture({ onStroke: report, tapSlop: CUT_TAP_SLOP * (px || 1) });
 
   const cutterStyle = useAnimatedStyle(() => ({
     opacity: 0.25 + stroke.active.value * 0.75,
     transform: [
-      { translateX: stroke.x.value - 28 * s },
-      { translateY: stroke.y.value - 22 * s },
+      { translateX: stroke.x.value - geo.r * 0.23 * s },
+      { translateY: stroke.y.value - geo.r * 0.18 * s },
       { scale: 0.8 + stroke.active.value * 0.2 },
     ],
   }));
@@ -1079,15 +1205,15 @@ function CutSurface({
   return (
     <GestureDetector gesture={stroke.gesture}>
       <View
-        style={at(s, PC.x - R_CRUST, PC.y - R_CRUST, box, box)}
+        style={at(s, geo.cx - geo.r, geo.cy - geo.r, geo.r * 2, geo.r * 2)}
         accessibilityRole="button"
         accessibilityLabel="Drag the cutter across the pizza"
       >
         {showHint && a && b ? (
-          <CutHint x1={a.x * s} y1={a.y * s} x2={b.x * s} y2={b.y * s} width={box * s} height={box * s} />
+          <CutHint x1={a.x * px} y1={a.y * px} x2={b.x * px} y2={b.y * px} width={box * px} height={box * px} />
         ) : null}
         <Animated.View style={[styles.floatingCutter, cutterStyle]} pointerEvents="none">
-          <PizzaCutter size={72 * s} />
+          <PizzaCutter size={geo.r * 0.6 * s} />
         </Animated.View>
       </View>
     </GestureDetector>
@@ -1099,35 +1225,36 @@ function CutSurface({
 /* ------------------------------------------------------------------ */
 
 function ToppingRack({
-  s,
+  geo,
   selected,
   plan,
   onPick,
   onDrop,
   onHover,
 }: {
-  s: number;
+  geo: Geo;
   selected: ToppingId | null;
   plan: { topping: ToppingId; need: number; have: number; done: boolean }[];
   onPick: (t: ToppingId) => void;
   onDrop: (t: ToppingId, dx: number, dy: number, home: Pt) => void;
   onHover: (t: ToppingId, dx: number, dy: number, home: Pt) => void;
 }) {
+  const { s, rack } = geo;
   const n = Math.max(1, plan.length);
-  const cellH = Math.min(104, (RACK.h - 16 - (n - 1) * 8) / n);
+  const cellH = Math.min(rack.w * 1.1, (rack.h - 16 - (n - 1) * 8) / n);
   return (
-    <View style={at(s, RACK.x, RACK.y, RACK.w, RACK.h)}>
+    <View style={at(s, rack.x, rack.y, rack.w, rack.h)}>
       <View style={[styles.rack, { borderRadius: 18 * s, borderWidth: 4 * s }]} pointerEvents="none" />
       {plan.map((p, i) => {
         const y = 8 + i * (cellH + 8);
-        const home: Pt = { x: RACK.x + RACK.w / 2, y: RACK.y + y + cellH / 2 };
+        const home: Pt = { x: rack.x + rack.w / 2, y: rack.y + y + cellH / 2 };
         return (
           <RackBowl
             key={p.topping}
             s={s}
             x={8}
             y={y}
-            width={RACK.w - 16}
+            width={rack.w - 16}
             topping={p.topping}
             selected={selected === p.topping}
             done={p.done}
@@ -1186,7 +1313,7 @@ function RackBowl({
 /* ------------------------------------------------------------------ */
 
 function ShareScene({
-  s,
+  geo,
   plates,
   each,
   total,
@@ -1196,7 +1323,7 @@ function ShareScene({
   onGive,
   onMiss,
 }: {
-  s: number;
+  geo: Geo;
   plates: number[];
   each: number;
   total: number;
@@ -1206,12 +1333,14 @@ function ShareScene({
   onGive: (plate: number, slice?: number) => void;
   onMiss: () => void;
 }) {
+  const { s, w, plateW } = geo;
   const nextIdx = nextPlate(plates, each);
   const [hover, setHover] = useState(-1);
-  const pileY = 348;
-  const tokenW = 46;
+  const pileY = geo.pileY;
   const perRow = Math.min(total, 7);
-  const startX = (D.w - perRow * (tokenW + 4)) / 2;
+  const tokenW = Math.max(38, Math.min(58, (w - 24) / perRow - 5));
+  const startX = (w - perRow * (tokenW + 4)) / 2;
+  const figure = plateW * 1.05;
 
   return (
     <>
@@ -1219,17 +1348,20 @@ function ShareScene({
         const n = plates[i] ?? 0;
         const glow = (highlight && i === nextIdx) || hover === i;
         return (
-          <View key={`plate${i}`} style={at(s, p.x - 46, p.y - 104, 92, 164)}>
+          <View
+            key={`plate${i}`}
+            style={at(s, p.x - plateW / 2, p.y - figure - plateW * 0.16, plateW, figure + plateW * 1.1)}
+          >
             <View style={styles.plateCol}>
               {/* critique #23 — the full rig stands at the plate */}
-              <CrewFigure {...(CREW[i % CREW.length] ?? CREW[0])} size={92 * s} bobPhase={i * 0.5} />
+              <CrewFigure {...(CREW[i % CREW.length] ?? CREW[0])} size={figure * s} bobPhase={i * 0.5} />
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel={`Plate ${i + 1}, ${n} slices`}
                 onPress={() => onGive(i)}
                 style={[styles.plateHit, glow && styles.plateGlow, { borderRadius: 18 * s }]}
               >
-                <PlateArt size={88 * s} />
+                <PlateArt size={plateW * 0.96 * s} />
                 <View style={styles.plateCount}>
                   <Text variant="h3" color={n === each ? palette.leafGreenDark : palette.navy}>
                     {n}
@@ -1247,7 +1379,7 @@ function ShareScene({
           const row = Math.floor(i / 7);
           const col = i % 7;
           const x = startX + col * (tokenW + 4);
-          const y = pileY + row * 10;
+          const y = pileY + row * (tokenW * 0.22);
           return (
             <SliceToken
               key={`slice${i}`}
@@ -1260,12 +1392,12 @@ function ShareScene({
                   setHover(-1);
                   return;
                 }
-                setHover(nearestTarget({ x: x + tokenW / 2 + dx, y: y + 22 + dy }, platePoints, 84));
+                setHover(nearestTarget({ x: x + tokenW / 2 + dx, y: y + tokenW / 2 + dy }, platePoints, plateW));
               }}
               onDrop={(dx, dy) => {
                 setHover(-1);
-                const p = { x: x + tokenW / 2 + dx, y: y + 22 + dy };
-                const idx = nearestTarget(p, platePoints, 84);
+                const p = { x: x + tokenW / 2 + dx, y: y + tokenW / 2 + dy };
+                const idx = nearestTarget(p, platePoints, plateW);
                 if (idx < 0) onMiss();
                 else onGive(idx, i);
               }}

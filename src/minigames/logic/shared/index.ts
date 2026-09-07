@@ -10,5 +10,6 @@ export * from './layout';
 export * from './speak';
 export * from './hosePath';
 export * from './routeSim';
+export * from './art/Scene';
 export * from './art/Glyphs';
 export * from './art/Props';

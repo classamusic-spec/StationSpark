@@ -7,3 +7,4 @@ export * from './AskQuestion';
 export * from './CaptainHint';
 export * from './GameShell';
 export * from './DragToken';
+export * from './scene';

@@ -18,12 +18,11 @@ import { speech } from '@/services/speech';
 import { AnswerTile, Text, TrayRow } from '@/ui';
 import type { AnswerState } from '@/ui/kit/AnswerTile';
 
-import { Stage } from '@/world';
-
 import { GameFrame } from '../shared/GameFrame';
 import { useGameLayout } from '../shared/layout';
 import { useHintLadder } from '../shared/useHintLadder';
 import { PatternGlyph, SparkleBurst, WaterBurst, type PatternSymbol } from '../shared/art/Glyphs';
+import { BoardFrame, RoomWash, TrainingYard, clamp, usePlayBox, yardMetrics } from '../shared/art/Scene';
 
 const NAMES: Record<PatternSymbol, { en: string; es: string }> = {
   fire: { en: 'fire', es: 'fuego' },
@@ -78,10 +77,13 @@ export function SprayPattern({ challenge, ageBand, onComplete, onEvent, compact 
   const spray = useSharedValue(0);
   const sprayStyle = useAnimatedStyle(() => ({ opacity: spray.value, transform: [{ scale: 0.6 + spray.value * 0.6 }] }));
 
-  /* say the pattern out loud on mount */
+  /*
+   * The pattern is READ ALOUD, never mirrored into a bubble. It used to raise a
+   * `say` event as well, which drew a card across the very targets the child was
+   * being asked to read.
+   */
   useEffect(() => {
     const words = shown.map((s) => NAMES[s].en).join(', ');
-    session.say('bea', `${words}… what comes next?`);
     const t = setTimeout(() => speech.say(`${words}. What comes next?`, { speaker: 'bea' }), 350);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -119,10 +121,28 @@ export function SprayPattern({ challenge, ageBand, onComplete, onEvent, compact 
     [challenge.answer, session, spray, state.phase],
   );
 
-  const slotSize = Math.max(
-    layout.s(44),
-    Math.min(layout.s(66), (layout.boxWidth - spacing.md * 2 - shown.length * 8) / (shown.length + 1)),
+  /*
+   * THE PATTERN IS THE ACTIVITY. It is mounted on a real board in the training
+   * yard and sized against the play area the chrome leaves, so the row fills
+   * the wall instead of floating small in the middle of it.
+   */
+  const { box, onLayout } = usePlayBox();
+  const yard = yardMetrics(box);
+  const slots = shown.length + 1;
+  const boardWidth = box.w > 0 ? clamp(box.w - spacing.md * 2, 240, 700) : layout.s(340);
+  const boardPad = clamp(boardWidth * 0.05, 12, 28);
+  const gap = 8;
+  const inner = boardWidth - boardPad * 2;
+  /* a long pattern wraps onto a second line rather than running off the board */
+  const perRow = Math.max(3, Math.min(slots, Math.floor((inner + gap) / (52 + gap))));
+  const rows = Math.ceil(slots / perRow);
+  const slotSize = clamp(
+    (inner - (perRow - 1) * gap) / perRow,
+    38,
+    box.h > 0 ? Math.min(104, (box.h * 0.42) / rows) : 104,
   );
+  const rowWidth = perRow * slotSize + (perRow - 1) * gap;
+  const boardHeight = rows * slotSize + (rows - 1) * gap + boardPad * 2;
 
   const hintText = useMemo(() => {
     const a = shown[shown.length - 2];
@@ -143,9 +163,7 @@ export function SprayPattern({ challenge, ageBand, onComplete, onEvent, compact 
       title="What Comes Next?"
       subtitle={ageBand === 'A' ? undefined : 'Finish the spray pattern.'}
       compact={compact}
-      backdrop={
-                  <Stage variant="yard" groundHeight={150} />
-      }
+      backdrop={<RoomWash top="#7FC8FA" bottom="#C9D0E2" />}
       hint={{ text: hintText, visible: hintLadder.showBubble, onDismiss: hintLadder.dismiss }}
       tray={
         <TrayRow>
@@ -169,12 +187,18 @@ export function SprayPattern({ challenge, ageBand, onComplete, onEvent, compact 
         </TrayRow>
       }
     >
-      <View style={styles.stage}>
-        <View style={styles.nozzle}>
-          <View style={styles.nozzleGrip} />
-          <View style={styles.nozzleTip} />
-        </View>
-        <View style={styles.row}>
+      <View style={styles.stage} onLayout={onLayout}>
+        {/* the training yard the targets are mounted in */}
+        <TrainingYard box={box} />
+
+        <View
+          style={[
+            styles.deck,
+            { paddingBottom: (box.h > 0 ? Math.max(spacing.sm, (box.h - yard.groundTop) * 0.42) : spacing.lg) + (hintLadder.showBubble ? clamp(box.h * 0.18, 80, 140) : 0) },
+          ]}
+        >
+        <BoardFrame width={boardWidth} height={boardHeight} tone="steel" pad={boardPad} style={styles.board}>
+        <View style={[styles.row, { width: rowWidth }]}>
           {shown.map((symbol, i) => (
             <Animated.View
               key={`${symbol}-${i}`}
@@ -208,6 +232,8 @@ export function SprayPattern({ challenge, ageBand, onComplete, onEvent, compact 
           </View>
         </View>
 
+        </BoardFrame>
+
         {state.phase === 'solved' ? (
           <Animated.View entering={FadeIn} style={styles.banner}>
             <Text variant="h3" color={palette.leafGreenDark} center>
@@ -215,14 +241,17 @@ export function SprayPattern({ challenge, ageBand, onComplete, onEvent, compact 
             </Text>
           </Animated.View>
         ) : null}
+        </View>
       </View>
     </GameFrame>
   );
 }
 
 const styles = StyleSheet.create({
-  stage: { alignItems: 'center', justifyContent: 'center', gap: spacing.md, paddingHorizontal: spacing.sm },
-  row: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', alignItems: 'center', gap: 8 },
+  stage: { flex: 1, alignSelf: 'stretch' },
+  deck: { flex: 1, alignItems: 'center', justifyContent: 'flex-end', gap: spacing.sm },
+  board: { alignItems: 'center' },
+  row: { flex: 1, flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', alignItems: 'center', gap: 8, alignSelf: 'center' },
   target: {
     backgroundColor: palette.white,
     borderRadius: radii.tile,
@@ -233,9 +262,6 @@ const styles = StyleSheet.create({
   mystery: { borderWidth: 4, borderColor: palette.safetyYellow, backgroundColor: palette.cream },
   shimmer: { position: 'absolute' },
   spray: { position: 'absolute' },
-  nozzle: { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', marginLeft: spacing.md },
-  nozzleGrip: { width: 34, height: 14, borderRadius: 7, backgroundColor: palette.engineRed },
-  nozzleTip: { width: 22, height: 10, borderRadius: 5, backgroundColor: palette.charcoal },
   banner: {
     backgroundColor: palette.mint,
     borderRadius: radii.pill,

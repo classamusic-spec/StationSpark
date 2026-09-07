@@ -18,12 +18,29 @@ import { Chip, Text } from '@/ui';
 import { sfx } from '@/services/audio';
 import { haptics } from '@/services/haptics';
 import { speech } from '@/services/speech';
-import Svg, { Path } from 'react-native-svg';
+import Svg, { Ellipse, G, Path } from 'react-native-svg';
 import { Rookie } from '@/characters';
-import { Stage } from '@/world';
+import { ContactShadow, Stage } from '@/world';
 
-import { Animal, RescueBasket, RescueTree, animalName, sceneTheme } from '@/world/props';
-import { AskQuestion, GameShell, PulseRing, optionsFor, useHintLadder, useMeasuredBox, useSpokenPrompt, useStage } from '../shared';
+import { Animal, RescueBasket, animalName, sceneTheme } from '@/world/props';
+import {
+  AskQuestion,
+  BigTree,
+  GameShell,
+  PlayGround,
+  PulseRing,
+  TREE_ASPECT,
+  TREE_FOOT,
+  TREE_PERCHES,
+  TREE_VB,
+  bark,
+  leaf,
+  optionsFor,
+  useHintLadder,
+  useMeasuredBox,
+  useSpokenPrompt,
+  useStage,
+} from '../shared';
 
 /* ------------------------------------------------------------------ */
 /* State machine: asking → rescuing → carrying → done                   */
@@ -171,53 +188,71 @@ export function RescuePets({ challenge, ageBand, onComplete, onEvent, compact }:
   const subtitle = compact ? undefined : 'Drag each one into the basket.';
   useSpokenPrompt(state.phase === 'asking' ? null : `Rescue the ${pet.plural}`, { speaker: 'bea' });
 
-  /* ---- geometry ---- */
+  /* ---- geometry ----
+   * Composition rule for this game: **the oak commands the play area.** The
+   * old layout drew a 250 px tree in the top third and left half the screen as
+   * flat sky. Now the tree is measured off the ground line, grows to fill the
+   * height it is given (capped so a tablet gets one big tree, not an absurd
+   * one), and Rookie's basket stands on the very same line. */
   const geo = useMemo(() => {
     const w = Math.max(1, box.w);
     const h = Math.max(1, box.h);
-    const treeW = Math.min(w * 0.72, stage.s(250));
-    const treeH = Math.min(h * 0.78, treeW * 1.08);
-    const treeX = w * 0.04;
-    const treeY = h * 0.02;
-    const petSize = Math.max(46, Math.min(stage.s(60), treeW * 0.26));
-    const basketW = Math.max(96, Math.min(stage.s(132), w * 0.36));
+    const wide = w > h * 1.15;
+
+    /* the near grass bank — deep enough to stand on, never half the screen */
+    const groundY = h - Math.max(54, Math.min(h * 0.19, stage.s(104)));
+    const topPad = Math.max(6, h * 0.02);
+
+    /* the canopy is allowed to run past the screen edges on a narrow phone —
+       a cropped canopy reads as a big tree; a shrunken one reads as a shrub */
+    let treeH = Math.min(groundY - topPad, stage.s(680));
+    let treeW = treeH * TREE_ASPECT;
+    const maxTreeW = w * (wide ? 0.5 : 1.18);
+    if (treeW > maxTreeW) {
+      treeW = maxTreeW;
+      treeH = treeW / TREE_ASPECT;
+    }
+    const treeX = w * (wide ? 0.3 : 0.45) - treeW / 2;
+    const treeY = groundY - treeH * (TREE_FOOT / TREE_VB.h);
+
+    const petSize = Math.max(64, Math.min(stage.s(76), treeW * 0.21));
+
+    const basketW = Math.max(104, Math.min(stage.s(158), w * (wide ? 0.22 : 0.34)));
     const basketH = basketW * 0.75;
-    const basketX = w - basketW - stage.s(8);
-    const basketY = h - basketH - stage.s(24);
-    const rookieSize = Math.max(64, Math.min(stage.s(96), w * 0.28));
+    const basketX = w - basketW - stage.s(16);
+    const basketY = groundY - basketH * 0.86;
+
+    const rookieH = Math.max(96, Math.min(groundY * 0.42, stage.s(200)));
+    const rookieW = rookieH * 0.727;
+
     return {
       w,
       h,
+      groundY,
       tree: { x: treeX, y: treeY, w: treeW, h: treeH },
       petSize,
       basket: { x: basketX, y: basketY, w: basketW, h: basketH },
-      basketCentre: { x: basketX + basketW / 2, y: basketY + basketH / 2, r: Math.max(90, basketW * 0.85) },
-      // the rig is drawn ~1.55 × the old portrait box, so it stands *behind*
-      // the basket rather than sitting in it
-      rookie: { x: basketX + basketW * 0.5 - rookieSize * 0.45, y: basketY - rookieSize * 1.32, size: rookieSize },
+      basketCentre: { x: basketX + basketW / 2, y: basketY + basketH / 2, r: Math.max(96, basketW * 0.9) },
+      /* Rookie stands *behind* the basket on the same ground line, so the two
+         read as one rescue post rather than a head in a basket */
+      rookie: { x: basketX + basketW * 0.5 - rookieW / 2, y: groundY - basketH * 0.3 - rookieH, h: rookieH, w: rookieW },
     };
   }, [box.h, box.w, stage]);
 
-  /** where each stranded animal perches, spread across the tree canopy */
-  const perches = useMemo(() => {
-    const spots = [
-      { fx: 0.44, fy: 0.1 },
-      { fx: 0.16, fy: 0.3 },
-      { fx: 0.72, fy: 0.28 },
-      { fx: 0.34, fy: 0.48 },
-      { fx: 0.62, fy: 0.55 },
-      { fx: 0.1, fy: 0.58 },
-      { fx: 0.84, fy: 0.46 },
-      { fx: 0.48, fy: 0.68 },
-    ];
-    return Array.from({ length: needHelp }, (_, i) => {
-      const s = spots[i % spots.length] ?? { fx: 0.4, fy: 0.4 };
-      return {
-        x: geo.tree.x + s.fx * (geo.tree.w - geo.petSize),
-        y: geo.tree.y + s.fy * (geo.tree.h - geo.petSize),
-      };
-    });
-  }, [geo.petSize, geo.tree.h, geo.tree.w, geo.tree.x, geo.tree.y, needHelp]);
+  /** where each stranded animal perches — the branches the art actually drew */
+  const perches = useMemo(
+    () =>
+      Array.from({ length: needHelp }, (_, i) => {
+        const spot = TREE_PERCHES[i % TREE_PERCHES.length];
+        const fx = spot?.fx ?? 0.5;
+        const fy = spot?.fy ?? 0.4;
+        return {
+          x: geo.tree.x + fx * geo.tree.w - geo.petSize / 2,
+          y: geo.tree.y + fy * geo.tree.h - geo.petSize,
+        };
+      }),
+    [geo.petSize, geo.tree.h, geo.tree.w, geo.tree.x, geo.tree.y, needHelp],
+  );
 
   /* ---- rescuing ---- */
   const pickUp = useCallback(() => {
@@ -339,28 +374,50 @@ export function RescuePets({ challenge, ageBand, onComplete, onEvent, compact }:
     >
       {ready ? (
         <View style={StyleSheet.absoluteFill}>
+          {/* the park bank the whole scene stands on */}
+          <PlayGround width={geo.w} height={geo.h} top={geo.groundY} variant="grass" seed={needHelp} />
+
+          {/* dressing at the foot of the trunk: a fallen limb and two acorns —
+              detail that belongs, and nothing a child has to touch */}
+          <View style={[styles.litter, { left: Math.max(2, geo.tree.x + geo.tree.w * 0.06), top: geo.groundY - stage.s(16) }]} pointerEvents="none">
+            <Svg width={stage.s(96)} height={stage.s(34)} viewBox="0 0 96 34">
+              <Ellipse cx={46} cy={26} rx={38} ry={6} fill={palette.navy} opacity={0.1} />
+              <Path d="M6 22 q 26 -10 62 -4 q 8 1 20 -3 q -12 8 -22 8 q -34 4 -60 3 z" fill={bark.mid} />
+              <Path d="M8 21 q 24 -8 56 -3" stroke={bark.rim} strokeWidth={2.4} fill="none" strokeLinecap="round" />
+              <G>
+                <Path d="M66 12 q 8 -3 12 4 q -8 5 -12 -4 z" fill={leaf.mid} />
+                <Path d="M78 10 q 7 -4 11 2 q -7 5 -11 -2 z" fill={leaf.lit} />
+              </G>
+              <Ellipse cx={22} cy={28} rx={5} ry={4.4} fill={bark.lit} />
+              <Ellipse cx={22} cy={25} rx={5} ry={2.4} fill={bark.deep} />
+              <Ellipse cx={33} cy={30} rx={4} ry={3.4} fill={bark.lit} />
+            </Svg>
+          </View>
+
+          {/* the oak — the subject, sized to the play area it was given */}
           <View style={[styles.tree, { left: geo.tree.x, top: geo.tree.y }]} pointerEvents="none">
-            <RescueTree width={geo.tree.w} height={geo.tree.h} />
+            <BigTree width={geo.tree.w} height={geo.tree.h} perches={needHelp} />
           </View>
 
-          {/* grass — the park plane the tree and the basket stand on */}
-          <View style={[styles.grass, { top: geo.h - stage.s(40) }]} pointerEvents="none">
-            <View style={styles.grassLip} />
-          </View>
-
-          {/* Rookie with the basket */}
+          {/* Rookie with the basket, both standing on the ground line */}
           <Animated.View
-            style={[styles.rookie, { left: geo.rookie.x, top: geo.rookie.y, width: geo.rookie.size }, hugStyle]}
+            style={[styles.rookie, { left: geo.rookie.x, top: geo.rookie.y, width: geo.rookie.w }, hugStyle]}
             pointerEvents="none"
           >
             {/* critique #23 — a head in a basket is unsettling; use the full rig */}
             <Rookie
-              size={geo.rookie.size * 1.55}
+              size={geo.rookie.h}
               emotion={state.phase === 'done' ? 'proud' : 'happy'}
               pose={state.phase === 'done' ? 'cheer' : 'stand'}
               jumping={state.phase === 'done'}
             />
           </Animated.View>
+          <View
+            style={[styles.contact, { left: geo.basket.x - geo.basket.w * 0.08, top: geo.groundY - geo.basket.h * 0.06 }]}
+            pointerEvents="none"
+          >
+            <ContactShadow width={geo.basket.w * 1.16} />
+          </View>
           <Animated.View
             style={[styles.basket, { left: geo.basket.x, top: geo.basket.y, width: geo.basket.w, height: geo.basket.h }, hugStyle]}
             pointerEvents="none"
@@ -369,7 +426,7 @@ export function RescuePets({ challenge, ageBand, onComplete, onEvent, compact }:
             <View style={styles.basketPets}>
               {Array.from({ length: Math.min(safeCount, 5) }, (_, i) => (
                 <Animated.View key={i} entering={ZoomIn.springify().damping(11)} style={styles.basketPet}>
-                  <Animal id={challenge.animal} size={geo.petSize * 0.72} mood="safe" phase={i} />
+                  <Animal id={challenge.animal} size={geo.petSize * 0.68} mood="safe" phase={i} />
                 </Animated.View>
               ))}
             </View>
@@ -415,8 +472,8 @@ export function RescuePets({ challenge, ageBand, onComplete, onEvent, compact }:
 
 const styles = StyleSheet.create({
   tree: { position: 'absolute' },
-  grass: { position: 'absolute', left: -18, right: -18, bottom: 0, backgroundColor: palette.grassDark, borderTopLeftRadius: 60, borderTopRightRadius: 60 },
-  grassLip: { position: 'absolute', left: 0, right: 0, top: 0, height: 9, backgroundColor: palette.grass, borderTopLeftRadius: 60, borderTopRightRadius: 60 },
+  litter: { position: 'absolute' },
+  contact: { position: 'absolute' },
   rookie: { position: 'absolute', alignItems: 'center' },
   basket: { position: 'absolute', alignItems: 'center', justifyContent: 'center' },
   basketPets: { position: 'absolute', top: -6, flexDirection: 'row', justifyContent: 'center', flexWrap: 'wrap' },

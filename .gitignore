@@ -60,6 +60,11 @@ yarn-error.*
 /tools/qa/out
 /tools/qa/.tmp
 /tools/qa/out2
+# …and the before/after sheets an art agent shoots to check its own work.
+# Megabytes of PNG that describe a moment, not the app.
+/tools/qa/before-*
+/tools/qa/wip*
+/tools/qa/after-*
 
 # one-off scratch drivers a harness run leaves behind
 *.tmp.mjs

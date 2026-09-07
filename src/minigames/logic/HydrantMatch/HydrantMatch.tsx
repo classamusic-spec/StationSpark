@@ -9,7 +9,6 @@ import { haptics } from '@/services/haptics';
 import { speech } from '@/services/speech';
 import { EquipmentIcon, Text, useSideRail } from '@/ui';
 
-import { Stage } from '@/world';
 import { Draggable } from '../shared/Draggable';
 import { GameFrame } from '../shared/GameFrame';
 import { SlotZone } from '../shared/SlotZone';
@@ -18,6 +17,7 @@ import { useCaptainLine } from '../shared/speak';
 import { useHintLadder } from '../shared/useHintLadder';
 import { WaterBurst } from '../shared/art/Glyphs';
 import { TruckSide } from '../shared/art/Props';
+import { RoomWash, StreetBlock, clamp, streetMetrics, usePlayBox } from '../shared/art/Scene';
 import { Hydrant } from '@/world/props';
 
 interface State {
@@ -116,19 +116,23 @@ export function HydrantMatch({ challenge, ageBand, onComplete, onEvent, compact 
     [challenge.correct, session],
   );
 
-  /* on a tablet the tray becomes a side rail: size the street to the play
-     column, not to the window */
+  /* the street is measured, so the hydrants stand on a real pavement and the
+     block above them is drawn inside the play box instead of behind the chrome */
   const sideRail = useSideRail();
-  const playWidth = sideRail
-    ? Math.min(layout.width - activity.sidePanelWidth - spacing.sm * 3, 820)
-    : layout.boxWidth;
+  const { box, onLayout } = usePlayBox();
+  const street = streetMetrics(box);
+  const playWidth = box.w > 0
+    ? box.w
+    : sideRail
+      ? Math.min(layout.width - activity.sidePanelWidth - spacing.sm * 3, 820)
+      : layout.boxWidth;
 
   const count = Math.max(1, challenge.options.length);
   const bayWidth = (playWidth - spacing.sm * 2 - (count - 1) * 6) / count;
-  const hydrantWidth = Math.min(sideRail ? 118 : layout.s(76), bayWidth - 14);
+  const hydrantWidth = clamp(bayWidth - 14, 46, sideRail ? 128 : 104);
   const coilSize = Math.max(hit.big, layout.s(76));
   /* the ticket carries the sum, so the truck is scenery and stays out of the way */
-  const truckWidth = Math.min(layout.s(168), playWidth * 0.42);
+  const truckWidth = clamp(playWidth * 0.46, 130, 320);
 
   const showDots = (ageBand === 'C' || hintLadder.level > 0) && !!equation;
 
@@ -148,13 +152,9 @@ export function HydrantMatch({ challenge, ageBand, onComplete, onEvent, compact 
       subtitle="Drag the hose to the hydrant that matches."
       compact={compact}
       onReplay={replay}
-      /*
-       * No bystander on this one. The four drop targets fill the width at the
-       * top edge of the tray — exactly where SceneCrew stands — so a resident
-       * character here always covered the last hydrant's number. The engine is
-       * this scene's character instead.
-       */
-      backdrop={<Stage variant="street" groundHeight={168} />}
+      /* the engine is this scene's character; the block itself is drawn inside
+         the play box so no shopfront is ever sliced by the task bar */
+      backdrop={<RoomWash top="#6FC0F8" bottom="#C4CCDE" />}
       hint={{ text: hintText, visible: hintLadder.showBubble, onDismiss: hintLadder.dismiss }}
       tray={
         <View style={styles.tray}>
@@ -175,7 +175,16 @@ export function HydrantMatch({ challenge, ageBand, onComplete, onEvent, compact 
         </View>
       }
     >
-      <View style={[styles.stage, { paddingBottom: spacing.xs + hintLane }]}>
+      <View style={styles.stage} onLayout={onLayout}>
+        {/* the block of Spark City the hydrants stand on */}
+        <StreetBlock box={box} />
+
+        <View
+          style={[
+            styles.deck,
+            { paddingBottom: (box.h > 0 ? Math.max(spacing.xs, (box.h - street.roadTop) * 0.24) : spacing.xs) + hintLane },
+          ]}
+        >
         {/*
          * THE SUM, ONCE. It used to be squeezed into the task bar (where it
          * wrapped onto two lines) and printed again on a helper card in the
@@ -207,14 +216,11 @@ export function HydrantMatch({ challenge, ageBand, onComplete, onEvent, compact 
         </Animated.View>
 
         <View style={styles.truckRow}>
-          <TruckSide width={truckWidth} />
+          <TruckSide width={truckWidth} bay={false} />
           <View style={[styles.hoseLine, { width: layout.s(40) }]} />
         </View>
 
-        <View style={styles.street}>
-          <View style={styles.curb} />
-          <View style={styles.curbLip} />
-          <View style={styles.hydrants}>
+        <View style={styles.hydrants}>
             {challenge.options.map((value, i) => {
               const isMatch = state.phase === 'connected' && value === challenge.correct;
               return (
@@ -243,7 +249,6 @@ export function HydrantMatch({ challenge, ageBand, onComplete, onEvent, compact 
                 </SlotZone>
               );
             })}
-          </View>
         </View>
 
         {state.phase === 'connected' ? (
@@ -253,13 +258,15 @@ export function HydrantMatch({ challenge, ageBand, onComplete, onEvent, compact 
             </Text>
           </Animated.View>
         ) : null}
+        </View>
       </View>
     </GameFrame>
   );
 }
 
 const styles = StyleSheet.create({
-  stage: { flex: 1, justifyContent: 'flex-end' },
+  stage: { flex: 1, alignSelf: 'stretch' },
+  deck: { flex: 1, justifyContent: 'flex-end', paddingHorizontal: spacing.sm },
   ticket: {
     alignSelf: 'center',
     alignItems: 'center',
@@ -290,30 +297,6 @@ const styles = StyleSheet.create({
     marginLeft: -6,
     borderBottomWidth: 3,
     borderBottomColor: palette.engineRedDark,
-  },
-  /* a real pavement: a light kerb lip on a grey slab, not a placeholder box */
-  street: {
-    backgroundColor: '#C4CCDE',
-    borderTopLeftRadius: radii.panel + 20,
-    borderTopRightRadius: radii.panel + 20,
-    paddingTop: spacing.xs,
-    paddingBottom: spacing.sm,
-    marginHorizontal: -spacing.md,
-    paddingHorizontal: spacing.sm,
-    ...roles.lift.surface,
-  },
-  curb: {
-    height: 9,
-    backgroundColor: '#E7EBF4',
-    borderTopLeftRadius: radii.panel + 20,
-    borderTopRightRadius: radii.panel + 20,
-    marginHorizontal: -spacing.sm,
-  },
-  curbLip: {
-    height: 5,
-    backgroundColor: 'rgba(31,42,90,0.08)',
-    marginHorizontal: -spacing.sm,
-    marginBottom: spacing.xs,
   },
   hydrants: { flexDirection: 'row', justifyContent: 'center', alignItems: 'flex-end', gap: 6 },
   /* each hydrant stands in a lit bay, so every drop target is visible before

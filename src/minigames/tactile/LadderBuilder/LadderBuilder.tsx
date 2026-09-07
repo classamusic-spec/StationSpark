@@ -9,12 +9,14 @@ import { sfx } from '@/services/audio';
 import { haptics } from '@/services/haptics';
 import { speech } from '@/services/speech';
 import { CaptainBea, Rookie } from '@/characters';
-import { Stage } from '@/world';
+import { ContactShadow, Stage } from '@/world';
 
-import { Animal, LadderPiece, UnitWall, animalName } from '@/world/props';
+import { Animal, LadderPiece, animalName } from '@/world/props';
 import {
   DragToken,
   GameShell,
+  PlayGround,
+  TownFacade,
   bestNextPiece,
   comboKey,
   equationText,
@@ -125,18 +127,25 @@ export function LadderBuilder({ challenge, ageBand, onComplete, onEvent, compact
     if (ageBand !== 'C') speech.say(String(total), { speaker: 'bea' });
   }, [ageBand, total]);
 
-  /* ---- geometry ---- */
+  /* ---- geometry ----
+   * The old layout put a tan panel in the right half and left the other half as
+   * raw sky. The building now runs the full width of the play area and the
+   * ladder climbs a measuring band painted on its wall, so the whole frame is
+   * one street. */
   const geo = useMemo(() => {
     const w = Math.max(1, box.w);
     const h = Math.max(1, box.h);
-    const groundY = h * 0.9;
-    const topPad = h * 0.08;
-    const unitPx = Math.max(12, Math.min(stage.s(30), (groundY - topPad) / (target + 0.8)));
-    const ladderW = Math.max(54, Math.min(stage.s(66), w * 0.2));
-    const wallX = Math.min(w * 0.46, w - ladderW - stage.s(96));
-    const wallW = w - wallX;
+    const groundY = h - Math.max(38, Math.min(h * 0.13, stage.s(76)));
+    /* the gutter at the top has to hold the roof band *and* the animal waiting
+       on the ledge, or the two collide at the highest targets */
+    const topPad = Math.max(h * 0.05, stage.s(66) + 26);
+    const unitPx = Math.max(12, Math.min(stage.s(34), (groundY - topPad) / (target + 0.9)));
+    const ladderW = Math.max(58, Math.min(stage.s(76), w * 0.22));
+    const stackX = Math.max(stage.s(8), w * 0.06);
+    const gaugeX = stackX + ladderW + stage.s(8);
+    const gaugeW = Math.max(34, stage.s(44));
     const ledgeY = groundY - target * unitPx;
-    return { w, h, groundY, unitPx, ladderW, wallX, wallW, ledgeY, stackX: Math.max(8, wallX - ladderW - stage.s(6)) };
+    return { w, h, groundY, unitPx, ladderW, stackX, gaugeX, gaugeW, ledgeY };
   }, [box.h, box.w, stage, target]);
 
   const trayUnitPx = Math.max(11, Math.min(geo.unitPx, stage.s(19)));
@@ -273,7 +282,7 @@ export function LadderBuilder({ challenge, ageBand, onComplete, onEvent, compact
       onStageLayout={onLayout}
       hint={hints.bubble}
       onDismissHint={hints.dismiss}
-      backdrop={<Stage variant="park" groundHeight={150} />}
+      backdrop={<Stage variant="street" groundHeight={130} />}
       footer={
         <View style={styles.mathRow}>
           <Text variant="h3" color={total === target ? palette.leafGreenDark : palette.navy}>
@@ -313,15 +322,29 @@ export function LadderBuilder({ challenge, ageBand, onComplete, onEvent, compact
     >
       {ready ? (
         <View style={StyleSheet.absoluteFill}>
-          {/* wall + unit marks */}
-          <View style={[styles.wall, { left: geo.wallX, top: 0, width: geo.wallW, height: geo.groundY }]} pointerEvents="none">
-            <UnitWall width={geo.wallW} height={geo.groundY} units={target + 1} unitPx={geo.unitPx} />
+          {/* the building the ladder leans on — full width, so the frame is a
+              street and not one panel floating beside a slab of sky */}
+          <View style={styles.wall} pointerEvents="none">
+            <TownFacade
+              width={geo.w}
+              height={geo.groundY}
+              tone="brick"
+              rows={Math.max(2, Math.min(5, Math.round(geo.groundY / Math.max(70, stage.s(96)))))}
+              cols={2}
+              awning
+              gauge={{ x: geo.gaugeX, w: geo.gaugeW, unitPx: geo.unitPx, units: target, baseY: geo.groundY, markAt: target }}
+              leftGutter={geo.stackX + geo.ladderW + stage.s(10)}
+            />
           </View>
 
-          {/* unit numbers up the wall */}
+          {/* unit numbers, painted up the gauge band */}
           {Array.from({ length: target + 1 }, (_, i) => i).map((i) =>
             i % (target > 10 ? 2 : 1) === 0 ? (
-              <View key={i} style={[styles.unitLabel, { left: geo.wallX + 8, top: geo.groundY - i * geo.unitPx - 11 }]} pointerEvents="none">
+              <View
+                key={i}
+                style={[styles.unitLabel, { left: geo.gaugeX + geo.gaugeW / 2 - 15, top: geo.groundY - i * geo.unitPx - 11 }]}
+                pointerEvents="none"
+              >
                 <Text variant="tiny" color={palette.navy}>
                   {i}
                 </Text>
@@ -329,26 +352,32 @@ export function LadderBuilder({ challenge, ageBand, onComplete, onEvent, compact
             ) : null,
           )}
 
-          {/* ledge with the animal */}
+          {/* the ledge the animal waits on */}
           <View
-            style={[styles.ledge, { left: geo.stackX - 6, top: geo.ledgeY - 10, width: geo.wallX - geo.stackX + geo.ladderW + 24 }]}
+            style={[styles.ledge, { left: geo.stackX - 10, top: geo.ledgeY - 10, width: geo.gaugeX + geo.gaugeW + 26 - geo.stackX }]}
+            pointerEvents="none"
+          />
+          <View
+            style={[styles.ledgeLip, { left: geo.stackX - 10, top: geo.ledgeY - 10, width: geo.gaugeX + geo.gaugeW + 26 - geo.stackX }]}
             pointerEvents="none"
           />
           {!animalOnShoulder ? (
-            <View style={[styles.animal, { left: geo.stackX + 2, top: geo.ledgeY - stage.s(62) }]} pointerEvents="none">
-              <Animal id={challenge.animal} size={stage.s(62)} mood="help" />
+            <View style={[styles.animal, { left: geo.stackX + 2, top: geo.ledgeY - stage.s(66) }]} pointerEvents="none">
+              <Animal id={challenge.animal} size={stage.s(66)} mood="help" />
             </View>
           ) : null}
 
-          {/* ground — a soft-lipped plane, never a hard-edged rectangle */}
-          <View style={[styles.ground, { top: geo.groundY, height: Math.max(0, geo.h - geo.groundY + 40) }]} pointerEvents="none">
-            <View style={styles.groundLip} />
-          </View>
+          {/* the pavement, with a kerb and a drain */}
+          <PlayGround width={geo.w} height={geo.h} top={geo.groundY} variant="pavement" dressed kerb seed={target} />
 
           {/* Captain Bea foots the ladder while the child climbs */}
-          <View style={[styles.pepper, { left: Math.max(4, geo.stackX - stage.s(60)), top: geo.groundY - stage.s(62) }]} pointerEvents="none">
+          <View
+            style={[styles.bea, { left: Math.min(geo.w - stage.s(70), geo.gaugeX + geo.gaugeW + stage.s(14)), top: geo.groundY - stage.s(96) }]}
+            pointerEvents="none"
+          >
+            <ContactShadow width={stage.s(56)} style={styles.beaShadow} />
             <CaptainBea
-              size={stage.s(78)}
+              size={stage.s(96)}
               emotion={state.phase === 'done' ? 'proud' : 'calm'}
               pose={state.phase === 'done' ? 'cheer' : 'stand'}
               bobPhase={0.55}
@@ -387,7 +416,7 @@ export function LadderBuilder({ challenge, ageBand, onComplete, onEvent, compact
           >
             {/* critique #23 — the full rig, never a head in a circle */}
             <Rookie
-              size={rookieSize * 1.75}
+              size={rookieH}
               emotion={state.phase === 'done' ? 'proud' : 'happy'}
               pose={state.phase === 'climbing' ? 'cheer' : 'stand'}
               jumping={state.phase === 'done'}
@@ -405,7 +434,7 @@ export function LadderBuilder({ challenge, ageBand, onComplete, onEvent, compact
 }
 
 const styles = StyleSheet.create({
-  wall: { position: 'absolute' },
+  wall: { position: 'absolute', left: 0, top: 0 },
   unitLabel: {
     position: 'absolute',
     backgroundColor: 'rgba(255,255,255,0.85)',
@@ -414,7 +443,8 @@ const styles = StyleSheet.create({
     minWidth: 22,
     alignItems: 'center',
   },
-  ledge: { position: 'absolute', height: 14, borderRadius: 7, backgroundColor: palette.wood, ...shadows.soft },
+  ledge: { position: 'absolute', height: 15, borderRadius: 7, backgroundColor: palette.woodDark, ...shadows.soft },
+  ledgeLip: { position: 'absolute', height: 6, borderRadius: 3, backgroundColor: palette.wood },
   animal: { position: 'absolute' },
   ground: {
     position: 'absolute',
@@ -425,7 +455,8 @@ const styles = StyleSheet.create({
     borderTopRightRadius: radii.panel * 3,
   },
   groundLip: { position: 'absolute', left: 0, right: 0, top: 0, height: 10, backgroundColor: palette.grass, borderTopLeftRadius: radii.panel * 3, borderTopRightRadius: radii.panel * 3 },
-  pepper: { position: 'absolute' },
+  bea: { position: 'absolute', alignItems: 'center' },
+  beaShadow: { position: 'absolute', bottom: -3 },
   stack: { position: 'absolute', bottom: 0, justifyContent: 'flex-end' },
   stacked: { position: 'absolute', alignItems: 'center' },
   rookie: { position: 'absolute', alignItems: 'center' },

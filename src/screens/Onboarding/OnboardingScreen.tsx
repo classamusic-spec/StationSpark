@@ -12,7 +12,7 @@ import Animated, { FadeIn, FadeInDown, FadeOut } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { palette, radii, shadows, spacing } from '@/theme';
-import { Button, ChevronRightIcon, GlyphIcon, Panel, ScreenFrame, Text } from '@/ui';
+import { Button, ChevronRightIcon, Panel, ScreenFrame, Text } from '@/ui';
 import { CelebrationOverlay } from '@/characters';
 import { sfx } from '@/services/audio';
 import { haptics } from '@/services/haptics';
@@ -29,24 +29,21 @@ const BEATS = [
     id: 'welcome',
     title: 'Welcome to Station Spark!',
     body: 'I am Captain Bea. Our little station helps the whole town — and you are our newest crew member.',
-    es: '¡Bienvenido a Station Spark!',
   },
   {
     id: 'rookie',
     title: 'Now — who are you?',
     body: 'Pick your look, write your name, and tell us how old you are so the games fit you just right.',
-    es: '¿Cómo te llamas?',
   },
   {
     id: 'safety',
     title: 'One important thing',
     body: 'In real life, trained grown-ups handle emergencies — here, we practise helping!',
-    es: 'En la vida real, los adultos ayudan en emergencias.',
   },
 ] as const;
 
 /** A beat's words — on a card of their own, or bare on the sheet. */
-function Prose({ card, title, body, es }: { card: boolean; title: string; body: string; es: string }) {
+function Prose({ card, title, body }: { card: boolean; title: string; body: string }) {
   const inner = (
     <>
       <Text variant="h2" center accessibilityRole="header">
@@ -55,12 +52,6 @@ function Prose({ card, title, body, es }: { card: boolean; title: string; body: 
       <Text variant="body" color={palette.navySoft} center>
         {body}
       </Text>
-      <View style={styles.esRow}>
-        <GlyphIcon id="subject-spanish" size={18} label="en español" ink={palette.purple} />
-        <Text variant="small" color={palette.purple} center>
-          {es}
-        </Text>
-      </View>
     </>
   );
   if (!card) return <View style={styles.prose}>{inner}</View>;
@@ -143,7 +134,7 @@ export function OnboardingScreen() {
             {/* On the picker beat the words are a heading on the sheet itself,
                 not a fourth white card above three more. A card only earns its
                 surface when something inside it can be touched. */}
-            <Prose card={step !== 1} title={beat.title} body={beat.body} es={beat.es} />
+            <Prose card={step !== 1} title={beat.title} body={beat.body} />
 
             {step === 1 ? (
               <Animated.View entering={FadeInDown.springify().damping(17)} style={styles.pickers}>
@@ -208,7 +199,6 @@ const styles = StyleSheet.create({
   beat: { gap: spacing.sm },
   card: { gap: 6 },
   prose: { gap: 6, paddingHorizontal: spacing.xs, paddingTop: spacing.xs },
-  esRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 2 },
   pickers: { gap: spacing.sm },
   cta: { marginTop: spacing.xs, alignSelf: 'stretch' },
 });

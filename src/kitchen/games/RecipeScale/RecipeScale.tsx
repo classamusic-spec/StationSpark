@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
+import Svg, { Circle, Defs, Ellipse, LinearGradient, Path, Rect, Stop } from 'react-native-svg';
 import { GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   FadeInDown,
@@ -21,12 +22,26 @@ import { ActivityFrame } from '@/ui/kit/ActivityFrame';
 import { GrownUpChip } from '@/ui/kit/Chip';
 import { VocabIcon } from '@/ui/kit/VocabIcon';
 
-import { Stage as SceneStage } from '@/world';
 import { CrewFigure } from '@/world/scenes';
+import { FluidStage, at, type FluidBox } from '../../parts/Stage';
 import { RecipeCardFrame } from '../../parts/RecipeCardFrame';
-import { CookCTA, PotArt, WoodenSpoon } from '../../parts/SceneBits';
+import {
+  CounterCrumbs,
+  CounterRun,
+  HerbPot,
+  Hob,
+  KitchenWall,
+  KitchenWindow,
+  MixingBowls,
+  Shelf,
+  SplashbackBand,
+  Steam,
+  StoreJar,
+  UtensilRail,
+} from '../../parts/KitchenRoom';
+import { CookCTA, WoodenSpoon } from '../../parts/SceneBits';
 import { pluralEn } from '../../spanish';
-import { scaleExplanation, scaleRatioText } from '../../shareMath';
+import { scaleExplanation } from '../../shareMath';
 import { SwirlHint, useIdleAssist, useScrubGesture, useSwirlGesture } from '../../gestures';
 import { kitchenFeel, useCaptainHint, useSpokenTask, useTimers } from '../useKitchenGame';
 
@@ -41,8 +56,8 @@ const CREW = [
 
 /** half turns of the spoon that cook the pot */
 const STIRS_TO_COOK = 6;
-const POT_W = 290;
-const POT_H = 250;
+/** the pot drawing's width ÷ height */
+const POT_ASPECT = 236 / 168;
 
 type Phase = 'set' | 'stir' | 'done';
 
@@ -227,13 +242,7 @@ export function RecipeScale({ challenge, onComplete, onEvent, compact }: MiniGam
       compact={compact}
       onReplay={replay}
       progress={{ done: phase === 'set' ? 0 : 1, total: 2 }}
-      backdrop={
-        <>
-          {/* the pot stands on a kitchen counter, not in the sky */}
-          <SceneStage variant="counter" groundHeight={170} />
-          
-        </>
-      }
+      backdrop={<KitchenWall />}
       controls={controls}
       controlsTone="cream"
       hint={{ text: assist.text, es: assist.es, visible: assist.visible, onDismiss: assist.dismiss }}
@@ -255,39 +264,40 @@ export function RecipeScale({ challenge, onComplete, onEvent, compact }: MiniGam
         </View>
 
         {phase === 'set' ? (
-          <>
-            <View style={styles.cardWrap}>
-              <RecipeCardFrame
-                title={`Serves ${challenge.serves} → ${challenge.eating}`}
-                titleEs={scaleRatioText(challenge.serves, challenge.eating)}
-                badge={<GrownUpChip />}
-              >
-                {challenge.lines.map((line, i) => (
-                  <ScaleLine
-                    key={line.item.id}
-                    index={i}
-                    icon={line.item.id}
-                    en={line.item.en}
-                    es={line.item.es}
-                    was={line.amount}
-                    value={values[i] ?? 0}
-                    correct={(values[i] ?? 0) === line.scaled}
-                    bump={bumps[i] ?? 0}
-                    onStep={(d) => step(i, d)}
-                  />
-                ))}
-              </RecipeCardFrame>
-            </View>
-
-            <View style={styles.potRow} pointerEvents="none">
-              <PotArt size={140} bubbling={false} />
-            </View>
-          </>
-        ) : (
-          <View style={styles.potStage}>
-            <StirPot onStir={onStir} showHint={stirs === 0} bubbling={phase === 'done'} stirred={stirred} />
+          <View style={styles.cardWrap}>
+            <RecipeCardFrame title={`Serves ${challenge.serves} → ${challenge.eating}`} badge={<GrownUpChip />}>
+              {challenge.lines.map((line, i) => (
+                <ScaleLine
+                  key={line.item.id}
+                  index={i}
+                  icon={line.item.icon}
+                  en={line.item.en}
+                  was={line.amount}
+                  value={values[i] ?? 0}
+                  correct={(values[i] ?? 0) === line.scaled}
+                  bump={bumps[i] ?? 0}
+                  onStep={(d) => step(i, d)}
+                />
+              ))}
+            </RecipeCardFrame>
           </View>
-        )}
+        ) : null}
+
+        {/* The pot is on the hob the whole time — while the amounts are being
+            set it is simply waiting, which fills the band of counter that used
+            to be nothing but wall, and shows the child where this is going. */}
+        <FluidStage minH={phase === 'set' ? 150 : 280} maxScale={1.8} style={styles.potStage}>
+          {(box) => (
+            <StirScene
+              box={box}
+              interactive={phase !== 'set'}
+              onStir={onStir}
+              showHint={phase === 'stir' && stirs === 0}
+              bubbling={phase === 'done' || stirred > 0.3}
+              simmering={phase === 'done'}
+            />
+          )}
+        </FluidStage>
       </View>
     </ActivityFrame>
   );
@@ -297,42 +307,137 @@ export function RecipeScale({ challenge, onComplete, onEvent, compact }: MiniGam
 /* The pot you actually stir                                            */
 /* ------------------------------------------------------------------ */
 
-function StirPot({
+/**
+ * THE POT YOU STIR — the whole play area, on a real hob.
+ *
+ * It used to be a fixed 290 px pot floating in the middle of a screen twice
+ * that size. It is sized from the room now: the pot takes the width, the hob is
+ * built to fit under it and the wall behind gets a shelf, a window and a rail.
+ */
+function StirScene({
+  box,
+  interactive,
   onStir,
   showHint,
   bubbling,
-  stirred,
+  simmering,
 }: {
+  box: FluidBox;
+  interactive: boolean;
   onStir: () => void;
   showHint: boolean;
   bubbling: boolean;
-  stirred: number;
+  simmering: boolean;
 }) {
-  const swirl = useSwirlGesture({ cx: POT_W / 2, cy: POT_H / 2, turnRadians: Math.PI, onStir });
+  const { s, w, h } = box;
+  const counterH = Math.max(40, Math.min(78, h * 0.13));
+  const counterY = h - counterH;
+  const availH = counterY - 6;
+
+  const potW = Math.min(w * 0.8, (availH - 44) * POT_ASPECT);
+  const potH = potW / POT_ASPECT;
+  const hobW = Math.min(w * 0.96, potW * 1.24);
+  const hobH = hobW * 0.3;
+  const deckY = counterY - hobH * 0.62;
+  const pot = { x: (w - potW) / 2, y: deckY + hobH * 0.16 - potH * 0.94, w: potW, h: potH };
+  const side = (w - hobW) / 2 + hobW * 0.06;
+
+  const swirl = useSwirlGesture({ cx: (potW * s) / 2, cy: (potH * s) / 2, turnRadians: Math.PI, onStir });
   const spoonStyle = useAnimatedStyle(() => ({
     transform: [
       { rotate: `${(swirl.spin.value * 180) / Math.PI}deg` },
-      { translateY: -POT_H * 0.12 },
+      { translateY: -potH * 0.1 * s },
       { scale: 1 + swirl.active.value * 0.06 },
     ],
   }));
 
   return (
-    <GestureDetector gesture={swirl.gesture}>
-      <View
-        accessibilityRole="button"
-        accessibilityLabel="Pot — swirl your finger round and round to stir it, or tap it"
-        style={[styles.pot, { width: POT_W, height: POT_H }]}
-      >
-        <View style={styles.potArt} pointerEvents="none">
-          <PotArt size={POT_W * 0.92} bubbling={bubbling || stirred > 0.3} />
+    <>
+      <SplashbackBand s={s} x={0} y={counterY - 58} w={w} depth={58} />
+      {pot.y > 96 ? (
+        <>
+          <Shelf s={s} x={8} y={pot.y - 30} w={Math.max(84, side + 40)} />
+          <StoreJar s={s} x={12} y={pot.y - 72} h={42} tone="jam" />
+          <StoreJar s={s} x={50} y={pot.y - 76} h={46} tone="oats" />
+          <KitchenWindow s={s} x={w - Math.min(110, side + 56) - 8} y={6} w={Math.min(110, side + 56)} />
+          <UtensilRail s={s} x={8} y={6} w={Math.min(140, w * 0.32)} />
+        </>
+      ) : null}
+      <CounterRun s={s} w={w} y={counterY} h={counterH + 44} />
+      <CounterCrumbs s={s} x={(w - hobW) / 2} y={counterY - 10} w={hobW} seed={4} />
+      <HerbPot s={s} x={Math.max(6, (w - hobW) / 2 - 48)} y={counterY - 48} h={46} />
+      {w - ((w - hobW) / 2 + hobW) > 78 ? (
+        <MixingBowls s={s} x={(w - hobW) / 2 + hobW + 6} y={counterY - 46} w={66} />
+      ) : null}
+      <Hob s={s} x={(w - hobW) / 2} y={deckY - hobH * 0.12} w={hobW} lit={bubbling} />
+      {simmering ? <Steam s={s} x={pot.x + pot.w * 0.28} y={pot.y - pot.w * 0.24} w={pot.w * 0.44} /> : null}
+
+      {interactive ? (
+        <GestureDetector gesture={swirl.gesture}>
+          <View
+            accessibilityRole="button"
+            accessibilityLabel="Pot — swirl your finger round and round to stir it, or tap it"
+            style={at(s, pot.x, pot.y, pot.w, pot.h)}
+          >
+            <View style={StyleSheet.absoluteFill} pointerEvents="none">
+              <ScalePotArt size={pot.w * s} bubbling={bubbling} />
+            </View>
+            {showHint ? <SwirlHint size={potW * 0.6 * s} style={styles.potCentre} /> : null}
+            <Animated.View style={[styles.potCentre, spoonStyle]} pointerEvents="none">
+              <WoodenSpoon size={potW * 0.2 * s} />
+            </Animated.View>
+          </View>
+        </GestureDetector>
+      ) : (
+        <View style={at(s, pot.x, pot.y, pot.w, pot.h)} pointerEvents="none">
+          <ScalePotArt size={pot.w * s} bubbling={bubbling} />
         </View>
-        {showHint ? <SwirlHint size={POT_W * 0.7} style={styles.potCentre} /> : null}
-        <Animated.View style={[styles.potCentre, spoonStyle]} pointerEvents="none">
-          <WoodenSpoon size={POT_W * 0.24} />
-        </Animated.View>
-      </View>
-    </GestureDetector>
+      )}
+    </>
+  );
+}
+
+/** The same enamelled stock pot the Soup Pot cooks in — one pot, one kitchen. */
+function ScalePotArt({ size, bubbling }: { size: number; bubbling: boolean }) {
+  return (
+    <Svg width={size} height={size / POT_ASPECT} viewBox="0 0 236 168">
+      <Defs>
+        <LinearGradient id="rsPot" x1="0" y1="0" x2="1" y2="0">
+          <Stop offset="0" stopColor={palette.engineRedDark} />
+          <Stop offset="0.34" stopColor={palette.engineRed} />
+          <Stop offset="1" stopColor={palette.engineRedDark} />
+        </LinearGradient>
+      </Defs>
+      <Ellipse cx={118} cy={160} rx={94} ry={9} fill="rgba(31,42,90,0.16)" />
+      <Rect x={0} y={52} width={34} height={18} rx={9} fill="#6B76A8" />
+      <Rect x={4} y={55} width={22} height={5} rx={2.5} fill="rgba(255,255,255,0.35)" />
+      <Rect x={202} y={52} width={34} height={18} rx={9} fill="#6B76A8" />
+      <Rect x={206} y={55} width={22} height={5} rx={2.5} fill="rgba(255,255,255,0.35)" />
+      <Circle cx={32} cy={61} r={4} fill="#D9DDEC" />
+      <Circle cx={204} cy={61} r={4} fill="#D9DDEC" />
+      <Path d="M25 40h186l-13 100a12 12 0 0 1-12 10H50a12 12 0 0 1-12-10z" fill="url(#rsPot)" />
+      <Path d="M31 92h174l-3 22H34z" fill="#FFF3DC" />
+      <Circle cx={90} cy={103} r={5} fill={palette.engineRed} opacity={0.55} />
+      <Circle cx={118} cy={103} r={5} fill={palette.safetyYellow} />
+      <Circle cx={146} cy={103} r={5} fill={palette.engineRed} opacity={0.55} />
+      <Path d="M43 56c5 30 7 58 7 84" stroke="rgba(255,255,255,0.30)" strokeWidth={8} strokeLinecap="round" fill="none" />
+      <Path d="M196 58c-4 28-6 54-6 80" stroke="rgba(31,42,90,0.14)" strokeWidth={9} strokeLinecap="round" fill="none" />
+      <Path d="M44 140h148l-2 8a10 10 0 0 1-10 8H56a10 10 0 0 1-10-8z" fill={palette.engineRedDark} />
+      <Ellipse cx={118} cy={42} rx={97} ry={21} fill="#D5D9E8" />
+      <Ellipse cx={118} cy={39} rx={97} ry={21} fill={palette.white} />
+      <Ellipse cx={118} cy={40} rx={85} ry={17} fill={palette.engineRedDark} />
+      <Ellipse cx={118} cy={42} rx={81} ry={15} fill="#7E1710" />
+      <Ellipse cx={118} cy={48} rx={73} ry={12} fill="#E8952F" />
+      <Ellipse cx={118} cy={46} rx={73} ry={12} fill="#FFC463" />
+      <Ellipse cx={98} cy={43} rx={22} ry={4} fill="rgba(255,255,255,0.35)" />
+      {bubbling ? (
+        <>
+          <Circle cx={88} cy={46} r={4.6} fill="rgba(255,255,255,0.62)" />
+          <Circle cx={134} cy={50} r={3.4} fill="rgba(255,255,255,0.5)" />
+          <Circle cx={154} cy={44} r={3} fill="rgba(255,255,255,0.55)" />
+        </>
+      ) : null}
+    </Svg>
   );
 }
 
@@ -374,7 +479,6 @@ function ScaleLine({
   index,
   icon,
   en,
-  es,
   was,
   value,
   correct,
@@ -384,7 +488,6 @@ function ScaleLine({
   index: number;
   icon: string;
   en: string;
-  es: string;
   was: number;
   value: number;
   correct: boolean;
@@ -423,13 +526,11 @@ function ScaleLine({
           <VocabIcon id={icon} size={34} />
           {/* BLOCKING DEFECT FIX: six labels were truncated ("mushr…",
               "champiñ…", "tomate · …"). Names now wrap onto two lines and the
-              "was N" note sits on its own line — the layout gives, not the word. */}
+              "was N" note sits on its own line — the layout gives, not the word.
+              The printed Spanish is gone from here; the word is still spoken. */}
           <View style={styles.lineText}>
             <Text variant="bodyStrong" color={palette.navy} numberOfLines={2} style={styles.lineName}>
               {pluralEn(en, value)}
-            </Text>
-            <Text variant="tiny" color={roles.ink.translation} numberOfLines={2} style={styles.lineEs}>
-              {es}
             </Text>
             <Text variant="tiny" color={roles.ink.muted} numberOfLines={1} style={styles.lineWas}>
               was {was}
@@ -489,7 +590,12 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
     justifyContent: 'center',
     gap: spacing.sm,
-    paddingHorizontal: spacing.md,
+    alignSelf: 'center',
+    marginHorizontal: spacing.md,
+    paddingHorizontal: spacing.sm,
+    paddingTop: 4,
+    backgroundColor: 'rgba(255,255,255,0.86)',
+    borderRadius: radii.card,
   },
   crewCol: { alignItems: 'center' },
   crewRow: { flexDirection: 'row', gap: 2 },
@@ -511,16 +617,16 @@ const styles = StyleSheet.create({
   },
   lineDone: { borderColor: palette.leafGreen, backgroundColor: palette.mint },
   lineText: { flex: 1, minWidth: 84 },
-  lineName: { fontSize: 15, lineHeight: 18 },
-  lineEs: { fontSize: 12, lineHeight: 14 },
-  lineWas: { fontSize: 11, lineHeight: 13 },
+  lineName: { fontSize: 16, lineHeight: 20 },
+  lineWas: { fontSize: 12, lineHeight: 15 },
   /* 44 wide, not 56: the extra room went to the ingredient name, which was
      breaking "mushrooms" across two lines mid-word. The drag target is still a
      full 56 tall, and the two 56 × 56 steppers beside it do the same job. */
-  value: { minWidth: 40, height: 56, alignItems: 'center', justifyContent: 'center' },
+  value: { minWidth: 34, height: 56, alignItems: 'center', justifyContent: 'center' },
   stepper: {
     width: 56,
     height: 56,
+    flexShrink: 0,
     borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
@@ -530,11 +636,8 @@ const styles = StyleSheet.create({
   stepperNeutral: { backgroundColor: palette.creamDeep },
   stepperAdd: { backgroundColor: palette.leafGreen },
   stepperOff: { backgroundColor: palette.lockedGrey },
-  potRow: { flex: 1, alignItems: 'center', justifyContent: 'flex-end', paddingBottom: spacing.xs },
-  potStage: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  pot: { alignItems: 'center', justifyContent: 'center' },
-  potArt: { position: 'absolute', bottom: 0, alignSelf: 'center' },
-  potCentre: { position: 'absolute', alignSelf: 'center', top: '26%' },
+  potStage: { flex: 1 },
+  potCentre: { position: 'absolute', alignSelf: 'center', top: '22%' },
   trayRow: {
     flexDirection: 'row',
     alignItems: 'center',

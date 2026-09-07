@@ -9,7 +9,6 @@ import { sfx, type SfxName } from '@/services/audio';
 import { haptics } from '@/services/haptics';
 import { Button, CheckIcon, ChevronRightIcon, Text, TrayRow } from '@/ui';
 
-import { Stage } from '@/world';
 import { SlotPlaque } from '@/world/scenes';
 import { Draggable } from '../shared/Draggable';
 import { GameFrame } from '../shared/GameFrame';
@@ -18,6 +17,7 @@ import { useGameLayout } from '../shared/layout';
 import { useCaptainLine } from '../shared/speak';
 import { useHintLadder } from '../shared/useHintLadder';
 import { SignalGlyph, signalName } from '../shared/art/Glyphs';
+import { RadioRoom, RoomWash, clamp, radioRoomMetrics, usePlayBox } from '../shared/art/Scene';
 
 const SIGNAL_SFX: Record<SignalId, SfxName> = {
   bell: 'bell',
@@ -179,16 +179,25 @@ export function Signals({ challenge, ageBand, onComplete, onEvent, compact }: Mi
     }
   }, [playSequence, session, shuffled, state.locked, state.phase, state.slots, steps]);
 
-  /* layout */
-  // the call is a sequence: keep it on ONE rail so the last socket never
-  // wraps under the clipboard and gets clipped by the tray
+  /*
+   * GEOMETRY FROM THE MEASURED ROOM. The call sheet is the activity, so it
+   * takes the width the play area really has (capped, so a tablet does not get
+   * one absurd clipboard) and the sockets grow with it.
+   */
+  const { box, onLayout } = usePlayBox();
+  const room = radioRoomMetrics(box);
+  const sheetWidth = box.w > 0 ? clamp(box.w - spacing.md * 2, 260, 620) : layout.s(350);
   const perRow = Math.min(steps.length, 4);
-  const slotSize = Math.min(
-    layout.s(96),
-    // the chevrons between the sockets take room too, or the last one wraps
-    (layout.boxWidth - spacing.lg * 2 - (perRow - 1) * layout.s(30)) / perRow,
+  /* the chevrons carry 2 px of padding on each side, and each socket sits under
+     its own step number — count all of it, or the last socket wraps off the rail */
+  const arrowW = clamp(sheetWidth * 0.05, 13, 28);
+  const arrowSlot = arrowW + 4;
+  const slotSize = clamp(
+    Math.floor((sheetWidth - spacing.md * 2 - (perRow - 1) * arrowSlot) / perRow),
+    50,
+    box.h > 0 ? Math.min(126, box.h * 0.3) : 126,
   );
-  const cardSize = Math.max(hit.big, Math.min(slotSize - 6, layout.s(82)));
+  const cardSize = Math.max(hit.big, Math.min(slotSize - 6, layout.s(86)));
 
   const nextWrongSlot = state.slots.findIndex((cardIndex, i) => {
     if (state.locked[i]) return false;
@@ -206,7 +215,7 @@ export function Signals({ challenge, ageBand, onComplete, onEvent, compact }: Mi
       title="Firefighter Signals"
       subtitle={ageBand === 'A' ? undefined : 'Put the steps of the call in order.'}
       compact={compact}
-      backdrop={<Stage variant="radio-room" groundHeight={150} />}
+      backdrop={<RoomWash top="#B3BCD8" bottom="#8C97BD" />}
       hint={{ text: hintText, visible: hintLadder.showBubble && state.phase === 'ordering', onDismiss: hintLadder.dismiss }}
       tray={
         <View style={styles.trayInner}>
@@ -255,9 +264,18 @@ export function Signals({ challenge, ageBand, onComplete, onEvent, compact }: Mi
         </View>
       }
     >
-      <View style={styles.stage}>
-        {/* the call sheet: a real clipboard, not cards floating in the sky */}
-        <View style={styles.clipboard}>
+      <View style={styles.stage} onLayout={onLayout}>
+        {/* the same dispatch room as the radio call, drawn inside the play box */}
+        <RadioRoom box={box} />
+
+        <View
+          style={[
+            styles.deck,
+            { paddingBottom: (box.h > 0 ? Math.max(spacing.sm, room.deskH * 0.42) : spacing.lg) + (hintLadder.showBubble && state.phase === 'ordering' ? clamp(box.h * 0.2, 90, 150) : 0) },
+          ]}
+        >
+        {/* the call sheet: a real clipboard on the desk, not cards in the sky */}
+        <View style={[styles.clipboard, { width: sheetWidth }]}>
           <View style={styles.clip} />
           <View style={styles.clipInner} />
           <View style={styles.clipRule} />
@@ -308,7 +326,7 @@ export function Signals({ challenge, ageBand, onComplete, onEvent, compact }: Mi
                 </View>
                 {i < steps.length - 1 && (i + 1) % perRow !== 0 ? (
                   <View style={styles.arrow}>
-                    <ChevronRightIcon size={layout.s(20)} color={palette.slate} />
+                    <ChevronRightIcon size={arrowW} color={palette.slate} />
                   </View>
                 ) : null}
               </React.Fragment>
@@ -324,6 +342,7 @@ export function Signals({ challenge, ageBand, onComplete, onEvent, compact }: Mi
             </Text>
           </Animated.View>
         ) : null}
+        </View>
       </View>
     </GameFrame>
   );
@@ -357,7 +376,8 @@ function PlacedCard({
 }
 
 const styles = StyleSheet.create({
-  stage: { alignItems: 'center', justifyContent: 'center', gap: spacing.md, paddingHorizontal: spacing.sm },
+  stage: { flex: 1, alignSelf: 'stretch' },
+  deck: { flex: 1, alignItems: 'center', justifyContent: 'flex-end', gap: spacing.sm },
   slotRow: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', alignItems: 'center' },
   slotCol: { alignItems: 'center' },
   slot: {
@@ -395,10 +415,12 @@ const styles = StyleSheet.create({
   clipboard: {
     backgroundColor: palette.creamDeep,
     borderRadius: radii.panel,
-    paddingHorizontal: spacing.sm,
+    paddingHorizontal: spacing.md,
     paddingTop: spacing.lg,
-    paddingBottom: spacing.sm,
+    paddingBottom: spacing.md,
     alignItems: 'center',
+    borderBottomWidth: 6,
+    borderBottomColor: palette.tanDark,
     ...shadows.card,
   },
   clip: {

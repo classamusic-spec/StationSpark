@@ -5,11 +5,11 @@ import Animated, { useAnimatedStyle } from 'react-native-reanimated';
 import { palette } from '@/theme';
 import { Text } from '@/ui/Text';
 import { at, useStage } from './parts/Stage';
+import { Canister, HerbPot, KitchenWall, PinnedNote, Shelf, StoreJar, UtensilRail } from './parts/KitchenRoom';
 import { useRise, useSwing } from './parts/motion';
 
 const DESIGN = { w: 390, h: 700 };
-/** the wall and counter colours the letterbox bands are painted with */
-const WALL_TOP = '#FFE6C7';
+/** the colour the band below the room is painted, so the counter runs on */
 const COUNTER_DEEP = '#E2BC86';
 
 /* ------------------------------------------------------------------ */
@@ -281,15 +281,39 @@ export interface KitchenBackdropProps {
 export function KitchenBackdrop({ still }: KitchenBackdropProps) {
   const stage = useStage(DESIGN.w, DESIGN.h, 'contain');
   const s = stage.s;
+  /* Anchor the room to the FOOT of the screen, not the middle: a counter
+     belongs on the floor, and it puts the whole letterbox band at the top where
+     it can be dressed as wall instead of sitting as two flat stripes. */
+  const roomTop = Math.max(0, stage.top * 2);
+  const band = roomTop;
   return (
     <View style={[StyleSheet.absoluteFill, styles.root]} pointerEvents="none" onLayout={stage.onLayout}>
+      <KitchenWall />
       {stage.ready ? (
         <>
-          {/* letterbox bands, painted so the room never floats on the sky */}
-          <View style={[styles.band, { top: 0, height: Math.max(0, stage.top + 2), backgroundColor: WALL_TOP }]} />
-          <View style={[styles.band, { top: stage.top + stage.height - 2, bottom: 0, backgroundColor: COUNTER_DEEP }]} />
-          <View style={{ position: 'absolute', left: stage.left, top: stage.top, width: stage.width, height: stage.height }}>
+          {/* the band above the room is wall, and a wall in this kitchen is
+              never bare: a rail of tools over a shelf of store jars */}
+          {band > 60 ? (
+            <View style={{ position: 'absolute', left: stage.left, top: 0, width: stage.width, height: band }}>
+              <UtensilRail s={s} x={18} y={Math.max(4, band / s - 118)} w={Math.min(148, DESIGN.w * 0.36)} />
+              <Shelf s={s} x={DESIGN.w - 160} y={Math.max(28, band / s - 30)} w={148} />
+              <StoreJar s={s} x={DESIGN.w - 154} y={Math.max(28, band / s - 30) - 44} h={44} tone="honey" />
+              <Canister s={s} x={DESIGN.w - 112} y={Math.max(28, band / s - 30) - 48} h={48} tone="#E8C89B" />
+              <StoreJar s={s} x={DESIGN.w - 68} y={Math.max(28, band / s - 30) - 40} h={40} tone="herbs" />
+            </View>
+          ) : null}
+          <View style={[styles.band, { top: roomTop + stage.height - 2, bottom: 0, backgroundColor: COUNTER_DEEP }]} />
+          <View style={{ position: 'absolute', left: stage.left, top: roomTop, width: stage.width, height: stage.height }}>
             <Room s={s} />
+            {/* the left wall used to be ~190 units of bare brick beside the
+                window: a pinned recipe, a shelf of jars and a herb pot on the
+                sill, so there is somewhere for the eye to go */}
+            <PinnedNote s={s} x={34} y={38} w={92} />
+            <Shelf s={s} x={16} y={238} w={158} />
+            <StoreJar s={s} x={22} y={190} h={48} tone="jam" />
+            <Canister s={s} x={64} y={186} h={52} tone="#C9DDF2" />
+            <StoreJar s={s} x={110} y={194} h={44} tone="berry" />
+            <HerbPot s={s} x={140} y={214} h={46} />
             <View style={[at(s, 19, 336, 102, 60), styles.poster]}>
               <Text variant="tiny" center color={palette.navySoft} style={{ fontSize: 14 * s, lineHeight: 19 * s }}>
                 {'COOK\nLEARN\nHELP!'}

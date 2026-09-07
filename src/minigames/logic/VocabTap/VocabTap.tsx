@@ -11,12 +11,11 @@ import { speech } from '@/services/speech';
 import { AnswerTile, Button, SpeakerIcon, Text, TrayRow, VocabIcon } from '@/ui';
 import type { AnswerState } from '@/ui/kit/AnswerTile';
 
-import { Stage } from '@/world';
-
 import { GameFrame } from '../shared/GameFrame';
 import { useGameLayout } from '../shared/layout';
 import { useHintLadder } from '../shared/useHintLadder';
 import { SparkleBurst } from '../shared/art/Glyphs';
+import { Classroom, RoomWash, classroomMetrics, clamp, usePlayBox } from '../shared/art/Scene';
 
 interface State {
   phase: 'listening' | 'solved';
@@ -59,8 +58,11 @@ export function VocabTap({ challenge, ageBand, onComplete, onEvent, compact }: M
     else speech.sayWord({ en: word.en, es: word.es }, promptLang);
   }, [promptLang, support, word]);
 
+  /*
+   * The word is spoken, and printed once on the board. It used to be mirrored
+   * into a speech bubble as well, which sat across the answer tiles.
+   */
   useEffect(() => {
-    session.say('bea', word[promptLang], promptLang === 'es' ? word.en : word.es);
     const t = setTimeout(speakWord, 350);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -103,14 +105,18 @@ export function VocabTap({ challenge, ageBand, onComplete, onEvent, compact }: M
   const hintText = `“${word[promptLang]}” means “${word[other]}”. Tap the ${word.en}!`;
   const iconSize = layout.s(ageBand === 'A' ? 72 : 62);
 
+  /* the word is pinned ON the classroom board, measured from the play area */
+  const { box, onLayout } = usePlayBox();
+  const room = classroomMetrics(box);
+  const cardWidth = box.w > 0 ? clamp(room.boardW * 0.82, 180, 520) : layout.s(280);
+  const wordSize = clamp(cardWidth * 0.16, 26, 62);
+
   return (
     <GameFrame
       title={promptLang === 'es' ? '¿Cuál es?' : 'Which one is it?'}
       subtitle={ageBand === 'A' ? undefined : 'Listen to Captain Bea, then tap the picture.'}
       compact={compact}
-      backdrop={
-                  <Stage variant="classroom" groundHeight={150} />
-      }
+      backdrop={<RoomWash top="#F6EEDC" bottom="#C7B181" />}
       hint={{ text: hintText, visible: hintLadder.showBubble, onDismiss: hintLadder.dismiss }}
       tray={
         <TrayRow>
@@ -134,55 +140,78 @@ export function VocabTap({ challenge, ageBand, onComplete, onEvent, compact }: M
         </TrayRow>
       }
     >
-      <View style={styles.stage}>
-        <View style={styles.wordCard}>
+      <View style={styles.stage} onLayout={onLayout}>
+        {/* the station's learning corner — the word is pinned on the board */}
+        <Classroom box={box} />
+
+        <View
+          style={[
+            styles.deck,
+            box.w > 0
+              ? { left: room.boardX, top: room.boardY, width: room.boardW, height: room.boardH }
+              : { left: 0, right: 0, top: 0, bottom: 0 },
+          ]}
+        >
+          <View style={[styles.wordCard, { width: cardWidth }]}>
+            <View style={styles.pins} pointerEvents="none">
+              <View style={styles.pin} />
+              <View style={styles.pin} />
+            </View>
+            {state.phase === 'solved' ? (
+              <Animated.View entering={ZoomIn.springify()} style={styles.sparkle} pointerEvents="none">
+                <SparkleBurst size={layout.s(90)} />
+              </Animated.View>
+            ) : null}
+            <Text
+              variant="hero"
+              center
+              color={promptLang === 'es' ? palette.purple : palette.navy}
+              style={{ fontSize: wordSize, lineHeight: wordSize * 1.16 }}
+            >
+              {word[promptLang]}
+            </Text>
+            {showSecondary ? (
+              <Text variant={showBoth ? 'h3' : 'small'} center color={palette.navySoft}>
+                {showBoth ? word[other] : `(${word[other]})`}
+              </Text>
+            ) : null}
+          </View>
+
+          <Button
+            label={promptLang === 'es' ? 'Escuchar' : 'Hear it again'}
+            tone="blue"
+            size="md"
+            sound="none"
+            icon={<SpeakerIcon size={22} color={palette.white} />}
+            onPress={speakWord}
+          />
+
           {state.phase === 'solved' ? (
-            <Animated.View entering={ZoomIn.springify()} style={styles.sparkle} pointerEvents="none">
-              <SparkleBurst size={layout.s(90)} />
+            <Animated.View entering={FadeIn} style={styles.banner}>
+              <Text variant="h3" color={palette.leafGreenDark} center>
+                {word.en} = {word.es}
+              </Text>
             </Animated.View>
           ) : null}
-          <Text variant="hero" center color={promptLang === 'es' ? palette.purple : palette.navy}>
-            {word[promptLang]}
-          </Text>
-          {showSecondary ? (
-            <Text variant={showBoth ? 'h3' : 'small'} center color={palette.navySoft}>
-              {showBoth ? word[other] : `(${word[other]})`}
-            </Text>
-          ) : null}
         </View>
-
-        <Button
-          label={promptLang === 'es' ? 'Escuchar' : 'Hear it again'}
-          tone="blue"
-          size="md"
-          sound="none"
-          icon={<SpeakerIcon size={22} color={palette.white} />}
-          onPress={speakWord}
-        />
-
-        {state.phase === 'solved' ? (
-          <Animated.View entering={FadeIn} style={styles.banner}>
-            <Text variant="h3" color={palette.leafGreenDark} center>
-              {word.en} = {word.es}
-            </Text>
-          </Animated.View>
-        ) : null}
       </View>
     </GameFrame>
   );
 }
 
 const styles = StyleSheet.create({
-  stage: { alignItems: 'center', justifyContent: 'center', gap: spacing.md },
+  stage: { flex: 1, alignSelf: 'stretch' },
+  deck: { position: 'absolute', alignItems: 'center', justifyContent: 'center', gap: spacing.md },
   wordCard: {
     backgroundColor: palette.white,
     borderRadius: radii.panel,
-    paddingHorizontal: spacing.xl,
+    paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
     alignItems: 'center',
-    minWidth: 220,
     ...shadows.card,
   },
+  pins: { position: 'absolute', top: -7, left: 0, right: 0, flexDirection: 'row', justifyContent: 'space-evenly' },
+  pin: { width: 14, height: 14, borderRadius: 7, backgroundColor: palette.engineRed },
   sparkle: { position: 'absolute', top: -18, right: -18 },
   banner: {
     backgroundColor: palette.mint,

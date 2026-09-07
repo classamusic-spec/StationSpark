@@ -9,12 +9,11 @@ import { haptics } from '@/services/haptics';
 import { speech } from '@/services/speech';
 import { Button, CheckIcon, Chip, SpeakerIcon, Text, VocabIcon } from '@/ui';
 
-import { Stage } from '@/world';
-
 import { GameFrame } from '../shared/GameFrame';
 import { useGameLayout } from '../shared/layout';
 import { useHintLadder } from '../shared/useHintLadder';
 import { CrateBox } from '../shared/art/Props';
+import { RoomWash, StoreRoom, clamp, usePlayBox } from '../shared/art/Scene';
 import { numberWordFor } from '../shared/labels';
 
 interface State {
@@ -61,8 +60,11 @@ export function ListenCount({ challenge, ageBand, onComplete, onEvent, compact }
     speech.say(challenge.phraseEs, { speaker: 'bea', lang: 'es' });
   }, [challenge.phraseEs]);
 
+  /*
+   * The phrase is spoken, and printed once on the card. It used to be mirrored
+   * into a speech bubble as well, which covered the crate it was talking about.
+   */
   useEffect(() => {
-    session.say('bea', challenge.phraseEn, challenge.phraseEs);
     const t = setTimeout(speakPhrase, 350);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -120,17 +122,19 @@ export function ListenCount({ challenge, ageBand, onComplete, onEvent, compact }
 
   const word = numberWordFor(challenge.count);
   const hintText = `Captain Bea said “${word.es}”. ${word.es} = ${challenge.count}. Put ${challenge.count} in the crate!`;
-  const itemSize = layout.s(ageBand === 'A' ? 58 : 50);
-  const crateWidth = Math.min(layout.s(190), layout.boxWidth * 0.6);
+  /* measured room: the shelf and the crate fill the store room they stand in */
+  const { box, onLayout } = usePlayBox();
+  const itemSize = box.w > 0 ? clamp(box.w / 7.4, 40, ageBand === 'A' ? 74 : 66) : layout.s(50);
+  const crateWidth = box.w > 0 ? clamp(box.w * 0.56, 150, 320) : Math.min(layout.s(190), layout.boxWidth * 0.6);
+  const benchLift = clamp(box.h * 0.09, 22, 60);
+  const benchY = box.h > 0 ? box.h - benchLift : 0;
 
   return (
     <GameFrame
       title="Listen & Count"
       subtitle={ageBand === 'A' ? undefined : 'Captain Bea speaks Spanish. Fill the crate!'}
       compact={compact}
-      backdrop={
-                  <Stage variant="store-room" groundHeight={158} />
-      }
+      backdrop={<RoomWash top="#F5E9D0" bottom="#D8DEEC" />}
       hint={{ text: hintText, visible: hintLadder.showBubble, onDismiss: hintLadder.dismiss }}
       tray={
         <View style={styles.trayInner}>
@@ -167,7 +171,11 @@ export function ListenCount({ challenge, ageBand, onComplete, onEvent, compact }
         </View>
       }
     >
-      <View style={styles.stage}>
+      <View style={styles.stage} onLayout={onLayout}>
+        {/* the station store room, with the crate standing on the workbench */}
+        <StoreRoom box={box} benchY={box.h > 0 ? benchY : undefined} dressMiddle={false} />
+
+        <View style={[styles.deck, { paddingBottom: benchLift }]}>
         <Pressable
           onPress={() => {
             setRevealed(true);
@@ -241,13 +249,21 @@ export function ListenCount({ challenge, ageBand, onComplete, onEvent, compact }
             </Text>
           </Animated.View>
         ) : null}
+        </View>
       </View>
     </GameFrame>
   );
 }
 
 const styles = StyleSheet.create({
-  stage: { alignItems: 'center', justifyContent: 'center', gap: spacing.sm, paddingHorizontal: spacing.sm },
+  stage: { flex: 1, alignSelf: 'stretch' },
+  deck: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    gap: spacing.sm,
+    paddingHorizontal: spacing.sm,
+  },
   phraseCard: {
     backgroundColor: palette.white,
     borderRadius: radii.card,
@@ -268,10 +284,12 @@ const styles = StyleSheet.create({
   },
   shelfItem: { padding: 2 },
   shelfBoard: {
-    height: 12,
-    width: '92%',
+    height: 13,
+    width: '96%',
     borderRadius: 6,
     backgroundColor: palette.wood,
+    borderBottomWidth: 4,
+    borderBottomColor: palette.woodDark,
     marginTop: 2,
     ...shadows.soft,
   },

@@ -26,7 +26,8 @@ import { useGameLayout } from '../shared/layout';
 import { useCaptainLine } from '../shared/speak';
 import { useHintLadder } from '../shared/useHintLadder';
 import { useDragToSlot, type DropOutcome } from '../shared/useDragToSlot';
-import { Bunting, CoinDisc, MarketGround, PaperBag, StallFront, stallRects } from './Stall';
+import { CoinDisc, PaperBag, StallFront, stallRects } from './Stall';
+import { MarketStreet, RoomWash, clamp, marketMetrics, usePlayBox } from '../shared/art/Scene';
 
 /* ---------------- state machine ---------------- */
 
@@ -203,7 +204,24 @@ export function MarketMoney({ challenge, ageBand, onComplete, onEvent, compact }
   const bob = useIdleBob(3, 2600);
   const sway = useIdleBob(1.5, 3200, 0.5);
 
-  const stallWidth = Math.min(layout.boxWidth - spacing.md * 2, layout.s(352));
+  /*
+   * THE STALL COMMANDS THE MARKET. The play area is measured, the stall takes
+   * the width the chrome leaves (bounded by the height so the counter and the
+   * running total always fit), and the market street is drawn inside the same
+   * box so nothing floats in raw sky.
+   */
+  const { box, onLayout } = usePlayBox();
+  const pavingTop = box.h > 0 ? box.h * 0.44 : 0;
+  const market = marketMetrics(box, pavingTop);
+  const pavingLift = box.h > 0 ? Math.max(spacing.xs, (box.h - market.pavingTop) * 0.2) : spacing.sm;
+  const stallWidth =
+    box.w > 0
+      ? clamp(
+          Math.min(box.w - spacing.sm * 2, ((box.h - pavingLift - layout.s(150)) * 340) / 196),
+          220,
+          620,
+        )
+      : Math.min(layout.boxWidth - spacing.md * 2, layout.s(352));
   const stall = stallRects(stallWidth);
 
   const itemStyle = useAnimatedStyle(() => ({
@@ -350,6 +368,7 @@ export function MarketMoney({ challenge, ageBand, onComplete, onEvent, compact }
       subtitle={ageBand === 'A' ? `Put ${price} on the counter` : 'Drag coins onto the counter, then tap Pay.'}
       es={`Cuesta ${price} monedas.`}
       compact={compact}
+      backdrop={<RoomWash top="#6FC0F8" bottom="#E3CFA6" />}
       hint={{
         text: hintText,
         es: short > 0 ? `Faltan ${short}.` : undefined,
@@ -407,13 +426,11 @@ export function MarketMoney({ challenge, ageBand, onComplete, onEvent, compact }
         </View>
       }
     >
-      <View style={styles.stage}>
-        {/* ---- the market itself: bunting overhead, paving underfoot ---- */}
-        <View style={StyleSheet.absoluteFill} pointerEvents="none">
-          <Bunting width={layout.boxWidth} />
-          <MarketGround width={layout.boxWidth} />
-        </View>
+      <View style={styles.stage} onLayout={onLayout}>
+        {/* ---- the market street the stall trades in ---- */}
+        <MarketStreet box={box} pavingTop={box.h > 0 ? pavingTop : undefined} />
 
+        <View style={[styles.deck, { paddingBottom: pavingLift }]}>
         {/* ---- the stall ---- */}
         <View style={{ width: stallWidth, height: stall.height }}>
           <StallFront width={stallWidth} />
@@ -477,13 +494,15 @@ export function MarketMoney({ challenge, ageBand, onComplete, onEvent, compact }
             </Text>
           </Animated.View>
         ) : null}
+        </View>
       </View>
     </GameFrame>
   );
 }
 
 const styles = StyleSheet.create({
-  stage: { flex: 1, alignSelf: 'stretch', alignItems: 'center', justifyContent: 'center', gap: spacing.xs },
+  stage: { flex: 1, alignSelf: 'stretch' },
+  deck: { flex: 1, alignSelf: 'stretch', alignItems: 'center', justifyContent: 'flex-end', gap: spacing.xs },
   abs: { position: 'absolute' },
   sign: { alignItems: 'center', justifyContent: 'center' },
   bag: { position: 'absolute', right: 6, bottom: -6, alignItems: 'center', justifyContent: 'center' },

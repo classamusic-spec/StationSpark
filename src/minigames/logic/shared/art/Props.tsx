@@ -1,5 +1,5 @@
 import React from 'react';
-import Svg, { Circle, Ellipse, G, Line, Path, Polygon, Rect } from 'react-native-svg';
+import Svg, { Circle, Ellipse, G, Line, Path, Rect } from 'react-native-svg';
 import type { SceneId } from '@/learning/types';
 import { palette } from '@/theme';
 
@@ -26,56 +26,119 @@ export function truckBayRect(width: number) {
   };
 }
 
-export function TruckSide({ width }: { width: number }) {
+/**
+ * The station's appliance, side on.
+ *
+ * `bay` opens the equipment locker the child packs into; with it closed the
+ * engine is scenery and shows its pump panel instead, so it stops reading as a
+ * dark delivery van. Three tones per object, no outlines, contact shadow under
+ * the tyres plus a soft ambient pool.
+ */
+export function TruckSide({ width, bay = true }: { width: number; bay?: boolean }) {
   const height = (width * TRUCK_VIEW.h) / TRUCK_VIEW.w;
   return (
     <Svg width={width} height={height} viewBox={`0 0 ${TRUCK_VIEW.w} ${TRUCK_VIEW.h}`}>
-      <Ellipse cx={180} cy={200} rx={168} ry={12} fill="rgba(31,42,90,0.13)" />
+      {/* ambient pool + hard contact shadows under the tyres */}
+      <Ellipse cx={180} cy={202} rx={170} ry={11} fill="rgba(31,42,90,0.10)" />
+      <Ellipse cx={86} cy={207} rx={30} ry={5} fill="rgba(31,42,90,0.22)" />
+      <Ellipse cx={286} cy={207} rx={30} ry={5} fill="rgba(31,42,90,0.22)" />
+
       {/* body */}
       <Rect x={4} y={26} width={352} height={148} rx={20} fill={palette.engineRed} />
       <Rect x={4} y={26} width={352} height={12} rx={6} fill={SHEEN} />
+      <Rect x={4} y={150} width={352} height={24} fill={palette.engineRedDark} opacity={0.45} />
+
+      {/* roof ladder rack */}
+      <G>
+        <Rect x={104} y={14} width={224} height={7} rx={3.5} fill={palette.slate} />
+        <Rect x={104} y={14} width={224} height={2.6} rx={1.3} fill={SHEEN} />
+        {[120, 300].map((x) => (
+          <Rect key={x} x={x} y={20} width={7} height={8} rx={3} fill={palette.slate} />
+        ))}
+        <Rect x={118} y={6} width={196} height={5} rx={2.5} fill={palette.safetyYellow} />
+        <Rect x={118} y={16} width={196} height={5} rx={2.5} fill={palette.safetyYellow} />
+        {Array.from({ length: 8 }, (_, i) => (
+          <Rect key={`rg${i}`} x={132 + i * 23} y={6} width={5} height={15} rx={2.5} fill={palette.gold} />
+        ))}
+      </G>
+
       {/* cab */}
       <Path d="M4 46c0-11 9-20 20-20h44v148H4z" fill={palette.engineRedDark} />
       <Rect x={12} y={44} width={46} height={34} rx={9} fill={palette.waterCyanLight} />
       <Path d="M12 62h46v16a9 9 0 0 1-9 9H21a9 9 0 0 1-9-9z" fill={palette.waterCyan} opacity={0.55} />
-      <Rect x={14} y={96} width={16} height={7} rx={3.5} fill={palette.charcoal} />
+      <Rect x={14} y={48} width={16} height={8} rx={4} fill="rgba(255,255,255,0.55)" />
+      {/* door line, handle and mirror */}
+      <Rect x={60} y={40} width={4} height={116} rx={2} fill="rgba(31,42,90,0.16)" />
+      <Rect x={40} y={96} width={17} height={7} rx={3.5} fill={palette.slateLight} />
+      <Rect x={4} y={54} width={9} height={20} rx={4} fill={palette.charcoal} />
+      <Rect x={14} y={104} width={44} height={9} rx={4.5} fill={palette.safetyYellow} />
+
       {/* light bar */}
       <Rect x={16} y={16} width={44} height={12} rx={6} fill={palette.navySoft} />
       <Rect x={20} y={18} width={16} height={8} rx={4} fill={palette.waterCyan} />
       <Rect x={40} y={18} width={16} height={8} rx={4} fill={palette.engineRedLight} />
+
       {/* reflective stripe */}
       <Rect x={4} y={128} width={352} height={13} fill={palette.safetyYellow} />
       <Rect x={4} y={128} width={352} height={4} fill="rgba(255,255,255,0.35)" />
-      {/* open bay */}
-      <Rect
-        x={TRUCK_BAY.x - 8}
-        y={TRUCK_BAY.y - 10}
-        width={TRUCK_BAY.w + 16}
-        height={TRUCK_BAY.h + 20}
-        rx={14}
-        fill={palette.slateLight}
-      />
-      <Rect x={TRUCK_BAY.x} y={TRUCK_BAY.y} width={TRUCK_BAY.w} height={TRUCK_BAY.h} rx={8} fill={palette.charcoal} />
-      <Rect x={TRUCK_BAY.x} y={TRUCK_BAY.y} width={TRUCK_BAY.w} height={10} rx={5} fill="rgba(0,0,0,0.18)" />
-      {/* roller door slats tucked above the bay */}
-      {[0, 1, 2].map((i) => (
-        <Rect
-          key={i}
-          x={TRUCK_BAY.x - 4}
-          y={TRUCK_BAY.y - 20 + i * 6}
-          width={TRUCK_BAY.w + 8}
-          height={4.5}
-          rx={2.2}
-          fill={i % 2 ? palette.slate : palette.slateLight}
-        />
-      ))}
-      {/* running board + wheels */}
+
+      {bay ? (
+        <G>
+          {/* the open equipment locker: a bright metal interior, lit from above */}
+          <Rect
+            x={TRUCK_BAY.x - 8}
+            y={TRUCK_BAY.y - 10}
+            width={TRUCK_BAY.w + 16}
+            height={TRUCK_BAY.h + 20}
+            rx={14}
+            fill={palette.slateLight}
+          />
+          <Rect x={TRUCK_BAY.x} y={TRUCK_BAY.y} width={TRUCK_BAY.w} height={TRUCK_BAY.h} rx={8} fill="#55607F" />
+          <Rect x={TRUCK_BAY.x} y={TRUCK_BAY.y} width={TRUCK_BAY.w} height={26} rx={8} fill="rgba(255,255,255,0.14)" />
+          <Rect x={TRUCK_BAY.x} y={TRUCK_BAY.y + TRUCK_BAY.h - 12} width={TRUCK_BAY.w} height={12} rx={6} fill="rgba(0,0,0,0.16)" />
+          {/* roller door slats tucked above the bay */}
+          {[0, 1, 2].map((i) => (
+            <Rect
+              key={i}
+              x={TRUCK_BAY.x - 4}
+              y={TRUCK_BAY.y - 20 + i * 6}
+              width={TRUCK_BAY.w + 8}
+              height={4.5}
+              rx={2.2}
+              fill={i % 2 ? palette.slate : palette.slateLight}
+            />
+          ))}
+        </G>
+      ) : (
+        <G>
+          {/* closed: the pump panel, two lockers and a coiled line */}
+          <Rect x={84} y={44} width={118} height={80} rx={10} fill={palette.slateLight} />
+          <Rect x={90} y={50} width={106} height={68} rx={7} fill="#B4BCD2" />
+          {[0, 1].map((r) =>
+            [0, 1, 2].map((c) => (
+              <G key={`gg${r}-${c}`}>
+                <Circle cx={110 + c * 36} cy={70 + r * 32} r={11} fill={palette.cream} />
+                <Path d={`M${110 + c * 36} ${70 + r * 32} l6 -6`} stroke={palette.engineRedDark} strokeWidth={2.6} strokeLinecap="round" />
+              </G>
+            )),
+          )}
+          <Rect x={214} y={44} width={128} height={80} rx={10} fill={palette.engineRedDark} />
+          {[0, 1, 2, 3, 4].map((i) => (
+            <Rect key={`sl${i}`} x={220} y={52 + i * 14} width={116} height={9} rx={4.5} fill={palette.engineRed} />
+          ))}
+          <Rect x={262} y={116} width={32} height={7} rx={3.5} fill={palette.slateLight} />
+        </G>
+      )}
+
+      {/* running board, mudguards + wheels */}
       <Rect x={30} y={168} width={300} height={12} rx={6} fill={palette.charcoalDark} />
       {[86, 286].map((cx) => (
         <G key={cx}>
+          <Path d={`M${cx - 36} 174 a36 36 0 0 1 72 0 z`} fill={palette.engineRedDark} />
           <Circle cx={cx} cy={182} r={26} fill={palette.charcoal} />
           <Circle cx={cx} cy={182} r={13} fill={palette.slateLight} />
           <Circle cx={cx} cy={182} r={5} fill={palette.slate} />
+          <Path d={`M${cx - 18} ${170} a20 20 0 0 1 12 -12`} stroke="rgba(255,255,255,0.25)" strokeWidth={4} fill="none" strokeLinecap="round" />
         </G>
       ))}
     </Svg>
@@ -227,115 +290,243 @@ export function TruckTop({ size }: { size: number }) {
 /* Town scenery                                                       */
 /* ================================================================= */
 
-type Emblem = 'bread' | 'pizza' | 'flag' | 'tree' | 'clock' | 'paw' | 'book' | 'basket' | 'window' | 'helmet';
+/**
+ * EVERY PLACE HAS ITS OWN ARCHITECTURE.
+ *
+ * These used to be one template — box + triangle + emblem — so School and
+ * Library were the same house in two roof colours, which made the Dispatch
+ * answer tiles unreadable. Each of the ten places is now drawn as itself:
+ * its own roofline, its own signage, its own openings, so a child can tell
+ * them apart by silhouette before they can read the name.
+ *
+ * Drawn in a 60 × 60 box, three tones per object, no outlines, and a navy
+ * contact ellipse under every one of them.
+ */
+const SHEEN_STRONG = 'rgba(255,255,255,0.5)';
 
-const SCENES: Record<SceneId, { body: string; roof: string; emblem: Emblem }> = {
-  bakery: { body: palette.tan, roof: palette.engineRed, emblem: 'bread' },
-  pizza: { body: palette.cream, roof: palette.leafGreen, emblem: 'pizza' },
-  school: { body: palette.creamDeep, roof: palette.navySoft, emblem: 'flag' },
-  park: { body: palette.mint, roof: palette.leafGreen, emblem: 'tree' },
-  'clock-tower': { body: palette.cream, roof: palette.engineRedDark, emblem: 'clock' },
-  apartments: { body: palette.slateLight, roof: palette.navySoft, emblem: 'window' },
-  'pet-shop': { body: palette.pinkSoft, roof: palette.pink, emblem: 'paw' },
-  library: { body: palette.creamDeep, roof: palette.purple, emblem: 'book' },
-  market: { body: palette.cream, roof: palette.orange, emblem: 'basket' },
-  'station-yard': { body: palette.tan, roof: palette.engineRed, emblem: 'helmet' },
-};
+function Base({ children }: { children: React.ReactNode }) {
+  return (
+    <G>
+      <Ellipse cx={30} cy={55} rx={24} ry={4} fill="rgba(31,42,90,0.12)" />
+      {children}
+    </G>
+  );
+}
 
-function EmblemShape({ kind }: { kind: Emblem }) {
-  switch (kind) {
-    case 'bread':
-      return <Ellipse cx={30} cy={30} rx={16} ry={11} fill={palette.wood} />;
+/** Striped awning used by the shopfronts. */
+function Awning({ x, y, w, tone }: { x: number; y: number; w: number; tone: string }) {
+  const n = 4;
+  return (
+    <G>
+      {Array.from({ length: n }, (_, i) => (
+        <Path
+          key={i}
+          d={`M${x + (w / n) * i} ${y} h${w / n} v5 q${-w / n / 2} 3 ${-w / n} 0 z`}
+          fill={i % 2 ? palette.cream : tone}
+        />
+      ))}
+      <Rect x={x - 1} y={y - 2.4} width={w + 2} height={3.4} rx={1.7} fill={tone} />
+    </G>
+  );
+}
+
+function SceneArt({ scene, tint }: { scene: SceneId; tint?: string }) {
+  switch (scene) {
+    case 'bakery':
+      return (
+        <Base>
+          <Rect x={8} y={24} width={44} height={30} rx={4} fill={palette.tan} />
+          <Rect x={8} y={24} width={6} height={30} fill={SHEEN} />
+          <Path d="M4 25L30 8l26 17z" fill={tint ?? palette.engineRed} />
+          <Path d="M4 25L30 8l4 2.6L12 25z" fill={SHEEN_STRONG} opacity={0.4} />
+          <Ellipse cx={30} cy={18} rx={8} ry={5} fill={palette.creamDeep} />
+          <Path d="M25 17q5-3 10 0" stroke={palette.woodDark} strokeWidth={1.4} fill="none" />
+          <Rect x={12} y={34} width={22} height={12} rx={2} fill="#9FC9E8" />
+          <Awning x={11} y={32} w={24} tone={palette.engineRed} />
+          <Rect x={38} y={34} width={11} height={20} rx={2} fill={palette.woodDark} />
+          <Circle cx={41} cy={45} r={1.4} fill={palette.safetyYellow} />
+        </Base>
+      );
     case 'pizza':
       return (
-        <G>
-          <Polygon points="30,16 46,44 14,44" fill={palette.safetyYellow} />
-          <Circle cx={30} cy={36} r={3} fill={palette.engineRed} />
-          <Circle cx={24} cy={40} r={2.6} fill={palette.engineRed} />
-        </G>
+        <Base>
+          <Rect x={8} y={20} width={44} height={34} rx={4} fill={palette.cream} />
+          <Rect x={8} y={20} width={6} height={34} fill={SHEEN} />
+          <Rect x={5} y={16} width={50} height={7} rx={3.5} fill={tint ?? palette.leafGreen} />
+          <Rect x={5} y={16} width={50} height={2.4} rx={1.2} fill={SHEEN_STRONG} opacity={0.5} />
+          <Rect x={40} y={6} width={7} height={11} rx={2} fill={palette.tanDark} />
+          <Circle cx={20} cy={30} r={6} fill="#9FC9E8" />
+          <Circle cx={18} cy={28} r={2} fill={SHEEN_STRONG} />
+          <Awning x={10} y={38} w={26} tone={palette.engineRed} />
+          <Rect x={38} y={36} width={12} height={18} rx={2} fill={palette.woodDark} />
+          <Rect x={12} y={44} width={22} height={10} rx={2} fill="#9FC9E8" />
+        </Base>
       );
-    case 'flag':
+    case 'school':
       return (
-        <G>
-          <Rect x={22} y={14} width={4} height={32} rx={2} fill={palette.charcoal} />
-          <Path d="M26 16h20l-6 7 6 7H26z" fill={palette.engineRed} />
-        </G>
-      );
-    case 'tree':
-      return (
-        <G>
-          <Rect x={27} y={32} width={6} height={14} rx={3} fill={palette.wood} />
-          <Circle cx={30} cy={26} r={14} fill={palette.leafGreenDark} />
-          <Circle cx={24} cy={30} r={9} fill={palette.grassDark} />
-        </G>
-      );
-    case 'clock':
-      return (
-        <G>
-          <Circle cx={30} cy={30} r={15} fill={palette.cream} stroke={palette.navy} strokeWidth={3} />
-          <Path d="M30 21v10l7 4" stroke={palette.navy} strokeWidth={3.4} strokeLinecap="round" fill="none" />
-        </G>
-      );
-    case 'paw':
-      return (
-        <G>
-          <Circle cx={30} cy={34} r={9} fill={palette.navySoft} />
-          {[
-            [20, 24],
-            [27, 19],
-            [35, 19],
-            [41, 25],
-          ].map(([cx, cy], i) => (
-            <Circle key={i} cx={cx} cy={cy} r={4.4} fill={palette.navySoft} />
+        <Base>
+          <Rect x={4} y={26} width={52} height={28} rx={4} fill={palette.creamDeep} />
+          <Rect x={4} y={26} width={52} height={5} fill={SHADE} />
+          <Rect x={2} y={22} width={56} height={6} rx={3} fill={tint ?? palette.navySoft} />
+          <Path d="M20 22h20v-6H20z" fill={palette.creamDeep} />
+          <Path d="M18 16L30 6l12 10z" fill={tint ?? palette.navySoft} />
+          <Circle cx={30} cy={19} r={3.4} fill={palette.white} />
+          <Rect x={29.4} y={4} width={1.6} height={4} fill={palette.charcoal} />
+          <Path d="M31 4h8l-2.4 3L39 10h-8z" fill={palette.engineRed} />
+          {[9, 20, 40, 49].map((x) => (
+            <Rect key={x} x={x} y={33} width={8} height={9} rx={1.6} fill="#9FC9E8" />
           ))}
-        </G>
+          <Rect x={26} y={38} width={12} height={16} rx={2} fill={palette.woodDark} />
+          <Rect x={22} y={52} width={20} height={3} rx={1.5} fill={palette.slateLight} />
+        </Base>
       );
-    case 'book':
+    case 'park':
       return (
-        <G>
-          <Rect x={14} y={20} width={32} height={22} rx={4} fill={palette.purple} />
-          <Rect x={28} y={20} width={4} height={22} fill={palette.white} />
-        </G>
+        <Base>
+          <Path d="M2 46q28-12 56 0v8H2z" fill={palette.grass} />
+          <Rect x={12} y={22} width={4} height={26} rx={2} fill={palette.woodDark} />
+          <Rect x={44} y={22} width={4} height={26} rx={2} fill={palette.woodDark} />
+          <Path d="M12 24q18-14 36 0" stroke={tint ?? palette.leafGreenDark} strokeWidth={4} fill="none" strokeLinecap="round" />
+          <Circle cx={30} cy={18} r={4} fill={palette.safetyYellow} />
+          <Rect x={20} y={40} width={20} height={3} rx={1.5} fill={palette.wood} />
+          <Rect x={22} y={43} width={2.6} height={6} rx={1.3} fill={palette.woodDark} />
+          <Rect x={35} y={43} width={2.6} height={6} rx={1.3} fill={palette.woodDark} />
+          <Circle cx={8} cy={34} r={9} fill={palette.leafGreenDark} />
+          <Circle cx={53} cy={32} r={8} fill={palette.leafGreen} />
+        </Base>
       );
-    case 'basket':
+    case 'clock-tower':
       return (
-        <G>
-          <Path d="M15 26h30l-4 18H19z" fill={palette.wood} />
-          <Path d="M20 26a10 10 0 0 1 20 0" stroke={palette.woodDark} strokeWidth={3} fill="none" />
-        </G>
+        <Base>
+          <Rect x={18} y={16} width={24} height={38} rx={3} fill={palette.cream} />
+          <Rect x={18} y={16} width={5} height={38} fill={SHEEN} />
+          <Rect x={15} y={13} width={30} height={5} rx={2.5} fill="#E2CDA6" />
+          <Path d="M13 14L30 2l17 12z" fill={tint ?? palette.engineRedDark} />
+          <Circle cx={30} cy={28} r={9} fill={palette.white} />
+          <Circle cx={30} cy={28} r={7.4} fill={palette.panel} />
+          <Path d="M30 22v6.4l4 2.4" stroke={palette.navy} strokeWidth={2} strokeLinecap="round" fill="none" />
+          <Path d="M24 54v-8a6 6 0 0 1 12 0v8z" fill="#4A5578" />
+          {[46, 50].map((y) => (
+            <Rect key={y} x={25} y={y} width={10} height={2} rx={1} fill="#B7A788" />
+          ))}
+        </Base>
       );
-    case 'helmet':
+    case 'apartments':
       return (
-        <G>
-          <Path d="M13 38c0-11 8-18 17-18s17 7 17 18z" fill={palette.engineRed} />
-          <Rect x={9} y={36} width={42} height={7} rx={3.5} fill={palette.engineRedDark} />
-          <Circle cx={30} cy={28} r={5} fill={palette.safetyYellow} />
-        </G>
+        <Base>
+          <Rect x={10} y={10} width={40} height={44} rx={3} fill={palette.slateLight} />
+          <Rect x={10} y={10} width={6} height={44} fill={SHEEN} />
+          <Rect x={44} y={10} width={6} height={44} fill={SHADE} />
+          <Rect x={8} y={7} width={44} height={5} rx={2.5} fill={tint ?? palette.navySoft} />
+          <Rect x={36} y={1} width={9} height={7} rx={2} fill={palette.slate} />
+          {[15, 26, 37].map((y) =>
+            [15, 27, 37].map((x) => (
+              <G key={`${x}-${y}`}>
+                <Rect x={x} y={y} width={8} height={7} rx={1.4} fill="#33477A" />
+                <Rect x={x} y={y} width={8} height={2.4} rx={1.2} fill="#4A5FA8" />
+              </G>
+            )),
+          )}
+          {[22, 33].map((y) => (
+            <Rect key={y} x={13} y={y} width={34} height={1.8} rx={0.9} fill={SHADE} />
+          ))}
+          <Rect x={25} y={45} width={10} height={9} rx={1.6} fill={palette.woodDark} />
+        </Base>
       );
-    case 'window':
+    case 'pet-shop':
+      return (
+        <Base>
+          <Rect x={8} y={24} width={44} height={30} rx={4} fill={palette.pinkSoft} />
+          <Rect x={8} y={24} width={6} height={30} fill={SHEEN} />
+          <Path d="M6 25q24-18 48 0z" fill={tint ?? palette.pink} />
+          <Circle cx={30} cy={17} r={5} fill={palette.white} />
+          <Circle cx={30} cy={18} r={2.6} fill={palette.navySoft} />
+          {[
+            [27, 14],
+            [33, 14],
+          ].map(([cx, cy], i) => (
+            <Circle key={i} cx={cx} cy={cy} r={1.5} fill={palette.navySoft} />
+          ))}
+          <Awning x={10} y={33} w={24} tone={palette.pink} />
+          <Rect x={12} y={38} width={22} height={12} rx={3} fill="#9FC9E8" />
+          <Path d="M38 54v-8a7 7 0 0 1 14 0v8z" fill={palette.wood} />
+          <Circle cx={45} cy={49} r={4} fill={palette.woodDark} />
+        </Base>
+      );
+    case 'library':
+      return (
+        <Base>
+          <Rect x={8} y={26} width={44} height={28} rx={2} fill={palette.creamDeep} />
+          <Path d="M4 26L30 12l26 14z" fill={tint ?? palette.purple} />
+          <Rect x={4} y={25} width={52} height={4} rx={2} fill="#E2CDA6" />
+          {[13, 22, 31, 40].map((x) => (
+            <G key={x}>
+              <Rect x={x} y={31} width={5} height={19} rx={2.5} fill={palette.panel} />
+              <Rect x={x} y={31} width={1.8} height={19} fill={SHEEN} />
+            </G>
+          ))}
+          <Rect x={9} y={49} width={42} height={3} rx={1.5} fill={palette.slateLight} />
+          <Rect x={6} y={52} width={48} height={3} rx={1.5} fill={palette.slate} opacity={0.6} />
+          <Rect x={22} y={16} width={16} height={9} rx={2} fill={palette.cream} />
+          <Rect x={29.2} y={16} width={1.6} height={9} fill={palette.purple} />
+        </Base>
+      );
+    case 'market':
+      return (
+        <Base>
+          <Rect x={10} y={26} width={40} height={26} rx={3} fill={palette.tan} />
+          {[32, 39, 46].map((y) => (
+            <Rect key={y} x={12} y={y} width={36} height={1.6} rx={0.8} fill="rgba(158,106,54,0.3)" />
+          ))}
+          <G>
+            {Array.from({ length: 5 }, (_, i) => (
+              <Path
+                key={i}
+                d={`M${6 + i * 9.6} 16 h9.6 v7 q-4.8 3 -9.6 0 z`}
+                fill={i % 2 ? palette.cream : tint ?? palette.orange}
+              />
+            ))}
+            <Rect x={5} y={13} width={50} height={4} rx={2} fill={tint ?? palette.orange} />
+          </G>
+          <Rect x={7} y={23} width={3.4} height={30} rx={1.7} fill={palette.woodDark} />
+          <Rect x={49} y={23} width={3.4} height={30} rx={1.7} fill={palette.woodDark} />
+          <Path d="M18 40h24l-3 12H21z" fill={palette.wood} />
+          {[
+            [24, 38, palette.engineRed],
+            [31, 36, palette.leafGreen],
+            [37, 38, palette.safetyYellow],
+          ].map(([cx, cy, fill], i) => (
+            <Circle key={i} cx={cx as number} cy={cy as number} r={4} fill={fill as string} />
+          ))}
+        </Base>
+      );
+    case 'station-yard':
     default:
       return (
-        <G>
-          {[18, 34].map((x) =>
-            [18, 34].map((y) => <Rect key={`${x}-${y}`} x={x} y={y} width={10} height={10} rx={2} fill={palette.waterCyanLight} />),
-          )}
-        </G>
+        <Base>
+          <Rect x={6} y={24} width={48} height={30} rx={3} fill={palette.tan} />
+          <Rect x={6} y={24} width={6} height={30} fill={SHEEN} />
+          <Rect x={3} y={20} width={54} height={6} rx={3} fill={tint ?? palette.engineRed} />
+          <Rect x={3} y={20} width={54} height={2} rx={1} fill={SHEEN_STRONG} opacity={0.5} />
+          <Rect x={38} y={6} width={12} height={16} rx={2} fill={palette.creamDeep} />
+          <Path d="M36 7l8-5 8 5z" fill={palette.engineRedDark} />
+          <Path d="M41 12a3 3 0 0 1 6 0v4h-6z" fill={palette.safetyYellow} />
+          <Rect x={11} y={31} width={22} height={23} rx={2} fill={palette.engineRedDark} />
+          {[34, 39, 44, 49].map((y) => (
+            <Rect key={y} x={12} y={y} width={20} height={3} rx={1.5} fill={palette.engineRed} />
+          ))}
+          <Rect x={37} y={38} width={14} height={16} rx={2} fill={palette.woodDark} />
+          <Circle cx={40} cy={46} r={1.4} fill={palette.safetyYellow} />
+        </Base>
       );
   }
 }
 
 /** A chunky little building front for the town grid / map strips. */
 export function SceneBuilding({ scene, size = 72, tint }: { scene: SceneId; size?: number; tint?: string }) {
-  const s = SCENES[scene];
   return (
     <Svg width={size} height={size} viewBox="0 0 60 60">
-      <Rect x={6} y={20} width={48} height={36} rx={7} fill={s.body} />
-      <Path d="M2 22L30 4l28 18z" fill={tint ?? s.roof} />
-      <Rect x={6} y={20} width={48} height={5} fill={SHADE} />
-      <G transform="translate(0,6) scale(0.86) translate(4,0)">
-        <EmblemShape kind={s.emblem} />
-      </G>
-      <Rect x={24} y={42} width={12} height={14} rx={3} fill={palette.woodDark} />
+      <SceneArt scene={scene} tint={tint} />
     </Svg>
   );
 }

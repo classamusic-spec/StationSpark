@@ -1,5 +1,5 @@
-import React, { useCallback, useMemo, useReducer, useRef, useState } from 'react';
-import { StyleSheet, View, type LayoutChangeEvent } from 'react-native';
+import React, { useCallback, useMemo, useReducer, useRef } from 'react';
+import { StyleSheet, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   FadeIn,
@@ -13,13 +13,11 @@ import Animated, {
 } from 'react-native-reanimated';
 import type { MiniGameProps } from '@/minigames/types';
 import { useMiniGameSession } from '@/minigames/useMiniGameSession';
-import { activity, hit, palette, radii, roles, spacing, springs } from '@/theme';
+import { hit, palette, radii, roles, spacing, springs } from '@/theme';
 import { sfx } from '@/services/audio';
 import { haptics } from '@/services/haptics';
 import { speech } from '@/services/speech';
 import { Button, CheckIcon, GlyphIcon, Text, useSideRail } from '@/ui';
-
-import { Stage } from '@/world';
 
 import { Animal } from '@/world/props';
 import { GameFrame } from '../shared/GameFrame';
@@ -27,6 +25,7 @@ import { useGameLayout } from '../shared/layout';
 import { useCaptainLine } from '../shared/speak';
 import { useHintLadder } from '../shared/useHintLadder';
 import { ClockFace } from '../shared/art/Props';
+import { ClockTower, RoomWash, clamp, usePlayBox } from '../shared/art/Scene';
 
 const clockLabel = (totalMinutes: number) => {
   const norm = ((Math.round(totalMinutes) % 720) + 720) % 720;
@@ -82,30 +81,28 @@ export function ClockWatch({ challenge, onComplete, onEvent, compact }: MiniGame
   const headline = sentence(challenge.event);
 
   /*
-   * THE CLOCK IS THE ACTIVITY — it takes every pixel the chrome does not need,
-   * including the extra room a tablet gives once the controls become a rail.
-   * The play area measures itself so the dial is sized against the room it
-   * really has: too big and it grows up underneath the task bar.
+   * THE CLOCK IS THE ACTIVITY, AND IT IS SET INTO A TOWER.
+   *
+   * The play area measures itself, the dial takes the room the chrome does not
+   * need (capped, so a tablet gets a bigger tower rather than one absurd dial),
+   * and the tower's stone housing, corbelled ledge and louvres are drawn around
+   * the dial's real centre — so the clock is part of a building instead of a
+   * disc floating in sky.
    */
   const sideRail = useSideRail();
-  const playWidth = sideRail
-    ? Math.min(layout.width - activity.sidePanelWidth - spacing.sm * 3, 820)
-    : layout.boxWidth;
+  const { box, onLayout } = usePlayBox();
 
-  const [stageH, setStageH] = useState(0);
-  const onStageLayout = useCallback((e: LayoutChangeEvent) => {
-    const h = e.nativeEvent.layout.height;
-    setStageH((prev) => (Math.abs(prev - h) < 1 ? prev : h));
-  }, []);
-
-  const basePad = layout.s(24);
-  const ledgeH = layout.s(36);
-  const roomForDial = stageH > 0 ? stageH - basePad - ledgeH : Number.POSITIVE_INFINITY;
-  const size = Math.max(
-    200,
-    Math.min(playWidth - spacing.xs * 2, layout.s(352) * (sideRail ? 1.3 : 1), layout.height * 0.62, roomForDial),
-  );
+  /* the bubble stands on the tower below the dial, so it never covers the face */
+  const available = box.h;
+  const size =
+    available > 0
+      ? clamp(Math.min(box.w * 0.8, available * 0.58), 176, sideRail ? 470 : 400)
+      : Math.max(200, Math.min(layout.boxWidth - spacing.md * 2, layout.s(300)));
   const centre = size / 2;
+  const dialCx = box.w > 0 ? box.w / 2 : size / 2;
+  const dialTop = available > 0 ? available * 0.1 : 0;
+  const dialCy = dialTop + size / 2;
+  const ledgeY = dialCy + size * 0.58;
 
   const minuteAngle = useSharedValue((startTotal % 60) * 6);
   const hourAngle = useSharedValue((startTotal / 60) * 30);
@@ -213,13 +210,6 @@ export function ClockWatch({ challenge, onComplete, onEvent, compact }: MiniGame
   const hourLen = size * 0.26;
 
   const hintText = `${headline} — that is ${clockLabel(targetTotal)}. Move the long hand ${answerDelta} minutes forward.`;
-  /*
-   * While a hint is up the dial lifts into whatever sky is left above it, so
-   * the bubble stands on the tower rather than on the clock face. It only ever
-   * takes room that is actually free — the dial never shrinks mid-puzzle.
-   */
-  const freeSky = stageH > 0 ? Math.max(0, stageH - basePad - ledgeH - size) : 0;
-  const hintLane = hintLadder.showBubble ? Math.min(layout.s(150), freeSky) : 0;
 
   /* One status line, never colour alone: it always carries words, and a mark. */
   const status = state.solved
@@ -236,7 +226,7 @@ export function ClockWatch({ challenge, onComplete, onEvent, compact }: MiniGame
       subtitle="Drag the hand, or tap − and +."
       compact={compact}
       onReplay={replay}
-      backdrop={<Stage variant="tower" groundHeight={140} />}
+      backdrop={<RoomWash top="#7BC6FA" bottom="#CDEAFF" />}
       hint={{ text: hintText, visible: hintLadder.showBubble, onDismiss: hintLadder.dismiss }}
       tray={
         <View style={styles.tray}>
@@ -294,9 +284,15 @@ export function ClockWatch({ challenge, onComplete, onEvent, compact }: MiniGame
         </View>
       }
     >
-      <View style={[styles.stage, { paddingBottom: basePad + hintLane }]} onLayout={onStageLayout}>
+      <View style={styles.stage} onLayout={onLayout}>
+        {/* the tower the dial is set into — drawn around the dial's real centre */}
+        <ClockTower box={box} cx={dialCx} cy={dialCy} r={size / 2} />
+
         <GestureDetector gesture={drag}>
-          <Animated.View style={[{ width: size, height: size }, dialStyle]} collapsable={false}>
+          <Animated.View
+            style={[styles.dial, { left: dialCx - size / 2, top: dialTop, width: size, height: size }, dialStyle]}
+            collapsable={false}
+          >
             <ClockFace size={size} />
 
             {/* BLOCKING DEFECT FIX: the numeral box was narrower than a
@@ -389,17 +385,19 @@ export function ClockWatch({ challenge, onComplete, onEvent, compact }: MiniGame
           </Animated.View>
         </GestureDetector>
 
-        {/* the tower ledge under the dial, with Luna sitting on it */}
-        <View style={[styles.ledge, { width: size * 1.1 }]} pointerEvents="none">
-          <View style={styles.ledgeTop} />
-          <View style={styles.ledgeShade} />
-          <View style={styles.luna}>
-            <Animal id="kitten" size={Math.max(38, size * 0.2)} mood={state.solved ? 'happy' : 'help'} />
-          </View>
+        {/* Luna sits on the drawn stone ledge under the dial */}
+        <View
+          style={[
+            styles.luna,
+            { left: dialCx + size * 0.3, top: ledgeY - Math.max(38, size * 0.22) + 2 },
+          ]}
+          pointerEvents="none"
+        >
+          <Animal id="kitten" size={Math.max(38, size * 0.22)} mood={state.solved ? 'happy' : 'help'} />
         </View>
 
         {state.solved ? (
-          <Animated.View entering={FadeIn} style={styles.banner}>
+          <Animated.View entering={FadeIn} style={[styles.banner, { top: ledgeY + 26 }]}>
             <Text variant="h3" color={palette.leafGreenDark} center>
               Right on time!
             </Text>
@@ -411,15 +409,15 @@ export function ClockWatch({ challenge, onComplete, onEvent, compact }: MiniGame
 }
 
 const styles = StyleSheet.create({
-  stage: { flex: 1, alignItems: 'center', justifyContent: 'flex-end', gap: spacing.xs },
+  stage: { flex: 1, alignSelf: 'stretch' },
+  dial: { position: 'absolute' },
   numeral: { position: 'absolute', textAlign: 'center' },
-  ledge: { alignItems: 'center', marginTop: -4 },
-  ledgeTop: { height: 12, alignSelf: 'stretch', borderRadius: 6, backgroundColor: '#DCC79F' },
-  ledgeShade: { height: 5, alignSelf: 'stretch', marginTop: -1, borderRadius: 3, backgroundColor: 'rgba(31,42,90,0.14)' },
-  luna: { position: 'absolute', right: '12%', bottom: 10 },
+  luna: { position: 'absolute' },
   hand: { position: 'absolute', borderRadius: 8 },
   cap: { position: 'absolute', backgroundColor: palette.gold, borderWidth: 3, borderColor: palette.white },
   banner: {
+    position: 'absolute',
+    alignSelf: 'center',
     backgroundColor: roles.state.successFill,
     borderRadius: radii.pill,
     paddingHorizontal: spacing.lg,

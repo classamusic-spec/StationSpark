@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useReducer, useRef } from 'react';
 import { StyleSheet, View } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withSequence, withSpring, withTiming } from 'react-native-reanimated';
-import Svg, { Ellipse, G, Path } from 'react-native-svg';
+import Svg, { Circle, Ellipse, G, Path, Rect } from 'react-native-svg';
 import type { MiniGameProps } from '@/minigames/types';
 import { useMiniGameSession } from '@/minigames/useMiniGameSession';
 import { palette, radii, shadows, spacing, springs } from '@/theme';
@@ -17,6 +17,10 @@ import { BarrierPiece, Campfire, Cone, RingPanel, ringSlots } from '@/world/prop
 import {
   DragToken,
   GameShell,
+  HILITE,
+  SHADE,
+  bark,
+  leaf,
   bestNextPiece,
   equationText,
   sumOf,
@@ -103,9 +107,15 @@ export function BuildBarrier({ challenge, ageBand, onComplete, onEvent, compact 
     const h = Math.max(1, box.h);
     const cx = w / 2;
     const cy = h * 0.5;
-    const radius = Math.min(w, h) * 0.36;
+    /* the safety ring is the subject: grow it until the widest barrier panel
+       just touches the edge of the play area, then stop */
+    const radius = Math.min(w * 0.36, h * 0.4);
     const slotSize = Math.max(10, Math.min(((2 * Math.PI * radius) / target) * 0.92, radius * 0.55));
-    return { w, h, cx, cy, radius, slotSize, fire: Math.min(radius * 1.3, Math.min(w, h) * 0.42) };
+    /* the clearing is an island of grass, sized to end *inside* the play area:
+       an ellipse clipped by the frame reads as a green card again */
+    const clearW = Math.min(w * 0.49, radius * 2);
+    const clearH = Math.min(h * 0.48, radius * 1.5);
+    return { w, h, cx, cy, radius, slotSize, clearW, clearH, fire: Math.min(radius * 1.55, Math.min(w, h) * 0.52) };
   }, [box.h, box.w, target]);
 
   const slots = useMemo(() => ringSlots(geo.cx, geo.cy, geo.radius, target), [geo.cx, geo.cy, geo.radius, target]);
@@ -259,45 +269,113 @@ export function BuildBarrier({ challenge, ageBand, onComplete, onEvent, compact 
     >
       {ready ? (
         <View style={StyleSheet.absoluteFill}>
-          {/* the picnic clearing: a rounded grass field with a dirt patch, a
-              worn path and tufts — never a hard-cornered rectangle */}
-          <View style={[styles.yard, { top: geo.cy - geo.radius * 1.62, height: geo.radius * 3.24 }]} pointerEvents="none">
-            <View style={styles.yardLip} />
-          </View>
+          {/* the picnic clearing — an organic grass bowl with a scorched
+              centre, a worn path, seating logs and the safety kit. Never a
+              hard-cornered rectangle: the old one read as a green card pasted
+              over the sky. */}
           <Svg style={StyleSheet.absoluteFill} width={geo.w} height={geo.h} pointerEvents="none">
-            <Ellipse cx={geo.cx} cy={geo.cy} rx={geo.radius * 1.22} ry={geo.radius * 1.05} fill="#D8C39A" opacity={0.55} />
+            {/* the clearing itself, and the mown lip that catches the light */}
+            <Ellipse cx={geo.cx} cy={geo.cy + geo.radius * 0.08} rx={geo.clearW} ry={geo.clearH} fill={palette.grassDark} />
+            <Ellipse cx={geo.cx} cy={geo.cy + geo.radius * 0.02} rx={geo.clearW * 0.955} ry={geo.clearH * 0.95} fill={palette.grass} />
+            <Ellipse cx={geo.cx} cy={geo.cy + geo.radius * 0.06} rx={geo.clearW * 0.9} ry={geo.clearH * 0.9} fill="#9BD97A" />
+            {/* the bare earth inside the ring, scorched at the middle */}
+            <Ellipse cx={geo.cx} cy={geo.cy} rx={geo.radius * 0.8} ry={geo.radius * 0.77} fill="#D8C39A" />
+            <Ellipse cx={geo.cx} cy={geo.cy + 2} rx={geo.radius * 0.6} ry={geo.radius * 0.57} fill="#C6AC7C" opacity={0.7} />
             <Path
-              d={`M ${geo.cx - geo.radius * 0.2} ${geo.h} Q ${geo.cx + geo.radius * 0.4} ${geo.cy + geo.radius * 1.3} ${geo.cx + geo.radius * 0.1} ${geo.cy + geo.radius * 1.05} L ${geo.cx + geo.radius * 0.6} ${geo.cy + geo.radius * 1.15} Q ${geo.cx + geo.radius * 0.8} ${geo.cy + geo.radius * 1.6} ${geo.cx + geo.radius * 0.5} ${geo.h} Z`}
-              fill="#E4D3AE"
-              opacity={0.7}
+              d={`M ${geo.cx - geo.radius * 0.44} ${geo.cy - geo.radius * 0.52} q ${geo.radius * 0.44} ${-geo.radius * 0.14} ${geo.radius * 0.84} ${geo.radius * 0.05}`}
+              stroke={HILITE}
+              strokeWidth={Math.max(2, geo.radius * 0.03)}
+              fill="none"
+              strokeLinecap="round"
             />
-            {[0.1, 0.24, 0.76, 0.9].map((f, i) => (
-              <G key={`tuft${i}`}>
-                <Path
-                  d={`M ${geo.w * f} ${geo.cy + geo.radius * (i % 2 ? 1.24 : -1.24)} q ${-5} ${-12} 0 ${-17} q 5 6 0 17 z`}
-                  fill="#3E9A55"
-                />
-                <Path
-                  d={`M ${geo.w * f + 7} ${geo.cy + geo.radius * (i % 2 ? 1.24 : -1.24)} q ${-4} ${-9} 1 ${-13} q 4 5 -1 13 z`}
-                  fill={palette.grass}
-                />
+            {/* the worn path somebody walked in on */}
+            <Path
+              d={`M ${geo.cx - geo.radius * 0.34} ${geo.h} Q ${geo.cx - geo.radius * 0.1} ${geo.cy + geo.radius * 1.5} ${geo.cx - geo.radius * 0.05} ${geo.cy + geo.radius * 0.94} L ${geo.cx + geo.radius * 0.42} ${geo.cy + geo.radius * 1.02} Q ${geo.cx + geo.radius * 0.5} ${geo.cy + geo.radius * 1.6} ${geo.cx + geo.radius * 0.36} ${geo.h} Z`}
+              fill="#E4D3AE"
+              opacity={0.8}
+            />
+            {/* two seating logs, outside the ring where nobody has to reach */}
+            {[
+              { x: Math.max(8, geo.cx - geo.clearW * 0.86), y: geo.cy + geo.radius * 0.94, f: 1 },
+              { x: Math.min(geo.w - geo.radius * 0.66 - 8, geo.cx + geo.clearW * 0.42), y: geo.cy - geo.clearH * 0.78, f: -1 },
+            ].map((log, i) => {
+              const lw = geo.radius * 0.62;
+              const lh = Math.max(12, geo.radius * 0.17);
+              return (
+                <G key={`log${i}`}>
+                  <Ellipse cx={log.x + lw / 2} cy={log.y + lh * 0.95} rx={lw * 0.56} ry={lh * 0.34} fill={palette.navy} opacity={0.1} />
+                  <Rect x={log.x} y={log.y} width={lw} height={lh} rx={lh / 2} fill={bark.mid} />
+                  <Rect x={log.x} y={log.y} width={lw} height={lh * 0.34} rx={lh * 0.17} fill={bark.rim} opacity={0.8} />
+                  <Ellipse cx={log.f > 0 ? log.x + lw : log.x} cy={log.y + lh / 2} rx={lh * 0.3} ry={lh / 2} fill={bark.lit} />
+                  <Ellipse cx={log.f > 0 ? log.x + lw : log.x} cy={log.y + lh / 2} rx={lh * 0.16} ry={lh * 0.26} fill={bark.deep} />
+                </G>
+              );
+            })}
+            {/* the water bucket that belongs beside any camp fire */}
+            <G>
+              <Ellipse cx={Math.min(geo.w - geo.radius * 0.24, geo.cx + geo.radius * 1.16)} cy={geo.cy + geo.radius * 1.12} rx={geo.radius * 0.2} ry={geo.radius * 0.06} fill={palette.navy} opacity={0.11} />
+              <Path
+                d={`M ${Math.min(geo.w - geo.radius * 0.42, geo.cx + geo.radius * 0.98)} ${geo.cy + geo.radius * 0.82} h ${geo.radius * 0.36} l ${-geo.radius * 0.05} ${geo.radius * 0.28} h ${-geo.radius * 0.26} z`}
+                fill={palette.slate}
+              />
+              <Ellipse cx={Math.min(geo.w - geo.radius * 0.24, geo.cx + geo.radius * 1.16)} cy={geo.cy + geo.radius * 0.82} rx={geo.radius * 0.18} ry={geo.radius * 0.05} fill={palette.waterCyan} />
+              <Path
+                d={`M ${Math.min(geo.w - geo.radius * 0.42, geo.cx + geo.radius * 0.98)} ${geo.cy + geo.radius * 0.82} a ${geo.radius * 0.18} ${geo.radius * 0.18} 0 0 1 ${geo.radius * 0.36} 0`}
+                stroke={palette.charcoal}
+                strokeWidth={Math.max(1.6, geo.radius * 0.025)}
+                fill="none"
+              />
+              <Path
+                d={`M ${Math.min(geo.w - geo.radius * 0.4, geo.cx + geo.radius * 1.0)} ${geo.cy + geo.radius * 0.88} l ${geo.radius * 0.06} ${geo.radius * 0.2}`}
+                stroke={HILITE}
+                strokeWidth={Math.max(1.4, geo.radius * 0.02)}
+                fill="none"
+                strokeLinecap="round"
+              />
+            </G>
+            {/* grass tufts around the clearing, densest at the edges */}
+            {[0.06, 0.16, 0.85, 0.95, 0.3, 0.72].map((f, i) => {
+              const x = geo.w * f;
+              const y = geo.cy + geo.radius * (i % 2 ? 1.36 : -1.34);
+              const k = Math.max(0.7, geo.radius * 0.013);
+              return (
+                <G key={`tuft${i}`}>
+                  <Path d={`M ${x} ${y} q ${-5 * k} ${-12 * k} 0 ${-17 * k} q ${5 * k} ${6 * k} 0 ${17 * k} z`} fill={leaf.deep} />
+                  <Path d={`M ${x + 7 * k} ${y} q ${-4 * k} ${-9 * k} ${1 * k} ${-13 * k} q ${4 * k} ${5 * k} ${-1 * k} ${13 * k} z`} fill={palette.grass} />
+                  <Path d={`M ${x - 7 * k} ${y} q ${-3 * k} ${-7 * k} ${-2 * k} ${-11 * k} q ${5 * k} ${4 * k} ${2 * k} ${11 * k} z`} fill={leaf.lit} />
+                </G>
+              );
+            })}
+            {/* a few pebbles kicked out of the fire ring */}
+            {[
+              [geo.cx - geo.radius * 0.86, geo.cy + geo.radius * 0.56],
+              [geo.cx + geo.radius * 0.78, geo.cy - geo.radius * 0.62],
+              [geo.cx - geo.radius * 0.2, geo.cy - geo.radius * 0.82],
+            ].map(([x, y], i) => (
+              <G key={`peb${i}`}>
+                <Circle cx={x} cy={y} r={Math.max(3, geo.radius * 0.045)} fill="#9AA4C0" />
+                <Circle cx={(x ?? 0) - geo.radius * 0.014} cy={(y ?? 0) - geo.radius * 0.014} r={Math.max(1.2, geo.radius * 0.02)} fill={HILITE} />
               </G>
             ))}
+            <Ellipse cx={geo.cx} cy={geo.cy + geo.radius * 0.06} rx={geo.radius * 0.84} ry={geo.radius * 0.8} fill={SHADE} opacity={0.14} />
           </Svg>
 
-          {/* cones + tape ringing the clearing */}
-          <View style={[styles.cone, { left: stage.s(6), top: geo.cy + geo.radius * 1.12 }]} pointerEvents="none">
-            <Cone size={stage.s(40)} />
-          </View>
-          <View style={[styles.cone, { left: stage.s(6), top: geo.cy - geo.radius * 1.42 }]} pointerEvents="none">
-            <Cone size={stage.s(34)} />
-          </View>
-          <View style={[styles.cone, { right: stage.s(6), top: geo.cy - geo.radius * 1.42 }]} pointerEvents="none">
-            <Cone size={stage.s(40)} />
-          </View>
-          <View style={[styles.cone, { right: stage.s(6), top: geo.cy + geo.radius * 1.12 }]} pointerEvents="none">
-            <Cone size={stage.s(34)} />
-          </View>
+          {/* cones marking the clearing — always inside the frame, never a
+              half-cone clipped by the edge of the play area */}
+          {[
+            { left: true, y: Math.min(geo.h - stage.s(46), geo.cy + geo.clearH * 0.82), size: stage.s(40) },
+            { left: true, y: Math.max(stage.s(4), geo.cy - geo.clearH * 0.92), size: stage.s(34) },
+            { left: false, y: Math.max(stage.s(4), geo.cy - geo.clearH * 0.92), size: stage.s(40) },
+            { left: false, y: Math.min(geo.h - stage.s(46), geo.cy + geo.clearH * 0.82), size: stage.s(34) },
+          ].map((c, i) => (
+            <View
+              key={i}
+              style={[styles.cone, c.left ? { left: stage.s(6) } : { right: stage.s(6) }, { top: c.y }]}
+              pointerEvents="none"
+            >
+              <Cone size={c.size} />
+            </View>
+          ))}
 
           {/* the campfire in the middle */}
           <Animated.View
@@ -332,15 +410,6 @@ export function BuildBarrier({ challenge, ageBand, onComplete, onEvent, compact 
 }
 
 const styles = StyleSheet.create({
-  yard: {
-    position: 'absolute',
-    left: -14,
-    right: -14,
-    backgroundColor: palette.grassDark,
-    borderRadius: 90,
-    overflow: 'hidden',
-  },
-  yardLip: { position: 'absolute', left: 0, right: 0, top: 0, height: 10, backgroundColor: palette.grass },
   cone: { position: 'absolute' },
   fire: { position: 'absolute', alignItems: 'center', justifyContent: 'center' },
   mathRow: {

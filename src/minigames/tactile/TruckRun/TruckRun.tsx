@@ -32,6 +32,7 @@ import { Tray } from '@/ui';
 import { GameShell, useHintLadder, useMeasuredBox, useSpokenPrompt } from '../shared';
 import { GateLabels } from './GateLabels';
 import { RoadScene } from './RoadScene';
+import { SkyBackdrop } from './SkyBackdrop';
 import { advance, createRun, questionAt, runFrame, runSummary, steerBy, type RunEvent, type RunFrame } from './run';
 
 /** How far a finger travels, as a share of the road's width, to change lane. */
@@ -353,6 +354,9 @@ export function TruckRun({ challenge, ageBand, onComplete, onEvent, compact }: M
           style={[StyleSheet.absoluteFill, shakeStyle]}
           testID={`truck-run:q${frame.questionIndex}:a${frame.attempt}:lane${frame.target}:${frame.answered}/${frame.total}`}
         >
+          {/* the sky above the horizon — the road paints only below it, and the
+              GL canvas is transparent, so one drawn sky serves both renderers */}
+          <SkyBackdrop width={box.w} height={box.h} reduced={reduced} />
           <RoadScene
             sample={sample}
             frame={frame}

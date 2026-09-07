@@ -4,7 +4,7 @@ import Animated, { FadeInDown, useAnimatedStyle, useSharedValue, withRepeat, wit
 import type { SceneId } from '@/learning/types';
 import type { MiniGameProps } from '@/minigames/types';
 import { useMiniGameSession } from '@/minigames/useMiniGameSession';
-import { activity, hit, palette, radii, roles, spacing } from '@/theme';
+import { hit, palette, radii, roles, spacing } from '@/theme';
 import { useReducedMotion, useShowTranslation } from '@/hooks';
 import { sfx } from '@/services/audio';
 import { haptics } from '@/services/haptics';
@@ -12,13 +12,13 @@ import { speech } from '@/services/speech';
 import { AnswerTile, Text, TrayRow, VocabIcon, useSideRail } from '@/ui';
 import type { AnswerState } from '@/ui/kit/AnswerTile';
 
-import { Stage } from '@/world';
-
 import { GameFrame } from '../shared/GameFrame';
 import { useGameLayout } from '../shared/layout';
 import { useHintLadder } from '../shared/useHintLadder';
 import { SceneBuilding } from '../shared/art/Props';
+import { RadioRoom, RoomWash, clamp, radioRoomMetrics, usePlayBox } from '../shared/art/Scene';
 import { sceneLabel } from '../shared/labels';
+import { ConsoleControls, ConsoleGrille } from './Console';
 
 const SCENE_IDS: SceneId[] = [
   'bakery',
@@ -176,15 +176,22 @@ export function DispatchDecoder({ challenge, ageBand, onComplete, onEvent, compa
     };
   }, [challenge.correct, hintLadder.level, message]);
 
-  /* on a tablet the tray becomes a side rail, so the radio sizes against the
-     narrower play column — and gets to be bigger inside it */
+  /*
+   * THE ROOM IS MEASURED, NOT GUESSED. Everything below is sized against the
+   * play area the chrome actually leaves, so the console commands it and the
+   * dispatch room is drawn inside the same box — nothing can be cropped by the
+   * task bar and nothing is left as an undressed slab.
+   */
+  const { box, onLayout } = usePlayBox();
+  const room = radioRoomMetrics(box);
   const sideRail = useSideRail();
-  const playWidth = sideRail
-    ? Math.min(layout.width - activity.sidePanelWidth - spacing.sm * 3, 820)
-    : layout.boxWidth;
-  /* the 76 px left inset on a tablet is the lane the crew stands in */
-  const panelWidth = Math.min(playWidth - spacing.md * 2 - (sideRail ? 76 : 0), sideRail ? 620 : layout.s(360));
-  const lcdSize = layout.s(ageBand === 'A' ? 21 : 19) * (sideRail ? 1.15 : 1);
+
+  /* the console fills the desk it stands on, with a cap so a tablet does not
+     get one absurd object */
+  const panelWidth = box.w > 0 ? clamp(box.w - spacing.md * 2, 260, sideRail ? 660 : 520) : layout.s(340);
+  const lcdSize = clamp(panelWidth * (ageBand === 'A' ? 0.062 : 0.056), 17, 30);
+  const controlsH = clamp(panelWidth * 0.17, 40, 84);
+  const headGrille = { w: clamp(panelWidth * 0.3, 60, 190), h: clamp(panelWidth * 0.05, 12, 24) };
 
   const tileState = (option: string): AnswerState => {
     if (state.phase === 'solved') return option === challenge.correct ? 'correct' : 'disabled';
@@ -205,10 +212,12 @@ export function DispatchDecoder({ challenge, ageBand, onComplete, onEvent, compa
 
   /*
    * Captain Bea's bubble stands on the top edge of the tray. While it is up the
-   * play area gives it a lane of its own, so a hint can never sit on the very
-   * thing it is talking about.
+   * console lifts by the same amount, so a hint can never sit on the very
+   * passage it is talking about.
    */
-  const hintLane = hintLadder.showBubble ? layout.s(132) : 0;
+  const hintLane = hintLadder.showBubble ? clamp(box.h * 0.2, 90, 150) : 0;
+  /* the console stands ON the desk, overlapping its front edge by a hair */
+  const restOnDesk = box.h > 0 ? Math.max(spacing.sm, room.deskH - 12 * room.s) : spacing.lg;
 
   return (
     <GameFrame
@@ -216,9 +225,7 @@ export function DispatchDecoder({ challenge, ageBand, onComplete, onEvent, compa
       subtitle={HOW}
       compact={compact}
       onReplay={replay}
-      backdrop={
-                  <Stage variant="radio-room" groundHeight={158} />
-      }
+      backdrop={<RoomWash top="#B3BCD8" bottom="#8C97BD" />}
       hint={{ text: hintText, visible: hintLadder.showBubble, onDismiss: hintLadder.dismiss }}
       tray={
         <TrayRow style={styles.options}>
@@ -239,7 +246,7 @@ export function DispatchDecoder({ challenge, ageBand, onComplete, onEvent, compa
                   <View style={styles.addressTile}>
                     <SceneBuilding
                       scene={scene ?? 'apartments'}
-                      size={layout.s(56)}
+                      size={layout.s(58)}
                       tint={[palette.engineRed, palette.waterCyanDark, palette.leafGreen, palette.purple][i % 4]}
                     />
                     <View style={styles.plate}>
@@ -249,7 +256,7 @@ export function DispatchDecoder({ challenge, ageBand, onComplete, onEvent, compa
                 ) : challenge.mode === 'location' ? (
                   <View style={styles.addressTile}>
                     {sceneId ? (
-                      <SceneBuilding scene={sceneId} size={layout.s(56)} />
+                      <SceneBuilding scene={sceneId} size={layout.s(58)} />
                     ) : (
                       <VocabIcon id={option.toLowerCase().replace(/\s+/g, '-')} size={layout.s(52)} />
                     )}
@@ -264,105 +271,118 @@ export function DispatchDecoder({ challenge, ageBand, onComplete, onEvent, compa
         </TrayRow>
       }
     >
-      {/* the bottom band is the lane the resident firefighter stands in, so
-          decoration never covers the passage */}
-      <View
-        style={[
-          styles.stage,
-          sideRail
-            ? { justifyContent: 'center', paddingBottom: spacing.md + hintLane, paddingLeft: 76 }
-            : { paddingBottom: layout.s(62) + hintLane },
-        ]}
-      >
-        {/*
-         * ONE copy of the call. The radio chassis is drawn here rather than
-         * pulled from a fixed-aspect sprite so the display grows with the
-         * passage instead of squeezing it into a 78 px window.
-         */}
-        <Pressable
-          onPress={revealAll}
-          accessibilityRole="button"
-          accessibilityLabel="Show the whole message"
-          style={[styles.radio, { width: panelWidth }]}
-        >
-          <View style={styles.radioHead}>
-            <Animated.View style={[styles.lamp, lampStyle]} />
-            <Text variant="tiny" color={palette.slateLight}>
-              DISPATCH
-            </Text>
-            <View style={styles.grille}>
-              {[0, 1, 2, 3, 4, 5].map((d) => (
-                <View key={d} style={styles.grilleDot} />
-              ))}
-            </View>
-          </View>
+      <View style={styles.stage} onLayout={onLayout}>
+        {/* the dispatch room, drawn inside the play box so nothing crops */}
+        <RadioRoom box={box} />
 
-          <View style={styles.lcd}>
-            <Text
-              variant="bodyStrong"
-              color="#8CFFC0"
-              style={[styles.lcdText, { fontSize: Math.round(lcdSize), lineHeight: Math.round(lcdSize * 1.42) }]}
-            >
-              {lcdParts ? (
-                <>
-                  {lcdParts.before}
-                  <Text variant="bodyStrong" color={palette.safetyYellow} style={styles.lcdKey}>
-                    {lcdParts.key}
-                  </Text>
-                  {lcdParts.after}
-                </>
-              ) : (
-                shown
-              )}
-              {chars < message.length ? '▌' : ''}
-            </Text>
-
-            {showEs && challenge.messageEs ? (
-              <>
-                <View style={styles.lcdRule} />
-                <Text
-                  variant="small"
-                  color="#8FD8FF"
-                  style={{ fontSize: Math.round(lcdSize * 0.85), lineHeight: Math.round(lcdSize * 1.24) }}
-                >
-                  {challenge.messageEs}
+        <View style={[styles.deck, { paddingBottom: restOnDesk + hintLane }]}>
+          {/*
+           * ONE copy of the call. The chassis is drawn here rather than pulled
+           * from a fixed-aspect sprite so the display grows with the passage
+           * instead of squeezing it into a 78 px window.
+           */}
+          <Pressable
+            onPress={revealAll}
+            accessibilityRole="button"
+            accessibilityLabel="Show the whole message"
+            style={[styles.case, { width: panelWidth }]}
+          >
+            <View style={styles.caseLip} />
+            <View style={styles.face}>
+              <View style={styles.head}>
+                <Animated.View style={[styles.lamp, lampStyle]} />
+                <Text variant="tiny" color={palette.slateLight}>
+                  DISPATCH
                 </Text>
-              </>
-            ) : null}
-          </View>
-        </Pressable>
+                <View style={styles.headSpacer} />
+                <ConsoleGrille width={headGrille.w} height={headGrille.h} />
+              </View>
 
-        {state.phase === 'solved' ? (
-          <Animated.View entering={FadeInDown.springify()} style={styles.stamp}>
-            <Text variant="h3" color={palette.leafGreenDark}>
-              Copy that! Rolling out.
-            </Text>
-          </Animated.View>
-        ) : null}
+              <View style={styles.lcd}>
+                <Text
+                  variant="bodyStrong"
+                  color="#8CFFC0"
+                  style={[styles.lcdText, { fontSize: Math.round(lcdSize), lineHeight: Math.round(lcdSize * 1.42) }]}
+                >
+                  {lcdParts ? (
+                    <>
+                      {lcdParts.before}
+                      <Text variant="bodyStrong" color={palette.safetyYellow} style={styles.lcdKey}>
+                        {lcdParts.key}
+                      </Text>
+                      {lcdParts.after}
+                    </>
+                  ) : (
+                    shown
+                  )}
+                  {chars < message.length ? '▌' : ''}
+                </Text>
+
+                {showEs && challenge.messageEs ? (
+                  <>
+                    <View style={styles.lcdRule} />
+                    <Text
+                      variant="small"
+                      color="#8FD8FF"
+                      style={{ fontSize: Math.round(lcdSize * 0.85), lineHeight: Math.round(lcdSize * 1.24) }}
+                    >
+                      {challenge.messageEs}
+                    </Text>
+                  </>
+                ) : null}
+              </View>
+
+              <ConsoleControls width={panelWidth - spacing.sm * 2 - 12} height={controlsH} />
+            </View>
+          </Pressable>
+
+          {state.phase === 'solved' ? (
+            <Animated.View entering={FadeInDown.springify()} style={styles.stamp}>
+              <Text variant="h3" color={palette.leafGreenDark}>
+                Copy that! Rolling out.
+              </Text>
+            </Animated.View>
+          ) : null}
+        </View>
       </View>
     </GameFrame>
   );
 }
 
 const styles = StyleSheet.create({
+  stage: { flex: 1, alignSelf: 'stretch' },
   /* the call sits directly above the answers, so the screen reads top to
      bottom: hear it, read it, choose */
-  stage: { flex: 1, alignItems: 'center', justifyContent: 'flex-end', gap: spacing.sm },
-  radio: {
-    backgroundColor: palette.navy,
-    borderRadius: radii.panel,
-    padding: spacing.xs,
-    gap: 6,
+  deck: { flex: 1, alignItems: 'center', justifyContent: 'flex-end', gap: spacing.xs },
+  /* the case: a charcoal shell with a navy face, like a piece of kit */
+  case: {
+    backgroundColor: palette.charcoalDark,
+    borderRadius: radii.panel + 6,
+    padding: 6,
     ...roles.lift.interactive,
   },
-  radioHead: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 6, paddingTop: 2 },
-  lamp: { width: 10, height: 10, borderRadius: 5, backgroundColor: palette.waterCyan },
-  grille: { flex: 1, flexDirection: 'row', justifyContent: 'flex-end', gap: 5 },
-  grilleDot: { width: 5, height: 5, borderRadius: 2.5, backgroundColor: palette.navySoft },
+  caseLip: {
+    position: 'absolute',
+    left: 14,
+    right: 14,
+    top: 3,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: 'rgba(255,255,255,0.22)',
+  },
+  face: {
+    backgroundColor: palette.navy,
+    borderRadius: radii.panel,
+    padding: spacing.sm,
+    gap: 8,
+  },
+  head: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 2 },
+  headSpacer: { flex: 1 },
+  lamp: { width: 11, height: 11, borderRadius: 6, backgroundColor: palette.waterCyan },
   lcd: {
     backgroundColor: '#0F3D2A',
     borderRadius: radii.tile,
-    borderWidth: 3,
+    borderWidth: 4,
     borderColor: palette.charcoalDark,
     paddingHorizontal: spacing.sm,
     paddingVertical: spacing.sm,

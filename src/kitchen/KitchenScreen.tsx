@@ -61,10 +61,10 @@ export function KitchenScreen() {
             <Text variant="tiny" color={palette.navyMuted}>
               Captain Bea
             </Text>
+            {/* the Spanish line is spoken, not printed: outside a Spanish lesson a
+                second line of text a five-year-old cannot read sits between them and
+                the room. */}
             <Text variant="bodyStrong">Pick a recipe — I will cook it with you.</Text>
-            <Text variant="small" color={palette.purple}>
-              Elige una receta.
-            </Text>
           </View>
         </Animated.View>
 

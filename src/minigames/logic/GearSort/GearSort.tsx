@@ -11,8 +11,6 @@ import { haptics } from '@/services/haptics';
 import { speech } from '@/services/speech';
 import { EquipmentIcon, Text, TrayRow, equipmentLabel, useSideRail } from '@/ui';
 
-import { Stage } from '@/world';
-
 import { Draggable } from '../shared/Draggable';
 import { GameFrame } from '../shared/GameFrame';
 import { SlotZone } from '../shared/SlotZone';
@@ -20,6 +18,7 @@ import { useGameLayout } from '../shared/layout';
 import { useCaptainLine } from '../shared/speak';
 import { useHintLadder } from '../shared/useHintLadder';
 import { BinBox } from '../shared/art/Props';
+import { RoomWash, StoreRoom, clamp, usePlayBox } from '../shared/art/Scene';
 
 type Item = GearSortChallenge['items'][number];
 
@@ -140,11 +139,16 @@ export function GearSort({ challenge, ageBand, onComplete, onEvent, compact }: M
   );
 
   /* ----- geometry: the bins are the play area, so they take the room ----- */
+  const { box, onLayout } = usePlayBox();
   const binCount = Math.max(1, challenge.bins.length);
   const binGap = spacing.xs;
-  const binWidth = Math.min(
-    sideRail ? 224 : layout.s(168),
-    (playWidth - spacing.md * 2 - (binCount - 1) * binGap) / binCount,
+  const shelfWidth = box.w > 0 ? box.w : playWidth;
+  /* a bin is as big as the floor and the plaque row allow, capped so a tablet
+     never gets one absurd bin */
+  const binWidth = clamp(
+    (shelfWidth - spacing.sm * 2 - (binCount - 1) * binGap) / binCount,
+    72,
+    Math.min(sideRail ? 250 : 210, box.h > 0 ? box.h * 0.5 : 210),
   );
   /*
    * BinBox is drawn in a 120 × 100 box and keeps its aspect ratio, so any other
@@ -167,9 +171,11 @@ export function GearSort({ challenge, ageBand, onComplete, onEvent, compact }: M
     return `Look at the ${by}. The ${itemLabel(focusItem).toLowerCase()} belongs in the ${bin?.label ?? 'right'} bin.`;
   }, [challenge.bins, challenge.by, focusItem]);
 
-  /* while a hint is up the bins move up out of its way — a hint must never
-     cover the bin name it is telling the child to aim for */
-  const hintLane = hintLadder.showBubble ? layout.s(132) : 0;
+  /* while a hint is up the bench and the bins ride up out of its way together —
+     a hint must never cover the bin name it is telling the child to aim for */
+  const hintLane = hintLadder.showBubble ? clamp(box.h * 0.2, 90, 140) : 0;
+  const benchLift = clamp(box.h * 0.1, 26, 74) + hintLane;
+  const benchY = box.h > 0 ? box.h - benchLift : 0;
 
   return (
     <GameFrame
@@ -179,9 +185,7 @@ export function GearSort({ challenge, ageBand, onComplete, onEvent, compact }: M
       compact={compact}
       onReplay={replay}
       progress={{ done, total: challenge.items.length }}
-      backdrop={
-                  <Stage variant="store-room" groundHeight={150} />
-      }
+      backdrop={<RoomWash top="#F5E9D0" bottom="#D8DEEC" />}
       hint={{ text: hintText, visible: hintLadder.showBubble, onDismiss: hintLadder.dismiss }}
       tray={
         <TrayRow style={styles.tokens}>
@@ -217,22 +221,24 @@ export function GearSort({ challenge, ageBand, onComplete, onEvent, compact }: M
         </TrayRow>
       }
     >
-      {/* the bottom band is the lane the resident firefighter stands in, so a
-          bin label is never behind a character */}
-      <View
-        style={[
-          styles.bench,
-          sideRail
-            ? { justifyContent: 'center', paddingBottom: spacing.md + hintLane }
-            : { paddingBottom: layout.s(62) + hintLane },
-        ]}
-      >
+      <View style={styles.stage} onLayout={onLayout}>
+        {/* the store room the bins stand in, drawn inside the play box */}
+        <StoreRoom box={box} benchY={box.h > 0 ? benchY : undefined} />
+        <View style={[styles.bench, { paddingBottom: benchLift }]}>
         <View style={[styles.bins, { gap: binGap }]}>
           {challenge.bins.map((bin, i) => {
             const contents = challenge.items.filter((it) => state.placed[it.id] === bin.id);
             const tint = bin.color ?? [palette.waterCyan, palette.safetyYellow, palette.leafGreen, palette.purple][i % 4] ?? palette.waterCyan;
             return (
               <View key={bin.id} style={[styles.binCol, { width: binWidth }]}>
+                {/* one plaque per bin, in one language: English on the label,
+                    Spanish only ever spoken (Captain Bea still says both) */}
+                <View style={styles.plaque}>
+                  <Text variant="bodyStrong" center numberOfLines={2} style={{ fontSize: layout.s(15), lineHeight: layout.s(19) }}>
+                    {bin.label}
+                  </Text>
+                </View>
+
                 <SlotZone
                   id={`bin:${bin.id}`}
                   hitPad={layout.s(14)}
@@ -258,21 +264,10 @@ export function GearSort({ challenge, ageBand, onComplete, onEvent, compact }: M
                     ))}
                   </View>
                 </SlotZone>
-
-                {/* one plaque per bin: the name, and the Spanish only when asked for */}
-                <View style={styles.plaque}>
-                  <Text variant="bodyStrong" center numberOfLines={2} style={{ fontSize: layout.s(15), lineHeight: layout.s(19) }}>
-                    {bin.label}
-                  </Text>
-                  {showEs && bin.labelEs ? (
-                    <Text variant="small" color={roles.ink.translation} center numberOfLines={1} style={{ fontSize: layout.s(13) }}>
-                      {bin.labelEs}
-                    </Text>
-                  ) : null}
-                </View>
               </View>
             );
           })}
+          </View>
         </View>
       </View>
     </GameFrame>
@@ -282,6 +277,7 @@ export function GearSort({ challenge, ageBand, onComplete, onEvent, compact }: M
 const styles = StyleSheet.create({
   /* the bins sit right above the tray: the shortest possible drag, and no
      empty floor between the thing you pick up and the place it goes */
+  stage: { flex: 1, alignSelf: 'stretch' },
   bench: { flex: 1, justifyContent: 'flex-end', paddingHorizontal: spacing.sm },
   bins: { flexDirection: 'row', justifyContent: 'center', alignItems: 'flex-start' },
   binCol: { alignItems: 'center', gap: 6 },

@@ -11,9 +11,18 @@ import { haptics } from '@/services/haptics';
 import { speech } from '@/services/speech';
 import { Rookie } from '@/characters';
 import { Stage } from '@/world';
-import { WallPanel } from '@/world/scenes';
 import { Animal, LadderRails } from '@/world/props';
-import { GameShell, clampNum, minJumps, useHintLadder, useMeasuredBox, useSpokenPrompt, useStage } from '../shared';
+import {
+  GameShell,
+  PlayGround,
+  TownFacade,
+  clampNum,
+  minJumps,
+  useHintLadder,
+  useMeasuredBox,
+  useSpokenPrompt,
+  useStage,
+} from '../shared';
 
 /* ------------------------------------------------------------------ */
 /* State machine: idle → hopping → (overshoot → idle) | done            */
@@ -109,20 +118,66 @@ export function NumberLadder({ challenge, ageBand, onComplete, onEvent, compact 
   const subtitle = compact ? undefined : ageBand === 'C' ? 'Fewest jumps earns a star bonus.' : 'Tap a jump button to hop.';
   useSpokenPrompt(`Climb to ${target}`, { speaker: 'bea' });
 
-  /* ---- geometry ---- */
+  /* ---- geometry ----
+   * Two things were wrong here. The ladder leaned on a tan panel in a screen
+   * half full of sky; and for bands B and C the number line runs 0…100, so a
+   * ladder drawn rung-for-rung was 1 600 px tall in a 500 px box — the child
+   * saw rungs 0 to 28 and the flag they were climbing to was off the top of the
+   * screen. So the ladder now shows a *window* of the line around the start and
+   * the target, wide enough that a jump can never land out of sight, and it
+   * leans on a building that runs the full width of the play area. */
+  const maxJump = useMemo(() => Math.max(1, ...jumps.map((j) => Math.abs(j))), [jumps]);
+
   const geo = useMemo(() => {
     const w = Math.max(1, box.w);
     const h = Math.max(1, box.h);
-    // critique: the top and bottom rung labels were clipped by the banner and
-    // the grass. Reserve a real gutter for them at both ends.
-    const topPad = Math.max(h * 0.07, 26);
+
+    const ladderW = Math.max(58, Math.min(stage.s(80), w * 0.24));
+    const rookieH = Math.max(48, Math.min(stage.s(74), ladderW * 1.1)) * 1.7;
+    /* the climber stands ON the top rung, so the gutter above it is his height */
+    const topPad = Math.max(h * 0.07, 26, rookieH * 0.86);
     const botPad = Math.max(h * 0.1, 44);
-    const unitPx = Math.max(16, (h - topPad - botPad) / span);
-    const ladderW = Math.max(58, Math.min(stage.s(78), w * 0.24));
-    const ladderX = w * 0.36;
+    const avail = Math.max(60, h - topPad - botPad);
+
+    /* the visible window: everything between start and target, plus a jump's
+       worth of room at each end so an overshoot still lands on a drawn rung */
+    let lo = Math.max(min, Math.min(start, target) - maxJump);
+    let hi = Math.min(max, Math.max(start, target) + maxJump);
+    const cap = stage.s(34);
+    /* ...then widened until the ladder fills the height it was given */
+    for (let guard = 0; guard < 200 && avail / Math.max(1, hi - lo) > cap && (lo > min || hi < max); guard += 1) {
+      if (lo > min) lo -= 1;
+      if (hi < max) hi += 1;
+    }
+    const rungs = Math.max(1, hi - lo);
+    const unitPx = Math.max(9, Math.min(cap, avail / rungs));
+    /* label every 1, 2, 5 or 10 — whichever first leaves the pills clear */
+    const step = [1, 2, 5, 10, 20].find((k) => k * unitPx >= 28) ?? 20;
+    /* a rung every whole number is unreadable once the window is 40 wide, so
+       rungs land on a multiple of the unit — always one the labels also use */
+    const rungStep = [1, 2, 5, 10, 20].find((k) => k * unitPx >= 16) ?? 20;
+
+    const gaugeW = Math.max(38, stage.s(48));
+    const ladderX = Math.max(gaugeW + stage.s(14), w * 0.44);
     const bottomY = h - botPad;
-    return { w, h, unitPx, ladderW, ladderX, bottomY, groundY: bottomY + 18, ladderH: unitPx * span };
-  }, [box.h, box.w, span, stage]);
+    return {
+      w,
+      h,
+      lo,
+      hi,
+      rungs,
+      step,
+      rungStep,
+      unitPx,
+      ladderW,
+      ladderX,
+      gaugeW,
+      gaugeX: ladderX - gaugeW - stage.s(6),
+      bottomY,
+      groundY: bottomY + 18,
+      ladderH: unitPx * rungs,
+    };
+  }, [box.h, box.w, max, maxJump, min, stage, start, target]);
 
   const rookieSize = Math.max(48, Math.min(stage.s(74), geo.ladderW * 1.1));
 
@@ -227,11 +282,13 @@ export function NumberLadder({ challenge, ageBand, onComplete, onEvent, compact 
     return () => clearTimeout(t);
   }, [hints, state.phase, state.pos, suggestion, target]);
 
+  const lo = geo.lo;
+  const hi = geo.hi;
   const climberStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: -(pos.value - min) * geo.unitPx + bob.value }],
+    transform: [{ translateY: -(Math.min(hi, Math.max(lo, pos.value)) - lo) * geo.unitPx + bob.value }],
   }));
 
-  const flagTop = geo.bottomY - (target - min) * geo.unitPx;
+  const flagTop = geo.bottomY - (target - geo.lo) * geo.unitPx;
 
   return (
     <GameShell
@@ -273,9 +330,19 @@ export function NumberLadder({ challenge, ageBand, onComplete, onEvent, compact 
     >
       {ready ? (
         <View style={StyleSheet.absoluteFill}>
-          {/* the ladder now leans on a real building, not on the sky */}
-          <View style={[styles.wall, { left: geo.ladderX - stage.s(18), top: 0, width: geo.w - geo.ladderX + stage.s(18), height: geo.groundY }]} pointerEvents="none">
-            <WallPanel width={geo.w - geo.ladderX + stage.s(18)} height={geo.groundY} startX={0.34} cols={2} />
+          {/* the building the ladder leans on, running the full width */}
+          <View style={styles.wall} pointerEvents="none">
+            <TownFacade
+              width={geo.w}
+              height={geo.groundY}
+              tone="cream"
+              rows={Math.max(2, Math.min(5, Math.round(geo.groundY / Math.max(70, stage.s(104)))))}
+              cols={2}
+              awning={false}
+              seed={1}
+              gauge={{ x: geo.gaugeX, w: geo.gaugeW, unitPx: geo.unitPx, units: geo.rungs, baseY: geo.bottomY, markAt: target - geo.lo }}
+              leftGutter={stage.s(12)}
+            />
           </View>
 
           {/* ladder */}
@@ -283,21 +350,32 @@ export function NumberLadder({ challenge, ageBand, onComplete, onEvent, compact 
             style={[styles.ladder, { left: geo.ladderX, top: geo.bottomY - geo.ladderH, width: geo.ladderW, height: geo.ladderH }]}
             pointerEvents="none"
           >
-            <LadderRails width={geo.ladderW} height={geo.ladderH} rungs={span} unitPx={geo.unitPx} markAt={target - min} />
+            <LadderRails
+              width={geo.ladderW}
+              height={geo.ladderH}
+              rungs={Math.max(1, Math.round(geo.rungs / geo.rungStep))}
+              unitPx={geo.unitPx * geo.rungStep}
+              markAt={Math.round((target - geo.lo) / geo.rungStep)}
+            />
           </View>
 
-          {/* rung numbers */}
-          {Array.from({ length: span + 1 }, (_, i) => min + i).map((n) => {
-            const showEvery = span > 14 ? 2 : 1;
-            if ((n - min) % showEvery !== 0) return null;
-            const top = geo.bottomY - (n - min) * geo.unitPx - 12;
+          {/* rung numbers, painted on the gauge band */}
+          {Array.from({ length: geo.rungs + 1 }, (_, i) => geo.lo + i).map((n) => {
             const isTarget = n === target;
+            /* the target always gets a pill; a step label that would sit on top
+               of it stands down, so two numbers never overlap */
+            if (!isTarget && (n % geo.step !== 0 || Math.abs(n - target) * geo.unitPx < 22)) return null;
+            const top = geo.bottomY - (n - geo.lo) * geo.unitPx - 12;
             return (
               <View
                 key={n}
                 style={[
                   styles.rungLabel,
-                  { left: geo.ladderX - stage.s(40), top, backgroundColor: isTarget ? palette.leafGreen : palette.white },
+                  {
+                    left: geo.gaugeX + geo.gaugeW / 2 - 17,
+                    top,
+                    backgroundColor: isTarget ? palette.leafGreen : palette.white,
+                  },
                 ]}
                 pointerEvents="none"
               >
@@ -319,10 +397,8 @@ export function NumberLadder({ challenge, ageBand, onComplete, onEvent, compact 
             </View>
           </View>
 
-          {/* ground — soft lip, never a hard-edged rectangle */}
-          <View style={[styles.ground, { top: geo.groundY, height: Math.max(0, geo.h - geo.groundY + 40) }]} pointerEvents="none">
-            <View style={styles.groundLip} />
-          </View>
+          {/* the pavement the ladder is footed on */}
+          <PlayGround width={geo.w} height={geo.h} top={geo.groundY} variant="pavement" dressed kerb seed={span} />
 
           {/* Rookie — critique #23: the full rig, not a head in a circle */}
           <Animated.View
@@ -345,7 +421,7 @@ const styles = StyleSheet.create({
   ladder: { position: 'absolute' },
   rungLabel: {
     position: 'absolute',
-    minWidth: 30,
+    minWidth: 34,
     alignItems: 'center',
     borderRadius: radii.tag,
     paddingHorizontal: 6,
@@ -354,25 +430,7 @@ const styles = StyleSheet.create({
   },
   flag: { position: 'absolute', alignItems: 'center' },
   flagPet: { marginTop: -6 },
-  wall: { position: 'absolute' },
-  ground: {
-    position: 'absolute',
-    left: -20,
-    right: -20,
-    backgroundColor: '#C4CCDE',
-    borderTopLeftRadius: radii.panel * 3,
-    borderTopRightRadius: radii.panel * 3,
-  },
-  groundLip: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    top: 0,
-    height: 9,
-    backgroundColor: '#DDE3F0',
-    borderTopLeftRadius: radii.panel * 3,
-    borderTopRightRadius: radii.panel * 3,
-  },
+  wall: { position: 'absolute', left: 0, top: 0 },
   rookie: { position: 'absolute', alignItems: 'center' },
   mathRow: {
     alignItems: 'center',

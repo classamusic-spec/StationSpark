@@ -5,15 +5,14 @@ import type { GridPos, HosePiece } from '@/learning/types';
 import type { MiniGameProps } from '@/minigames/types';
 import { useMiniGameSession } from '@/minigames/useMiniGameSession';
 import { posKey, samePos, solveHosePath } from '@/utils/grid';
-import { hit, palette, radii, shadows, spacing, springs } from '@/theme';
+import { hit, palette, radii, spacing, springs } from '@/theme';
 import { sfx } from '@/services/audio';
 import { haptics } from '@/services/haptics';
 import { Button, EquipmentIcon, ResetIcon, Text, TrayRow } from '@/ui';
 
-import { Stage } from '@/world';
-
 import { Draggable } from '../shared/Draggable';
 import { GameFrame } from '../shared/GameFrame';
+import { BoardFrame, RoomWash, TrainingYard, clamp, usePlayBox, yardMetrics } from '../shared/art/Scene';
 import { SlotZone } from '../shared/SlotZone';
 import { useGameLayout } from '../shared/layout';
 import { useCaptainLine } from '../shared/speak';
@@ -193,10 +192,29 @@ export function HosePath({ challenge, ageBand, onComplete, onEvent, compact }: M
     session.progress(Object.keys(state.placed).length, challenge.pieces.length);
   }, [challenge.pieces.length, session, state.placed]);
 
-  /* geometry */
+  /*
+   * GEOMETRY FROM THE MEASURED YARD. The plan board is the activity: the cell
+   * size is solved from both the width and the height the play area really has,
+   * so the grid fills the yard wall instead of floating small on it — with a
+   * cap so a tablet gets a bigger yard rather than one absurd board.
+   */
+  const { box, onLayout } = usePlayBox();
+  const yard = yardMetrics(box);
   const gap = layout.s(5);
-  const boardWidth = Math.min(layout.boxWidth - spacing.md * 2, layout.s(330));
-  const cell = (boardWidth - gap * (grid.cols + 1)) / grid.cols;
+  const framePad = box.w > 0 ? clamp(box.w * 0.035, 9, 20) : 12;
+  const legendH = 34;
+  const groundLift = box.h > 0 ? Math.max(spacing.sm, (box.h - yard.groundTop) * 0.36) : spacing.md;
+  const availW = (box.w > 0 ? box.w : layout.boxWidth) - spacing.sm * 2 - framePad * 2;
+  const availH = (box.h > 0 ? box.h : 420) - legendH - groundLift - framePad * 2 - spacing.sm;
+  const cell = clamp(
+    Math.min(
+      (availW - gap * (grid.cols + 1)) / grid.cols,
+      (availH - gap * (grid.rows + 1)) / grid.rows,
+    ),
+    38,
+    112,
+  );
+  const boardWidth = cell * grid.cols + gap * (grid.cols + 1);
   const boardHeight = cell * grid.rows + gap * (grid.rows + 1);
 
   const onDropPiece = useCallback(
@@ -250,9 +268,7 @@ export function HosePath({ challenge, ageBand, onComplete, onEvent, compact }: M
       title="Lay the Hose"
       subtitle={ageBand === 'A' ? undefined : 'Drag pieces in, tap to turn them.'}
       compact={compact}
-      backdrop={
-                  <Stage variant="yard" groundHeight={150} />
-      }
+      backdrop={<RoomWash top="#7FC8FA" bottom="#C9D0E2" />}
       hint={{ text: hintText, visible: hintLadder.showBubble && state.phase === 'building', onDismiss: hintLadder.dismiss }}
       tray={
         <View style={styles.trayInner}>
@@ -294,7 +310,17 @@ export function HosePath({ challenge, ageBand, onComplete, onEvent, compact }: M
         </View>
       }
     >
-      <View style={styles.stage}>
+      <View style={styles.stage} onLayout={onLayout}>
+        {/* the training yard the plan board is mounted in */}
+        <TrainingYard box={box} />
+
+        <View style={[styles.deck, { paddingBottom: groundLift }]}>
+        <BoardFrame
+          width={boardWidth + framePad * 2}
+          height={boardHeight + framePad * 2}
+          tone="wood"
+          pad={framePad}
+        >
         <View style={[styles.board, { width: boardWidth, height: boardHeight }]}>
           {cells.map((pos) => {
             const key = posKey(pos);
@@ -362,6 +388,8 @@ export function HosePath({ challenge, ageBand, onComplete, onEvent, compact }: M
           })}
         </View>
 
+        </BoardFrame>
+
         {state.phase === 'done' ? (
           <Animated.View entering={FadeIn} style={styles.banner}>
             <Text variant="h3" color={palette.leafGreenDark} center>
@@ -370,12 +398,13 @@ export function HosePath({ challenge, ageBand, onComplete, onEvent, compact }: M
           </Animated.View>
         ) : (
           <View style={styles.legend}>
-            <EquipmentIcon id="hose" size={layout.s(26)} />
+            <EquipmentIcon id="hose" size={layout.s(24)} />
             <Text variant="tiny" color={palette.navySoft}>
               {remaining.length} piece{remaining.length === 1 ? '' : 's'} left
             </Text>
           </View>
         )}
+        </View>
       </View>
     </GameFrame>
   );
@@ -406,12 +435,9 @@ function RotatingPiece({
 }
 
 const styles = StyleSheet.create({
-  stage: { alignItems: 'center', justifyContent: 'center', gap: spacing.sm },
-  board: {
-    backgroundColor: palette.tan,
-    borderRadius: radii.card,
-    ...shadows.card,
-  },
+  stage: { flex: 1, alignSelf: 'stretch' },
+  deck: { flex: 1, alignItems: 'center', justifyContent: 'flex-end', gap: spacing.xs },
+  board: { backgroundColor: palette.tan, borderRadius: radii.card },
   cell: {
     position: 'absolute',
     borderRadius: 10,
@@ -427,7 +453,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.xs,
   },
-  legend: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
+  legend: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    backgroundColor: 'rgba(255,255,255,0.86)',
+    borderRadius: radii.pill,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 2,
+    minHeight: 26,
+  },
   trayInner: { gap: spacing.xs },
   pieceCard: {
     alignItems: 'center',

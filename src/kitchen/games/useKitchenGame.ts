@@ -336,3 +336,65 @@ export function nearestTarget(
   });
   return best;
 }
+
+/* ------------------------------------------------------------------ */
+/* Packing things into the room the stage actually has                  */
+/* ------------------------------------------------------------------ */
+
+export interface GridRegion {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
+
+export interface PackedGrid {
+  /** one cell's side, in design units */
+  item: number;
+  cols: number;
+  rows: number;
+  /** top-left of each cell, in design units */
+  cells: { x: number; y: number }[];
+  /** the rows' baselines — where a shelf plank goes under each row */
+  rowY: number[];
+  /** the block's real width, centred in the region */
+  width: number;
+}
+
+/**
+ * Lay `n` square things out inside a region as LARGE as they will go.
+ *
+ * Kitchen shelves used to be a fixed 7-across row of 50 px tokens, which meant a
+ * phone got a half-empty shelf of small tokens and a tablet got the same small
+ * tokens with a metre of bare wood beside them. Choosing the column count that
+ * maximises the cell instead means the shelf is always full and the pieces are
+ * always as big as the room allows — and it keeps every draggable comfortably
+ * over the 64 px minimum on a phone.
+ */
+export function packGrid(n: number, region: GridRegion, opts: { gap?: number; max?: number; min?: number } = {}): PackedGrid {
+  const { gap = 8, max = 96, min = 34 } = opts;
+  const count = Math.max(1, n);
+  let best = { item: 0, cols: 1, rows: count };
+  for (let cols = 1; cols <= count; cols += 1) {
+    const rows = Math.ceil(count / cols);
+    const byW = (region.w - gap * (cols - 1)) / cols;
+    const byH = (region.h - gap * (rows - 1)) / rows;
+    const item = Math.min(byW, byH, max);
+    if (item > best.item) best = { item, cols, rows };
+  }
+  const item = Math.max(min, best.item);
+  const { cols, rows } = best;
+  const width = cols * item + gap * (cols - 1);
+  const blockH = rows * item + gap * (rows - 1);
+  const top = region.y + Math.max(0, (region.h - blockH) / 2);
+  const left = region.x + (region.w - width) / 2;
+  /* every slot in the block, whether an item wants it or not — the leftovers on
+     the last row are what a caller fills with jars, so a shelf is never a bare
+     run of wood */
+  const cells: { x: number; y: number }[] = [];
+  for (let i = 0; i < cols * rows; i += 1) {
+    cells.push({ x: left + (i % cols) * (item + gap), y: top + Math.floor(i / cols) * (item + gap) });
+  }
+  const rowY = Array.from({ length: rows }, (_, r) => top + r * (item + gap) + item);
+  return { item, cols, rows, cells, rowY, width };
+}
