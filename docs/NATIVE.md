@@ -218,11 +218,27 @@ only the human-facing `version`.
 Everything below was found by reading the code and by bundling for `android` and `ios` with Metro and
 Hermes. Nothing below has been observed on hardware.
 
+> **Status, later pass.** Risks **1** and **5** have since been FIXED — see the
+> ✅ notes on each. Both were still described as open here long after the code
+> changed, which is exactly how a stale risk register gets someone hurt, so
+> check the code before trusting an entry below. Risks 2, 3, 4, 6 and 7 remain
+> open. **Nothing here has been verified on hardware yet; no device run of this
+> app has ever happened.**
+
 ---
 
-### 🔴 1. The native bundle does not build at all — `app/_layout.tsx:27`
+### ✅ 1. ~~The native bundle does not build at all~~ — FIXED
 
-**This is a hard blocker: `npx expo run:android`, `run:ios` and every EAS build fail today.**
+**Was a hard blocker; it is not any more.** The Skia web loader is now split
+across `src/services/skiaWeb.ts` and `src/services/skiaWeb.native.ts`, so Metro
+resolves the CanvasKit import only on web and never drags Node's `fs` into the
+native bundle. `app/_layout.tsx` calls `loadSkia()` and lets the platform pick
+the file.
+
+Do NOT "fix" this by hiding the specifier in a variable to defeat Metro's static
+resolution — that gets the bundle built and then dies in Hermes at runtime,
+which is strictly worse than failing at build time. The original diagnosis
+follows, for anyone who reintroduces the pattern.
 
 ```
 Error: Unable to resolve module fs from node_modules/canvaskit-wasm/bin/full/canvaskit.js
@@ -332,7 +348,15 @@ failure honest.
 
 ---
 
-### 🟠 5. `Speech.stop()` immediately before `Speech.speak()` drops the new line on Android — `src/services/speech.ts:39-40`
+### ✅ 5. ~~`Speech.stop()` immediately before `Speech.speak()` drops the new line on Android~~ — FIXED
+
+`src/services/speech.ts` now awaits the stop before speaking:
+`Promise.resolve(Speech.stop()).then(speak, speak)`. The original diagnosis
+follows; it matters because the swallowed line was usually the Spanish half of a
+vocabulary pair, chained off an `onDone` that then never fired — so the app
+silently stopped teaching Spanish rather than visibly breaking.
+
+#### Original diagnosis — `src/services/speech.ts:39-40`
 
 ```ts
 Speech.stop();          // returns a Promise; not awaited

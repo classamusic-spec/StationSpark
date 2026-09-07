@@ -128,7 +128,7 @@ The app targets under-13s, so it lands in the **App Store Kids Category** and
 - **Apple privacy manifest** (`PrivacyInfo.xcprivacy`) — required since May 2024.
   AsyncStorage uses a declared-reason API (`UserDefaults`). Expo generates a
   manifest during prebuild; verify it lists the right reason codes.
-- `app.json` version is **`0.1.0`**.
+- `app.json` version is **`0.1.0`**. Ship as `1.0.0`.
 
 ---
 
@@ -139,7 +139,8 @@ The app targets under-13s, so it lands in the **App Store Kids Category** and
   this installed has no answer.
 - **No progress report.** The Grown-Ups screen has counters, not a "what did they
   practise this week" view. This is the #1 retention feature for a paid kids'
-  learning app.
+  learning app — and the data is now trustworthy enough to build it on, which it
+  was not before the mastery arithmetic was fixed.
 - **One profile.** Siblings share a save. Multi-profile is table stakes here.
 - **No settings** for music volume vs SFX volume, speech on/off, text size, or an
   explicit reduce-motion toggle. Reduced motion *is* respected in 101 places in
@@ -163,18 +164,36 @@ The app targets under-13s, so it lands in the **App Store Kids Category** and
 ## 7. Testing
 
 **Strong for a web/unit surface:**
-- 1010 unit tests across 27 suites.
+- **1,237 unit tests across 31 suites**, including a `mathTruth` suite that
+  proves generator answers are correct and distractors are wrong across every
+  age band and thousands of seeds. For a maths teaching app that is the test
+  that matters most.
 - A Playwright play-harness (`tools/qa/play.mjs`) drives all 27 mini-games, 3
   missions, 2 recipe runs and the whole shift flow to completion in headless
-  Chromium — 33/33 passing with zero console issues.
+  Chromium — **33/33 passing with zero console issues**.
 - Character art is proven pixel-identical to the authored SVG by
-  `npm run art:verify`.
+  `npm run art:verify` (360,000 pixels per character).
 
-**Entirely absent:**
+**The gap the tests do not cover — and it is where every real defect was found.**
+A read-only audit produced **29 findings: 1 blocker, 7 high, 10 medium, 11 low**.
+Every single one lived in a layer nothing tested: persistence, React lifecycle,
+gesture edge cases, accessibility, and the reporting parents read. The unit
+tests were green the whole time. Notably:
+- The save file had no version, no migration and a shallow merge — the next
+  schema change would have blanked every existing player's Badge Wall.
+- The mastery percentage shown to parents was arithmetically a constant.
+- A child could not leave an activity while a question was on screen.
+- `/dev/*` shipped in the production bundle with an unguarded "Reset store".
+
+All of the above are now fixed, with tests. The lesson for the roadmap: **the
+next round of testing effort belongs on persistence, navigation and
+accessibility, not on more generator coverage.**
+
+**Still entirely absent:**
 - Native tests. Device tests. Screen-reader tests.
-- Performance profiling on a low-end phone — the app draws a *lot* of SVG, and
+- Performance profiling on a low-end phone — the app draws a *lot* of SVG and
   nobody has measured frame time on hardware.
-- No CI. Nothing runs these checks automatically on push.
+- No CI. Nothing runs any of these automatically on push.
 
 ---
 
