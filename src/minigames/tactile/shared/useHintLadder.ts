@@ -60,17 +60,29 @@ export function useHintLadder(onHint?: () => void): HintLadder {
     [onHint],
   );
 
+  /*
+   * The side effects live OUTSIDE the updater on purpose.
+   *
+   * They used to sit inside `setMisses((m) => …)`, which React documents as a
+   * pure function that it may call more than once — twice under StrictMode, and
+   * again whenever a concurrent render is rebased. `raise()` plays a sound,
+   * speaks a line and calls the session's `hint()`, which costs the child a
+   * star. `counted.current` kept the star safe, but the beep and Captain Bea's
+   * line could double up, so a single miss occasionally sounded like two.
+   *
+   * The hook already owns `misses` in state, so computing the next value here
+   * is both simpler and correct. (The logic-side ladder gets this right a
+   * different way: it derives the level from a prop and raises in an effect.)
+   */
   const miss = useCallback(
     (hint?: HintText) => {
-      setMisses((m) => {
-        const next = m + 1;
-        if (next >= 3) setAssist(true);
-        if (next >= 2 && hint) raise(hint);
-        return next;
-      });
+      const next = misses + 1;
+      setMisses(next);
+      if (next >= 3) setAssist(true);
+      if (next >= 2 && hint) raise(hint);
       haptics.nudge();
     },
-    [raise],
+    [misses, raise],
   );
 
   const nudge = useCallback(

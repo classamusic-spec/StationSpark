@@ -104,6 +104,13 @@ const OVERLAP = 26;
 /** `Button size="xl"` — face + edge */
 const CTA_HEIGHT = 85;
 /**
+ * The mission chrome the runner floats over this screen: `TopBar` at
+ * `insets.top + 8`, 56 tall. The reading column starts below it, because on a
+ * landscape phone the sheet is taller than the room it has and its headline
+ * slid up underneath the star counter.
+ */
+const CHROME_H = 8 + 56 + spacing.xs;
+/**
  * `SceneHero bleed` carries sky above the roof and pavement below the kerb, and
  * it is sliced to fill, so the whole storefront survives in any box between
  * about 1 : 2 and 6 : 5. Outside that the roof goes over the top edge — hence
@@ -214,10 +221,10 @@ export function MissionBrief({ mission, onStart }: MissionBriefProps) {
   const { width, height, contentWidth } = layout;
 
   /**
-   * In landscape a full-width band of picture is only ever a couple of hundred
-   * px tall — far too short a box for a building — so past this the picture and
-   * the reading column stand side by side and the extra width becomes a bigger
-   * storefront, never a wider paragraph.
+   * In landscape the picture cannot sit *above* the card: a full-width band of
+   * storefront is only ever a couple of hundred px tall, far too short a box for
+   * a building. So past this it goes *behind* the card and fills the screen, and
+   * the extra width becomes a bigger storefront rather than a wider paragraph.
    */
   const wide = layout.landscape && width >= 720;
   /** a short phone drops the practice chips rather than pushing the CTA off */
@@ -378,7 +385,7 @@ export function MissionBrief({ mission, onStart }: MissionBriefProps) {
         <View
           style={[
             styles.wideCol,
-            { width: colW, top: insets.top + spacing.sm, bottom: footPad + spacing.md, right: spacing.lg },
+            { width: colW, top: insets.top + CHROME_H, bottom: footPad + spacing.md, right: spacing.lg },
           ]}
         >
           <ScrollView contentContainerStyle={styles.wideColInner} showsVerticalScrollIndicator={false}>

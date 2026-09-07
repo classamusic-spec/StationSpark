@@ -33,7 +33,15 @@ import { BeatErrorBoundary } from './BeatErrorBoundary';
 
 export type MinigameBeat = Extract<MissionBeat, { type: 'minigame' }>;
 
-/** Result used when a beat has to be skipped — full marks, never a penalty. */
+/**
+ * Result used when a beat has to be skipped — full marks, never a penalty.
+ *
+ * `correct` is deliberately absent, and must stay absent. It is the optional
+ * count of questions answered right that feeds the mastery percentage a parent
+ * reads in Grown-Ups; a beat nobody played has no such count, and inventing one
+ * (even a flattering one) would move that number on the strength of a game that
+ * never appeared. The stars are the child's — the report card is not.
+ */
 export function skipResult(beat: MinigameBeat): MiniGameResult {
   return {
     kind: beat.game,
