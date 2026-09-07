@@ -276,7 +276,7 @@ export function EquipmentCheck({ challenge, ageBand, onComplete, onEvent, compac
       compact={compact}
       backdrop={<RoomWash top="#F2E5CB" bottom="#C6CEDF" />}
       hint={{ text: hintText, visible: hintLadder.showBubble && state.phase === 'packing', onDismiss: hintLadder.dismiss }}
-      overlay={
+      playOverlay={
         askItem ? (
           <AskQuestion
             visible={state.phase === 'ask'}

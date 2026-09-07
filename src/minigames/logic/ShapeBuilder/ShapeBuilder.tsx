@@ -410,7 +410,7 @@ export function ShapeBuilder({ challenge, ageBand, onComplete, onEvent, compact 
       compact={compact}
       backdrop={<RoomWash top="#F6EBD5" bottom="#C58B4E" />}
       hint={{ text: hintText, visible: hintLadder.showBubble && state.phase === 'building', onDismiss: hintLadder.dismiss }}
-      overlay={
+      playOverlay={
         challenge.askCount && askShape ? (
           <AskQuestion
             visible={state.phase === 'ask'}

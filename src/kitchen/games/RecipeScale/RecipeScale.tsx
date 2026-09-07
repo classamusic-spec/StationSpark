@@ -1,6 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
-import Svg, { Circle, Defs, Ellipse, LinearGradient, Path, Rect, Stop } from 'react-native-svg';
 import { GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   FadeInDown,
@@ -23,6 +22,7 @@ import { GrownUpChip } from '@/ui/kit/Chip';
 import { VocabIcon } from '@/ui/kit/VocabIcon';
 
 import { CrewFigure } from '@/world/scenes';
+import { POT_ASPECT, StockPot } from '../../parts/Cookware';
 import { FluidStage, at, type FluidBox } from '../../parts/Stage';
 import { RecipeCardFrame } from '../../parts/RecipeCardFrame';
 import {
@@ -57,8 +57,6 @@ const CREW = [
 
 /** half turns of the spoon that cook the pot */
 const STIRS_TO_COOK = 6;
-/** the pot drawing's width ÷ height */
-const POT_ASPECT = 236 / 168;
 
 type Phase = 'set' | 'stir' | 'done';
 
@@ -407,46 +405,7 @@ function StirScene({
 
 /** The same enamelled stock pot the Soup Pot cooks in — one pot, one kitchen. */
 function ScalePotArt({ size, bubbling }: { size: number; bubbling: boolean }) {
-  return (
-    <Svg width={size} height={size / POT_ASPECT} viewBox="0 0 236 168">
-      <Defs>
-        <LinearGradient id="rsPot" x1="0" y1="0" x2="1" y2="0">
-          <Stop offset="0" stopColor={palette.engineRedDark} />
-          <Stop offset="0.34" stopColor={palette.engineRed} />
-          <Stop offset="1" stopColor={palette.engineRedDark} />
-        </LinearGradient>
-      </Defs>
-      <Ellipse cx={118} cy={160} rx={94} ry={9} fill="rgba(31,42,90,0.16)" />
-      <Rect x={0} y={52} width={34} height={18} rx={9} fill="#6B76A8" />
-      <Rect x={4} y={55} width={22} height={5} rx={2.5} fill="rgba(255,255,255,0.35)" />
-      <Rect x={202} y={52} width={34} height={18} rx={9} fill="#6B76A8" />
-      <Rect x={206} y={55} width={22} height={5} rx={2.5} fill="rgba(255,255,255,0.35)" />
-      <Circle cx={32} cy={61} r={4} fill="#D9DDEC" />
-      <Circle cx={204} cy={61} r={4} fill="#D9DDEC" />
-      <Path d="M25 40h186l-13 100a12 12 0 0 1-12 10H50a12 12 0 0 1-12-10z" fill="url(#rsPot)" />
-      <Path d="M31 92h174l-3 22H34z" fill="#FFF3DC" />
-      <Circle cx={90} cy={103} r={5} fill={palette.engineRed} opacity={0.55} />
-      <Circle cx={118} cy={103} r={5} fill={palette.safetyYellow} />
-      <Circle cx={146} cy={103} r={5} fill={palette.engineRed} opacity={0.55} />
-      <Path d="M43 56c5 30 7 58 7 84" stroke="rgba(255,255,255,0.30)" strokeWidth={8} strokeLinecap="round" fill="none" />
-      <Path d="M196 58c-4 28-6 54-6 80" stroke="rgba(31,42,90,0.14)" strokeWidth={9} strokeLinecap="round" fill="none" />
-      <Path d="M44 140h148l-2 8a10 10 0 0 1-10 8H56a10 10 0 0 1-10-8z" fill={palette.engineRedDark} />
-      <Ellipse cx={118} cy={42} rx={97} ry={21} fill="#D5D9E8" />
-      <Ellipse cx={118} cy={39} rx={97} ry={21} fill={palette.white} />
-      <Ellipse cx={118} cy={40} rx={85} ry={17} fill={palette.engineRedDark} />
-      <Ellipse cx={118} cy={42} rx={81} ry={15} fill="#7E1710" />
-      <Ellipse cx={118} cy={48} rx={73} ry={12} fill="#E8952F" />
-      <Ellipse cx={118} cy={46} rx={73} ry={12} fill="#FFC463" />
-      <Ellipse cx={98} cy={43} rx={22} ry={4} fill="rgba(255,255,255,0.35)" />
-      {bubbling ? (
-        <>
-          <Circle cx={88} cy={46} r={4.6} fill="rgba(255,255,255,0.62)" />
-          <Circle cx={134} cy={50} r={3.4} fill="rgba(255,255,255,0.5)" />
-          <Circle cx={154} cy={44} r={3} fill="rgba(255,255,255,0.55)" />
-        </>
-      ) : null}
-    </Svg>
-  );
+  return <StockPot size={size} bubbling={bubbling} level="low" />;
 }
 
 function CrewRow({

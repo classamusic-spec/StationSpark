@@ -1,5 +1,5 @@
 import React from 'react';
-import { StyleSheet, type StyleProp, type ViewStyle } from 'react-native';
+import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 import { ActivityFrame } from '@/ui';
 import { DragArena } from './DragArena';
 
@@ -26,6 +26,17 @@ export interface GameFrameProps {
   hint?: { text: string; es?: string; visible: boolean; onDismiss?: () => void };
   /** absolute layer above everything (AskQuestion, celebration) */
   overlay?: React.ReactNode;
+  /**
+   * An absolute layer over the PLAY AREA only.
+   *
+   * `overlay` covers the whole frame, which is right for a celebration and
+   * wrong for a question: the card centred itself on the screen and landed on
+   * top of the tray — in Equipment Check it covered the very row of items
+   * ("x3 x4 x3") the question was asking the child to count. A question is
+   * about what is in the play area, so it belongs in the play area, with the
+   * things it is asking about still visible beneath and beside it.
+   */
+  playOverlay?: React.ReactNode;
   bodyStyle?: StyleProp<ViewStyle>;
 }
 
@@ -55,6 +66,7 @@ export function GameFrame({
   trayStyle,
   hint,
   overlay,
+  playOverlay,
   bodyStyle,
 }: GameFrameProps) {
   return (
@@ -76,6 +88,11 @@ export function GameFrame({
         playStyle={bodyStyle}
       >
         {children}
+        {playOverlay ? (
+          <View style={styles.playOverlay} pointerEvents="box-none">
+            {playOverlay}
+          </View>
+        ) : null}
       </ActivityFrame>
     </DragArena>
   );
@@ -83,4 +100,6 @@ export function GameFrame({
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
+  /* under the task bar (zIndex 100) so the way out is never covered */
+  playOverlay: { position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, zIndex: 80 },
 });

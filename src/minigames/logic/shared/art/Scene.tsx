@@ -26,7 +26,7 @@
 import React, { memo, useCallback, useState } from 'react';
 import { StyleSheet, View, type LayoutChangeEvent, type StyleProp, type ViewStyle } from 'react-native';
 import Animated, { useAnimatedStyle } from 'react-native-reanimated';
-import Svg, { Circle, Defs, Ellipse, G, LinearGradient, Path, Rect, Stop } from 'react-native-svg';
+import Svg, { Circle, Defs, Ellipse, G, LinearGradient, Path, RadialGradient, Rect, Stop } from 'react-native-svg';
 import { palette, radii } from '@/theme';
 import { useLoop } from '@/hooks';
 
@@ -364,6 +364,143 @@ export function Paving({
     }
   }
   return <Path d={d} fill={tone} />;
+}
+
+/* ------------------------------------------------------------------ */
+/* Light and material                                                  */
+/* ------------------------------------------------------------------ */
+
+/**
+ * THE LIGHT IN THE ROOM.
+ *
+ * Every surface in this file is lit from the upper left (ART_DIRECTION), but a
+ * vertical gradient on a wall only says "brighter at the top" — it is ambient,
+ * not directional, and a room built out of ambient gradients still reads as a
+ * sheet of stickers. This is the envelope that ties a whole scene into ONE
+ * light: a soft key wash falling in from the top-left corner and the ambient
+ * occlusion that gathers in the opposite one.
+ *
+ * It is drawn LAST in a room, over the props, because that is what makes it
+ * lighting rather than another painted shape — the near corner of the floor,
+ * the shaded flank of a shopfront and the underside of a desk all darken
+ * together. Two nodes and two gradients for the whole room; nothing per-frame.
+ *
+ * Only one room is ever mounted at a time, so the gradient ids are fixed.
+ */
+export function SceneLight({
+  w,
+  h,
+  /** strength of the key wash falling in from the upper left */
+  keyLight = 0.13,
+  /** strength of the occlusion gathering in the lower right */
+  ambient = 0.13,
+  /** the colour of the key — white indoors, a warm cream under a sun */
+  tint = '#FFFFFF',
+}: {
+  w: number;
+  h: number;
+  keyLight?: number;
+  ambient?: number;
+  tint?: string;
+}) {
+  if (w <= 0 || h <= 0) return null;
+  return (
+    <G>
+      <Defs>
+        <RadialGradient id="ssAmbient" cx="86%" cy="102%" r="88%">
+          <Stop offset="0" stopColor={palette.navy} stopOpacity={ambient} />
+          <Stop offset="0.55" stopColor={palette.navy} stopOpacity={ambient * 0.34} />
+          <Stop offset="1" stopColor={palette.navy} stopOpacity={0} />
+        </RadialGradient>
+        <RadialGradient id="ssKeyLight" cx="13%" cy="1%" r="84%">
+          <Stop offset="0" stopColor={tint} stopOpacity={keyLight} />
+          <Stop offset="0.5" stopColor={tint} stopOpacity={keyLight * 0.36} />
+          <Stop offset="1" stopColor={tint} stopOpacity={0} />
+        </RadialGradient>
+      </Defs>
+      <Rect x={0} y={0} width={w} height={h} fill="url(#ssAmbient)" />
+      <Rect x={0} y={0} width={w} height={h} fill="url(#ssKeyLight)" />
+    </G>
+  );
+}
+
+/**
+ * WOOD GRAIN, as one path.
+ *
+ * The pizza board read as a wall until it got grain: a flat brown rectangle is
+ * a colour, and a brown rectangle with five long bowed figures in it is a
+ * plank. Each line is a closed lens (a quadratic out and a quadratic back), so
+ * the whole surface costs a single node however wide the desk is.
+ */
+export function WoodGrain({
+  x,
+  y,
+  w,
+  h,
+  lines = 5,
+  seed = 0,
+  tone = 'rgba(118,74,34,0.22)',
+}: {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  lines?: number;
+  seed?: number;
+  tone?: string;
+}) {
+  if (w <= 0 || h <= 0) return null;
+  let d = '';
+  for (let i = 0; i < lines; i += 1) {
+    const k = i + seed;
+    const gy = y + (h * (i + 1)) / (lines + 1);
+    const bow = (k % 2 ? 1 : -1) * h * (0.06 + 0.05 * ((k % 3) / 2));
+    const x0 = x + w * 0.03 + w * 0.07 * ((k % 4) / 3);
+    const x1 = x + w * 0.97 - w * 0.08 * (((k + 2) % 4) / 3);
+    const mid = (x0 + x1) / 2;
+    const th = Math.max(1.1, h * 0.035);
+    d +=
+      `M ${x0.toFixed(1)} ${gy.toFixed(1)} ` +
+      `Q ${mid.toFixed(1)} ${(gy + bow).toFixed(1)} ${x1.toFixed(1)} ${gy.toFixed(1)} ` +
+      `Q ${mid.toFixed(1)} ${(gy + bow + th).toFixed(1)} ${x0.toFixed(1)} ${(gy + th).toFixed(1)} z `;
+  }
+  return <Path d={d} fill={tone} />;
+}
+
+/**
+ * A specular band — the one bright streak that tells a child a surface is
+ * metal or glass rather than paint. Angled with the key light, so it always
+ * runs down-right from the upper-left corner of the thing it is on.
+ */
+export function Specular({
+  x,
+  y,
+  w,
+  h,
+  o = 0.3,
+  rx = 0,
+}: {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  o?: number;
+  rx?: number;
+}) {
+  if (w <= 0 || h <= 0) return null;
+  const bandW = Math.max(3, w * 0.16);
+  return (
+    <G opacity={o}>
+      <Defs>
+        <LinearGradient id="ssSpec" x1="0" y1="0" x2="1" y2="1">
+          <Stop offset="0" stopColor="#FFFFFF" stopOpacity={0} />
+          <Stop offset="0.45" stopColor="#FFFFFF" stopOpacity={1} />
+          <Stop offset="1" stopColor="#FFFFFF" stopOpacity={0} />
+        </LinearGradient>
+      </Defs>
+      <Rect x={x} y={y} width={bandW} height={h} rx={rx} fill="url(#ssSpec)" />
+    </G>
+  );
 }
 
 /* ------------------------------------------------------------------ */
@@ -715,9 +852,8 @@ export const RadioRoom = memo(function RadioRoom({ box }: { box: PlayBox }) {
       <Rect x={0} y={deskTop} width={w} height={9 * s} rx={4 * s} fill="#E2BC86" />
       <Rect x={0} y={deskTop + 9 * s} width={w} height={4 * s} fill={SHADE_SOFT} />
       {/* grain, and the rubber desk mat the console stands on */}
-      {[0.34, 0.58, 0.8].map((f, i) => (
-        <Rect key={`gr${i}`} x={w * (i % 2 ? 0.1 : 0.42)} y={deskTop + (h - deskTop) * f} width={w * 0.46} height={2.4} rx={1.2} fill="rgba(158,106,54,0.28)" />
-      ))}
+      <WoodGrain x={0} y={deskTop + 12 * s} w={w} h={h - deskTop - 12 * s} lines={5} seed={1} />
+      <WoodGrain x={0} y={deskTop + 12 * s} w={w} h={h - deskTop - 12 * s} lines={3} seed={4} tone="rgba(255,235,205,0.16)" />
       <Rect x={w * 0.12} y={deskTop + 12 * s} width={w * 0.76} height={Math.max(8, (h - deskTop) * 0.3)} rx={8} fill={SHADE_SOFT} />
 
       {/* the props stand along the FRONT edge, clear of the console behind them */}
@@ -771,6 +907,9 @@ export const RadioRoom = memo(function RadioRoom({ box }: { box: PlayBox }) {
           )),
         )}
       </G>
+      {/* the room's one light: key from the upper left, occlusion in the far
+          corner — drawn last so every surface shades together */}
+      <SceneLight w={w} h={h} keyLight={0.14} ambient={0.15} />
     </SceneLayer>
   );
 });
@@ -1002,6 +1141,8 @@ export const StoreRoom = memo(function StoreRoom({
           <Rect x={0} y={benchY + 13 * s} width={w} height={9 * s} rx={4 * s} fill="#A2743F" />
           <Rect x={0} y={benchY} width={w} height={14 * s} rx={6 * s} fill={palette.wood} />
           <Rect x={0} y={benchY} width={w} height={4.4 * s} rx={2.2 * s} fill="#DDAE72" />
+          {/* a worked bench top: grain along the plank, not a brown bar */}
+          <WoodGrain x={0} y={benchY + 3 * s} w={w} h={9 * s} lines={3} seed={2} tone="rgba(118,74,34,0.26)" />
           <Rect x={0} y={benchY + 11 * s} width={w} height={3.4 * s} fill={SHADE_SOFT} />
           {/*
            * The bench dressing lives on the APRON, under the top — a vice
@@ -1028,6 +1169,9 @@ export const StoreRoom = memo(function StoreRoom({
           ) : null}
         </G>
       ) : null}
+      {/* the room's one light: key from the upper left, occlusion in the far
+          corner — drawn last so every surface shades together */}
+      <SceneLight w={w} h={h} keyLight={0.16} ambient={0.13} tint="#FFF6E5" />
     </SceneLayer>
   );
 });
@@ -1139,8 +1283,24 @@ export const ClockTower = memo(function ClockTower({
         ))}
       </G>
 
+      {/*
+       * WEATHERING. Cut stone that has stood in the rain for a hundred years
+       * does not stay one flat cream: it darkens in long streaks under every
+       * ledge that sheds water. Two paths, and the shaft stops being a sheet.
+       */}
+      <Path
+        d={[0.2, 0.36, 0.58, 0.78].map((f) => {
+          const sx = tx + towerW * f;
+          const sw = towerW * 0.05;
+          return `M ${sx.toFixed(1)} ${(capY + 16 * s).toFixed(1)} h ${sw.toFixed(1)} v ${((h - capY) * 0.5).toFixed(1)} h ${(-sw).toFixed(1)} z `;
+        }).join('')}
+        fill="rgba(31,42,90,0.045)"
+      />
+
       {/* --- the dial housing --- */}
       <G>
+        {/* what the housing throws onto the shaft, down and to the right */}
+        <Circle cx={cx + r * 0.1} cy={cy + r * 0.12} r={r * 1.26} fill={palette.navy} opacity={0.09} />
         <Circle cx={cx} cy={cy} r={r * 1.2} fill="#E2CDA6" />
         <Circle cx={cx} cy={cy} r={r * 1.13} fill="#D2B98D" />
         <Circle cx={cx} cy={cy} r={r * 1.07} fill="#EFE0C1" />
@@ -1214,6 +1374,9 @@ export const ClockTower = memo(function ClockTower({
           );
         })}
       </G>
+      {/* the room's one light: key from the upper left, occlusion in the far
+          corner — drawn last so every surface shades together */}
+      <SceneLight w={w} h={h} keyLight={0.18} ambient={0.14} tint="#FFF6E5" />
     </SceneLayer>
   );
 });
@@ -1434,6 +1597,9 @@ export const TrainingYard = memo(function TrainingYard({ box }: { box: PlayBox }
           <Rect x={cxp - 16 * s} y={h - 10 * s} width={32 * s} height={7 * s} rx={3.5 * s} fill={palette.orangeDark} />
         </G>
       ))}
+      {/* the room's one light: key from the upper left, occlusion in the far
+          corner — drawn last so every surface shades together */}
+      <SceneLight w={w} h={h} keyLight={0.16} ambient={0.14} tint="#FFF6E5" />
     </SceneLayer>
   );
 });
@@ -1583,8 +1749,25 @@ export const Classroom = memo(function Classroom({ box }: { box: PlayBox }) {
             fill="none"
           />
         </G>
-        {/* chalk dust settled along the bottom edge */}
-        <Rect x={m.boardX} y={m.boardY + m.boardH - 5} width={m.boardW} height={5} fill={palette.white} opacity={0.09} />
+        {/* chalk dust: settled along the ledge, and hanging in the air over it
+            — the material that says slate rather than dark paint */}
+        <Rect x={m.boardX} y={m.boardY + m.boardH - 5} width={m.boardW} height={5} fill={palette.white} opacity={0.11} />
+        <Ellipse
+          cx={m.boardX + m.boardW * 0.5}
+          cy={m.boardY + m.boardH}
+          rx={m.boardW * 0.48}
+          ry={Math.max(8, m.boardH * 0.12)}
+          fill={palette.white}
+          opacity={0.07}
+        />
+        <Ellipse
+          cx={m.boardX + m.boardW * 0.18}
+          cy={m.boardY + m.boardH * 0.9}
+          rx={m.boardW * 0.16}
+          ry={Math.max(6, m.boardH * 0.07)}
+          fill={palette.white}
+          opacity={0.06}
+        />
         {/* chalk ledge with chalk and an eraser */}
         <Rect x={m.boardX - 10 * s} y={m.boardY + m.boardH + 4 * s} width={m.boardW + 20 * s} height={9 * s} rx={4 * s} fill="#A2743F" />
         <Rect x={m.boardX - 10 * s} y={m.boardY + m.boardH + 4 * s} width={m.boardW + 20 * s} height={3 * s} rx={1.5 * s} fill={HILITE} />
@@ -1620,15 +1803,7 @@ export const Classroom = memo(function Classroom({ box }: { box: PlayBox }) {
             );
           })
         : null}
-      <Path
-        d={[0.34, 0.62, 0.86]
-          .map((f) => {
-            const gy = m.deskTop + (h - m.deskTop) * f;
-            return `M ${(w * 0.02).toFixed(1)} ${gy.toFixed(1)} h ${(w * 0.96).toFixed(1)} v 2 h ${(-w * 0.96).toFixed(1)} z `;
-          })
-          .join('')}
-        fill="rgba(140,110,66,0.16)"
-      />
+      <WoodGrain x={0} y={m.deskTop + 10 * s} w={w} h={h - m.deskTop - 10 * s} lines={4} seed={2} tone="rgba(140,110,66,0.2)" />
       <G>
         <Contact cx={w * 0.08} cy={m.deskTop + 2} rx={14 * s} />
         <Circle cx={w * 0.08} cy={m.deskTop - 10 * s} r={11 * s} fill={palette.engineRed} />
@@ -1659,6 +1834,9 @@ export const Classroom = memo(function Classroom({ box }: { box: PlayBox }) {
         <Path d={`M ${w * 0.72 - 12 * s} ${m.deskTop - 26 * s} q ${8 * s} ${-5 * s} ${16 * s} ${1 * s} q ${5 * s} ${4 * s} ${8 * s} ${1 * s}`} stroke={palette.leafGreen} strokeWidth={4 * s} fill="none" strokeLinecap="round" />
         <Circle cx={w * 0.72 - 5 * s} cy={m.deskTop - 27 * s} r={4 * s} fill={HILITE} />
       </G>
+      {/* the room's one light: key from the upper left, occlusion in the far
+          corner — drawn last so every surface shades together */}
+      <SceneLight w={w} h={h} keyLight={0.15} ambient={0.13} tint="#FFF6E5" />
     </SceneLayer>
   );
 });
@@ -1753,8 +1931,15 @@ export const EngineBay = memo(function EngineBay({ box }: { box: PlayBox }) {
       <Ground w={w} h={h} top={floorTop} near="#C6CEDF" lip="#DEE4F1" />
       <Paving w={w} top={floorTop + 20 * s} bottom={h} s={s} unit={86} />
       <Rect x={w * 0.08} y={floorTop + 14 * s} width={w * 0.84} height={4 * s} rx={2 * s} fill={palette.safetyYellow} opacity={0.7} />
+      {/* the pool the ceiling strip throws on the concrete, so the bay reads
+          as lit from a fitting rather than from nowhere */}
+      <Ellipse cx={w * 0.5} cy={floorTop + (h - floorTop) * 0.62} rx={w * 0.42} ry={(h - floorTop) * 0.44} fill={palette.white} opacity={0.13} />
       <Ellipse cx={w * 0.22} cy={h - 12 * s} rx={30 * s} ry={7 * s} fill={palette.waterCyanLight} opacity={0.55} />
+      <Ellipse cx={w * 0.22 - 8 * s} cy={h - 14 * s} rx={13 * s} ry={2.6 * s} fill={palette.white} opacity={0.5} />
       <Ellipse cx={w * 0.78} cy={h - 8 * s} rx={20 * s} ry={5 * s} fill={SHADE_SOFT} />
+      {/* the room's one light: key from the upper left, occlusion in the far
+          corner — drawn last so every surface shades together */}
+      <SceneLight w={w} h={h} keyLight={0.15} ambient={0.15} tint="#FFF6E5" />
     </SceneLayer>
   );
 });
@@ -1867,17 +2052,31 @@ function Shopfront({
         fill={palette.navyMuted}
         opacity={0.45}
       />
-      {/* awning */}
+      {/* awning — canvas, so it takes the light on its crown and throws the
+          shopfront under it into shade */}
       <G>
         {Array.from({ length: 5 }, (_, i) => (
-          <Path
-            key={`aw${i}`}
-            d={`M ${x + (w / 5) * i} ${base - h * 0.28} h ${w / 5} v ${11 * s} q ${-w / 10} ${6 * s} ${-w / 5} 0 z`}
-            fill={i % 2 ? palette.cream : awning}
-          />
+          <G key={`aw${i}`}>
+            <Path
+              d={`M ${x + (w / 5) * i} ${base - h * 0.28} h ${w / 5} v ${11 * s} q ${-w / 10} ${6 * s} ${-w / 5} 0 z`}
+              fill={i % 2 ? palette.cream : awning}
+            />
+            {/* the fold: every scallop is a bulge of cloth, lit at the ridge */}
+            <Path
+              d={`M ${x + (w / 5) * i} ${base - h * 0.28} h ${w / 10} v ${13 * s} q ${-w / 20} ${3 * s} ${-w / 10} 0 z`}
+              fill={HILITE_SOFT}
+            />
+            <Path
+              d={`M ${x + (w / 5) * i + w / 10} ${base - h * 0.28} h ${w / 10} v ${11 * s} q ${-w / 20} ${5 * s} ${-w / 10} ${2 * s} z`}
+              fill={SHADE_SOFT}
+            />
+          </G>
         ))}
         <Rect x={x - 2 * s} y={base - h * 0.28 - 4 * s} width={w + 4 * s} height={6 * s} rx={3 * s} fill={awning} />
+        <Rect x={x - 2 * s} y={base - h * 0.28 - 4 * s} width={w + 4 * s} height={2.2 * s} rx={1.1 * s} fill={HILITE} />
       </G>
+      {/* what the awning throws onto the shopfront below it */}
+      <Rect x={x} y={base - h * 0.28 + 15 * s} width={w} height={Math.max(6, h * 0.09)} fill={SHADE_SOFT} />
       {/* shop window + door */}
       <Rect x={x + w * 0.1} y={base - h * 0.16} width={w * 0.48} height={h * 0.16} rx={4} fill="#9FC9E8" />
       <Rect x={x + w * 0.1} y={base - h * 0.16} width={w * 0.48} height={h * 0.05} rx={3} fill={HILITE} />
@@ -1909,6 +2108,10 @@ export const StreetBlock = memo(function StreetBlock({ box }: { box: PlayBox }) 
           <Stop offset="0" stopColor="#6FC0F8" />
           <Stop offset="1" stopColor="#C6E7FF" />
         </LinearGradient>
+        <LinearGradient id="stCast" x1="0" y1="0" x2="0" y2="1">
+          <Stop offset="0" stopColor={palette.navy} stopOpacity={0.2} />
+          <Stop offset="1" stopColor={palette.navy} stopOpacity={0} />
+        </LinearGradient>
       </Defs>
       <Rect x={0} y={0} width={w} height={roadTop + 6} fill="url(#stSky)" />
       <Ellipse cx={w * 0.22} cy={h * 0.08} rx={40 * s} ry={15 * s} fill={palette.white} opacity={0.6} />
@@ -1937,6 +2140,9 @@ export const StreetBlock = memo(function StreetBlock({ box }: { box: PlayBox }) 
 
       {/* pavement + kerb + road */}
       <Ground w={w} h={h} top={roadTop} near="#C4CCDE" lip="#E3E8F2" />
+      {/* the block's own shadow, thrown forward onto the flags — a row of
+          shopfronts standing on paint is the giveaway that nothing is lit */}
+      <Rect x={0} y={roadTop} width={w} height={clamp((h - roadTop) * 0.42, 14, 60)} fill="url(#stCast)" />
       <Rect x={0} y={roadTop + 16 * s} width={w} height={4 * s} fill={SHADE_SOFT} />
       {/* the flags of the pavement: material, not props */}
       <Paving w={w} top={roadTop + 22 * s} bottom={h} s={s} unit={80} />
@@ -1960,6 +2166,9 @@ export const StreetBlock = memo(function StreetBlock({ box }: { box: PlayBox }) 
         <Path d={`M ${w * 0.08 - 11 * s} ${roadTop - 22 * s} h ${22 * s} l ${-2.6 * s} ${40 * s} h ${-16.8 * s} z`} fill="#6F7CA6" />
         <Rect x={w * 0.08 - 13 * s} y={roadTop - 26 * s} width={26 * s} height={7 * s} rx={3.5 * s} fill="#5A6488" />
       </G>
+      {/* the room's one light: key from the upper left, occlusion in the far
+          corner — drawn last so every surface shades together */}
+      <SceneLight w={w} h={h} keyLight={0.15} ambient={0.14} tint="#FFF6E5" />
     </SceneLayer>
   );
 });
@@ -2020,13 +2229,20 @@ export const MarketStreet = memo(function MarketStreet({ box, pavingTop: pavingO
             <Rect x={n.x} y={neighTop + 18 * s} width={nw} height={pavingTop - neighTop - 18 * s} rx={8} fill="#EDD9B2" />
             <Rect x={n.x} y={neighTop + 18 * s} width={nw * 0.12} height={pavingTop - neighTop - 18 * s} fill={HILITE_SOFT} />
             {Array.from({ length: 6 }, (_, k) => (
-              <Path
-                key={`na${k}`}
-                d={`M ${n.x + (nw / 6) * k} ${neighTop} h ${nw / 6} v ${16 * s} q ${-nw / 12} ${8 * s} ${-nw / 6} 0 z`}
-                fill={k % 2 ? palette.cream : n.tone}
-                opacity={0.9}
-              />
+              <G key={`na${k}`}>
+                <Path
+                  d={`M ${n.x + (nw / 6) * k} ${neighTop} h ${nw / 6} v ${16 * s} q ${-nw / 12} ${8 * s} ${-nw / 6} 0 z`}
+                  fill={k % 2 ? palette.cream : n.tone}
+                  opacity={0.9}
+                />
+                <Path
+                  d={`M ${n.x + (nw / 6) * k + nw / 12} ${neighTop} h ${nw / 12} v ${16 * s} q ${-nw / 24} ${6 * s} ${-nw / 12} ${2 * s} z`}
+                  fill={SHADE_SOFT}
+                />
+              </G>
             ))}
+            {/* the shade the neighbour's canvas throws down its own front */}
+            <Rect x={n.x} y={neighTop + 24 * s} width={nw} height={18 * s} fill={SHADE_SOFT} />
             <Rect x={n.x - 3 * s} y={neighTop - 5 * s} width={nw + 6 * s} height={8 * s} rx={4 * s} fill={n.tone} opacity={0.9} />
             <Rect x={n.x + nw * 0.16} y={pavingTop - 46 * s} width={nw * 0.68} height={30 * s} rx={6} fill={palette.wood} />
             {[0, 1, 2].map((k) => (
@@ -2065,6 +2281,9 @@ export const MarketStreet = memo(function MarketStreet({ box, pavingTop: pavingO
           ))}
         </G>
       ))}
+      {/* the room's one light: key from the upper left, occlusion in the far
+          corner — drawn last so every surface shades together */}
+      <SceneLight w={w} h={h} keyLight={0.16} ambient={0.13} tint="#FFF6E5" />
     </SceneLayer>
   );
 });
@@ -2178,6 +2397,9 @@ export const PlanRoom = memo(function PlanRoom({ box }: { box: PlayBox }) {
       <Rect x={0} y={tableTop} width={w} height={h - tableTop} fill="#B08A57" />
       <Rect x={0} y={tableTop} width={w} height={8 * s} rx={4 * s} fill="#D6AC77" />
       <Rect x={0} y={tableTop + 8 * s} width={w} height={3.4 * s} fill={SHADE_SOFT} />
+      {/* the plan table is oak, not a brown rectangle */}
+      <WoodGrain x={0} y={tableTop + 10 * s} w={w} h={h - tableTop - 10 * s} lines={4} seed={3} tone="rgba(104,64,28,0.2)" />
+      <WoodGrain x={0} y={tableTop + 10 * s} w={w} h={h - tableTop - 10 * s} lines={2} seed={5} tone="rgba(255,232,196,0.16)" />
       {/* what a planner keeps on the table: a mug, a rule and two pencils */}
       <Mug x={w * 0.04} baseY={h - 4 * s} s={s * 0.9} tint={palette.waterCyanLight} />
       <G>
@@ -2200,6 +2422,9 @@ export const PlanRoom = memo(function PlanRoom({ box }: { box: PlayBox }) {
         <Circle cx={w * 0.9 - 12 * s} cy={h - 8 * s} r={5 * s} fill={palette.charcoal} />
         <Circle cx={w * 0.9 + 12 * s} cy={h - 8 * s} r={5 * s} fill={palette.charcoal} />
       </G>
+      {/* the room's one light: key from the upper left, occlusion in the far
+          corner — drawn last so every surface shades together */}
+      <SceneLight w={w} h={h} keyLight={0.14} ambient={0.15} />
     </SceneLayer>
   );
 });

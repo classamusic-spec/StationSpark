@@ -22,7 +22,7 @@
 import React, { memo } from 'react';
 import { StyleSheet, View } from 'react-native';
 import Animated, { useAnimatedStyle } from 'react-native-reanimated';
-import Svg, { Circle, Ellipse, G, Path } from 'react-native-svg';
+import Svg, { Circle, Defs, Ellipse, G, Path, RadialGradient, Stop } from 'react-native-svg';
 import { palette } from '@/theme';
 import { useIdleBob } from '@/hooks';
 import { CONTACT, HILITE, HILITE_SOFT, SHADE, bark, leaf } from './tones';
@@ -82,6 +82,40 @@ const CREASES: readonly string[] = [
   'M 76 132 q 24 16 50 2',
 ];
 
+/**
+ * Dappled light: small clusters of three or four leaves, warm ones up in the
+ * sun and cool ones down in the shade. A leaf mass painted in one flat green is
+ * the "sticker" defect the art critique keeps naming; these break the field
+ * into leaves you could count without adding a hundred nodes — one `<Path>`
+ * per cluster, both lists concatenated into two `<Path>` elements below.
+ */
+const blade = (x: number, y: number, w: number, tilt: number) =>
+  `M ${x} ${y} q ${w * 0.55} ${-w * 0.5 - tilt} ${w} ${-tilt} q ${-w * 0.55} ${w * 0.5 + tilt} ${-w} ${tilt} z`;
+
+/** the sunlit shoulder, up and to the left */
+const DAPPLE_LIT: readonly [number, number, number, number][] = [
+  [46, 54, 15, 3],
+  [70, 34, 13, 2],
+  [96, 58, 14, 4],
+  [122, 46, 12, 2],
+  [34, 88, 13, 5],
+  [62, 100, 12, 3],
+  [104, 84, 11, 2],
+  [140, 74, 12, 4],
+];
+/** the shaded underside, down and to the right */
+const DAPPLE_DEEP: readonly [number, number, number, number][] = [
+  [128, 118, 14, -4],
+  [96, 140, 13, -3],
+  [154, 96, 12, -2],
+  [64, 148, 12, -4],
+  [118, 158, 13, -3],
+  [42, 118, 11, -2],
+];
+
+const dapplePath = (list: readonly [number, number, number, number][]) =>
+  list.map(([x, y, w, t]) => blade(x, y, w, t)).join('');
+
 function lobes(inset: number, fill: string, opacity = 1) {
   return (
     <G opacity={opacity}>
@@ -103,10 +137,23 @@ function limb(p: Perch, i: number) {
   const half = 24;
   const rise = p.side * 7;
   const d = `M ${x - half} ${y + 5 + rise} Q ${x} ${y + 1} ${x + half} ${y + 5 - rise}`;
+  /* the same curve dropped a few units: the shadow the bough throws on the
+     leaves under it. Without it a branch is a stick lying on a green field. */
+  const shadow = `M ${x - half} ${y + 12 + rise} Q ${x} ${y + 8} ${x + half} ${y + 12 - rise}`;
   return (
     <G key={`limb${i}`}>
+      <Path d={shadow} stroke={palette.navy} strokeWidth={11} strokeLinecap="round" fill="none" opacity={0.13} />
       <Path d={d} stroke={bark.deep} strokeWidth={8.5} strokeLinecap="round" fill="none" />
       <Path d={d} stroke={bark.mid} strokeWidth={6} strokeLinecap="round" fill="none" />
+      {/* grain: two short strokes along the bough, so it is timber and not a pipe */}
+      <Path
+        d={`M ${x - half * 0.62} ${y + 3.4 + rise * 0.6} Q ${x} ${y - 0.4} ${x + half * 0.62} ${y + 3.4 - rise * 0.6}`}
+        stroke={bark.rim}
+        strokeWidth={1.4}
+        strokeLinecap="round"
+        fill="none"
+        opacity={0.55}
+      />
       <Path d={d} stroke={HILITE_SOFT} strokeWidth={2} strokeLinecap="round" fill="none" />
       {/* leaf sprigs at both tips, so the branch grows out of the leaves */}
       {[-1, 1].map((dir) => (
@@ -170,26 +217,44 @@ export const BigTree = memo(function BigTree({ width, height, perches = TREE_PER
         <Path d="M 96 150 q -30 -8 -54 -32" stroke={bark.mid} strokeWidth={17} strokeLinecap="round" fill="none" />
         <Path d="M 106 142 q 34 -6 60 -28" stroke={bark.mid} strokeWidth={15} strokeLinecap="round" fill="none" />
         <Path d="M 96 150 q -30 -8 -54 -32" stroke={HILITE_SOFT} strokeWidth={5} strokeLinecap="round" fill="none" />
+        {/* the canopy's own shadow, thrown down the trunk it hangs over — the
+            one thing that stopped the trunk reading as a plank behind the leaves */}
+        <Path d={`M 74 150 q 26 16 54 0 l 2 26 q -28 14 -58 0 z`} fill={palette.navy} opacity={0.13} />
+        {/* and the grass's shadow up the root flare, so the trunk enters the
+            ground instead of stopping on it */}
+        <Path d={`M 50 ${TREE_FOOT + 4} q 26 -6 52 -6 q 26 0 52 6 q -26 6 -52 6 q -26 0 -52 -6 z`} fill={palette.navy} opacity={0.12} />
       </Svg>
 
       {/* the canopy, which breathes */}
       <Animated.View style={[StyleSheet.absoluteFill, canopy]} pointerEvents="none">
         <Svg width={width} height={height} viewBox={`0 0 ${TREE_VB.w} ${TREE_VB.h}`}>
+          <Defs>
+            {/* ONE LIGHT ON THE WHOLE MASS. The lobes used to be filled flat, so
+                a canopy that covers half the screen read as a sheet of green
+                paint. Painting every lobe from one radial anchored up-left
+                gives the crown a lit shoulder and the underside a real fall-off
+                — for the cost of a single extra node, not thirty more circles. */}
+            <RadialGradient id="ss-oak-mass" cx="66" cy="42" r="168" gradientUnits="userSpaceOnUse">
+              <Stop offset="0" stopColor={leaf.lit} />
+              <Stop offset="0.34" stopColor={leaf.mid} />
+              <Stop offset="0.72" stopColor="#38874A" />
+              <Stop offset="1" stopColor={leaf.deep} />
+            </RadialGradient>
+          </Defs>
           {lobes(0, leaf.deep)}
-          {lobes(7, leaf.mid)}
-          {/* the sunlit upper-left shoulder */}
-          <G>
-            <Circle cx={84} cy={36} r={26} fill={leaf.lit} />
-            <Circle cx={46} cy={62} r={19} fill={leaf.lit} />
-            <Circle cx={116} cy={44} r={17} fill={leaf.lit} />
-            <Circle cx={62} cy={94} r={15} fill={leaf.lit} opacity={0.8} />
+          {lobes(6, 'url(#ss-oak-mass)')}
+          {/* the sunlit upper-left shoulder, sitting on top of the wash */}
+          <G opacity={0.7}>
+            <Circle cx={84} cy={36} r={24} fill={leaf.lit} />
+            <Circle cx={46} cy={62} r={17} fill={leaf.lit} />
+            <Circle cx={116} cy={44} r={15} fill={leaf.lit} />
           </G>
           {/* rim light on the crown — leaf-coloured, never a white scratch */}
           <Path d="M 62 32 q 26 -26 62 -14 q -32 -2 -56 20 z" fill={leaf.rim} opacity={0.85} />
           <Path d="M 30 84 q 10 -20 30 -26 q -20 12 -24 30 z" fill={leaf.rim} opacity={0.6} />
           <Path d="M 70 24 q 20 -16 46 -10 q -26 2 -42 14 z" fill={HILITE} opacity={0.45} />
           {/* the shaded underside, so the canopy has a bottom */}
-          <G opacity={0.55}>
+          <G opacity={0.45}>
             <Circle cx={150} cy={122} r={19} fill={leaf.deep} />
             <Circle cx={116} cy={140} r={15} fill={leaf.deep} />
             <Circle cx={74} cy={132} r={13} fill={leaf.deep} />
@@ -199,17 +264,10 @@ export const BigTree = memo(function BigTree({ width, height, perches = TREE_PER
           {CREASES.map((d, i) => (
             <Path key={`cr${i}`} d={d} stroke={leaf.deep} strokeWidth={5.2} fill="none" strokeLinecap="round" opacity={0.72} />
           ))}
-          {/* leaf sparkle: a few lighter blades so the mass is not one flat green */}
-          {[
-            [58, 50],
-            [132, 70],
-            [92, 66],
-            [156, 96],
-            [40, 100],
-            [118, 108],
-          ].map(([cx, cy], i) => (
-            <Path key={i} d={`M ${cx} ${cy} q 9 -7 16 0 q -9 7 -16 0 z`} fill={leaf.rim} opacity={0.7} />
-          ))}
+          {/* dappled leaves: two paths, a dozen clusters, so a five-year-old can
+              see that the green is made of leaves */}
+          <Path d={dapplePath(DAPPLE_LIT)} fill={leaf.rim} opacity={0.66} />
+          <Path d={dapplePath(DAPPLE_DEEP)} fill={leaf.deep} opacity={0.5} />
         </Svg>
       </Animated.View>
 

@@ -464,6 +464,11 @@ export function MeasurePour({ challenge, onComplete, onEvent, compact }: MiniGam
                 <Liquid s={s} span={sc.span} level={level} width={inner.w} look={look} />
               </View>
 
+              {/* …and the front wall of the glass over the top of it */}
+              <View style={at(s, cup.x, cup.y, cup.w * 1.34, cup.h)} pointerEvents="none">
+                <CupGlass width={cup.w * 1.34 * s} height={cup.h * s} />
+              </View>
+
               {/* The stream falls into the cup, not into the gap beside it: it
                   used to be pinned to the jug and hidden behind the readout card,
                   so nothing connected the tipping jug to the rising liquid. It
@@ -491,15 +496,20 @@ export function MeasurePour({ challenge, onComplete, onEvent, compact }: MiniGam
                   const lit = pouredN >= t - 1e-6;
                   const y = inner.y - cup.y + inner.h - t * sc.span;
                   const isTarget = Math.abs(t - targetN) < 1e-6;
+                  const tickH = (isTarget ? 5 : 3) * s;
                   return (
                     <View key={t} style={[at(s, cup.w * 0.12, y - 10, cup.w * 1.2, 20), styles.tickRow]}>
                       <View
                         style={[
                           styles.tick,
-                          { width: (isTarget ? cup.w * 0.58 : cup.w * 0.3) * s, height: (isTarget ? 5 : 3) * s },
+                          { width: (isTarget ? cup.w * 0.58 : cup.w * 0.3) * s, height: tickH },
                           { backgroundColor: isTarget ? palette.engineRed : lit ? palette.gold : 'rgba(31,42,90,0.28)' },
                         ]}
-                      />
+                      >
+                        {/* a measure line is moulded INTO the glass: the cut
+                            takes the shade and the lip under it takes the light */}
+                        <View style={[styles.tickLip, { height: tickH * 0.7, bottom: -tickH * 0.8 }]} />
+                      </View>
                       <Text
                         variant="tiny"
                         color={isTarget ? palette.engineRed : lit ? palette.goldDark : roles.ink.muted}
@@ -581,6 +591,21 @@ function Liquid({
   return (
     <Animated.View style={[styles.liquid, { backgroundColor: look.fill }, style]}>
       <Wave s={s} width={width} color={look.foam} />
+      {/* a body, not a flat fill: light comes through the near wall, the far
+          wall shades it, and the deepest part at the foot is darkest */}
+      <View style={[styles.liquidLit, { left: width * 0.08 * s, width: width * 0.14 * s }]} pointerEvents="none" />
+      <View style={[styles.liquidShade, { width: width * 0.17 * s }]} pointerEvents="none" />
+      <View style={[styles.liquidFloor, { height: Math.max(12, width * 0.26) * s }]} pointerEvents="none">
+        <Svg width="100%" height="100%" preserveAspectRatio="none" viewBox="0 0 10 10">
+          <Defs>
+            <LinearGradient id="mpDepth" x1="0" y1="0" x2="0" y2="1">
+              <Stop offset="0" stopColor="#1F2A5A" stopOpacity={0} />
+              <Stop offset="1" stopColor="#1F2A5A" stopOpacity={0.22} />
+            </LinearGradient>
+          </Defs>
+          <Rect x={0} y={0} width={10} height={10} fill="url(#mpDepth)" />
+        </Svg>
+      </View>
     </Animated.View>
   );
 }
@@ -612,30 +637,75 @@ function MeasuringCup({ width, height }: { width: number; height: number }) {
   return (
     <Svg width={width} height={height} viewBox="0 0 134 200">
       <Defs>
+        {/* glass is not white: it is a cool tint that darkens at both walls,
+            and this jug used to be the same value as the cream wall behind it */}
         <LinearGradient id="mpGlass" x1="0" y1="0" x2="1" y2="0">
-          <Stop offset="0" stopColor="rgba(255,255,255,0.75)" />
-          <Stop offset="0.5" stopColor="rgba(255,255,255,0.10)" />
-          <Stop offset="1" stopColor="rgba(255,255,255,0.45)" />
+          <Stop offset="0" stopColor="#A3B2CE" />
+          <Stop offset="0.22" stopColor="#D3DCEC" />
+          <Stop offset="0.72" stopColor="#C3CFE4" />
+          <Stop offset="1" stopColor="#9DACC9" />
+        </LinearGradient>
+        <LinearGradient id="mpSteel" x1="0" y1="0" x2="0.3" y2="1">
+          <Stop offset="0" stopColor="#FFFFFF" />
+          <Stop offset="1" stopColor="#BCC7DE" />
         </LinearGradient>
       </Defs>
-      <Ellipse cx={50} cy={192} rx={44} ry={7} fill="rgba(31,42,90,0.14)" />
+      {/* two shadows: the wide soft one and the tight dark one at the foot */}
+      <Ellipse cx={52} cy={195} rx={50} ry={8} fill="rgba(31,42,90,0.07)" />
+      <Ellipse cx={50} cy={193} rx={40} ry={5} fill="rgba(31,42,90,0.17)" />
       {/* handle, behind the glass so the glass reads as the front face */}
-      <Path d="M96 62q34 8 34 40t-34 40" fill="none" stroke="#A9B8D2" strokeWidth={21} strokeLinecap="round" />
-      <Path d="M96 60q34 8 34 40t-34 38" fill="none" stroke="#DFE7F4" strokeWidth={14} strokeLinecap="round" />
+      <Path d="M96 62q34 8 34 40t-34 40" fill="none" stroke="#8C9CBC" strokeWidth={21} strokeLinecap="round" />
+      <Path d="M96 60q34 8 34 40t-34 38" fill="none" stroke="#D5DEEE" strokeWidth={14} strokeLinecap="round" />
       <Path d="M99 68q24 8 24 30" fill="none" stroke="rgba(255,255,255,0.95)" strokeWidth={5} strokeLinecap="round" />
       {/* body */}
-      <Rect x={2} y={14} width={96} height={176} rx={22} fill="#B6C4DC" />
-      <Rect x={7} y={19} width={86} height={166} rx={18} fill="#DCE4F1" />
-      <Rect x={7} y={19} width={86} height={166} rx={18} fill="url(#mpGlass)" />
-      <Rect x={14} y={30} width={13} height={140} rx={6.5} fill="rgba(255,255,255,0.8)" />
-      <Rect x={80} y={30} width={7} height={140} rx={3.5} fill="rgba(255,255,255,0.5)" />
-      {/* spout + rim */}
-      <Path d="M2 22h20l-6 16z" fill={palette.white} />
-      <Rect x={0} y={6} width={100} height={20} rx={10} fill={palette.white} />
-      <Rect x={4} y={9} width={40} height={6} rx={3} fill="rgba(31,42,90,0.06)" />
+      <Rect x={2} y={14} width={96} height={176} rx={22} fill="#8C9CBC" />
+      <Rect x={5} y={17} width={90} height={170} rx={20} fill="url(#mpGlass)" />
+      {/* the far wall of the jug, seen through the near one — the single most
+          "this is glass" cue there is */}
+      <Ellipse cx={50} cy={30} rx={39} ry={8} fill="rgba(31,42,90,0.10)" />
+      <Ellipse cx={50} cy={176} rx={39} ry={8} fill="rgba(31,42,90,0.08)" />
       {/* foot */}
-      <Rect x={6} y={180} width={88} height={12} rx={6} fill="#B6C4DC" />
-      <Rect x={10} y={182} width={40} height={4} rx={2} fill="rgba(255,255,255,0.5)" />
+      <Rect x={6} y={176} width={88} height={14} rx={7} fill="#93A3C2" />
+      <Rect x={10} y={178} width={42} height={4} rx={2} fill="rgba(255,255,255,0.6)" />
+      {/* spout + rim */}
+      <Path d="M2 22h20l-6 16z" fill="#E4EAF5" />
+      <Rect x={0} y={5} width={100} height={22} rx={11} fill="#A9B8D2" />
+      <Rect x={0} y={4} width={100} height={19} rx={9.5} fill="url(#mpSteel)" />
+      <Rect x={5} y={7} width={44} height={5} rx={2.5} fill="rgba(255,255,255,0.95)" />
+      <Rect x={4} y={19} width={92} height={5} rx={2.5} fill="rgba(31,42,90,0.12)" />
+    </Svg>
+  );
+}
+
+/**
+ * The glass IN FRONT of what is in it. The liquid is a separate layer stacked
+ * over the jug, so every highlight the jug drew was buried the moment a child
+ * poured: the wall thickening at the silhouette, the specular running down the
+ * lit side, the bounce coming back up through the foot. They live here, drawn
+ * last, which is what makes the milk look like it is *inside* something.
+ */
+function CupGlass({ width, height }: { width: number; height: number }) {
+  return (
+    <Svg width={width} height={height} viewBox="0 0 134 200">
+      <Defs>
+        <LinearGradient id="mpShine" x1="0" y1="0" x2="0" y2="1">
+          <Stop offset="0" stopColor="#FFFFFF" stopOpacity={0.95} />
+          <Stop offset="1" stopColor="#FFFFFF" stopOpacity={0.4} />
+        </LinearGradient>
+        <LinearGradient id="mpWallL" x1="0" y1="0" x2="1" y2="0">
+          <Stop offset="0" stopColor="#1F2A5A" stopOpacity={0.2} />
+          <Stop offset="1" stopColor="#1F2A5A" stopOpacity={0} />
+        </LinearGradient>
+        <LinearGradient id="mpWallR" x1="0" y1="0" x2="1" y2="0">
+          <Stop offset="0" stopColor="#1F2A5A" stopOpacity={0} />
+          <Stop offset="1" stopColor="#1F2A5A" stopOpacity={0.22} />
+        </LinearGradient>
+      </Defs>
+      <Rect x={7} y={24} width={13} height={162} fill="url(#mpWallL)" />
+      <Rect x={80} y={24} width={13} height={162} fill="url(#mpWallR)" />
+      <Rect x={14} y={32} width={13} height={140} rx={6.5} fill="url(#mpShine)" />
+      <Rect x={81} y={38} width={6} height={126} rx={3} fill="rgba(255,255,255,0.55)" />
+      <Path d="M11 166q39 13 78 0v11q-39 12-78 0z" fill="rgba(255,255,255,0.26)" />
     </Svg>
   );
 }
@@ -653,24 +723,43 @@ function MeasuringCup({ width, height }: { width: number; height: number }) {
 function PourJug({ width, look }: { width: number; look: { tin: string; tinDark: string; fill: string } }) {
   return (
     <Svg width={width} height={width / 0.95} viewBox="0 0 114 120">
-      <Ellipse cx={56} cy={114} rx={40} ry={6} fill="rgba(31,42,90,0.14)" />
+      <Defs>
+        {/* enamelware is a cylinder too: dark rim, lit left of centre */}
+        <LinearGradient id="mpTin" x1="0" y1="0" x2="1" y2="0">
+          <Stop offset="0" stopColor={look.tinDark} />
+          <Stop offset="0.3" stopColor={look.tin} />
+          <Stop offset="0.72" stopColor={look.tin} />
+          <Stop offset="1" stopColor={look.tinDark} />
+        </LinearGradient>
+        <LinearGradient id="mpTinFoot" x1="0" y1="0" x2="0" y2="1">
+          <Stop offset="0" stopColor="#1F2A5A" stopOpacity={0} />
+          <Stop offset="1" stopColor="#1F2A5A" stopOpacity={0.26} />
+        </LinearGradient>
+      </Defs>
       {/* handle */}
       <Path d="M86 40q24 6 24 26t-24 24" fill="none" stroke={look.tinDark} strokeWidth={13} strokeLinecap="round" />
       <Path d="M88 46q16 6 16 20" fill="none" stroke="rgba(255,255,255,0.35)" strokeWidth={4} strokeLinecap="round" />
       {/* body */}
       <Path d="M16 30h74l-7 68a12 12 0 0 1-12 11H35a12 12 0 0 1-12-11z" fill={look.tinDark} />
-      <Path d="M20 34h66l-6 62a10 10 0 0 1-10 9H36a10 10 0 0 1-10-9z" fill={look.tin} />
-      <Path d="M26 38h12l-4 66h-8z" fill="rgba(255,255,255,0.34)" />
-      <Path d="M74 38h8l-6 66h-7z" fill="rgba(31,42,90,0.12)" />
+      <Path d="M20 34h66l-6 62a10 10 0 0 1-10 9H36a10 10 0 0 1-10-9z" fill="url(#mpTin)" />
+      {/* the broad specular, the tight line inside it, the cool shaded wall,
+          and the underside a held jug always has */}
+      <Path d="M25 38h14l-5 64h-9z" fill="rgba(255,255,255,0.26)" />
+      <Path d="M29 40h5l-4 60h-4z" fill="rgba(255,255,255,0.55)" />
+      <Path d="M74 38h8l-6 66h-7z" fill="rgba(31,42,90,0.14)" />
+      <Path d="M22 82h62l-3 14a10 10 0 0 1-10 9H36a10 10 0 0 1-10-9z" fill="url(#mpTinFoot)" />
       {/* label */}
       <Ellipse cx={53} cy={70} rx={26} ry={23} fill="#FFF8EA" />
-      <Ellipse cx={53} cy={70} rx={26} ry={23} fill="none" stroke={look.tinDark} strokeWidth={2.5} />
+      <Ellipse cx={53} cy={68} rx={26} ry={23} fill="#FFFDF6" />
+      <Ellipse cx={53} cy={68} rx={26} ry={23} fill="none" stroke={look.tinDark} strokeWidth={2.5} />
+      <Path d="M34 56a26 23 0 0 1 26 -11 26 23 0 0 0 -22 15z" fill="rgba(255,255,255,0.85)" />
       {/* spout, aimed at the cup on the left */}
       <Path d="M16 30L2 36l6 13 10-7z" fill={look.tin} />
       <Path d="M16 30L2 36l3 6 12-6z" fill="rgba(255,255,255,0.4)" />
       {/* rim */}
-      <Rect x={10} y={20} width={88} height={15} rx={7.5} fill={palette.white} />
-      <Rect x={16} y={23} width={34} height={5} rx={2.5} fill="rgba(31,42,90,0.07)" />
+      <Rect x={10} y={19} width={88} height={16} rx={8} fill="#CBD3E4" />
+      <Rect x={10} y={18} width={88} height={13} rx={6.5} fill={palette.white} />
+      <Rect x={16} y={20} width={34} height={4} rx={2} fill="rgba(255,255,255,0.95)" />
       <Circle cx={54} cy={16} r={7} fill={look.tinDark} />
       <Circle cx={52} cy={14} r={2.5} fill="rgba(255,255,255,0.6)" />
     </Svg>
@@ -681,9 +770,13 @@ const styles = StyleSheet.create({
   stage: { flex: 1 },
   clip: { overflow: 'hidden', justifyContent: 'flex-end' },
   liquid: { width: '100%', justifyContent: 'flex-start' },
+  liquidLit: { position: 'absolute', top: 0, bottom: 0, backgroundColor: 'rgba(255,255,255,0.26)' },
+  liquidShade: { position: 'absolute', top: 0, bottom: 0, right: 0, backgroundColor: 'rgba(31,42,90,0.10)' },
+  liquidFloor: { position: 'absolute', left: 0, right: 0, bottom: 0 },
   wave: { position: 'absolute', left: 0 },
   tickRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   tick: { borderRadius: 3 },
+  tickLip: { position: 'absolute', left: 0, right: 0, borderRadius: 3, backgroundColor: 'rgba(255,255,255,0.7)' },
   flag: { marginLeft: 2 },
   jugLabel: { position: 'absolute', top: '46%', alignSelf: 'center', marginLeft: '-6%', marginTop: '-14%' },
   stream: { alignItems: 'center' },

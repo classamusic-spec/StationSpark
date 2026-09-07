@@ -1,6 +1,6 @@
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
-import Svg, { Circle, Ellipse, G, Path, Rect } from 'react-native-svg';
+import Svg, { Circle, Defs, Ellipse, G, LinearGradient, Path, RadialGradient, Rect, Stop } from 'react-native-svg';
 import { palette, radii } from '@/theme';
 import { Text } from '@/ui';
 
@@ -44,11 +44,25 @@ export function StallFront({ width }: { width: number }) {
   const stripes = 10;
   return (
     <Svg width={width} height={(width * h) / w} viewBox={`0 0 ${w} ${h}`}>
+      <Defs>
+        <LinearGradient id="stallAwnFold" x1="0" y1="0" x2="0" y2="1">
+          <Stop offset="0" stopColor="#1F2A5A" stopOpacity={0} />
+          <Stop offset="1" stopColor="#1F2A5A" stopOpacity={0.22} />
+        </LinearGradient>
+      </Defs>
       {/* back wall of the stall — warm tan planks so the cream awning reads */}
       <Rect x={16} y={30} width={308} height={140} rx={10} fill={palette.tanDark} />
       <Rect x={16} y={30} width={308} height={134} rx={10} fill={palette.tan} />
-      {[58, 84, 110, 136].map((y) => (
-        <Rect key={y} x={20} y={y} width={300} height={2.4} rx={1.2} fill="rgba(158,106,54,0.30)" />
+      {/* boarding, with the grain running along each plank rather than four
+          ruled lines — the difference between a plank and a stripe */}
+      {[58, 84, 110, 136].map((y, i) => (
+        <G key={y}>
+          <Rect x={20} y={y} width={300} height={2.4} rx={1.2} fill="rgba(158,106,54,0.30)" />
+          <Path
+            d={`M ${28 + i * 9} ${y - 13} Q 170 ${y - 13 + (i % 2 ? 5 : -5)} ${306 - i * 7} ${y - 12} Q 170 ${y - 11 + (i % 2 ? 5 : -5)} ${28 + i * 9} ${y - 11} z`}
+            fill="rgba(158,106,54,0.2)"
+          />
+        </G>
       ))}
       <Rect x={16} y={30} width={308} height={8} rx={4} fill="rgba(255,255,255,0.30)" />
 
@@ -60,20 +74,29 @@ export function StallFront({ width }: { width: number }) {
         </G>
       ))}
 
-      {/* awning */}
+      {/*
+       * THE AWNING IS CLOTH. Ten flat stripes and a row of scallops read as a
+       * paper cut-out; canvas stretched over a frame bulges between its ribs,
+       * catches the light along each crown and darkens into every valley — and
+       * it throws the front of the stall into shade.
+       */}
       {Array.from({ length: stripes }, (_, i) => (
-        <Rect
-          key={i}
-          x={(w / stripes) * i}
-          y={0}
-          width={w / stripes}
-          height={30}
-          fill={i % 2 ? palette.cream : palette.engineRed}
-        />
+        <G key={i}>
+          <Rect
+            x={(w / stripes) * i}
+            y={0}
+            width={w / stripes}
+            height={30}
+            fill={i % 2 ? palette.cream : palette.engineRed}
+          />
+          <Rect x={(w / stripes) * i} y={0} width={w / stripes / 2} height={30} fill={SHEEN} opacity={0.45} />
+          <Rect x={(w / stripes) * (i + 1) - 4} y={0} width={4} height={30} fill={SHADE} />
+        </G>
       ))}
       {scallops(stripes, w, 30, w / stripes / 2)}
       <Rect x={0} y={0} width={w} height={8} rx={4} fill={SHEEN} />
-      <Rect x={0} y={30} width={w} height={7} fill={SHADE} />
+      <Rect x={0} y={26} width={w} height={11} fill="url(#stallAwnFold)" />
+      <Rect x={16} y={37} width={308} height={26} fill={SHADE} opacity={0.55} />
 
       {/* hanging price board */}
       <Path d={`M${STALL_SIGN.x + 14} 32 v 18 M${STALL_SIGN.x + STALL_SIGN.w - 14} 32 v 18`} stroke={palette.woodDark} strokeWidth={3} />
@@ -213,15 +236,33 @@ const coinTone = (value: number): { face: string; edge: string; rim: string } =>
   return { face: '#E8A85A', edge: '#B9762F', rim: '#F7D6A8' };
 };
 
-/** A chunky market coin with its value embossed in the middle. */
+/**
+ * A chunky market coin.
+ *
+ * A coin is *struck*: the blank is squeezed between two dies, so the flat of
+ * the metal takes the light in a sweep from the upper left, the milled edge and
+ * the raised inner ring each carry a bright half and a dark half, and the whole
+ * disc stands on a thickness you can see. Flat fill + one arc was a token.
+ */
 export function CoinDisc({ value, size = 56, dim }: { value: number; size?: number; dim?: boolean }) {
   const tone = coinTone(value);
   const notches = 16;
+  /* one gradient per denomination: same value, same colours, same id */
+  const gid = `coin${value}`;
   return (
     <View style={[{ width: size, height: size }, styles.coin, dim && styles.dim]}>
       <Svg width={size} height={size} viewBox="0 0 64 64">
+        <Defs>
+          <RadialGradient id={gid} cx="30%" cy="24%" r="82%">
+            <Stop offset="0" stopColor="#FFFFFF" stopOpacity={0.55} />
+            <Stop offset="0.46" stopColor="#FFFFFF" stopOpacity={0.08} />
+            <Stop offset="1" stopColor={tone.edge} stopOpacity={0.55} />
+          </RadialGradient>
+        </Defs>
+        {/* the thickness of the blank */}
         <Circle cx={32} cy={34} r={29} fill={tone.edge} />
         <Circle cx={32} cy={31} r={29} fill={tone.face} />
+        {/* milling: lit on the light side, in shade on the other */}
         {Array.from({ length: notches }, (_, i) => (
           <Rect
             key={i}
@@ -230,20 +271,59 @@ export function CoinDisc({ value, size = 56, dim }: { value: number; size?: numb
             width={2.8}
             height={5}
             rx={1.4}
-            fill={tone.edge}
-            opacity={0.55}
+            fill={i > notches * 0.15 && i < notches * 0.6 ? tone.edge : tone.rim}
+            opacity={0.6}
             transform={`rotate(${(360 / notches) * i} 32 31)`}
           />
         ))}
-        <Circle cx={32} cy={31} r={22} fill={tone.rim} />
+        {/* the raised inner ring: bright rim on the light side, dark beneath */}
+        <Circle cx={32} cy={31} r={22} fill={tone.edge} opacity={0.75} />
+        <Circle cx={32} cy={30.2} r={22} fill={tone.rim} />
         <Circle cx={32} cy={31} r={19} fill={tone.face} />
-        <Path d="M14 20a22 22 0 0 1 17-11" stroke="rgba(255,255,255,0.7)" strokeWidth={4} strokeLinecap="round" fill="none" />
+        <Circle cx={32} cy={31.6} r={19} fill={tone.edge} opacity={0.28} />
+        <Circle cx={32} cy={30.8} r={18.4} fill={tone.face} />
+        {/* the sweep of the flat, and the specular the die leaves on the edge */}
+        <Circle cx={32} cy={31} r={29} fill={`url(#${gid})`} />
+        <Path d="M14 20a22 22 0 0 1 17-11" stroke="rgba(255,255,255,0.75)" strokeWidth={4} strokeLinecap="round" fill="none" />
+        <Path d="M47 45a20 20 0 0 1-13 8" stroke="rgba(255,255,255,0.3)" strokeWidth={2.4} strokeLinecap="round" fill="none" />
       </Svg>
       <View style={styles.coinLabel} pointerEvents="none">
         <Text variant="h3" center style={{ fontSize: size * 0.36, lineHeight: size * 0.46 }}>
           {value}
         </Text>
       </View>
+    </View>
+  );
+}
+
+/**
+ * The grain of the counter top, stretched over whatever size the counter is.
+ *
+ * Two straight bars said "there are two lines on this box". Long bowed figures
+ * running the length of the plank say oak — the same lesson the pizza board
+ * taught: a brown rectangle is a colour until it has a grain.
+ */
+export function CounterGrain() {
+  const grain = [
+    'M 4 22 Q 50 15 97 21 Q 50 20 4 27 z',
+    'M 12 44 Q 52 52 92 43 Q 52 48 12 49 z',
+    'M 2 68 Q 48 61 98 69 Q 48 66 2 73 z',
+    'M 20 88 Q 56 94 86 87 Q 56 91 20 93 z',
+  ].join(' ');
+  return (
+    <View style={StyleSheet.absoluteFill} pointerEvents="none">
+      <Svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none">
+        <Defs>
+          <LinearGradient id="ctrTop" x1="0" y1="0" x2="0" y2="1">
+            <Stop offset="0" stopColor="#FFFFFF" stopOpacity={0.34} />
+            <Stop offset="0.3" stopColor="#FFFFFF" stopOpacity={0.05} />
+            <Stop offset="1" stopColor="#1F2A5A" stopOpacity={0.1} />
+          </LinearGradient>
+        </Defs>
+        <Rect x={0} y={0} width={100} height={100} fill="url(#ctrTop)" />
+        <Path d={grain} fill="rgba(140,88,40,0.3)" />
+        <Path d="M 8 34 Q 50 30 94 35 Q 50 33 8 37 z" fill="rgba(255,232,196,0.22)" />
+      </Svg>
     </View>
   );
 }

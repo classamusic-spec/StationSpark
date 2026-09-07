@@ -88,6 +88,14 @@ interface StrandedProps {
   onPickUp: () => void;
 }
 
+/**
+ * How far down its own box an animal's feet are. The rigs in `world/props` are
+ * drawn in a 100-unit box standing on y ≈ 93, so a perch measured to the top of
+ * the bough needs the box pulled up by this much or the animal hovers a few
+ * pixels above the branch — which is exactly what it looked like.
+ */
+const ANIMAL_FOOT = 0.93;
+
 /** One animal on a branch: wiggles on pickup, plops into the basket on release. */
 function Stranded({ id, size, x, y, phase, basket, enabled, onRescue, onPickUp }: StrandedProps) {
   const dx = useSharedValue(0);
@@ -143,16 +151,34 @@ function Stranded({ id, size, x, y, phase, basket, enabled, onRescue, onPickUp }
     transform: [{ translateX: dx.value }, { translateY: dy.value }, { scale: 1 + lift.value * 0.14 }, { rotate: `${lift.value * 5}deg` }],
     zIndex: lift.value > 0 ? 40 : 5,
   }));
+  /* the shadow stays on the bough and shrinks as the animal is picked up: the
+     one cue that says "this is sitting on that", and the thing every stranded
+     animal was missing */
+  const shadowStyle = useAnimatedStyle(() => ({
+    opacity: 0.9 - lift.value * 0.55,
+    transform: [{ scaleX: 1 - lift.value * 0.22 }, { scaleY: 1 - lift.value * 0.3 }],
+  }));
 
   return (
-    <GestureDetector gesture={gesture}>
+    <>
       <Animated.View
-        style={[styles.stranded, { left: x, top: y, width: size, height: size }, style]}
-        accessibilityLabel={`Rescue the ${animalName[id].en}`}
+        style={[styles.perchShadow, { left: x, top: y + size * ANIMAL_FOOT - size * 0.06, width: size, height: size * 0.14 }, shadowStyle]}
+        pointerEvents="none"
       >
-        <Animal id={id} size={size} mood="help" phase={phase} />
+        <Svg width="100%" height="100%" viewBox="0 0 100 14">
+          <Ellipse cx={52} cy={7} rx={33} ry={5.4} fill={palette.navy} opacity={0.2} />
+          <Ellipse cx={52} cy={7} rx={20} ry={3.4} fill={palette.navy} opacity={0.16} />
+        </Svg>
       </Animated.View>
-    </GestureDetector>
+      <GestureDetector gesture={gesture}>
+        <Animated.View
+          style={[styles.stranded, { left: x, top: y, width: size, height: size }, style]}
+          accessibilityLabel={`Rescue the ${animalName[id].en}`}
+        >
+          <Animal id={id} size={size} mood="help" phase={phase} />
+        </Animated.View>
+      </GestureDetector>
+    </>
   );
 }
 
@@ -270,7 +296,10 @@ export function RescuePets({ challenge, ageBand, onComplete, onEvent, compact }:
            world continuing: every perch is pulled back inside the play area */
         return {
           x: Math.max(2, Math.min(geo.w - geo.petSize - 2, geo.tree.x + fx * geo.tree.w - geo.petSize / 2)),
-          y: Math.max(2, geo.tree.y + fy * geo.tree.h - geo.petSize),
+          /* `fy` is the TOP of the bough; the rig's feet are `ANIMAL_FOOT` down
+             its own box, so the box has to be lifted by that, not by its
+             whole height, or the animal floats above the branch */
+          y: Math.max(2, geo.tree.y + fy * geo.tree.h - geo.petSize * ANIMAL_FOOT),
         };
       }),
     [geo.petSize, geo.tree.h, geo.tree.w, geo.tree.x, geo.tree.y, geo.w, needHelp],
@@ -543,6 +572,7 @@ const styles = StyleSheet.create({
   basketPets: { position: 'absolute', top: -6, flexDirection: 'row', justifyContent: 'center', flexWrap: 'wrap' },
   basketPet: { marginHorizontal: -6 },
   stranded: { position: 'absolute', alignItems: 'center', justifyContent: 'center' },
+  perchShadow: { position: 'absolute', zIndex: 4 },
   hearts: { position: 'absolute' },
   counter: {
     flexDirection: 'row',

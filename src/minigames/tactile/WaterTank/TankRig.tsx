@@ -17,7 +17,7 @@ import React, { memo } from 'react';
 import { StyleSheet } from 'react-native';
 import Svg, { Circle, Defs, Ellipse, G, Line, LinearGradient, Path, Rect, Stop } from 'react-native-svg';
 import { palette } from '@/theme';
-import { HILITE, HILITE_SOFT, SHADE, SHADE_DEEP, SHEEN } from '../shared';
+import { HILITE, SHADE, SHADE_DEEP, SHEEN } from '../shared';
 
 export interface TankRigProps {
   width: number;
@@ -32,7 +32,7 @@ export interface TankRigProps {
  * An empty tank drawn as clear glass is not a tank, it is a hole: the fire
  * engine's red body, its yellow stripe and half the town showed straight
  * through the thing the child is trying to fill. So the tank has a back wall —
- * a pale steel liner with two weld seams, a lit left side and a shaded right —
+ * a steel liner shaded as a cylinder, with two weld seams and a specular band —
  * and the water level is read against it. Drawn behind `WaterSurface`, inside
  * the glass, so the surface still sloshes over it.
  */
@@ -41,16 +41,31 @@ export const TankBack = memo(function TankBack({ width, height }: { width: numbe
   return (
     <Svg width={width} height={height} style={StyleSheet.absoluteFill} pointerEvents="none">
       <Defs>
+        {/* A CYLINDER, NOT A PANEL. The old liner ran pale-to-paler across the
+            width, which is what made the tank read as a white fridge door: no
+            dark rim on either side, so nothing curved. This is the standard
+            metal-drum ramp — dark rim, bright specular a quarter in, mid
+            body, dark rim again — and it is what lets the cyan water read as
+            liquid sitting inside something. */}
         <LinearGradient id="ss-tank-liner" x1="0" y1="0" x2="1" y2="0">
-          <Stop offset="0" stopColor="#EAF4FA" />
-          <Stop offset="0.55" stopColor="#DDEAF3" />
-          <Stop offset="1" stopColor="#C9DAE8" />
+          <Stop offset="0" stopColor="#9CB3C9" />
+          <Stop offset="0.09" stopColor="#C6D8E7" />
+          <Stop offset="0.24" stopColor="#F4F9FD" />
+          <Stop offset="0.46" stopColor="#D6E4EF" />
+          <Stop offset="0.8" stopColor="#AFC3D6" />
+          <Stop offset="1" stopColor="#8CA3BB" />
+        </LinearGradient>
+        {/* the crown catches the sky; the sump sits in its own shadow */}
+        <LinearGradient id="ss-tank-depth" x1="0" y1="0" x2="0" y2="1">
+          <Stop offset="0" stopColor="#FFFFFF" stopOpacity={0.3} />
+          <Stop offset="0.3" stopColor="#FFFFFF" stopOpacity={0.02} />
+          <Stop offset="1" stopColor="#1F2A5A" stopOpacity={0.2} />
         </LinearGradient>
       </Defs>
       <Rect x={0} y={0} width={width} height={height} fill="url(#ss-tank-liner)" />
-      {/* the lit left wall and the shaded right wall of a cylinder */}
-      <Rect x={0} y={0} width={width * 0.14} height={height} fill={HILITE_SOFT} />
-      <Rect x={width * 0.86} y={0} width={width * 0.14} height={height} fill={SHADE} />
+      <Rect x={0} y={0} width={width} height={height} fill="url(#ss-tank-depth)" />
+      {/* the hot specular line down the lit quarter — steel, not matte plastic */}
+      <Rect x={width * 0.2} y={height * 0.04} width={Math.max(2, width * 0.035)} height={height * 0.92} rx={width * 0.02} fill={palette.white} opacity={0.5} />
       {/* two weld seams, so a blank wall has something to read */}
       {[0.36, 0.68].map((f) => (
         <G key={f}>
@@ -60,6 +75,7 @@ export const TankBack = memo(function TankBack({ width, height }: { width: numbe
       ))}
       {/* the sump: the floor of the tank is in shade */}
       <Rect x={0} y={height - 10 * s} width={width} height={10 * s} fill={SHADE} opacity={0.55} />
+      <Rect x={0} y={height - 12 * s} width={width} height={Math.max(1.4, 2 * s)} fill={palette.white} opacity={0.3} />
     </Svg>
   );
 });

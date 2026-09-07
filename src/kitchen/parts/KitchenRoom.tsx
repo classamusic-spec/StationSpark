@@ -1,6 +1,6 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import { StyleSheet, View, type LayoutChangeEvent, type StyleProp, type ViewStyle } from 'react-native';
-import Svg, { Circle, Defs, Ellipse, G, LinearGradient, Path, Rect, Stop } from 'react-native-svg';
+import Svg, { Circle, Defs, Ellipse, G, LinearGradient, Path, RadialGradient, Rect, Stop } from 'react-native-svg';
 import Animated, { useAnimatedStyle } from 'react-native-reanimated';
 import { palette } from '@/theme';
 import { at } from './Stage';
@@ -52,6 +52,18 @@ export function KitchenWall({ tone = 'warm', style }: { tone?: 'warm' | 'cool'; 
             <Stop offset="0" stopColor={top} />
             <Stop offset="1" stopColor={bottom} />
           </LinearGradient>
+          {/* the room has ONE light, up and to the left: a soft pool where it
+              lands and a fall-off into the far corners. Without it the tiled
+              wall is a single flat value across the whole screen. */}
+          <RadialGradient id="kglow" cx="24%" cy="8%" r="86%">
+            <Stop offset="0" stopColor="#FFFFFF" stopOpacity={0.5} />
+            <Stop offset="0.5" stopColor="#FFFFFF" stopOpacity={0.14} />
+            <Stop offset="1" stopColor="#FFFFFF" stopOpacity={0} />
+          </RadialGradient>
+          <RadialGradient id="kfall" cx="30%" cy="10%" r="92%">
+            <Stop offset="0.42" stopColor="#1F2A5A" stopOpacity={0} />
+            <Stop offset="1" stopColor="#1F2A5A" stopOpacity={0.16} />
+          </RadialGradient>
           <LinearGradient id="kvig" x1="0" y1="0" x2="0" y2="1">
             <Stop offset="0" stopColor="rgba(31,42,90,0.10)" />
             <Stop offset="0.35" stopColor="rgba(31,42,90,0)" />
@@ -59,6 +71,8 @@ export function KitchenWall({ tone = 'warm', style }: { tone?: 'warm' | 'cool'; 
           </LinearGradient>
         </Defs>
         <Rect x={0} y={0} width={100} height={100} fill="url(#kwall)" />
+        <Rect x={0} y={0} width={100} height={100} fill="url(#kglow)" />
+        <Rect x={0} y={0} width={100} height={100} fill="url(#kfall)" />
         <Rect x={0} y={0} width={100} height={100} fill="url(#kvig)" />
       </Svg>
       <TileField />
@@ -66,14 +80,45 @@ export function KitchenWall({ tone = 'warm', style }: { tone?: 'warm' | 'cool'; 
   );
 }
 
-/** The grout grid. Drawn as explicit lines so it reads the same on every platform. */
+/**
+ * The grout grid. Drawn as explicit lines so it reads the same on every
+ * platform — and each course gets a lit top lip and a shaded foot, because a
+ * ceramic tile has a glazed bevel and a flat grid of lines does not. A handful
+ * of tiles are fired a shade off, the way a real wall is, so a big field never
+ * repeats perfectly.
+ */
 function TileField() {
   const cols = 9;
   const rows = 14;
+  /* deterministic, so the wall is the same wall on every render */
+  const offTiles = useMemo(
+    () =>
+      Array.from({ length: 13 }, (_, i) => ({
+        r: (i * 7 + 1) % rows,
+        c: (i * 5 + (i % 3)) % cols,
+        light: i % 3 !== 1,
+      })),
+    [],
+  );
   return (
     <Svg style={StyleSheet.absoluteFill} width="100%" height="100%" preserveAspectRatio="none" viewBox="0 0 90 140">
+      {offTiles.map((t, i) => (
+        <Rect
+          key={`o${i}`}
+          x={t.c * 10 + (t.r % 2 ? 5 : 0)}
+          y={t.r * 10}
+          width={10}
+          height={10}
+          fill={t.light ? 'rgba(255,255,255,0.34)' : 'rgba(31,42,90,0.035)'}
+        />
+      ))}
       {Array.from({ length: rows }, (_, r) => (
-        <Rect key={`r${r}`} x={0} y={r * 10} width={90} height={0.9} fill={GROUT} />
+        <G key={`r${r}`}>
+          <Rect x={0} y={r * 10} width={90} height={0.9} fill={GROUT} />
+          {/* the glazed lip that catches the light, and the shade it drops */}
+          <Rect x={0} y={r * 10 + 0.9} width={90} height={0.85} fill="rgba(255,255,255,0.5)" />
+          <Rect x={0} y={r * 10 + 8.6} width={90} height={1.4} fill="rgba(31,42,90,0.045)" />
+        </G>
       ))}
       {Array.from({ length: rows }, (_, r) =>
         Array.from({ length: cols + 1 }, (_, c) => (
@@ -128,6 +173,22 @@ export function CounterRun({ s, w, y, h, deck = 0 }: { s: number; w: number; y: 
             <Stop offset="0.55" stopColor="#EABE8C" />
             <Stop offset="1" stopColor="#F5D0A4" />
           </LinearGradient>
+          {/* the pool of light the room's one lamp lays across the worktop */}
+          <LinearGradient id="ckSheen" x1="0.08" y1="0" x2="0.72" y2="1">
+            <Stop offset="0" stopColor="#FFFFFF" stopOpacity={0.34} />
+            <Stop offset="0.5" stopColor="#FFFFFF" stopOpacity={0.09} />
+            <Stop offset="1" stopColor="#FFFFFF" stopOpacity={0} />
+          </LinearGradient>
+          {/* the roll-over at the front lip: wood turns away from the light */}
+          <LinearGradient id="ckLip" x1="0" y1="0" x2="0" y2="1">
+            <Stop offset="0" stopColor="#8C5824" stopOpacity={0} />
+            <Stop offset="1" stopColor="#8C5824" stopOpacity={0.26} />
+          </LinearGradient>
+          <LinearGradient id="ckNose" x1="0" y1="0" x2="0" y2="1">
+            <Stop offset="0" stopColor="#E4A970" />
+            <Stop offset="0.5" stopColor="#CE8A4B" />
+            <Stop offset="1" stopColor="#A96C33" />
+          </LinearGradient>
         </Defs>
         {d > 0 ? (
           <>
@@ -147,6 +208,9 @@ export function CounterRun({ s, w, y, h, deck = 0 }: { s: number; w: number; y: 
                 fill={g.dark ? 'rgba(140,88,36,0.22)' : 'rgba(255,255,255,0.34)'}
               />
             ))}
+            {/* light lands on the wood, and the wood darkens as it rolls over */}
+            <Rect x={0} y={0} width={w} height={d} fill="url(#ckSheen)" />
+            <Rect x={0} y={d - Math.min(14, d * 0.3)} width={w} height={Math.min(14, d * 0.3)} fill="url(#ckLip)" />
           </>
         ) : null}
         {/* the shadow the worktop throws on the cabinet fronts */}
@@ -174,8 +238,7 @@ export function CounterRun({ s, w, y, h, deck = 0 }: { s: number; w: number; y: 
           );
         })}
         {/* the front nose of the slab */}
-        <Rect x={0} y={d} width={w} height={topH} rx={d > 0 ? 0 : 4} fill={palette.wood} />
-        <Rect x={0} y={d} width={w} height={topH * 0.44} fill="#D89A5D" />
+        <Rect x={0} y={d} width={w} height={topH} rx={d > 0 ? 0 : 4} fill="url(#ckNose)" />
         <Rect x={0} y={d} width={w} height={3.5} fill="rgba(255,255,255,0.5)" />
         {d > 0
           ? null
@@ -217,10 +280,22 @@ export function Shelf({ s, x, y, w, thickness = 11 }: { s: number; x: number; y:
   return (
     <View style={at(s, x, y, w, h)} pointerEvents="none">
       <Svg width={w * s} height={h * s} viewBox={`0 0 ${w} ${h}`}>
-        <Rect x={0} y={thickness} width={w} height={5} fill="rgba(31,42,90,0.10)" />
+        <Defs>
+          {/* the shadow a plank throws down the tiles behind it */}
+          <LinearGradient id="shCast" x1="0" y1="0" x2="0" y2="1">
+            <Stop offset="0" stopColor="#1F2A5A" stopOpacity={0.19} />
+            <Stop offset="1" stopColor="#1F2A5A" stopOpacity={0} />
+          </LinearGradient>
+          <LinearGradient id="shPlank" x1="0" y1="0" x2="0" y2="1">
+            <Stop offset="0" stopColor="#DBA268" />
+            <Stop offset="0.55" stopColor={palette.wood} />
+            <Stop offset="1" stopColor="#A9743C" />
+          </LinearGradient>
+        </Defs>
+        <Rect x={2} y={thickness} width={w - 4} height={11} fill="url(#shCast)" />
         <Path d={`M22 ${thickness} h13 l-13 15 z`} fill={palette.woodDark} />
         <Path d={`M${w - 22} ${thickness} h-13 l13 15 z`} fill={palette.woodDark} />
-        <Rect x={0} y={0} width={w} height={thickness} rx={thickness / 2} fill={palette.wood} />
+        <Rect x={0} y={0} width={w} height={thickness} rx={thickness / 2} fill="url(#shPlank)" />
         <Rect x={0} y={0} width={w} height={thickness * 0.4} rx={thickness * 0.2} fill="rgba(255,255,255,0.34)" />
       </Svg>
     </View>
@@ -253,7 +328,13 @@ export function StoreJar({ s, x, y, h, tone }: { s: number; x: number; y: number
         <Ellipse cx={31} cy={96} rx={26} ry={4} fill="rgba(31,42,90,0.10)" />
         <Rect x={4} y={16} width={54} height={80} rx={13} fill={t.body} />
         <Rect x={9} y={44} width={44} height={50} rx={10} fill={t.fill} />
+        {/* what is in the jar has a surface, seen through the glass */}
+        <Ellipse cx={31} cy={45} rx={22} ry={5} fill="rgba(255,255,255,0.28)" />
+        {/* glass: a bright band up the lit side, a dark edge on the shaded one,
+            and the bounce the counter throws back up into the foot */}
         <Rect x={9} y={21} width={9} height={62} rx={4.5} fill="rgba(255,255,255,0.55)" />
+        <Rect x={48} y={24} width={6} height={58} rx={3} fill="rgba(31,42,90,0.13)" />
+        <Path d="M10 84q21 9 42 0v6q-21 8-42 0z" fill="rgba(255,255,255,0.34)" />
         {/* label */}
         <Rect x={7} y={54} width={48} height={26} rx={6} fill="#FFF8EA" />
         <Rect x={13} y={61} width={30} height={3.4} rx={1.7} fill="rgba(31,42,90,0.30)" />
@@ -605,8 +686,17 @@ export function SplashbackBand({ s, x, y, w, depth = 34 }: { s: number; x: numbe
   return (
     <View style={at(s, x, y, w, h)} pointerEvents="none">
       <Svg width={w * s} height={h * s} viewBox={`0 0 ${w} ${h}`}>
+        <Defs>
+          {/* glazed ceramic: brightest where the light lands, cooler in the corner */}
+          <LinearGradient id="sbLight" x1="0.1" y1="0" x2="0.8" y2="1">
+            <Stop offset="0" stopColor="#FFFFFF" stopOpacity={0.5} />
+            <Stop offset="0.55" stopColor="#FFFFFF" stopOpacity={0.12} />
+            <Stop offset="1" stopColor="#1F2A5A" stopOpacity={0.05} />
+          </LinearGradient>
+        </Defs>
         {/* the plain tile field under the accent course */}
         <Rect x={0} y={band} width={w} height={h - band} fill="#FDF3E0" />
+        <Rect x={0} y={band} width={w} height={h - band} fill="url(#sbLight)" />
         {Array.from({ length: rows }, (_, r) =>
           Array.from({ length: n * 2 + 1 }, (_, c) => (
             <Rect
@@ -619,9 +709,19 @@ export function SplashbackBand({ s, x, y, w, depth = 34 }: { s: number; x: numbe
             />
           )),
         )}
-        {Array.from({ length: rows }, (_, r) => (
-          <Rect key={`sr${r}`} x={0} y={band + r * ((h - band) / rows)} width={w} height={1.2} fill={GROUT} />
-        ))}
+        {Array.from({ length: rows }, (_, r) => {
+          const rowH = (h - band) / rows;
+          const ry = band + r * rowH;
+          return (
+            <G key={`sr${r}`}>
+              <Rect x={0} y={ry} width={w} height={1.2} fill={GROUT} />
+              {/* every course has a glazed lip that catches the light and a
+                  shaded foot — that bevel is what stops it reading as graph paper */}
+              <Rect x={0} y={ry + 1.2} width={w} height={1} fill="rgba(255,255,255,0.66)" />
+              <Rect x={0} y={ry + rowH - 1.8} width={w} height={1.8} fill="rgba(31,42,90,0.05)" />
+            </G>
+          );
+        })}
         {/* The accent course. It used to be four hues of big diamond, one per
             30 units — with a pot or a jug standing in front of it, all a child
             saw was two coloured arrowheads stranded at the frame edges. One
@@ -659,24 +759,89 @@ export function Hob({ s, x, y, w, lit = false }: { s: number; x: number; y: numb
   return (
     <View style={at(s, x, y, w, h)} pointerEvents="none">
       <Svg width={w * s} height={h * s} viewBox="0 0 240 86">
+        <Defs>
+          {/* brushed enamel: cool steel that turns to shadow at the front */}
+          <LinearGradient id="hbDeck" x1="0.06" y1="0" x2="0.5" y2="1">
+            <Stop offset="0" stopColor="#8E97B9" />
+            <Stop offset="0.46" stopColor="#6E779E" />
+            <Stop offset="1" stopColor="#4C5476" />
+          </LinearGradient>
+          <LinearGradient id="hbFascia" x1="0" y1="0" x2="0" y2="1">
+            <Stop offset="0" stopColor="#464F71" />
+            <Stop offset="1" stopColor="#2B3149" />
+          </LinearGradient>
+          {/* the one specular band a steel top always carries */}
+          <LinearGradient id="hbSpec" x1="0" y1="0" x2="0.4" y2="1">
+            <Stop offset="0" stopColor="#FFFFFF" stopOpacity={0.4} />
+            <Stop offset="1" stopColor="#FFFFFF" stopOpacity={0} />
+          </LinearGradient>
+          <LinearGradient id="hbKnob" x1="0" y1="0" x2="0.3" y2="1">
+            <Stop offset="0" stopColor="#FFFFFF" />
+            <Stop offset="1" stopColor="#B7BFD6" />
+          </LinearGradient>
+          {/* heat, contained in the ring — the kitchen's only fire */}
+          <RadialGradient id="hbHeat" cx="50%" cy="50%" r="50%">
+            <Stop offset="0" stopColor={palette.flameCore} stopOpacity={0.95} />
+            <Stop offset="0.45" stopColor={palette.flameMid} stopOpacity={0.8} />
+            <Stop offset="1" stopColor={palette.flameOuter} stopOpacity={0} />
+          </RadialGradient>
+        </Defs>
+
         <Ellipse cx={120} cy={78} rx={112} ry={8} fill="rgba(31,42,90,0.14)" />
+        {/* what a working ring throws back onto the wood around the stove */}
+        {lit ? <Ellipse cx={96} cy={70} rx={104} ry={20} fill="url(#hbHeat)" opacity={0.34} /> : null}
+
         {/* deck */}
-        <Rect x={4} y={10} width={232} height={48} rx={12} fill="#5A648A" />
-        <Rect x={4} y={10} width={232} height={30} rx={12} fill="#767FA3" />
-        <Rect x={10} y={14} width={90} height={5} rx={2.5} fill="rgba(255,255,255,0.3)" />
-        {/* rings */}
-        <Ellipse cx={84} cy={30} rx={54} ry={15} fill="#3B4460" />
-        <Ellipse cx={84} cy={28} rx={46} ry={12} fill={lit ? '#F0A24B' : '#4B5573'} />
-        <Ellipse cx={84} cy={28} rx={30} ry={7.5} fill={lit ? '#FFC463' : '#5A648A'} />
-        <Ellipse cx={186} cy={32} rx={30} ry={9} fill="#3B4460" />
-        <Ellipse cx={186} cy={30} rx={24} ry={7} fill="#4B5573" />
+        <Rect x={4} y={10} width={232} height={48} rx={12} fill="url(#hbDeck)" />
+        <Path d="M16 10h180c-40 6-96 22-124 46H16a12 12 0 0 1-12-12V22a12 12 0 0 1 12-12z" fill="url(#hbSpec)" />
+        <Rect x={4} y={10} width={232} height={3} rx={1.5} fill="rgba(255,255,255,0.55)" />
+        <Rect x={4} y={54} width={232} height={4} fill="rgba(31,42,90,0.18)" />
+
+        {/* the big ring, under the pan: a recessed well, cast-iron arms across
+            it and — when it is on — a glow inside the well, never a flame */}
+        <Ellipse cx={84} cy={31} rx={55} ry={16} fill="rgba(31,42,90,0.34)" />
+        <Ellipse cx={84} cy={29} rx={52} ry={14} fill="#333B57" />
+        <Ellipse cx={84} cy={28} rx={44} ry={11} fill="#252B42" />
+        {lit ? <Ellipse cx={84} cy={28} rx={42} ry={10.5} fill="url(#hbHeat)" /> : null}
+        {[-40, -14, 14, 40].map((dx) => (
+          <Rect key={`ta${dx}`} x={84 + dx - 3.4} y={19} width={6.8} height={19} rx={3.4} fill="#3B4460" />
+        ))}
+        <Ellipse cx={84} cy={23} rx={46} ry={4} fill="rgba(255,255,255,0.12)" />
+        <Ellipse cx={84} cy={28} rx={11} ry={4.4} fill="#3B4460" />
+        <Ellipse cx={84} cy={26.6} rx={11} ry={4.4} fill="#4B5573" />
+
+        {/* the spare ring */}
+        <Ellipse cx={186} cy={33} rx={31} ry={10} fill="rgba(31,42,90,0.3)" />
+        <Ellipse cx={186} cy={31} rx={29} ry={9} fill="#333B57" />
+        <Ellipse cx={186} cy={30} rx={23} ry={6.6} fill="#252B42" />
+        {[-16, 0, 16].map((dx) => (
+          <Rect key={`tb${dx}`} x={186 + dx - 2.6} y={24} width={5.2} height={13} rx={2.6} fill="#3B4460" />
+        ))}
+        <Ellipse cx={186} cy={26} rx={25} ry={2.6} fill="rgba(255,255,255,0.12)" />
+        <Ellipse cx={186} cy={30} rx={7} ry={3} fill="#4B5573" />
+
         {/* fascia + knobs */}
-        <Rect x={4} y={52} width={232} height={22} rx={9} fill="#3B4460" />
-        <Circle cx={196} cy={63} r={9} fill="#D9DDEC" />
-        <Rect x={195} y={56} width={3} height={7} rx={1.5} fill={palette.navy} />
-        <Circle cx={220} cy={63} r={9} fill="#D9DDEC" />
-        <Rect x={219} y={57} width={3} height={7} rx={1.5} fill={palette.navy} />
-        <Rect x={16} y={58} width={140} height={9} rx={4.5} fill="rgba(255,255,255,0.14)" />
+        <Rect x={4} y={52} width={232} height={22} rx={9} fill="url(#hbFascia)" />
+        <Rect x={8} y={53} width={224} height={2} rx={1} fill="rgba(255,255,255,0.22)" />
+        <Rect x={16} y={58} width={140} height={9} rx={4.5} fill="rgba(255,255,255,0.10)" />
+        <Rect x={16} y={58} width={140} height={3} rx={1.5} fill="rgba(255,255,255,0.10)" />
+        {[196, 220].map((cx, i) => (
+          <G key={`kn${cx}`}>
+            <Circle cx={cx} cy={64} r={10} fill="rgba(31,42,90,0.5)" />
+            <Circle cx={cx} cy={63} r={9} fill="url(#hbKnob)" />
+            <Rect
+              x={cx - 1.5}
+              y={56}
+              width={3}
+              height={7}
+              rx={1.5}
+              fill={palette.navy}
+              transform={lit && i === 0 ? `rotate(-34 ${cx} 63)` : undefined}
+            />
+            <Circle cx={cx - 3} cy={60} r={2.4} fill="rgba(255,255,255,0.9)" />
+          </G>
+        ))}
+        {lit ? <Circle cx={172} cy={63} r={3.2} fill={palette.flameOuter} /> : null}
       </Svg>
     </View>
   );

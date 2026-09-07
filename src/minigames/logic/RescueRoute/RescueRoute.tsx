@@ -461,7 +461,7 @@ export function RescueRoute({ challenge, ageBand, onComplete, onEvent, compact }
       compact={compact}
       backdrop={<RoomWash top="#C9D6E8" bottom="#A9BAD6" />}
       hint={{ text: hintText, visible: hintLadder.showBubble && state.phase !== 'running', onDismiss: hintLadder.dismiss }}
-      overlay={
+      playOverlay={
         challenge.compareRoutes ? (
           <AskQuestion
             visible={state.phase === 'compare'}

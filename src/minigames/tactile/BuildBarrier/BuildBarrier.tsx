@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useReducer, useRef } from 'react';
 import { StyleSheet, View } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withSequence, withSpring, withTiming } from 'react-native-reanimated';
-import Svg, { Circle, Ellipse, G, Path, Rect } from 'react-native-svg';
+import Svg, { Circle, Defs, Ellipse, G, Path, RadialGradient, Rect, Stop } from 'react-native-svg';
 import type { MiniGameProps } from '@/minigames/types';
 import { useMiniGameSession } from '@/minigames/useMiniGameSession';
 import { hit, palette, radii, shadows, spacing, springs } from '@/theme';
@@ -293,7 +293,17 @@ export function BuildBarrier({ challenge, ageBand, onComplete, onEvent, compact 
   /* two constraints at once: the LONGEST barrier must fit one line of the tray,
      and the whole set must fit in about two lines — five 58 px rows of tokens
      ate half the phone screen and shrank the ring they are meant to fill */
-  const segPx = Math.max(9, Math.min(stage.s(22), (stage.trayWidth - 26) / longest, (stage.trayWidth * 1.8) / units));
+  /* ...and each token now stands on a shelf with 12 px of padding, so the
+     budget the barrier itself may spend is that much smaller on every piece */
+  const shelf = 12;
+  const segPx = Math.max(
+    9,
+    Math.min(
+      stage.s(22),
+      (stage.trayWidth - 26 - shelf) / longest,
+      Math.max(9, stage.trayWidth * 1.8 - pieces.length * shelf) / units,
+    ),
+  );
   const pieceH = Math.max(hit.min, Math.min(stage.rail ? 62 : 56, stage.s(58)));
 
   return (
@@ -321,15 +331,22 @@ export function BuildBarrier({ challenge, ageBand, onComplete, onEvent, compact 
         <Tray>
           <TrayRow style={stage.rail ? styles.trayColumn : undefined}>
             {available.map((p) => (
-              <DragToken
-                key={p.index}
-                disabled={p.used || state.phase !== 'building'}
-                highlight={hints.assist && !p.used && p.value === suggestion}
-                onPlace={() => place(p.index)}
-                accessibilityLabel={`Barrier of ${p.value}`}
-              >
-                <BarrierPiece segments={p.value} segmentPx={segPx} height={pieceH} tone={p.used ? 'ghost' : 'red'} />
-              </DragToken>
+              /* THE DEPOT RACK. A barrier is red AND WHITE, and half of it
+                 disappeared against a white tray — a 4-unit barrier read as
+                 two red stubs and a 2 as one. Every token stands on its own
+                 slate shelf, so the white stripes have something to be white
+                 against and the row reads as barriers racked in the yard. */
+              <View key={p.index} style={styles.rackCell}>
+                <DragToken
+                  disabled={p.used || state.phase !== 'building'}
+                  highlight={hints.assist && !p.used && p.value === suggestion}
+                  onPlace={() => place(p.index)}
+                  accessibilityLabel={`Barrier of ${p.value}`}
+                >
+                  <BarrierPiece segments={p.value} segmentPx={segPx} height={pieceH} tone={p.used ? 'ghost' : 'red'} />
+                </DragToken>
+                <View style={styles.rackRail} />
+              </View>
             ))}
             <Button
               label="Undo"
@@ -354,6 +371,18 @@ export function BuildBarrier({ challenge, ageBand, onComplete, onEvent, compact 
           <PlayGround width={geo.w} height={geo.h} top={geo.horizonY} variant="grass" dressed seed={target} />
 
           <Svg style={StyleSheet.absoluteFill} width={geo.w} height={geo.h} pointerEvents="none">
+            <Defs>
+              <RadialGradient id="ss-pit-dish" cx="0.34" cy="0.28" r="0.86">
+                <Stop offset="0" stopColor="#FFFFFF" stopOpacity={0.3} />
+                <Stop offset="0.5" stopColor="#FFFFFF" stopOpacity={0.02} />
+                <Stop offset="1" stopColor="#1F2A5A" stopOpacity={0.2} />
+              </RadialGradient>
+              <RadialGradient id="ss-pit-glow" cx="0.5" cy="0.5" r="0.5">
+                <Stop offset="0" stopColor={palette.flameMid} stopOpacity={0.4} />
+                <Stop offset="0.55" stopColor={palette.flameOuter} stopOpacity={0.14} />
+                <Stop offset="1" stopColor={palette.flameOuter} stopOpacity={0} />
+              </RadialGradient>
+            </Defs>
             {/* sky furniture: the band over the hedge is the top plane of the
                 composition and it was raw blue. A flat cloud bank and two
                 gulls, both pale and static — nothing here may pull an eye off
@@ -433,7 +462,12 @@ export function BuildBarrier({ challenge, ageBand, onComplete, onEvent, compact 
             <Ellipse cx={geo.cx} cy={geo.cy + geo.radius * 0.06} rx={geo.radius * 0.9} ry={geo.radius * 0.86} fill={leaf.deep} opacity={0.3} />
             <Ellipse cx={geo.cx} cy={geo.cy} rx={geo.radius * 0.88} ry={geo.radius * 0.84} fill="#D8C39A" />
             <Ellipse cx={geo.cx} cy={geo.cy - geo.radius * 0.03} rx={geo.radius * 0.84} ry={geo.radius * 0.79} fill="#E4D3AE" />
+            {/* the pit is dished, not painted on: one wash lights the up-left
+                rim of the earth and drops the far-right side into shade */}
+            <Ellipse cx={geo.cx} cy={geo.cy - geo.radius * 0.03} rx={geo.radius * 0.84} ry={geo.radius * 0.79} fill="url(#ss-pit-dish)" />
             <Ellipse cx={geo.cx} cy={geo.cy + 2} rx={geo.radius * 0.5} ry={geo.radius * 0.46} fill="#C6AC7C" opacity={0.62} />
+            {/* the fire's own warmth, thrown on the ground it is standing on */}
+            <Ellipse cx={geo.cx} cy={geo.cy + geo.radius * 0.1} rx={geo.radius * 0.66} ry={geo.radius * 0.5} fill="url(#ss-pit-glow)" />
             <Path
               d={`M ${geo.cx - geo.radius * 0.4} ${geo.cy - geo.radius * 0.54} q ${geo.radius * 0.36} ${-geo.radius * 0.12} ${geo.radius * 0.72} ${geo.radius * 0.05}`}
               stroke={HILITE}
@@ -533,6 +567,17 @@ export function BuildBarrier({ challenge, ageBand, onComplete, onEvent, compact 
 
 const styles = StyleSheet.create({
   cone: { position: 'absolute' },
+  /* the shelf one barrier is racked on: a pale slate plate with a darker rail
+     under its feet, so a red-and-white barrier has a ground to stand on */
+  rackCell: {
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    paddingHorizontal: 6,
+    paddingTop: 4,
+    borderRadius: radii.tile,
+    backgroundColor: 'rgba(140,148,179,0.13)',
+  },
+  rackRail: { height: 4, alignSelf: 'stretch', borderRadius: 2, backgroundColor: 'rgba(140,148,179,0.4)' },
   /* in a side rail the tray is a tall column: a wrapping ROW hung the longest
      barrier over both edges of the panel */
   trayColumn: { flexDirection: 'column' },

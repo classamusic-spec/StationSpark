@@ -26,7 +26,7 @@ import { useGameLayout } from '../shared/layout';
 import { useCaptainLine } from '../shared/speak';
 import { useHintLadder } from '../shared/useHintLadder';
 import { useDragToSlot, type DropOutcome } from '../shared/useDragToSlot';
-import { CoinDisc, PaperBag, StallFront, stallRects } from './Stall';
+import { CoinDisc, CounterGrain, PaperBag, StallFront, stallRects } from './Stall';
 import { MarketStreet, RoomWash, clamp, marketMetrics, usePlayBox } from '../shared/art/Scene';
 
 /* ---------------- state machine ---------------- */
@@ -380,7 +380,7 @@ export function MarketMoney({ challenge, ageBand, onComplete, onEvent, compact }
         visible: hintLadder.showBubble && state.phase === 'shopping',
         onDismiss: hintLadder.dismiss,
       }}
-      overlay={
+      playOverlay={
         challenge.askChange ? (
           <AskQuestion
             visible={state.phase === 'change'}
@@ -473,8 +473,7 @@ export function MarketMoney({ challenge, ageBand, onComplete, onEvent, compact }
            * tray sunk into it with a lit rim and a shaded well.
            */}
           <View style={styles.counterLip} pointerEvents="none" />
-          <View style={[styles.counterGrain, { top: '38%' }]} pointerEvents="none" />
-          <View style={[styles.counterGrain, styles.counterGrainShort, { top: '72%' }]} pointerEvents="none" />
+          <CounterGrain />
           <View style={styles.counterInner}>
             <View style={styles.counterWell} pointerEvents="none" />
             {state.counter.length === 0 ? (
@@ -543,15 +542,6 @@ const styles = StyleSheet.create({
     borderTopRightRadius: radii.card,
     backgroundColor: '#DDAE72',
   },
-  counterGrain: {
-    position: 'absolute',
-    left: '8%',
-    width: '56%',
-    height: 2.6,
-    borderRadius: 1.3,
-    backgroundColor: 'rgba(140,88,40,0.34)',
-  },
-  counterGrainShort: { left: '34%', width: '38%' },
   counterInner: {
     flex: 1,
     alignSelf: 'stretch',

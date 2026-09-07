@@ -1,5 +1,5 @@
 import React from 'react';
-import Svg, { Circle, Ellipse, G, Path, Rect } from 'react-native-svg';
+import Svg, { Circle, Defs, Ellipse, G, LinearGradient, Path, RadialGradient, Rect, Stop } from 'react-native-svg';
 import type { ShapePieceKind } from '@/learning/types';
 import { palette } from '@/theme';
 
@@ -152,13 +152,43 @@ export function PieceArt({ shape, w, h, rotation, color, ghost }: PieceArtProps)
 /* The blueprint sheet on the workbench                               */
 /* ================================================================= */
 
-/** Deep blue paper with a faint grid and four gold pins — the outlines go on top. */
+/**
+ * The blueprint the child builds on.
+ *
+ * It was a flat navy rectangle with a grid ruled on it — a colour, not a sheet
+ * of paper. Real blueprint stock is cheap, toothy, slightly uneven paper that
+ * has been rolled: it takes the lamp unevenly, it is darker where it curls into
+ * the corners, and the edge of the plate sits proud of the board it is pinned
+ * to. All four of those are here, and they cost five nodes for the whole sheet.
+ */
 export function BlueprintSheet({ size }: { size: number }) {
   const lines = [10, 20, 30, 40, 50, 60, 70, 80, 90];
+  /* the tooth of the paper: one path of hairline diagonals, barely there —
+     it is what stops the field reading as a screen of solid ink */
+  const tooth = Array.from({ length: 26 }, (_, i) => {
+    const o = i * 8 - 100;
+    return `M ${o} 100 L ${o + 100} 0 l 0.9 0 L ${o + 0.9} 100 z `;
+  }).join('');
   return (
     <Svg width={size} height={size} viewBox="0 0 100 100">
+      <Defs>
+        <RadialGradient id="bpLamp" cx="24%" cy="14%" r="92%">
+          <Stop offset="0" stopColor="#7C8CC8" stopOpacity={0.55} />
+          <Stop offset="0.55" stopColor="#5A6AA8" stopOpacity={0.18} />
+          <Stop offset="1" stopColor={palette.navy} stopOpacity={0.32} />
+        </RadialGradient>
+        <LinearGradient id="bpEdge" x1="0" y1="0" x2="1" y2="1">
+          <Stop offset="0" stopColor="#FFFFFF" stopOpacity={0.4} />
+          <Stop offset="0.5" stopColor="#FFFFFF" stopOpacity={0.06} />
+          <Stop offset="1" stopColor="#FFFFFF" stopOpacity={0.24} />
+        </LinearGradient>
+      </Defs>
+      {/* the plate itself, and the lamp falling across it from the upper left */}
       <Rect x={0} y={0} width={100} height={100} rx={4} fill={palette.navySoft} />
       <Rect x={0} y={0} width={100} height={100} rx={4} fill={palette.navy} opacity={0.25} />
+      <Rect x={0} y={0} width={100} height={100} rx={4} fill="url(#bpLamp)" />
+      <Path d={tooth} fill="#FFFFFF" opacity={0.035} />
+      {/* the print */}
       {lines.map((v) => (
         <G key={v}>
           <Rect x={v} y={0} width={0.5} height={100} fill="rgba(255,255,255,0.13)" />
@@ -166,6 +196,18 @@ export function BlueprintSheet({ size }: { size: number }) {
         </G>
       ))}
       <Rect x={3} y={3} width={94} height={94} rx={2.5} fill="none" stroke="rgba(255,255,255,0.4)" strokeWidth={0.9} />
+      <Rect x={5.4} y={5.4} width={89.2} height={89.2} rx={1.8} fill="none" stroke="rgba(255,255,255,0.16)" strokeWidth={0.5} />
+      {/* registration ticks, the way a drawing office trims a plate */}
+      <Path
+        d="M9 3.4h0.8v3.4h-0.8z M90.2 3.4h0.8v3.4h-0.8z M9 93.2h0.8v3.4h-0.8z M90.2 93.2h0.8v3.4h-0.8z
+           M3.4 9h3.4v0.8h-3.4z M93.2 9h3.4v0.8h-3.4z M3.4 90.2h3.4v0.8h-3.4z M93.2 90.2h3.4v0.8h-3.4z"
+        fill="#FFFFFF"
+        opacity={0.3}
+      />
+      {/* the cut edge of the sheet: bright where the light lands, and a shadow
+          where the paper lifts off the board in the far corner */}
+      <Rect x={0.5} y={0.5} width={99} height={99} rx={3.6} fill="none" stroke="url(#bpEdge)" strokeWidth={1.1} />
+      <Path d="M100 84 L100 100 L84 100 Q94 96 100 84 z" fill={palette.navy} opacity={0.22} />
       {([
         [5, 5],
         [95, 5],
@@ -173,9 +215,11 @@ export function BlueprintSheet({ size }: { size: number }) {
         [95, 95],
       ] as [number, number][]).map(([cx, cy]) => (
         <G key={`${cx}-${cy}`}>
+          {/* the pin dimples the paper before it shines */}
+          <Ellipse cx={cx + 0.8} cy={cy + 1.6} rx={3.4} ry={2.2} fill={palette.navy} opacity={0.3} />
           <Circle cx={cx} cy={cy + 0.6} r={2.6} fill={palette.goldDark} />
           <Circle cx={cx} cy={cy} r={2.4} fill={palette.safetyYellow} />
-          <Circle cx={cx - 0.7} cy={cy - 0.8} r={0.8} fill="rgba(255,255,255,0.8)" />
+          <Path d={`M ${cx - 1.9} ${cy - 0.6} a 2.4 2.4 0 0 1 1.9 -1.6`} stroke="rgba(255,255,255,0.85)" strokeWidth={0.9} fill="none" strokeLinecap="round" />
         </G>
       ))}
     </Svg>

@@ -373,6 +373,57 @@ export const vocabulary: VocabWord[] = [
   { id: 'seagull', en: 'seagull', es: 'gaviota', icon: 'bird', category: 'animals' },
   { id: 'owl', en: 'owl', es: 'búho', icon: 'bird', category: 'animals' },
   { id: 'crab', en: 'crab', es: 'cangrejo', icon: 'lizard', category: 'animals' },
+
+  /* ------------------------------------------------------------------ *
+   * THIRD WORD LIST — the shelves the newest calls needed.
+   *
+   * The band on the park bandstand, the storm that took the power out, the
+   * harbour, the birthday order at the bakery and the dishes the kitchen
+   * learned to cook. Nothing new is asked of the icon sheet: every word below
+   * borrows the nearest drawn cousin exactly the way `naranja → apple` does,
+   * and `src/learning/shelves.ts` is what keeps two borrowers of one picture
+   * off the same shelf.
+   * ------------------------------------------------------------------ */
+
+  /* ---- the band, the parade and the party (+8) ---- */
+  { id: 'drum', en: 'drum', es: 'tambor', icon: 'bucket', category: 'equipment' },
+  { id: 'guitar', en: 'guitar', es: 'guitarra', icon: 'musician', category: 'equipment' },
+  { id: 'trumpet', en: 'trumpet', es: 'trompeta', icon: 'siren', category: 'equipment' },
+  { id: 'candle', en: 'candle', es: 'vela', icon: 'flashlight', category: 'equipment' },
+  { id: 'gift', en: 'gift', es: 'regalo', icon: 'toolbox', category: 'equipment' },
+  { id: 'song', en: 'song', es: 'canción', icon: 'listen', category: 'actions' },
+  { id: 'dance', en: 'dance', es: 'bailar', icon: 'excited', category: 'actions' },
+  { id: 'crowd', en: 'crowd', es: 'público', icon: 'happy', category: 'people' },
+
+  /* ---- the storm and the long night (+5) ---- */
+  { id: 'blanket', en: 'blanket', es: 'manta', icon: 'uniform', category: 'equipment' },
+  { id: 'melt', en: 'melt', es: 'derretir', icon: 'hot', category: 'actions' },
+  { id: 'freeze', en: 'freeze', es: 'congelar', icon: 'cold', category: 'actions' },
+  { id: 'together', en: 'together', es: 'juntos', icon: 'please', category: 'actions' },
+  { id: 'story', en: 'story', es: 'cuento', icon: 'look', category: 'actions' },
+
+  /* ---- the harbour (+6) ---- */
+  { id: 'boat', en: 'boat', es: 'barco', icon: 'river', category: 'places' },
+  { id: 'harbour', en: 'harbour', es: 'puerto', icon: 'beach', category: 'places' },
+  { id: 'net', en: 'net', es: 'red', icon: 'rope', category: 'equipment' },
+  { id: 'anchor', en: 'anchor', es: 'ancla', icon: 'axe', category: 'equipment' },
+  { id: 'sailor', en: 'sailor', es: 'marinero', icon: 'driver', category: 'people' },
+  { id: 'whale', en: 'whale', es: 'ballena', icon: 'fish', category: 'animals' },
+
+  /* ---- sports day (+4) ---- */
+  { id: 'race', en: 'race', es: 'carrera', icon: 'fast', category: 'actions' },
+  { id: 'win', en: 'win', es: 'ganar', icon: 'proud', category: 'actions' },
+  { id: 'field', en: 'field', es: 'cancha', icon: 'park', category: 'places' },
+  { id: 'stage', en: 'stage', es: 'escenario', icon: 'festival', category: 'places' },
+
+  /* ---- what the new dishes are made of (+7) ---- */
+  { id: 'cream', en: 'cream', es: 'crema', icon: 'milk', category: 'food' },
+  { id: 'seaweed', en: 'seaweed', es: 'alga', icon: 'lettuce', category: 'food' },
+  { id: 'celery', en: 'celery', es: 'apio', icon: 'cilantro', category: 'food' },
+  { id: 'spinach', en: 'spinach', es: 'espinaca', icon: 'basil', category: 'food' },
+  { id: 'cinnamon', en: 'cinnamon', es: 'canela', icon: 'salt', category: 'food' },
+  { id: 'vanilla', en: 'vanilla', es: 'vainilla', icon: 'honey', category: 'food' },
+  { id: 'oats', en: 'oats', es: 'avena', icon: 'flour', category: 'food' },
 ];
 
 const byId = new Map(vocabulary.map((w) => [w.id, w]));
@@ -473,6 +524,16 @@ const gender: Record<string, 'm' | 'f'> = {
   lifeguard: 'm', student: 'm', coach: 'm',
   goat: 'f', donkey: 'm', chicken: 'f', bee: 'f', butterfly: 'f', snail: 'm',
   dolphin: 'm', seagull: 'f', owl: 'm', crab: 'm',
+  // ---- third word list ----
+  drum: 'm', guitar: 'f', trumpet: 'f', candle: 'f', gift: 'm', song: 'f',
+  crowd: 'm', blanket: 'f', story: 'm',
+  /* el ancla and el alga are feminine nouns that take the masculine article in
+     the singular ("un ancla"), so they are filed as m — the article is what
+     `countPhraseEs` reads, and the plural rule adds -s either way. */
+  boat: 'm', harbour: 'm', net: 'f', anchor: 'm', sailor: 'm', whale: 'f',
+  race: 'f', field: 'f', stage: 'm',
+  cream: 'f', seaweed: 'm', celery: 'm', spinach: 'f', cinnamon: 'f',
+  vanilla: 'f', oats: 'f',
 };
 
 /** Plurals that the regular rule would get wrong (accents, compounds). */
@@ -512,6 +573,15 @@ const pluralEsOverride: Record<string, string> = {
   lifeguard: 'salvavidas',
   sand: 'arena',
   sky: 'cielo',
+  // ---- third word list ----
+  song: 'canciones',
+  crowd: 'público',
+  cream: 'crema',
+  cinnamon: 'canela',
+  vanilla: 'vainilla',
+  oats: 'avena',
+  celery: 'apio',
+  spinach: 'espinacas',
 };
 
 const pluralEnOverride: Record<string, string> = {
@@ -555,6 +625,15 @@ const pluralEnOverride: Record<string, string> = {
   peach: 'peaches',
   sandwich: 'sandwiches',
   'watering-can': 'watering cans',
+  // ---- third word list ----
+  cream: 'cream',
+  seaweed: 'seaweed',
+  celery: 'celery',
+  spinach: 'spinach',
+  cinnamon: 'cinnamon',
+  vanilla: 'vanilla',
+  oats: 'oats',
+  crowd: 'crowds',
 };
 
 /** Spanish plural: vowel → +s, -z → -ces, other consonant → +es. */
@@ -604,6 +683,9 @@ export const countableIds: readonly string[] = [
   'chili', 'garlic', 'pear', 'peach', 'mango', 'melon', 'cookie', 'sandwich',
   'goat', 'donkey', 'chicken', 'bee', 'butterfly', 'snail', 'seagull', 'owl', 'crab',
   'star', 'window', 'door',
+  /* ---- third word list ---- */
+  'drum', 'guitar', 'trumpet', 'candle', 'gift', 'blanket', 'net', 'boat',
+  'whale', 'song', 'race',
 ];
 
 export const countableWords = (): VocabWord[] => countableIds.map((id) => wordById(id));

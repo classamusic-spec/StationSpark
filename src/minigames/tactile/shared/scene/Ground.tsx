@@ -16,7 +16,7 @@
  */
 import React, { memo } from 'react';
 import { StyleSheet } from 'react-native';
-import Svg, { Circle, Ellipse, G, Path, Rect } from 'react-native-svg';
+import Svg, { Circle, Defs, Ellipse, G, LinearGradient, Path, Rect, Stop } from 'react-native-svg';
 import { palette } from '@/theme';
 import { CONTACT, HILITE, HILITE_SOFT, SHADE, SHADE_DEEP, SHADE_SOFT, leaf } from './tones';
 
@@ -131,6 +131,21 @@ export const PlayGround = memo(function PlayGround({
 
   return (
     <Svg width={width} height={height} style={StyleSheet.absoluteFill} pointerEvents="none">
+      <Defs>
+        {/* THE FLOOR IS NOT ONE COLOUR. A ground plane painted in a single flat
+            fill is the "green card pasted on the sky" defect seen from above
+            instead of from the side: the eye reads no distance across it. One
+            wash — sun on the crest, the near edge falling into the shade the
+            child is standing in — gives every game's floor depth for the price
+            of a single node, and it is shared by grass, pavement and apron so
+            all seven games are lit the same way. */}
+        <LinearGradient id={`ss-ground-${variant}`} x1="0" y1="0" x2="0" y2="1">
+          <Stop offset="0" stopColor="#FFFFFF" stopOpacity={0.14} />
+          <Stop offset="0.34" stopColor="#FFFFFF" stopOpacity={0.02} />
+          <Stop offset="0.78" stopColor="#1F2A5A" stopOpacity={0.05} />
+          <Stop offset="1" stopColor="#1F2A5A" stopOpacity={0.14} />
+        </LinearGradient>
+      </Defs>
       {/* a paler band just past the ground line reads as distance */}
       <Path d={`${edge(gy)} L ${width + 20} ${height + 40} L -20 ${height + 40} Z`} fill={g.far} />
       <Path d={`${edge(gy + Math.max(14, (height - gy) * 0.22))} L ${width + 20} ${height + 40} L -20 ${height + 40} Z`} fill={g.near} />
@@ -158,6 +173,9 @@ export const PlayGround = memo(function PlayGround({
           </G>
         </G>
       ) : null}
+      {/* the wash that gives the plane its distance, under the dressing so a
+          tuft or a pebble still reads as an object lying on top of it */}
+      <Path d={`${edge(gy)} L ${width + 20} ${height + 40} L -20 ${height + 40} Z`} fill={`url(#ss-ground-${variant})`} />
       {/* the crest catches the sun */}
       <Path d={`${edge(gy)}`} stroke={HILITE_SOFT} strokeWidth={Math.max(2, 3 * s)} fill="none" />
       {dressing}

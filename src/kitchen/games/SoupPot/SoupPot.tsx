@@ -1,6 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
-import Svg, { Circle, Defs, Ellipse, LinearGradient, Path, Rect, Stop } from 'react-native-svg';
 import Animated, { FadeIn, FadeInDown, ZoomIn, useAnimatedStyle, useSharedValue, withSequence, withTiming } from 'react-native-reanimated';
 import type { VocabWord } from '@/learning/types';
 import type { MiniGameProps } from '@/minigames/types';
@@ -12,6 +11,7 @@ import { haptics } from '@/services/haptics';
 import { speech } from '@/services/speech';
 import { ActivityFrame, AnswerTile, Button, CheckIcon, Text, TrayRow, VocabIcon } from '@/ui';
 
+import { POT_ASPECT, StockPot } from '../../parts/Cookware';
 import { FluidStage, at, type FluidBox } from '../../parts/Stage';
 import {
   Canister,
@@ -32,9 +32,6 @@ import {
 import { countPhraseEn, countPhraseEs, orderPhraseEn, orderPhraseEs } from '../../spanish';
 import { answerOptions, potDrop, potState, potTotal } from '../../shareMath';
 import { kitchenFeel, useCaptainHint } from '../useKitchenGame';
-
-/** the pot drawing's width ÷ height */
-const POT_ASPECT = 236 / 168;
 
 /**
  * Where a piece floats once it is in the broth, as a FRACTION of the pot's
@@ -514,64 +511,9 @@ function CounterTile({
 /* The pot                                                              */
 /* ------------------------------------------------------------------ */
 
-/**
- * The stock pot: enamelled red with a cream band, a heavy rolled rim, two
- * riveted handles and a broth surface you can see the soup landing on. It used
- * to carry its own little hob inside the drawing; the hob is a real object in
- * the room now, so the pot is just a pot.
- */
+/** The station's one stock pot, filled to the brim and floating its soup. */
 function PotArt({ size, bubbling }: { size: number; bubbling: boolean }) {
-  return (
-    <Svg width={size} height={size / POT_ASPECT} viewBox="0 0 236 168">
-      <Defs>
-        <LinearGradient id="potBody" x1="0" y1="0" x2="1" y2="0">
-          <Stop offset="0" stopColor={palette.engineRedDark} />
-          <Stop offset="0.34" stopColor={palette.engineRed} />
-          <Stop offset="1" stopColor={palette.engineRedDark} />
-        </LinearGradient>
-      </Defs>
-
-      <Ellipse cx={118} cy={160} rx={94} ry={9} fill="rgba(31,42,90,0.16)" />
-
-      {/* handles, with rivets */}
-      <Rect x={0} y={52} width={34} height={18} rx={9} fill="#6B76A8" />
-      <Rect x={4} y={55} width={22} height={5} rx={2.5} fill="rgba(255,255,255,0.35)" />
-      <Rect x={202} y={52} width={34} height={18} rx={9} fill="#6B76A8" />
-      <Rect x={206} y={55} width={22} height={5} rx={2.5} fill="rgba(255,255,255,0.35)" />
-      <Circle cx={32} cy={61} r={4} fill="#D9DDEC" />
-      <Circle cx={204} cy={61} r={4} fill="#D9DDEC" />
-
-      {/* body */}
-      <Path d="M25 40h186l-13 100a12 12 0 0 1-12 10H50a12 12 0 0 1-12-10z" fill="url(#potBody)" />
-      {/* enamel band */}
-      <Path d="M31 92h174l-3 22H34z" fill="#FFF3DC" />
-      <Circle cx={90} cy={103} r={5} fill={palette.engineRed} opacity={0.55} />
-      <Circle cx={118} cy={103} r={5} fill={palette.safetyYellow} />
-      <Circle cx={146} cy={103} r={5} fill={palette.engineRed} opacity={0.55} />
-      {/* lit edge and shade */}
-      <Path d="M43 56c5 30 7 58 7 84" stroke="rgba(255,255,255,0.30)" strokeWidth={8} strokeLinecap="round" fill="none" />
-      <Path d="M196 58c-4 28-6 54-6 80" stroke="rgba(31,42,90,0.14)" strokeWidth={9} strokeLinecap="round" fill="none" />
-      {/* foot */}
-      <Path d="M44 140h148l-2 8a10 10 0 0 1-10 8H56a10 10 0 0 1-10-8z" fill={palette.engineRedDark} />
-
-      {/* rolled rim */}
-      <Ellipse cx={118} cy={40} rx={97} ry={21} fill={palette.white} />
-      <Ellipse cx={118} cy={42} rx={97} ry={20} fill="#EDEFF6" />
-      <Ellipse cx={118} cy={39} rx={97} ry={20} fill={palette.white} />
-      {/* broth */}
-      <Ellipse cx={118} cy={41} rx={84} ry={15} fill="#E8952F" />
-      <Ellipse cx={118} cy={39} rx={84} ry={15} fill="#FFC463" />
-      <Ellipse cx={92} cy={35} rx={26} ry={5} fill="rgba(255,255,255,0.35)" />
-      {bubbling ? (
-        <>
-          <Circle cx={88} cy={46} r={4.6} fill="rgba(255,255,255,0.62)" />
-          <Circle cx={134} cy={50} r={3.4} fill="rgba(255,255,255,0.5)" />
-          <Circle cx={154} cy={44} r={3} fill="rgba(255,255,255,0.55)" />
-          <Circle cx={110} cy={51} r={2.6} fill="rgba(255,255,255,0.45)" />
-        </>
-      ) : null}
-    </Svg>
-  );
+  return <StockPot size={size} bubbling={bubbling} level="brim" />;
 }
 
 const styles = StyleSheet.create({
