@@ -21,8 +21,18 @@ export interface Question {
  * It lives in its own module so it can be tested without dragging the whole
  * native component tree into the test runner.
  */
+/**
+ * The highest product any times-table in this app reaches. Both factors start
+ * above it so the gate can never land inside the syllabus by chance — the first
+ * cut used 11 and 12 as floors, and 11 × 12, 11 × 13 and 12 × 12 all sit at or
+ * under this line. Three combinations out of six thousand, which is a 22 %
+ * chance of a run producing one. Rare enough to look like a flaky test, and it
+ * was reported as one.
+ */
+export const SYLLABUS_CEILING = 144; // 12 × 12
+
 export function makeQuestion(): Question {
-  const a = 11 + Math.floor(Math.random() * 78); // 11–88
-  const b = 12 + Math.floor(Math.random() * 77); // 12–88
+  const a = 13 + Math.floor(Math.random() * 76); // 13–88
+  const b = 13 + Math.floor(Math.random() * 76); // 13–88, so the product is ≥ 169
   return { prompt: `What is ${a} × ${b}?`, answer: a * b };
 }

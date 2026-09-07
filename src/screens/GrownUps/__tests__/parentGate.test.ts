@@ -8,10 +8,7 @@
  * These tests pin the property that matters: the question is always outside
  * anything the curriculum reaches, and it is never the same one twice running.
  */
-import { makeQuestion } from '../gateQuestion';
-
-/** The highest product any times-table in the app goes to. */
-const SYLLABUS_CEILING = 144; // 12 × 12
+import { SYLLABUS_CEILING, makeQuestion } from '../gateQuestion';
 
 describe('the parent gate stays outside the syllabus', () => {
   it('always asks something past the curriculum ceiling', () => {
@@ -28,8 +25,8 @@ describe('the parent gate stays outside the syllabus', () => {
       expect(m).not.toBeNull();
       const a = Number(m?.[1]);
       const b = Number(m?.[2]);
-      expect(a).toBeGreaterThanOrEqual(10);
-      expect(b).toBeGreaterThanOrEqual(10);
+      expect(a).toBeGreaterThanOrEqual(13);
+      expect(b).toBeGreaterThanOrEqual(13);
       expect(a).toBeLessThan(100);
       expect(b).toBeLessThan(100);
       // and the stated answer is actually correct — a gate that rejects the
