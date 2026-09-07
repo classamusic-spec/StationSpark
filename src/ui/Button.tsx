@@ -30,7 +30,12 @@ const tones: Record<ButtonTone, { face: string; edge: string; text: string; bord
 const DISABLED_TONE = { face: '#DCE1EE', edge: '#BAC2D8', text: palette.navyMuted, border: undefined } as const;
 
 const sizes: Record<ButtonSize, { h: number; px: number; edge: number; variant: 'buttonSmall' | 'button' }> = {
-  sm: { h: 48, px: 18, edge: 4, variant: 'buttonSmall' },
+  /* 48 was under the 56 px house minimum, and `sm` is used on things a
+     five-year-old taps — "Show me", "Skip", "Buy". hitSlop cannot rescue it
+     either: react-native-web ignores hitSlop, so on web the drawn size IS the
+     target. If a genuinely smaller button is ever needed it has to be a
+     deliberate, documented exception rather than the default small size. */
+  sm: { h: hit.min, px: 18, edge: 4, variant: 'buttonSmall' },
   md: { h: hit.min, px: 24, edge: 5, variant: 'buttonSmall' },
   lg: { h: 66, px: 32, edge: 6, variant: 'button' },
   xl: { h: hit.big + 6, px: 40, edge: 7, variant: 'button' },
