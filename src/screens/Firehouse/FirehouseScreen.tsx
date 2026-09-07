@@ -95,8 +95,12 @@ const CTA_BLOCK = 138;
 const CTA_AIR = 42;
 /** the widest the side blocks may reach, in façade design units, per side */
 const WING_MAX = 152;
-/** below this they read as a stray edge rather than a building — so: none */
-const WING_MIN = 40;
+/**
+ * Below this there is not room for the inner block, and a wing cropped through
+ * its own tower is worse than no wing at all — so: none. (78 units of tower
+ * plus a little forecourt beside it.)
+ */
+const WING_MIN = 92;
 
 const clamp = (n: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, n));
 
@@ -199,8 +203,8 @@ export function FirehouseScreen() {
      * letting it grow sideways — it simply cannot. The wings take that room
      * instead: they fill whatever is left beside the core, up to the point where
      * the building would start to look like a terrace rather than a station.
-     * Below ~40 units they would read as a stray edge, so they are off — which
-     * is every phone, where the core already runs nearly frame to frame.
+     * Below `WING_MIN` they are off — which is every phone, where the core
+     * already runs nearly frame to frame and there is nothing to fill.
      */
     const roomEachSide = (W - width) / 2 - 4;
     const wingUnits = Math.min(WING_MAX, roomEachSide / (width / FACADE_VB.w));
